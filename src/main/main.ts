@@ -14,6 +14,8 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { ToMianIpc } from '../ipc/toMain';
+import { TabWebView } from './webView/tab';
 
 class AppUpdater {
   constructor() {
@@ -24,11 +26,55 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+const webViewTabsById = new Map<string, TabWebView>();
 
-ipcMain.on('ipc-example', async (event, arg) => {
+console.log('starting main process ipc-example');
+ipcMain.handle('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
   console.log(msgTemplate(arg));
-  event.reply('ipc-example', msgTemplate('pong'));
+  return msgTemplate('pong');
+});
+
+ToMianIpc.createTab.handle(ipcMain, async (event, detail) => {
+  console.log('Create tab request received in main process:', detail);
+  // Here you can add logic to create a new tab or window as needed
+  const wvTab = new TabWebView(detail.url, detail.bounds);
+  webViewTabsById.set(wvTab.id, wvTab);
+  mainWindow?.contentView.addChildView(wvTab.webView);
+  return { id: wvTab.id };
+});
+
+ToMianIpc.operateTab.handle(ipcMain, async (event, detail) => {
+  const wvTab = webViewTabsById.get(detail.id);
+  if (wvTab) {
+    let response;
+    if (detail.close) {
+      wvTab.webView.setVisible(false);
+      mainWindow?.contentView.removeChildView(wvTab.webView);
+      webViewTabsById.delete(detail.id);
+      response = 'closed';
+    } else {
+      if (detail.visible) {
+        wvTab.webView.setVisible(detail.visible);
+      }
+      if (detail.bounds) {
+        wvTab.webView.setBounds(detail.bounds);
+      }
+      if (detail.url) {
+        wvTab.webView.webContents.loadURL(detail.url);
+        await new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      }
+      if (detail.exeScript) {
+        response = await wvTab.webView.webContents.executeJavaScript(
+          detail.exeScript,
+        );
+      }
+    }
+    return { response };
+  }
+  return { error: 'Tab not found' };
 });
 
 if (process.env.NODE_ENV === 'production') {

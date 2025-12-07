@@ -1,8 +1,7 @@
 {
   "name": "runEver",
   "description": "agentic runtime",
-  "keywords": [
-  ],
+  "keywords": [],
   "homepage": "https://github.com/dimbreak/runEver",
   "repository": {
     "type": "git",
@@ -83,7 +82,8 @@
     "electron-updater": "^6.3.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0"
+    "react-router-dom": "^7.3.0",
+    "typescript-eslint": "^8.48.1"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
