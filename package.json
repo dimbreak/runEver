@@ -1,8 +1,7 @@
 {
   "name": "runEver",
   "description": "agentic runtime",
-  "keywords": [
-  ],
+  "keywords": [],
   "homepage": "https://github.com/dimbreak/runEver",
   "repository": {
     "type": "git",
@@ -78,12 +77,16 @@
   },
   "dependencies": {
     "@electron/notarize": "^3.0.0",
+    "@tailwindcss/postcss": "^4.1.17",
     "electron-debug": "^4.1.0",
     "electron-log": "^5.3.2",
     "electron-updater": "^6.3.9",
+    "postcss": "^8.5.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom": "^7.3.0"
+    "react-router-dom": "^7.3.0",
+    "source-map-support": "^0.5.21",
+    "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
@@ -131,6 +134,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "lucide-react": "^0.548.0",
     "mini-css-extract-plugin": "^2.9.2",
+    "postcss-loader": "^8.2.0",
     "prettier": "^3.5.3",
     "react-refresh": "^0.16.0",
     "react-test-renderer": "^19.0.0",
