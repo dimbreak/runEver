@@ -1,7 +1,26 @@
+/* eslint-disable no-restricted-syntax */
+const js = require('@eslint/js');
+const tseslint = require('typescript-eslint');
+const importPlugin = require('eslint-plugin-import');
+
+function softenRules(rules = {}) {
+  const out = {};
+  for (const [name, value] of Object.entries(rules)) {
+    if (value === 'error' || value === 2) out[name] = 'warn';
+    else if (Array.isArray(value) && (value[0] === 'error' || value[0] === 2)) {
+      out[name] = ['warn', ...value.slice(1)];
+    } else out[name] = value;
+  }
+  return out;
+}
+
 module.exports = {
   extends: 'erb',
   plugins: ['@typescript-eslint'],
   rules: {
+    ...softenRules(js.configs.recommended.rules),
+    ...softenRules(tseslint.configs.recommendedTypeChecked[0].rules),
+    ...softenRules(importPlugin.configs.recommended.rules),
     // A temporary hack related to IDE not resolving correct package.json
     'import/no-extraneous-dependencies': 'off',
     'react/react-in-jsx-scope': 'off',
@@ -18,6 +37,10 @@ module.exports = {
     'import/prefer-default-export': 'off',
     'react/require-default-props': 'off',
     'jsx-a11y/label-has-associated-control': 'warn',
+    'no-useless-constructor': 'warn',
+    'no-empty-function': 'warn',
+    'prettier/prettier': 'warn',
+    'promise/always-return': 'warn',
   },
   parserOptions: {
     ecmaVersion: 2022,
