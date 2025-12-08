@@ -23,6 +23,8 @@ on:
 jobs:
   analyze:
     name: Analyze
+    # Run only when Advanced Security is enabled on the repository
+    if: ${{ github.event.repository.security_and_analysis.advanced_security.status == 'enabled' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
