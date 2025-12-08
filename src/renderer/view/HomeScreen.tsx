@@ -13,7 +13,7 @@ export const HomeScreen: React.FC<{}> = () => {
               <CheckBox name="promptAgentMode" label="Agent Mode" />
             </li>
             <li>
-              <button>Query</button>
+              <button type="button">Query</button>
             </li>
           </ul>
         </div>
