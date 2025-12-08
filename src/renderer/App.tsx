@@ -15,7 +15,7 @@ export default function App() {
         isRunning: true,
       },
       {
-        id: 'tab-1',
+        id: 'tab-2',
         title: 'OpenAI',
         type: 'webview',
         url: 'https://www.openai.com',
