@@ -24,23 +24,24 @@ export default function App() {
     ],
   });
   useEffect(() => {
-    ToMianIpc.createTab
-      .invoke({
-        url: 'http://www.google.com',
-        bounds: { x: 100, y: 10, width: 200, height: 200 },
-      })
-      .then((res) => {
-        console.log('Tab create res:', res);
-        ToMianIpc.operateTab
-          .invoke({
-            id: res.id,
-            bounds: { x: 100, y: 10, width: 400, height: 400 },
-            exeScript: 'alert("Hello from tab!");',
-          })
-          .then((res) => {
-            console.log('Tab operate res:', res);
-          });
-      });
+    const createTab = async () => {
+      try {
+        const tabRes = await ToMianIpc.createTab.invoke({
+          url: 'http://www.google.com',
+          bounds: { x: 100, y: 10, width: 200, height: 200 },
+        });
+
+        await ToMianIpc.operateTab.invoke({
+          id: tabRes.id,
+          bounds: { x: 100, y: 10, width: 400, height: 400 },
+          exeScript: 'alert("Hello from tab!");',
+        });
+      } catch (error) {
+        // swallow errors in dev bootstrap to avoid unhandled promise rejections
+      }
+    };
+
+    void createTab();
   }, []);
   return (
     <>

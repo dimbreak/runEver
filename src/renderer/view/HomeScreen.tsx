@@ -10,14 +10,14 @@ export const HomeScreen: React.FC<{}> = () => {
           <textarea placeholder="Do something..." />
           <ul>
             <li>
-              <CheckBox name="promptAgentMode" label="Agent Mode" />
-            </li>
-            <li>
-              <button>Query</button>
-            </li>
-          </ul>
-        </div>
-      </div>
+          <CheckBox name="promptAgentMode" label="Agent Mode" />
+        </li>
+        <li>
+          <button type="button">Query</button>
+        </li>
+      </ul>
     </div>
+  </div>
+</div>
   );
 };

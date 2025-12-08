@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file, no-console */
 import type {
   IpcMain,
   IpcMainInvokeEvent,

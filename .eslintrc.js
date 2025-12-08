@@ -1,16 +1,17 @@
+/* eslint-disable no-restricted-syntax */
 const js = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 const importPlugin = require('eslint-plugin-import');
 
 function softenRules(rules = {}) {
-  const out = {}
+  const out = {};
   for (const [name, value] of Object.entries(rules)) {
-    if (value === 'error' || value === 2) out[name] = 'warn'
+    if (value === 'error' || value === 2) out[name] = 'warn';
     else if (Array.isArray(value) && (value[0] === 'error' || value[0] === 2)) {
-      out[name] = ['warn', ...value.slice(1)]
-    } else out[name] = value
+      out[name] = ['warn', ...value.slice(1)];
+    } else out[name] = value;
   }
-  return out
+  return out;
 }
 
 module.exports = {
