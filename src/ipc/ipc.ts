@@ -15,6 +15,8 @@ export const isRenderer = typeof window === 'object' && window.electron;
 export const isMain = isElectron && (process as any).type === 'browser';
 
 class IcpContract<REQ extends Array<any>, RES = any> {
+  protected _types?: { req: REQ; res: RES };
+
   constructor(public channel: string) {}
 }
 

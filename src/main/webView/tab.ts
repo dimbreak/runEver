@@ -2,10 +2,15 @@ import { Rectangle, WebContentsView } from 'electron';
 
 export class TabWebView {
   id: string;
+
   url: string;
+
   webView: WebContentsView;
 
-  constructor(public initUrl: string, public bounds: Rectangle) {
+  constructor(
+    public initUrl: string,
+    public bounds: Rectangle,
+  ) {
     this.id = TabWebView.generateId();
     this.url = initUrl;
     this.webView = new WebContentsView();

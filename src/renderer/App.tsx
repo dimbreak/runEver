@@ -32,16 +32,16 @@ export default function App() {
         });
 
         await ToMianIpc.operateTab.invoke({
-          id: tabRes.id,
+          id: (tabRes as { id: string }).id,
           bounds: { x: 100, y: 10, width: 400, height: 400 },
           exeScript: 'alert("Hello from tab!");',
         });
       } catch (error) {
-        // swallow errors in dev bootstrap to avoid unhandled promise rejections
+        console.error(error);
       }
     };
 
-    void createTab();
+    createTab();
   }, []);
   return (
     <>
