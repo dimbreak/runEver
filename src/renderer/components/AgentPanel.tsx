@@ -11,23 +11,23 @@ const sampleMessages: Message[] = [
   {
     id: 1,
     role: 'user',
-    text: '我想生成一個自動化清單，幫我跑每日銷售摘要。',
+    text: 'I want to generate a list of automated tasks to run daily sales summary.',
   },
   {
     id: 2,
     role: 'assistant',
-    text: '好的，我會串接 API，提供每日營收、訂單數與 KPI 偵測。',
+    text: 'I will connect to the API, provide daily revenue, order count, and KPI detection.',
     tag: 'Plan',
   },
   {
     id: 3,
     role: 'user',
-    text: '加上「低毛利商品」警示，並輸出 CSV。',
+    text: 'Add "low-margin product" warning, and output CSV.',
   },
   {
     id: 4,
     role: 'assistant',
-    text: '已加入警示，並在清晨 7 點推送 CSV 到你的雲端。',
+    text: 'Added warning, and pushed CSV to your cloud at 7am.',
     tag: 'Ready',
   },
 ];
@@ -128,12 +128,13 @@ export const AgentPanel: React.FC = () => {
           onClick={() => setIsOpen((prev) => !prev)}
           aria-expanded={isOpen}
           className={`group flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-2xl shadow-blue-400/40 transition ${
-            isOpen ? 'scale-90 opacity-60 pointer-events-none' : 'hover:scale-105'
+            isOpen
+              ? 'scale-90 opacity-60 pointer-events-none'
+              : 'hover:scale-105'
           }`}
         >
           <div className="text-center leading-tight">
-            <div className="text-[11px] opacity-80">Open</div>
-            <div className="text-sm font-bold">Panel</div>
+            <div className="text-[11px] opacity-80">Open Agent</div>
           </div>
         </button>
       </div>

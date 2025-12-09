@@ -33,7 +33,7 @@ export default function App() {
 
         await ToMianIpc.operateTab.invoke({
           id: (tabRes as { id: string }).id,
-          bounds: { x: 100, y: 10, width: 400, height: 400 },
+          bounds: { x: 0, y: 50, width: 600, height: 600 },
           exeScript: 'alert("Hello from tab!");',
         });
       } catch (error) {
