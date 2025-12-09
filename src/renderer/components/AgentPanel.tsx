@@ -122,22 +122,20 @@ export const AgentPanel: React.FC = () => {
       </div>
 
       {/* Toggle button */}
-      <div className="absolute bottom-0 right-0">
-        <button
-          type="button"
-          onClick={() => setIsOpen((prev) => !prev)}
-          aria-expanded={isOpen}
-          className={`group flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-2xl shadow-blue-400/40 transition ${
-            isOpen
-              ? 'scale-90 opacity-60 pointer-events-none'
-              : 'hover:scale-105'
-          }`}
-        >
-          <div className="text-center leading-tight">
-            <div className="text-[11px] opacity-80">Open Agent</div>
-          </div>
-        </button>
-      </div>
+      {!isOpen && (
+        <div className="absolute bottom-0 right-0">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            aria-expanded={isOpen}
+            className="group flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-2xl shadow-blue-400/40 transition hover:scale-105"
+          >
+            <div className="text-center leading-tight">
+              <div className="text-[11px] opacity-80">Open Agent</div>
+            </div>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
