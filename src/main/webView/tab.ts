@@ -1,4 +1,5 @@
-import { Rectangle, WebContentsView } from 'electron';
+import { app, Rectangle, WebContentsView } from 'electron';
+import path from 'path';
 
 export class TabWebView {
   id: string;
@@ -13,7 +14,14 @@ export class TabWebView {
   ) {
     this.id = TabWebView.generateId();
     this.url = initUrl;
-    this.webView = new WebContentsView();
+    this.webView = new WebContentsView({
+      webPreferences: {
+        contextIsolation: true,
+        preload: app.isPackaged
+          ? path.join(__dirname, 'webViewPreload.js')
+          : path.join(__dirname, '../../.erb/dll/webViewPreload.js'),
+      },
+    });
     this.initView();
   }
 
@@ -22,8 +30,12 @@ export class TabWebView {
   }
 
   initView() {
-    const { webContents } = this.webView;
-    this.webView.setBounds(this.bounds);
-    webContents.loadURL(this.url);
+    const { webView } = this;
+    webView.setBounds(this.bounds);
+    webView.webContents.loadURL(this.url);
+    webView.webContents.openDevTools();
+    webView.webContents.executeJavaScript(
+      `window.postMessage({ frameId: ${webView.webContents.id}})`,
+    );
   }
 }
