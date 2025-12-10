@@ -1,15 +1,15 @@
 import type { Rectangle } from 'electron';
-import { IcpMainContract } from './ipc';
+import { IpcMainContract } from './ipc';
 
 export const ToMianIpc = {
-  createTab: new IcpMainContract<
+  createTab: new IpcMainContract<
     [{ url: string; bounds: Rectangle }],
-    { id: string } | { error: string }
+    { id: number } | { error: string }
   >('create-tab'),
-  operateTab: new IcpMainContract<
+  operateTab: new IpcMainContract<
     [
       {
-        id: string;
+        id: number;
         bounds?: Rectangle;
         url?: string;
         exeScript?: string;
@@ -19,4 +19,17 @@ export const ToMianIpc = {
     ],
     { error: string } | { response: any }
   >('operate-tab'),
+  takeScreenshot: new IpcMainContract<
+    [
+      {
+        frameId: number;
+        ttlHeight: number;
+        ttlWidth: number;
+        vpHeight: number;
+        vpWidth: number;
+        slices: { x: number; y: number }[];
+      },
+    ],
+    { error: string } | Buffer[]
+  >('take-screenshot'),
 };

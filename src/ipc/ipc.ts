@@ -11,7 +11,6 @@ export const isElectron =
   !!(process as any).versions &&
   !!(process as any).versions.electron;
 
-export const isRenderer = typeof window === 'object' && window.electron;
 export const isMain = isElectron && (process as any).type === 'browser';
 
 class IcpContract<REQ extends Array<any>, RES = any> {
@@ -20,21 +19,18 @@ class IcpContract<REQ extends Array<any>, RES = any> {
   constructor(public channel: string) {}
 }
 
-console.log(
-  'isElectron',
-  isElectron,
-  'isMain',
-  isMain,
-  'isRenderer',
-  isRenderer,
-);
+let ipcMain: IpcMain;
 
-export class IcpMainContract<
+export function setIpcMain(main: IpcMain) {
+  ipcMain = main;
+}
+
+export class IpcMainContract<
   REQ extends Array<any>,
   RES = any,
 > extends IcpContract<REQ, RES> {
   invoke(...args: REQ): Promise<RES> {
-    if (isRenderer) {
+    if (!isMain) {
       return window.electron.ipcRenderer.invoke(this.channel, ...args);
     }
     throw new Error(
@@ -42,11 +38,13 @@ export class IcpMainContract<
     );
   }
 
-  handle(
-    ipcMain: IpcMain,
-    handler: (event: IpcMainInvokeEvent, ...args: REQ) => Promise<RES>,
-  ) {
+  handle(handler: (event: IpcMainInvokeEvent, ...args: REQ) => Promise<RES>) {
     if (isMain) {
+      if (!ipcMain) {
+        throw new Error(
+          'IpcMainContract.handle ipcMain is not set. Did you forget to call setIpcMain()?',
+        );
+      }
       ipcMain.handle(this.channel, handler);
       return;
     }
@@ -63,7 +61,7 @@ export class IcpRendererContract<
   }
 
   on(handler: (event: IpcRendererEvent, ...args: REQ) => void) {
-    if (isRenderer) {
+    if (!isMain) {
       window.electron.ipcRenderer.on(this.channel, handler);
       return;
     }

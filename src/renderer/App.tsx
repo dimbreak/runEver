@@ -24,6 +24,12 @@ export default function App() {
     ],
   });
   useEffect(() => {
+    // Listen for IPC example events
+    window.electron.ipcRenderer.on('ipc-example', (_event, args) => {
+      console.log('ipc-example event received with args:', args);
+    });
+
+    // Create and operate on a tab using async/await pattern
     const createTab = async () => {
       try {
         const tabRes = await ToMianIpc.createTab.invoke({
@@ -31,13 +37,19 @@ export default function App() {
           bounds: { x: 100, y: 10, width: 200, height: 200 },
         });
 
-        await ToMianIpc.operateTab.invoke({
-          id: (tabRes as { id: string }).id,
-          bounds: { x: 0, y: 50, width: 600, height: 600 },
-          exeScript: 'alert("Hello from tab!");',
-        });
+        console.log('Tab create res:', tabRes);
+
+        if ('id' in tabRes) {
+          const operateRes = await ToMianIpc.operateTab.invoke({
+            id: tabRes.id,
+            bounds: { x: 0, y: 50, width: 600, height: 600 },
+            exeScript: 'alert("Hello from tab!");',
+          });
+
+          console.log('Tab operate res:', operateRes);
+        }
       } catch (error) {
-        console.error(error);
+        console.error('Error creating or operating tab:', error);
       }
     };
 
