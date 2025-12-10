@@ -47,6 +47,14 @@ export default function App() {
           });
 
           console.log('Tab operate res:', operateRes);
+
+          // expose latest tab info for other components (e.g., AgentPanel screenshot)
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          window.lastFrameId = tabRes.id;
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          window.lastTabBounds = { width: 600, height: 600 };
         }
       } catch (error) {
         console.error('Error creating or operating tab:', error);

@@ -1,39 +1,106 @@
 import * as React from 'react';
+import { Buffer } from 'buffer';
+import { ToMianIpc } from '../../ipc/toMain';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
   text: string;
   tag?: string;
+  image?: string;
 };
-
-const sampleMessages: Message[] = [
-  {
-    id: 1,
-    role: 'user',
-    text: 'I want to generate a list of automated tasks to run daily sales summary.',
-  },
-  {
-    id: 2,
-    role: 'assistant',
-    text: 'I will connect to the API, provide daily revenue, order count, and KPI detection.',
-    tag: 'Plan',
-  },
-  {
-    id: 3,
-    role: 'user',
-    text: 'Add "low-margin product" warning, and output CSV.',
-  },
-  {
-    id: 4,
-    role: 'assistant',
-    text: 'Added warning, and pushed CSV to your cloud at 7am.',
-    tag: 'Ready',
-  },
-];
 
 export const AgentPanel: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(true);
+  const [messages, setMessages] = React.useState<Message[]>([
+    {
+      id: 1,
+      role: 'user',
+      text: 'I want to generate a list of automated tasks to run daily sales summary.',
+    },
+    {
+      id: 2,
+      role: 'assistant',
+      text: 'I will connect to the API, provide daily revenue, order count, and KPI detection.',
+      tag: 'Plan',
+    },
+    {
+      id: 3,
+      role: 'user',
+      text: 'Add "low-margin product" warning, and output CSV.',
+    },
+    {
+      id: 4,
+      role: 'assistant',
+      text: 'Added warning, and pushed CSV to your cloud at 7am.',
+      tag: 'Ready',
+    },
+  ]);
+
+  const handleCapture = async () => {
+    try {
+      // frameId/bounds from window (set in App.tsx useEffect)
+      const { lastFrameId, lastTabBounds } = window as any;
+      const frameId: number | undefined = lastFrameId;
+      const bounds = lastTabBounds || { width: 800, height: 600 };
+      if (!frameId) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            role: 'assistant',
+            text: 'No active tab to capture.',
+            tag: 'Error',
+          },
+        ]);
+        return;
+      }
+
+      const payload = {
+        frameId,
+        ttlHeight: bounds.height,
+        ttlWidth: bounds.width,
+        vpHeight: bounds.height,
+        vpWidth: bounds.width,
+        slices: [{ x: 0, y: 0 }],
+      };
+
+      const imgJpgs = await ToMianIpc.takeScreenshot.invoke(payload);
+      if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
+        const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            role: 'assistant',
+            text: 'Captured current view.',
+            image: `data:image/jpeg;base64,${base64Img}`,
+            tag: 'Screenshot',
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            role: 'assistant',
+            text: 'Failed to capture screenshot.',
+            tag: 'Error',
+          },
+        ]);
+      }
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: `Capture error: ${(err as Error).message}`,
+          tag: 'Error',
+        },
+      ]);
+    }
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-[430px] max-w-[92vw] h-[88vh]">
@@ -50,6 +117,13 @@ export const AgentPanel: React.FC = () => {
             <div className="text-[15px]">Agent</div>
           </div>
           <div className="flex flex-1 items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCapture}
+              className="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-amber-200/60 transition hover:-translate-y-[1px] hover:bg-amber-600"
+            >
+              Capture View
+            </button>
             <button
               type="button"
               className="rounded-xl bg-[#3aa5ff] px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-sky-200/60 transition hover:-translate-y-[1px] hover:bg-[#1893ff]"
@@ -74,7 +148,7 @@ export const AgentPanel: React.FC = () => {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto bg-slate-50/70 px-4 py-3 space-y-3">
-          {sampleMessages.map((msg) => (
+          {messages.map((msg) => (
             <div
               key={msg.id}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -93,11 +167,16 @@ export const AgentPanel: React.FC = () => {
                         ? 'bg-white/20 text-white'
                         : 'bg-slate-100 text-slate-600'
                     }`}
-                  >
-                    {msg.tag}
-                  </span>
-                )}
-                <div className="whitespace-pre-line">{msg.text}</div>
+                >
+                  {msg.tag}
+                </span>
+              )}
+              <div className="whitespace-pre-line">{msg.text}</div>
+              {msg.image && (
+                <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                  <img src={msg.image} alt="screenshot" className="max-w-full h-auto block" />
+                </div>
+              )}
               </div>
             </div>
           ))}
