@@ -24,6 +24,9 @@ export default function App() {
     ],
   });
   useEffect(() => {
+    window.electron.ipcRenderer.on('ipc-example', (_event, args) => {
+      console.log('ipc-example event received with args:', args);
+    });
     ToMianIpc.createTab
       .invoke({
         url: 'http://www.google.com',
@@ -35,7 +38,7 @@ export default function App() {
           .invoke({
             id: res.id,
             bounds: { x: 100, y: 10, width: 400, height: 400 },
-            exeScript: 'alert("Hello from tab!");',
+            exeScript: '1+1;',
           })
           .then((res) => {
             console.log('Tab operate res:', res);
