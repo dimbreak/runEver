@@ -102,6 +102,26 @@ export const AgentPanel: React.FC = () => {
     }
   };
 
+  const updateWebViewLayout = React.useCallback(async (sidebarOpen: boolean) => {
+    const { lastFrameId } = window as any;
+    if (!lastFrameId) return;
+    const sidebarWidth = sidebarOpen ? 430 : 0;
+    const tabbarHeight = 56;
+    try {
+      await ToMianIpc.operateTab.invoke({
+        id: lastFrameId,
+        sidebarWidth,
+        tabbarHeight,
+      });
+    } catch (error) {
+      // swallow layout errors to avoid blocking UI
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void updateWebViewLayout(isOpen);
+  }, [isOpen, updateWebViewLayout]);
+
   return (
     <div className="fixed bottom-6 right-6 z-50 w-[430px] max-w-[92vw] h-[88vh]">
       {/* Panel card */}
@@ -205,10 +225,10 @@ export const AgentPanel: React.FC = () => {
         <div className="absolute bottom-0 right-0">
           <button
             type="button"
-            onClick={() => setIsOpen(true)}
-            aria-expanded={isOpen}
-            className="group flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-2xl shadow-blue-400/40 transition hover:scale-105"
-          >
+              onClick={() => setIsOpen(true)}
+              aria-expanded={isOpen}
+              className="group flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-2xl shadow-blue-400/40 transition hover:scale-105"
+            >
             <div className="text-center leading-tight">
               <div className="text-[11px] opacity-80">Open Agent</div>
             </div>

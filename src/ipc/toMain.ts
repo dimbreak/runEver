@@ -15,6 +15,9 @@ export const ToMianIpc = {
         exeScript?: string;
         close?: boolean;
         visible?: boolean;
+        sidebarWidth?: number;
+        tabbarHeight?: number;
+        devtoolsWidth?: number;
       },
     ],
     { error: string } | { response: any }

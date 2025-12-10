@@ -300,6 +300,7 @@ export namespace OCRModel {
     if (!overlayResizeHandler) {
       overlayResizeHandler = () => {
         resizeOverlayCanvas();
+        overlayInteractive = getInteractiveElements();
         markElement(overlayInteractive, overlayOptions || {});
       };
       window.addEventListener('resize', overlayResizeHandler);

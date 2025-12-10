@@ -29,6 +29,41 @@ class AppUpdater {
 let mainWindow: BrowserWindow | null = null;
 const webViewTabsById = new Map<number, TabWebView>();
 
+const PADDING = 12;
+const DEFAULT_TABBAR_HEIGHT = 56;
+const DEFAULT_SIDEBAR_WIDTH = 430;
+const DEFAULT_DEVTOOLS_WIDTH = 360;
+
+type SafeBoundsOptions = {
+  sidebarWidth?: number;
+  tabbarHeight?: number;
+  devtoolsWidth?: number;
+};
+
+const getSafeBounds = (opts: SafeBoundsOptions = {}) => {
+  const sidebarWidth = opts.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH;
+  const tabbarHeight = opts.tabbarHeight ?? DEFAULT_TABBAR_HEIGHT;
+  const devtoolsWidth = opts.devtoolsWidth ?? 0;
+
+  const win = mainWindow?.getBounds();
+  const width = Math.max(
+    320,
+    (win?.width ?? 1024) - sidebarWidth - devtoolsWidth - PADDING * 2,
+  );
+  const height = Math.max(
+    320,
+    (win?.height ?? 728) - tabbarHeight - PADDING * 2,
+  );
+  return { x: PADDING, y: tabbarHeight + PADDING, width, height };
+};
+
+const removeAllWebViews = () => {
+  webViewTabsById.forEach((tab) => {
+    mainWindow?.contentView.removeChildView(tab.webView);
+  });
+  webViewTabsById.clear();
+};
+
 console.log('starting main process ipc-example');
 ipcMain.handle('ocr-preload-loaded', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -79,8 +114,10 @@ ToMianIpc.createTab.handle(async (event, detail) => {
     detail,
     event.frameId,
   );
+  removeAllWebViews();
   // Here you can add logic to create a new tab or window as needed
-  const wvTab = new TabWebView(detail.url, detail.bounds);
+  const bounds = detail.bounds ?? getSafeBounds();
+  const wvTab = new TabWebView(detail.url, bounds);
   webViewTabsById.set(wvTab.webView.webContents.id, wvTab);
   mainWindow?.contentView.addChildView(wvTab.webView);
   return { id: wvTab.webView.webContents.id };
@@ -98,14 +135,25 @@ ToMianIpc.operateTab.handle(async (event, detail) => {
     if (detail.close) {
       wvTab.webView.setVisible(false);
       mainWindow?.contentView.removeChildView(wvTab.webView);
-      webViewTabsById.delete(event.frameId);
+      webViewTabsById.delete(detail.id);
       response = 'closed';
     } else {
-      if (detail.visible) {
+      if (detail.visible !== undefined) {
         wvTab.webView.setVisible(detail.visible);
       }
       if (detail.bounds) {
         wvTab.webView.setBounds(detail.bounds);
+      } else if (!detail.url && !detail.exeScript) {
+        const devtoolsWidth = wvTab.webView.webContents.isDevToolsOpened()
+          ? DEFAULT_DEVTOOLS_WIDTH
+          : 0;
+        wvTab.webView.setBounds(
+          getSafeBounds({
+            sidebarWidth: detail.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH,
+            tabbarHeight: detail.tabbarHeight ?? DEFAULT_TABBAR_HEIGHT,
+            devtoolsWidth,
+          }),
+        );
       }
       if (detail.url) {
         wvTab.webView.webContents.loadURL(detail.url);
