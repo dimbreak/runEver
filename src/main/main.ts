@@ -9,13 +9,14 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, ipcRenderer } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { ToMianIpc } from '../ipc/toMain';
 import { TabWebView } from './webView/tab';
+import { setIpcMain } from '../ipc/ipc';
 
 class AppUpdater {
   constructor() {
@@ -26,32 +27,78 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
-const webViewTabsById = new Map<string, TabWebView>();
+const webViewTabsById = new Map<number, TabWebView>();
 
 console.log('starting main process ipc-example');
+ipcMain.handle('ocr-preload-loaded', async (event, arg) => {
+  const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
+  console.log('handle', msgTemplate(arg), event.frameId);
+  return msgTemplate('ocr pong');
+});
+
 ipcMain.handle('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
   console.log(msgTemplate(arg));
   return msgTemplate('pong');
 });
 
-ToMianIpc.createTab.handle(ipcMain, async (event, detail) => {
-  console.log('Create tab request received in main process:', detail);
-  // Here you can add logic to create a new tab or window as needed
-  const wvTab = new TabWebView(detail.url, detail.bounds);
-  webViewTabsById.set(wvTab.id, wvTab);
-  mainWindow?.contentView.addChildView(wvTab.webView);
-  return { id: wvTab.id };
+setIpcMain(ipcMain);
+
+ToMianIpc.takeScreenshot.handle(async (event, arg) => {
+  const { slices, ttlWidth, vpWidth, ttlHeight, vpHeight, frameId } = arg;
+  console.log('takeScreenshot in main process:', frameId);
+  const wvTab = webViewTabsById.get(frameId);
+  if (wvTab) {
+    const imgs = [];
+    for (const slice of slices) {
+      await wvTab.webView.webContents.executeJavaScript(
+        `window.scrollTo(${slice.x}, ${slice.y});`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const width = vpWidth + slice.x > ttlWidth ? ttlWidth - slice.x : vpWidth;
+      const height =
+        vpHeight + slice.y > ttlHeight ? ttlHeight - slice.y : vpHeight;
+      imgs.push(
+        await wvTab.webView.webContents.capturePage({
+          x: vpWidth - width,
+          y: vpHeight - height,
+          width,
+          height,
+        }),
+      );
+    }
+
+    return imgs.map((img) => img.toJPEG(80));
+  }
+  return { error: 'Tab not found' };
 });
 
-ToMianIpc.operateTab.handle(ipcMain, async (event, detail) => {
+ToMianIpc.createTab.handle(async (event, detail) => {
+  console.log(
+    'Create tab request received in main process:',
+    detail,
+    event.frameId,
+  );
+  // Here you can add logic to create a new tab or window as needed
+  const wvTab = new TabWebView(detail.url, detail.bounds);
+  webViewTabsById.set(wvTab.webView.webContents.id, wvTab);
+  mainWindow?.contentView.addChildView(wvTab.webView);
+  return { id: wvTab.webView.webContents.id };
+});
+
+ToMianIpc.operateTab.handle(async (event, detail) => {
+  console.log(
+    'Operate tab request received in main process:',
+    detail,
+    event.frameId,
+  );
   const wvTab = webViewTabsById.get(detail.id);
   if (wvTab) {
     let response;
     if (detail.close) {
       wvTab.webView.setVisible(false);
       mainWindow?.contentView.removeChildView(wvTab.webView);
-      webViewTabsById.delete(detail.id);
+      webViewTabsById.delete(event.frameId);
       response = 'closed';
     } else {
       if (detail.visible) {
