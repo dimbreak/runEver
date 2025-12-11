@@ -39,6 +39,7 @@ module.exports = {
     'jsx-a11y/label-has-associated-control': 'warn',
     'no-useless-constructor': 'warn',
     'no-empty-function': 'warn',
+    'lines-between-class-members': 'warn',
     'prettier/prettier': 'warn',
     'promise/always-return': 'warn',
     'no-promise-executor-return': 'off',
