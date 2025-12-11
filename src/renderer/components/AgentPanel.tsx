@@ -105,21 +105,24 @@ export const AgentPanel: React.FC = () => {
     }
   };
 
-  const updateWebViewLayout = React.useCallback(async (sidebarOpen: boolean) => {
-    const { lastFrameId } = window as any;
-    if (!lastFrameId) return;
-    const width = sidebarOpen ? sidebarWidth : collapsedWidth;
-    const tabbarHeight = 56;
-    try {
-      await ToMianIpc.operateTab.invoke({
-        id: lastFrameId,
-        sidebarWidth: width,
-        tabbarHeight,
-      });
-    } catch (error) {
-      // swallow layout errors to avoid blocking UI
-    }
-  }, [collapsedWidth, sidebarWidth]);
+  const updateWebViewLayout = React.useCallback(
+    async (sidebarOpen: boolean) => {
+      const { lastFrameId } = window as any;
+      if (!lastFrameId) return;
+      const width = sidebarOpen ? sidebarWidth : collapsedWidth;
+      const tabbarHeight = 56;
+      try {
+        await ToMianIpc.operateTab.invoke({
+          id: lastFrameId,
+          sidebarWidth: width,
+          tabbarHeight,
+        });
+      } catch (error) {
+        // swallow layout errors to avoid blocking UI
+      }
+    },
+    [collapsedWidth, sidebarWidth],
+  );
 
   React.useEffect(() => {
     void updateWebViewLayout(sidebarOpen);
@@ -158,12 +161,6 @@ export const AgentPanel: React.FC = () => {
             >
               New Chat
             </button>
-            <button
-              type="button"
-              className="rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-slate-400/50 transition hover:-translate-y-[1px] hover:bg-slate-800"
-            >
-              Save
-            </button>
           </div>
           <button
             type="button"
@@ -195,16 +192,20 @@ export const AgentPanel: React.FC = () => {
                         ? 'bg-white/20 text-white'
                         : 'bg-slate-100 text-slate-600'
                     }`}
-                >
-                  {msg.tag}
-                </span>
-              )}
-              <div className="whitespace-pre-line">{msg.text}</div>
-              {msg.image && (
-                <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                  <img src={msg.image} alt="screenshot" className="max-w-full h-auto block" />
-                </div>
-              )}
+                  >
+                    {msg.tag}
+                  </span>
+                )}
+                <div className="whitespace-pre-line">{msg.text}</div>
+                {msg.image && (
+                  <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    <img
+                      src={msg.image}
+                      alt="screenshot"
+                      className="max-w-full h-auto block"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -227,7 +228,6 @@ export const AgentPanel: React.FC = () => {
           </div>
         </div>
       </div>
-
     </div>
   );
 };
