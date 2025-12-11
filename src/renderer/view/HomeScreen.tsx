@@ -26,6 +26,10 @@ export const HomeScreen: React.FC<{}> = () => {
 
   // create webview only once
   React.useEffect(() => {
+    // Skip when ipc bridge is unavailable (e.g., tests or non-Electron env)
+    const hasIpc = typeof window !== 'undefined' && (window as any).electron?.ipcRenderer;
+    if (!hasIpc) return;
+
     if (createdRef.current) return;
     createdRef.current = true;
     const createTab = async () => {
@@ -55,6 +59,9 @@ export const HomeScreen: React.FC<{}> = () => {
   // adjust bounds on sidebar/resizes via operateTab
   React.useEffect(() => {
     const applyLayout = () => {
+      const hasIpc =
+        typeof window !== 'undefined' && (window as any).electron?.ipcRenderer;
+      if (!hasIpc) return;
       const frameId = (window as any).lastFrameId;
       if (!frameId) return;
       const bounds = computeBounds();
