@@ -11,7 +11,7 @@ export abstract class Role<R = any> {
 }
 
 const defaultPromptTransformer = (prompt: string) => `[url]
-${location.href}
+${window.location.href}
 
 [user prompt]
 ${prompt}

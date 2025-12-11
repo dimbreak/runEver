@@ -1,25 +1,29 @@
-import { Role } from "./role"
-import { LLMApiRunner } from "../type"
-import { queryLLMSession } from "../llm"
+import { Role } from './role';
+import { LLMApiRunner } from '../type';
+import { queryLLMSession } from '../llm';
 
-const promptedCache: Record<string, string> = JSON.parse(localStorage.getItem('runEver_prompt_cache') ?? '{}');
+const promptedCache: Record<string, string> = JSON.parse(
+  localStorage.getItem('runEver_prompt_cache') ?? '{}',
+);
 
 export class Session<R> {
-  conversations: ([string]|[string, string])[] = [];
-  systemPrompt: string;
-  promptRunner: LLMApiRunner;
-  constructor(public role: Role<R>, public promptTransformer: (prompt:string)=>string) {
+  conversations: ([string] | [string, string])[] = [];
+
+  constructor(
+    public role: Role<R>,
+    public promptTransformer: (prompt: string) => string,
+  ) {
     this.systemPrompt = role.systemPrompt;
     this.promptRunner = queryLLMSession(this.systemPrompt);
   }
-  async newPrompt(prompt: string): Promise<R> {
-    if(prompt.startsWith('!')) {
+
+  async newPrompt(oldPrompt: string): Promise<R> {
+    let prompt = oldPrompt;
+    if (prompt.startsWith('!')) {
       prompt = prompt.slice(1);
-    }else{
-      if(promptedCache[prompt]) {
-        console.log('done cache', promptedCache[prompt]);
-        return this.role.parseLLMResult(promptedCache[prompt]);
-      }
+    } else if (promptedCache[prompt]) {
+      console.log('done cache', promptedCache[prompt]);
+      return this.role.parseLLMResult(promptedCache[prompt]);
     }
     const rr: [string] = [prompt];
     this.conversations.push(rr);
@@ -28,10 +32,10 @@ export class Session<R> {
     const parts = [];
     for await (const part of stream) {
       console.log('part', Date.now() - startTs, part);
-      parts.push(part.part??'');
-      if(part.error) {
+      parts.push(part.part ?? '');
+      if (part.error) {
         throw new Error(part.error);
-      }else if(part.eof) {
+      } else if (part.eof) {
         break;
       }
     }

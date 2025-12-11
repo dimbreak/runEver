@@ -4,6 +4,10 @@ import {
   type TaskRunRecord,
 } from '@fsb/drizzle';
 
+declare global {
+  const browser: typeof chrome;
+}
+
 export interface WorkflowRecord {
   workflow: typeof workflowTable.$inferSelect & {
     tasks: (typeof workflowTaskTable.$inferSelect)[];
@@ -58,7 +62,3 @@ export type LLMApiRunner = (
 ) => AsyncGenerator<LLMApiPart, 'NO_RETRY: no key' | undefined, void>;
 
 export type WorkflowExecutor = (rec: WorkflowRecord) => Promise<void>;
-
-declare global {
-  const browser: typeof chrome;
-}

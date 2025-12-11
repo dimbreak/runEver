@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { ExecutorLlmResultSchema } from './roles/system/executor.schema';
 import z from 'zod';
+import { ExecutorLlmResultSchema } from './roles/system/executor.schema';
 import { LLMApiPart, ToBackgroundMsg } from './type';
 
 // Typed browser API fallback
@@ -55,21 +55,14 @@ browserApi.runtime.onMessage.addListener((msg: StreamMsg) => {
   return true;
 });
 
-export const queryLLMSession = (systemPrompt: string) => {
-  const cacheKey = `${Math.round(Math.random() * 1000000)}`;
-  return (
-    prompt: string,
-    reasoning: Extract<ToBackgroundMsg, { type: 'CALL_LLM' }>['systemPrompt'] = 'low',
-  ) => {
-    return queryLLMApi(prompt, systemPrompt, cacheKey, reasoning);
-  };
-};
-
 export async function* queryLLMApi(
   prompt: string,
   systemPrompt = '',
   cacheKey = '',
-  reasoning: Extract<ToBackgroundMsg, { type: 'CALL_LLM' }>['systemPrompt'] = 'low',
+  reasoning: Extract<
+    ToBackgroundMsg,
+    { type: 'CALL_LLM' }
+  >['systemPrompt'] = 'low',
 ): AsyncGenerator<LLMApiPart, 'NO_RETRY: no key' | undefined, void> {
   if (await llmKey) {
     const msg = (await browserApi.runtime.sendMessage({
@@ -80,7 +73,7 @@ export async function* queryLLMApi(
       cacheKey,
     } as ToBackgroundMsg)) as { requestId: string };
 
-    const requestId = msg.requestId;
+    const { requestId } = msg;
     while (true) {
       const part = await new Promise<LLMApiPart>((resolve) => {
         requestHandlers[requestId] = resolve;
@@ -92,3 +85,16 @@ export async function* queryLLMApi(
     return 'NO_RETRY: no key';
   }
 }
+
+export const queryLLMSession = (systemPrompt: string) => {
+  const cacheKey = `${Math.round(Math.random() * 1000000)}`;
+  return (
+    prompt: string,
+    reasoning: Extract<
+      ToBackgroundMsg,
+      { type: 'CALL_LLM' }
+    >['systemPrompt'] = 'low',
+  ) => {
+    return queryLLMApi(prompt, systemPrompt, cacheKey, reasoning);
+  };
+};

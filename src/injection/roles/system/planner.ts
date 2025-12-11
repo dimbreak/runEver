@@ -1,9 +1,9 @@
-import { Role } from "../role";
-import { PlannerResult, PlannerResultSchema } from "./planner.schema"
-import { Session } from "../session"
+import { Role } from '../role';
+import { PlannerResult, PlannerResultSchema } from './planner.schema';
+import { Session } from '../session';
 
 export class Planner extends Role<PlannerResult> {
-  systemPrompt = ``
+  systemPrompt = ``;
 
   newSession(): Session<PlannerResult> {
     this.systemPrompt = this.buildSystemPrompt({});
@@ -49,17 +49,25 @@ LLM executor will take your step guide and dom to compile action details with qu
   - describe implementation details of the executor (no algorithms, no pseudo code, no internal policies)
   - talk about model behaviour, latency, cost, or performance
 - you ONLY describe what the step should do in natural language, from the browser user’s perspective.
-${parsers.length ? `
+${
+  parsers.length
+    ? `
 -parser usage:
 - for building more efficient html to executor, no parser = full visible html with minimal tree shaking
 - only suggest parser names listed in [html parsers and usages] when they clearly match the task page type.
-- if a parser is suitable for the main part of the task, set Task.p to that parser name.` : ''}
+- if a parser is suitable for the main part of the task, set Task.p to that parser name.`
+    : ''
+}
 
 [response json only]
 
   type Task = {
-    n: string, // task name${parsers.length ? `
-    p?: string, // suggested parser name from [html parsers and usages]`:''}
+    n: string, // task name${
+      parsers.length
+        ? `
+    p?: string, // suggested parser name from [html parsers and usages]`
+        : ''
+    }
     s: Step[],
   }
 
@@ -76,9 +84,13 @@ ${parsers.length ? `
 - do NOT output explanations, comments, markdown, or prose outside the JSON.
 - the entire response MUST be a single JSON object of type Response.
 
-${parsers.length ? `
+${
+  parsers.length
+    ? `
 [html parsers and usages]
-${parsers.map(parser => `${parser[0]}=${parser[1]}`).join('\n')}` : ''}
-`
+${parsers.map((parser) => `${parser[0]}=${parser[1]}`).join('\n')}`
+    : ''
+}
+`;
   }
 }

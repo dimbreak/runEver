@@ -46,9 +46,10 @@ export namespace OCRModel {
   ].join(',');
 
   function elementContains(parent: Element, child: Element | null): boolean {
-    while (child && child !== document.body) {
-      if (parent.contains(child)) return true;
-      child = child.parentElement;
+    let currentChild = child;
+    while (currentChild && currentChild !== document.body) {
+      if (parent.contains(currentChild)) return true;
+      currentChild = currentChild.parentElement;
     }
     return false;
   }
@@ -277,7 +278,8 @@ export namespace OCRModel {
     const { innerWidth } = window;
 
     elements.forEach((item, idx) => {
-      let { x, y } = item.bbox;
+      let { x } = item.bbox;
+      const { y } = item.bbox;
       const overlay = x < lastX && y <= lastY - 13;
 
       if (item.element.innerText) {
@@ -427,7 +429,8 @@ export namespace OCRModel {
       const canvas = new OffscreenCanvas(ttlWidth, ttlHeight);
       const ctx = canvas.getContext('2d')!;
 
-      for (const i in imgJpgs) {
+      // Iterate through each image slice and draw it onto the canvas
+      for (let i = 0; i < imgJpgs.length; i++) {
         const slice = slices[i];
         const base64Img = Buffer.from(imgJpgs[i]).toString('base64');
         const img = new Image();

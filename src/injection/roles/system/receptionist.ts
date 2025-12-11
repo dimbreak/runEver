@@ -1,6 +1,6 @@
-import { Task } from "../../type"
-import { Role } from "../role"
-import { ReceptionResult, ReceptionResultSchema } from "./reception.schema"
+import { Task } from '../../type';
+import { Role } from '../role';
+import { ReceptionResult, ReceptionResultSchema } from './reception.schema';
 
 export class Receptionist extends Role<ReceptionResult> {
   systemPrompt = `[system]
@@ -91,12 +91,11 @@ Rules:
 - When routing to Task Builder, keep the context_summary short and focused. Do not exceed about 200 words.
 - Do not guess user intention if it is obviously pure chat.
 - If the user intention is ambiguous but looks actionable (e.g. could be a browser operation), you may prefer run_prompt.
-- Do not include any text outside the single JSON object in your output.`
+- Do not include any text outside the single JSON object in your output.`;
 
   parseLLMResult(result: string): ReceptionResult {
     return ReceptionResultSchema.parse(JSON.parse(result));
   }
-
 }
 
 export const receptionSystemPrompt = (preDefinedTasks: Task[]) => {
@@ -188,5 +187,5 @@ Rules:
 - When routing to Task Builder, keep the context_summary short and focused. Do not exceed about 200 words.
 - Do not guess user intention if it is obviously pure chat.
 - If the user intention is ambiguous but looks actionable (e.g. could be a browser operation), you may prefer run_prompt.
-- Do not include any text outside the single JSON object in your output.`
-}
+- Do not include any text outside the single JSON object in your output.`;
+};

@@ -49,7 +49,7 @@ export const HomeScreen: React.FC<{}> = () => {
         console.error('Error creating tab:', error);
       }
     };
-    void createTab();
+    createTab();
   }, [computeBounds, tabbarHeight, sidebarOpen, sidebarWidth, collapsedWidth]);
 
   // adjust bounds on sidebar/resizes via operateTab

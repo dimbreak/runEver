@@ -1,6 +1,8 @@
-import { Role } from "../role"
-import { TaskBuilderResult, TaskBuilderResultSchema } from "./taskBuilder.schema"
-
+import { Role } from '../role';
+import {
+  TaskBuilderResult,
+  TaskBuilderResultSchema,
+} from './taskBuilder.schema';
 
 export class TaskBuilder extends Role<TaskBuilderResult> {
   systemPrompt = `[system] 
