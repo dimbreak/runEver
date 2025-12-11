@@ -6,8 +6,8 @@ const promptedCache: Record<string, string> = JSON.parse(
 );
 
 export class Session<R> {
-  private systemPrompt: string;
-  private promptRunner: ReturnType<typeof queryLLMSession>;
+  systemPrompt: string;
+  promptRunner: ReturnType<typeof queryLLMSession>;
   conversations: ([string] | [string, string])[] = [];
 
   constructor(

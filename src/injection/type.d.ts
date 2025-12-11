@@ -19,6 +19,7 @@ export type workflowTaskTable = {
   workflowId: string;
   name?: string;
   status?: string;
+  steps: { id: string; prompt: string }[];
   createdAt?: string;
   updatedAt?: string;
 };
