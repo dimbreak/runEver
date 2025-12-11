@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
 import { ToMianIpc } from '../../ipc/toMain';
+import { useLayoutStore } from '../state/layoutStore';
 
 type Message = {
   id: number;
@@ -11,7 +12,9 @@ type Message = {
 };
 
 export const AgentPanel: React.FC = () => {
-  const [isOpen, setIsOpen] = React.useState(true);
+  const { sidebarOpen, toggleSidebar, sidebarWidth, collapsedWidth } =
+    useLayoutStore();
+  const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
@@ -105,29 +108,34 @@ export const AgentPanel: React.FC = () => {
   const updateWebViewLayout = React.useCallback(async (sidebarOpen: boolean) => {
     const { lastFrameId } = window as any;
     if (!lastFrameId) return;
-    const sidebarWidth = sidebarOpen ? 430 : 0;
+    const width = sidebarOpen ? sidebarWidth : collapsedWidth;
     const tabbarHeight = 56;
     try {
       await ToMianIpc.operateTab.invoke({
         id: lastFrameId,
-        sidebarWidth,
+        sidebarWidth: width,
         tabbarHeight,
       });
     } catch (error) {
       // swallow layout errors to avoid blocking UI
     }
-  }, []);
+  }, [collapsedWidth, sidebarWidth]);
 
   React.useEffect(() => {
-    void updateWebViewLayout(isOpen);
-  }, [isOpen, updateWebViewLayout]);
+    void updateWebViewLayout(sidebarOpen);
+  }, [sidebarOpen, updateWebViewLayout]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[430px] max-w-[92vw] h-[88vh]">
+    <div
+      className="flex h-full flex-col overflow-hidden transition-[width] duration-200"
+      style={{ width: `${panelWidth}px` }}
+    >
       {/* Panel card */}
       <div
-        className={`flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_20px_60px_-25px_rgba(15,23,42,0.35)] backdrop-blur-md ${
-          isOpen ? 'opacity-100' : 'hidden'
+        className={`flex h-full flex-col border-l border-slate-200 bg-white transition-all duration-200 ${
+          sidebarOpen
+            ? 'opacity-100 scale-100 translate-x-0'
+            : 'opacity-0 scale-95 translate-x-4 pointer-events-none'
         }`}
       >
         {/* Header */}
@@ -159,10 +167,10 @@ export const AgentPanel: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
+            onClick={toggleSidebar}
             className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-200"
           >
-            Hide
+            {sidebarOpen ? 'Hide' : 'Open'}
           </button>
         </div>
 
@@ -220,21 +228,6 @@ export const AgentPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Toggle button */}
-      {!isOpen && (
-        <div className="absolute bottom-0 right-0">
-          <button
-            type="button"
-              onClick={() => setIsOpen(true)}
-              aria-expanded={isOpen}
-              className="group flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-400 text-white shadow-2xl shadow-blue-400/40 transition hover:scale-105"
-            >
-            <div className="text-center leading-tight">
-              <div className="text-[11px] opacity-80">Open Agent</div>
-            </div>
-          </button>
-        </div>
-      )}
     </div>
   );
 };
