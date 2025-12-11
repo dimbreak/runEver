@@ -6,7 +6,8 @@ type NetworkStatus = {
 }
 
 // Background service worker (MV3) - lightweight, no external deps
-const browserApi: typeof browser = typeof browser !== 'undefined' ? browser : chrome
+const browserApi: typeof browser | typeof chrome =
+  typeof browser !== 'undefined' ? browser : chrome;
 
 const sessionsStorage = new Map<number, Record<string, unknown>>() // tabId -> { running-workflow-record }
 let activeTabs: Record<number, NetworkStatus> = {} // tabId -> { inFlight, lastActivity }
@@ -22,7 +23,7 @@ const ensureLlmKey = async () => {
   return openAiKey
 }
 
-const extractTextContent = (content: any): string => {
+const extractTextContent = (content: unknown): string => {
   if (!content) return ''
   if (typeof content === 'string') return content
   if (Array.isArray(content)) {
@@ -117,14 +118,22 @@ const callLLMApi = async (
   }
 }
 
-const updateWorkflow = async (msg: Record<string, any>, sender: any, sendResponse: any) => {
+const updateWorkflow = async (
+  msg: Record<string, unknown>,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (resp: unknown) => void,
+) => {
   const workflowRecord = sessionsStorage.get(sender.tab.id)?.['running-workflow-record']
   delete msg.type
   sessionsStorage.set(sender.tab.id, { 'running-workflow-record': { ...workflowRecord, ...msg } })
   sendResponse({ success: true, tabId: sender.tab?.id })
 }
 
-const handler = async (msg: ToBackgroundMsg, sender: any, sendResponse: any) => {
+const handler = async (
+  msg: ToBackgroundMsg,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (resp: unknown) => void,
+) => {
   if (!sender.tab || sender.tab.id === undefined) {
     sendResponse(null)
     return
@@ -184,7 +193,7 @@ const handler = async (msg: ToBackgroundMsg, sender: any, sendResponse: any) => 
 }
 
 browserApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  handler(msg as ToBackgroundMsg, sender, sendResponse)
+  handler(msg as ToBackgroundMsg, sender as chrome.runtime.MessageSender, sendResponse)
   if (sender.tab && sender.tab.id !== undefined && !activeTabs[sender.tab.id]) {
     activeTabs[sender.tab.id] = { inFlight: 0, lastActivity: null }
   }

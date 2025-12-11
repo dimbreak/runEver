@@ -80,6 +80,7 @@
     }
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.81",
     "@electron/notarize": "^3.0.0",
     "@tailwindcss/postcss": "^4.1.17",
     "electron-debug": "^4.1.0",
@@ -91,6 +92,7 @@
     "react-router-dom": "^7.3.0",
     "source-map-support": "^0.5.21",
     "tailwindcss": "^4.1.17",
+    "zod": "^4.1.13",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
@@ -100,6 +102,7 @@
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
+    "@types/chrome": "^0.1.32",
     "@types/jest": "^29.5.14",
     "@types/node": "22.13.10",
     "@types/react": "^19.2.1",
