@@ -3,8 +3,12 @@ import { ToMianIpc } from '../../ipc/toMain';
 import { useLayoutStore } from '../state/layoutStore';
 
 export const HomeScreen: React.FC<{}> = () => {
-  const { sidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =
-    useLayoutStore();
+  const {
+    isSidebarOpen: sidebarOpen,
+    sidebarWidth,
+    collapsedWidth,
+    tabbarHeight,
+  } = useLayoutStore();
   const createdRef = React.useRef(false);
   const computeBounds = React.useCallback(() => {
     const padding = 12;

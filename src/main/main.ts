@@ -9,14 +9,15 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain, ipcRenderer } from 'electron';
-import { autoUpdater } from 'electron-updater';
+/* eslint-disable no-await-in-loop, no-restricted-syntax, no-promise-executor-return */
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import log from 'electron-log';
+import { autoUpdater } from 'electron-updater';
+import { setIpcMain } from '../ipc/ipc';
+import { ToMianIpc } from '../ipc/toMain';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import { ToMianIpc } from '../ipc/toMain';
 import { TabWebView } from './webView/tab';
-import { setIpcMain } from '../ipc/ipc';
 
 class AppUpdater {
   constructor() {

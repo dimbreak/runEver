@@ -48,14 +48,14 @@ export type ToBackgroundMsg =
       cacheKey?: string;
     };
 
+export type LLMApiPart = { part?: string; eof?: boolean; error?: string };
+
 export type LLMApiRunner = (
   prompt: string,
   systemPrompt?: string,
   cacheKey?: string,
   reasoning?: Extract<ToBackgroundMsg, { type: 'CALL_LLM' }>['systemPrompt'],
 ) => AsyncGenerator<LLMApiPart, 'NO_RETRY: no key' | undefined, void>;
-
-export type LLMApiPart = { part?: string; eof?: boolean; error?: string };
 
 export type WorkflowExecutor = (rec: WorkflowRecord) => Promise<void>;
 

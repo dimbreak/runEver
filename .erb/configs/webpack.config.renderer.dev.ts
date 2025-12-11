@@ -1,11 +1,9 @@
 import 'webpack-dev-server';
 import path from 'path';
-import fs from 'fs';
 import webpack from 'webpack';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
-import chalk from 'chalk';
 import { merge } from 'webpack-merge';
-import { execSync, spawn } from 'child_process';
+import { spawn } from 'child_process';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
 import checkNodeEnv from '../scripts/check-node-env';

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 type LayoutState = {
-  sidebarOpen: boolean;
+  isSidebarOpen: boolean;
   sidebarWidth: number;
   collapsedWidth: number;
   tabbarHeight: number;
@@ -9,12 +9,12 @@ type LayoutState = {
 };
 
 export const useLayoutStore = create<LayoutState>((set) => ({
-  sidebarOpen: true,
+  isSidebarOpen: true,
   sidebarWidth: 430,
   collapsedWidth: 0,
   tabbarHeight: 56,
   toggleSidebar: () =>
     set((state) => ({
-      sidebarOpen: !state.sidebarOpen,
+      isSidebarOpen: !state.isSidebarOpen,
     })),
 }));

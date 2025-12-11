@@ -9,7 +9,7 @@ root.render(<App />);
 window.electron?.ipcRenderer
   .invoke('ipc-example', ['ping'])
   .then((arg) => {
-    console.log(arg);
+    console.info(arg);
   })
   .catch((error) => {
     console.error(error);

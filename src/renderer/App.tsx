@@ -25,8 +25,12 @@ export default function App() {
     ],
   });
 
-  const { sidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =
-    useLayoutStore();
+  const {
+    isSidebarOpen: sidebarOpen,
+    sidebarWidth,
+    collapsedWidth,
+    tabbarHeight,
+  } = useLayoutStore();
   const activeSidebarWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
 
   const leftWidthStyle = useMemo(
@@ -36,7 +40,10 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50">
-      <div className="flex flex-col" style={{ width: `${leftWidthStyle.width}` }}>
+      <div
+        className="flex flex-col"
+        style={{ width: `${leftWidthStyle.width}` }}
+      >
         <div
           className="flex items-center border-b border-slate-200 bg-white"
           style={{ height: `${tabbarHeight}px` }}

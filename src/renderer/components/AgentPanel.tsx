@@ -12,8 +12,12 @@ type Message = {
 };
 
 export const AgentPanel: React.FC = () => {
-  const { sidebarOpen, toggleSidebar, sidebarWidth, collapsedWidth } =
-    useLayoutStore();
+  const {
+    isSidebarOpen: sidebarOpen,
+    toggleSidebar,
+    sidebarWidth,
+    collapsedWidth,
+  } = useLayoutStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
   const [messages, setMessages] = React.useState<Message[]>([
     {
@@ -106,10 +110,10 @@ export const AgentPanel: React.FC = () => {
   };
 
   const updateWebViewLayout = React.useCallback(
-    async (sidebarOpen: boolean) => {
+    async (isSidebarOpen: boolean) => {
       const { lastFrameId } = window as any;
       if (!lastFrameId) return;
-      const width = sidebarOpen ? sidebarWidth : collapsedWidth;
+      const width = isSidebarOpen ? sidebarWidth : collapsedWidth;
       const tabbarHeight = 56;
       try {
         await ToMianIpc.operateTab.invoke({
@@ -117,7 +121,7 @@ export const AgentPanel: React.FC = () => {
           sidebarWidth: width,
           tabbarHeight,
         });
-      } catch (error) {
+      } catch {
         // swallow layout errors to avoid blocking UI
       }
     },
@@ -125,7 +129,7 @@ export const AgentPanel: React.FC = () => {
   );
 
   React.useEffect(() => {
-    void updateWebViewLayout(sidebarOpen);
+    updateWebViewLayout(sidebarOpen);
   }, [sidebarOpen, updateWebViewLayout]);
 
   return (
