@@ -1,12 +1,13 @@
-import { Role } from './role';
-import { LLMApiRunner } from '../type';
 import { queryLLMSession } from '../llm';
+import { Role } from './role';
 
 const promptedCache: Record<string, string> = JSON.parse(
   localStorage.getItem('runEver_prompt_cache') ?? '{}',
 );
 
 export class Session<R> {
+  private systemPrompt: string;
+  private promptRunner: ReturnType<typeof queryLLMSession>;
   conversations: ([string] | [string, string])[] = [];
 
   constructor(

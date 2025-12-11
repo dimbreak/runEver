@@ -1,16 +1,44 @@
-import {
-  type workflowTable,
-  type workflowTaskTable,
-  type TaskRunRecord,
-} from '@fsb/drizzle';
+// TODO: Restore real types from @fsb/drizzle when dependency is available.
+// import {
+//   type workflowTable,
+//   type workflowTaskTable,
+//   type TaskRunRecord,
+// } from '@fsb/drizzle';
+
+// Lightweight placeholders to keep type-checking working without @fsb/drizzle.
+export type workflowTable = {
+  id: string;
+  name?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type workflowTaskTable = {
+  id: string;
+  workflowId: string;
+  name?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type TaskRunRecord = {
+  id: string;
+  taskId: string;
+  status: string;
+  output?: string;
+  startedAt?: string;
+  finishedAt?: string;
+};
 
 declare global {
   const browser: typeof chrome;
 }
 
 export interface WorkflowRecord {
-  workflow: typeof workflowTable.$inferSelect & {
-    tasks: (typeof workflowTaskTable.$inferSelect)[];
+  workflow: workflowTable & {
+    tasks: workflowTaskTable[];
     creator: {
       id: string;
       name: string;

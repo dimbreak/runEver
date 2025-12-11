@@ -124,12 +124,18 @@ const updateWorkflow = async (
   sender: chrome.runtime.MessageSender,
   sendResponse: (resp: unknown) => void,
 ) => {
+  if (!sender.tab || sender.tab.id === undefined) {
+    throw new Error('Tab not found');
+  }
   const workflowRecord = sessionsStorage.get(sender.tab.id)?.[
     'running-workflow-record'
   ];
   delete msg.type;
   sessionsStorage.set(sender.tab.id, {
-    'running-workflow-record': { ...workflowRecord, ...msg },
+    'running-workflow-record': {
+      ...(workflowRecord as Record<string, unknown>),
+      ...msg,
+    },
   });
   sendResponse({ success: true, tabId: sender.tab?.id });
 };
@@ -144,11 +150,15 @@ const handler = async (
     return;
   }
   switch (msg.type) {
-    case 'INIT_WORKFLOW':
-      delete msg.type;
-      sessionsStorage.set(sender.tab.id, { 'running-workflow-record': msg });
+    case 'INIT_WORKFLOW': {
+      // Extract workflow record without the type property
+      const { type, ...workflowRecord } = msg;
+      sessionsStorage.set(sender.tab.id, {
+        'running-workflow-record': workflowRecord,
+      });
       sendResponse({ success: true, tabId: sender.tab?.id });
       break;
+    }
     case 'WORKFLOW_UPDATED':
       await updateWorkflow(msg as any, sender, sendResponse);
       break;
@@ -203,10 +213,13 @@ const handler = async (
       const requestId = String(
         Date.now() * 10 + Math.round(Math.random() * 10),
       );
+      if (!msg.cacheKey) {
+        throw new Error('System prompt is required');
+      }
       callLLMApi(
         msg.prompt,
         msg.systemPrompt,
-        msg.cacheKey,
+        msg.cacheKey!,
         msg.reasoning,
         requestId,
         sender.tab.id,
@@ -234,15 +247,15 @@ browserApi.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 browserApi.webRequest.onBeforeRequest.addListener(
   (details) => {
     const { tabId, type } = details;
-    if (tabId < 0) return;
+    if (tabId < 0) return undefined;
     const status = activeTabs[tabId];
-    if (!status) return;
+    if (!status) return undefined;
     if (
       !['xmlhttprequest', 'script', 'image', 'stylesheet', 'other'].includes(
         type,
       )
     )
-      return;
+      return undefined;
     status.inFlight += 1;
     status.lastActivity = Date.now();
     if (networkStatusSubscriptions.has(tabId))
@@ -250,6 +263,7 @@ browserApi.webRequest.onBeforeRequest.addListener(
         type: 'NETWORK_STATUS_UPDATE',
         status,
       });
+    return undefined;
   },
   { urls: ['<all_urls>'] },
 );
