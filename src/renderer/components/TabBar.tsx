@@ -21,7 +21,7 @@ export const TabBar: React.FC<{
   tabConfig: TabConfig;
   setTabConfig: React.Dispatch<React.SetStateAction<TabConfig>>;
 }> = ({ tabConfig, setTabConfig }) => {
-  const { setSidebarOpen } = useLayoutStore();
+  const { toggleSidebar } = useLayoutStore();
   const handleTabClick = useCallback(
     (currentTabIndex: number) => () =>
       setTabConfig((s) => ({ ...s, currentTabIndex })),
@@ -30,10 +30,8 @@ export const TabBar: React.FC<{
 
   const baseTab =
     'flex items-center gap-2 h-10 px-3 rounded-lg text-sm font-semibold transition-colors border';
-  const activeTab =
-    'bg-white text-slate-900 border-slate-200 shadow-sm';
-  const inactiveTab =
-    'text-slate-600 border-transparent hover:bg-slate-100';
+  const activeTab = 'bg-white text-slate-900 border-slate-200 shadow-sm';
+  const inactiveTab = 'text-slate-600 border-transparent hover:bg-slate-100';
 
   return (
     <ul className="flex w-full items-center gap-2 px-3">
@@ -64,7 +62,7 @@ export const TabBar: React.FC<{
       <li className="ml-auto">
         <button
           type="button"
-          onClick={() => setSidebarOpen(true)}
+          onClick={toggleSidebar}
           className="bg-blue-500 hover:bg-blue-600 text-white text-[12px] font-semibold px-3 py-1.5 rounded-md transition-colors border border-blue-500"
         >
           Open Agent
