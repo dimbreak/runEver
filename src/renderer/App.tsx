@@ -1,8 +1,9 @@
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { TabBar, TabConfig } from './components/TabBar';
 import { HomeScreen } from './view/HomeScreen';
-import { ToMianIpc } from '../ipc/toMain';
+import { AgentPanel } from './components/AgentPanel';
+import { useLayoutStore } from './state/layoutStore';
 
 export default function App() {
   const [tabConfig, setTabConfig] = useState<TabConfig>({
@@ -23,38 +24,42 @@ export default function App() {
       },
     ],
   });
-  useEffect(() => {
-    window.electron.ipcRenderer.on('ipc-example', (_event, args) => {
-      console.log('ipc-example event received with args:', args);
-    });
-    ToMianIpc.createTab
-      .invoke({
-        url: 'http://www.google.com',
-        bounds: { x: 100, y: 10, width: 200, height: 200 },
-      })
-      .then((res) => {
-        console.log('Tab create res:', res);
-        if ('id' in res) {
-          ToMianIpc.operateTab
-            .invoke({
-              id: res.id,
-              bounds: { x: 100, y: 10, width: 400, height: 400 },
-              exeScript: '1+1;',
-            })
-            .then((res) => {
-              console.log('Tab operate res:', res);
-            });
-        }
-      });
-  }, []);
+
+  const {
+    isSidebarOpen: sidebarOpen,
+    sidebarWidth,
+    collapsedWidth,
+    tabbarHeight,
+  } = useLayoutStore();
+  const activeSidebarWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+
+  const leftWidthStyle = useMemo(
+    () => ({ width: `calc(100% - ${activeSidebarWidth}px)` }),
+    [activeSidebarWidth],
+  );
+
   return (
-    <>
-      <TabBar tabConfig={tabConfig} setTabConfig={setTabConfig} />
-      <div id="body-placeholder">
-        <div className={tabConfig.currentTabIndex === -1 ? '' : 'hide'}>
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50">
+      <div
+        className="flex flex-col"
+        style={{ width: `${leftWidthStyle.width}` }}
+      >
+        <div
+          className="flex items-center border-b border-slate-200 bg-white"
+          style={{ height: `${tabbarHeight}px` }}
+        >
+          <TabBar tabConfig={tabConfig} setTabConfig={setTabConfig} />
+        </div>
+        <div className="flex-1 overflow-hidden">
           <HomeScreen />
         </div>
       </div>
-    </>
+      <div
+        className="h-full border-l border-slate-200 bg-white shadow-inner"
+        style={{ width: `${activeSidebarWidth}px` }}
+      >
+        <AgentPanel />
+      </div>
+    </div>
   );
 }

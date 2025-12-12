@@ -14,6 +14,26 @@ checkNodeEnv('development');
 
 const dist = webpackPaths.dllPath;
 
+const dllExcludes = [
+  'tailwindcss',
+  '@tailwindcss/postcss',
+  '@tailwindcss/node',
+  '@tailwindcss/oxide',
+  'lightningcss',
+  // platform-specific lightningcss native binaries
+  'lightningcss-darwin-arm64',
+  'lightningcss-darwin-x64',
+  'lightningcss-linux-arm-gnueabihf',
+  'lightningcss-linux-arm64-gnu',
+  'lightningcss-linux-arm64-musl',
+  'lightningcss-linux-x64-gnu',
+  'lightningcss-linux-x64-musl',
+  'lightningcss-android-arm64',
+  'lightningcss-freebsd-x64',
+  'lightningcss-win32-arm64-msvc',
+  'lightningcss-win32-x64-msvc',
+];
+
 const configuration: webpack.Configuration = {
   context: webpackPaths.rootPath,
 
@@ -31,7 +51,9 @@ const configuration: webpack.Configuration = {
   module: require('./webpack.config.renderer.dev').default.module,
 
   entry: {
-    renderer: Object.keys(dependencies || {}),
+    renderer: Object.keys(dependencies || {}).filter(
+      (dep) => !dllExcludes.includes(dep),
+    ),
   },
 
   output: {

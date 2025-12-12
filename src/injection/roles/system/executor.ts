@@ -1,30 +1,39 @@
-import { getHtml } from "../../html"
-import { type ExecutorLlmResult, ExecutorLlmResultSchema } from "./executor.schema"
-import { Role } from "../role"
-import { Session } from "../session"
+import { getHtml } from '../../html';
+import {
+  type ExecutorLlmResult,
+  ExecutorLlmResultSchema,
+} from './executor.schema';
+import { Role } from '../role';
+import { Session } from '../session';
 
 export class Executor extends Role<ExecutorLlmResult> {
   newSession(): Session<ExecutorLlmResult> {
     this.systemPrompt = this.buildSystemPrompt();
-    return super.newSession(this.promptTransformer())
+    return super.newSession(this.promptTransformer());
   }
 
   promptTransformer(args: Record<string, string> = {}) {
-    return (prompt: string)=>`
+    return (prompt: string) => `
 [web url] 
-${location.href} 
+${window.location.href} 
 
 [viewport] 
 w=${window.innerWidth} h=${window.innerHeight} 
-${args ? `
+${
+  args
+    ? `
 [argument keys]
-${Object.keys(args).map(key => `${key}}`).join('\n')}` : ''}
+${Object.keys(args)
+  .map((key) => `${key}}`)
+  .join('\n')}`
+    : ''
+}
 
 [task guide]
-${prompt}`
+${prompt}`;
   }
 
-  buildSystemPrompt () {
+  buildSystemPrompt() {
     return `[system]
 a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.
 
@@ -153,20 +162,22 @@ try the possible action first, then ends with followup WireAction tell what is m
 the engine will resend update status.
 
 [customised html]
-${getHtml()}`
-  };
+${getHtml()}`;
+  }
 
   parseLLMResult(result: string): ExecutorLlmResult {
     return ExecutorLlmResultSchema.parse(JSON.parse(result));
   }
-
 }
 
-export const followUpPromptTpl = (originalPrompt: string, followUpPrompt: string) => {
+export const followUpPromptTpl = (
+  originalPrompt: string,
+  followUpPrompt: string,
+) => {
   return `${originalPrompt}
-${followUpPrompt}`
+${followUpPrompt}`;
 };
-export const llmErrorPromptTpl = (prompt:string, error: string) => {
+export const llmErrorPromptTpl = (prompt: string, error: string) => {
   return `${prompt}
-${error}`
+${error}`;
 };

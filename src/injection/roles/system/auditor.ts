@@ -1,5 +1,5 @@
-import { Role } from "../role"
-import { AuditResult, AuditResultSchema } from "./auditor.schema"
+import { Role } from '../role';
+import { AuditResult, AuditResultSchema } from './auditor.schema';
 
 export class Auditor extends Role<AuditResult> {
   systemPrompt = `[system]
@@ -42,6 +42,8 @@ type AuditResult =
 
 `;
 
+  // Implements abstract method from Role; 'this' not required for parsing
+  // eslint-disable-next-line class-methods-use-this
   parseLLMResult(result: string): AuditResult {
     return AuditResultSchema.parse(JSON.parse(result));
   }

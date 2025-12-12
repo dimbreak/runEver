@@ -25,7 +25,10 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:webViewPreload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.webViewPreload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest"
+    "test": "jest",
+    "clean": "npm run clean:modules && npm run clean:dll",
+    "clean:modules": "rm -rf node_modules",
+    "clean:dll": "rm -rf .erb/dll"
   },
   "browserslist": [
     "extends browserslist-config-erb"
@@ -77,14 +80,20 @@
     }
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.81",
     "@electron/notarize": "^3.0.0",
+    "@tailwindcss/postcss": "^4.1.17",
     "electron-debug": "^4.1.0",
     "electron-log": "^5.3.2",
     "electron-updater": "^6.3.9",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "postcss": "^8.5.6",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-router-dom": "^7.3.0",
-    "typescript-eslint": "^8.48.1"
+    "source-map-support": "^0.5.21",
+    "tailwindcss": "^4.1.17",
+    "zod": "^4.1.13",
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
@@ -93,10 +102,11 @@
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
+    "@types/chrome": "^0.1.32",
     "@types/jest": "^29.5.14",
     "@types/node": "22.13.10",
-    "@types/react": "^19.0.11",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "^19.2.1",
+    "@types/react-dom": "^19.2.1",
     "@types/react-test-renderer": "^19.0.0",
     "@types/webpack-bundle-analyzer": "^4.7.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
@@ -132,8 +142,9 @@
     "jest-environment-jsdom": "^29.7.0",
     "lucide-react": "^0.548.0",
     "mini-css-extract-plugin": "^2.9.2",
+    "postcss-loader": "^8.2.0",
     "prettier": "^3.5.3",
-    "react-refresh": "^0.16.0",
+    "react-refresh": "^0.17.0",
     "react-test-renderer": "^19.0.0",
     "rimraf": "^6.0.1",
     "sass": "^1.86.0",
@@ -145,6 +156,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
     "typescript": "^5.8.2",
+    "typescript-eslint": "^8.48.1",
     "url-loader": "^4.1.1",
     "webpack": "^5.98.0",
     "webpack-bundle-analyzer": "^4.10.2",

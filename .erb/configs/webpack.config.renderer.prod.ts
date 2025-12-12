@@ -25,6 +25,9 @@ const configuration: webpack.Configuration = {
 
   target: ['web', 'electron-renderer'],
 
+  // Do not externalize anything in renderer to avoid multiple React copies
+  externals: [],
+
   entry: [path.join(webpackPaths.srcRendererPath, 'index.tsx')],
 
   output: {
@@ -33,6 +36,13 @@ const configuration: webpack.Configuration = {
     filename: 'renderer.js',
     library: {
       type: 'umd',
+    },
+  },
+
+  resolve: {
+    alias: {
+      react: path.resolve(__dirname, '../../node_modules/react'),
+      'react-dom': path.resolve(__dirname, '../../node_modules/react-dom'),
     },
   },
 
@@ -50,13 +60,19 @@ const configuration: webpack.Configuration = {
               importLoaders: 1,
             },
           },
+          'postcss-loader',
           'sass-loader',
         ],
         include: /\.module\.s?(c|a)ss$/,
       },
       {
         test: /\.s?(a|c)ss$/,
-        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+          'sass-loader',
+        ],
         exclude: /\.module\.s?(c|a)ss$/,
       },
       // Fonts

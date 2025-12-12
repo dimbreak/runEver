@@ -2,7 +2,26 @@ import { ipcRenderer } from 'electron';
 import { ToMianIpc } from '../ipc/toMain';
 
 export namespace OCRModel {
-  type ShowInteractiveOverlayOption = {};
+  type OverlayOptions = {
+    font?: string;
+    textColor?: string;
+    labelBgColor?: string;
+  };
+
+  type InteractiveBBox = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+
+  type InteractiveElement = {
+    element: HTMLElement;
+    bbox: InteractiveBBox;
+    type: string;
+    label: string;
+    oldStyle?: { opacity: string };
+  };
   const INTERACTIVE_SELECTOR = [
     // 原生可點擊 / 輸入
     'a[href]',
@@ -26,15 +45,16 @@ export namespace OCRModel {
     '[contenteditable="true"]',
   ].join(',');
 
-  function elementContains(parent: Element, child: Element): boolean {
-    while (child !== document.body) {
-      if (parent.contains(child)) return true;
-      child = child.parentElement;
+  function elementContains(parent: Element, child: Element | null): boolean {
+    let currentChild = child;
+    while (currentChild && currentChild !== document.body) {
+      if (parent.contains(currentChild)) return true;
+      currentChild = currentChild.parentElement;
     }
     return false;
   }
 
-  function isVisible(el) {
+  function isVisible(el: HTMLElement): DOMRect | null {
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return null;
 
@@ -70,7 +90,7 @@ export namespace OCRModel {
     return rect;
   }
 
-  function getElementLabel(el) {
+  function getElementLabel(el: HTMLElement): string {
     // 盡量搵到人類睇得明嘅 label
 
     // 1. aria-label
@@ -103,14 +123,15 @@ export namespace OCRModel {
 
     // 5. input 嘅 value 當 label（例如 button-like input）
     if (el.tagName === 'INPUT') {
-      const val = el.value && String(el.value).trim();
+      const inputElement = el as HTMLInputElement;
+      const val = inputElement.value && String(inputElement.value).trim();
       if (val) return val;
     }
 
     return '';
   }
 
-  function getElementType(el) {
+  function getElementType(el: HTMLElement): string {
     const tag = el.tagName.toLowerCase();
     const role = (el.getAttribute('role') || '').toLowerCase();
     const typeAttr = (el.getAttribute('type') || '').toLowerCase();
@@ -158,10 +179,14 @@ export namespace OCRModel {
    * - type: string
    * - label: string
    */
-  function getInteractiveElements(root = document) {
-    const nodes = Array.from(root.querySelectorAll(INTERACTIVE_SELECTOR));
+  function getInteractiveElements(
+    root: Document | HTMLElement = document,
+  ): InteractiveElement[] {
+    const nodes = Array.from(
+      root.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR),
+    );
 
-    const elements = [];
+    const elements: InteractiveElement[] = [];
     for (const el of nodes) {
       const rect = isVisible(el);
       if (rect) {
@@ -184,12 +209,12 @@ export namespace OCRModel {
 
   // ===== Overlay painter using <canvas> =====
 
-  let overlayCanvas = null;
-  let overlayCtx = null;
-  let overlayInteractive = [];
-  let overlayOptions = null;
-  let overlayResizeHandler = null;
-  let overlayScrollHandler = null;
+  let overlayCanvas: HTMLCanvasElement | null = null;
+  let overlayCtx: CanvasRenderingContext2D | null = null;
+  let overlayInteractive: InteractiveElement[] = [];
+  let overlayOptions: OverlayOptions | null = null;
+  let overlayResizeHandler: (() => void) | null = null;
+  let overlayScrollHandler: (() => void) | null = null;
 
   function createOverlayCanvas() {
     if (overlayCanvas) return overlayCanvas;
@@ -216,7 +241,7 @@ export namespace OCRModel {
   }
 
   function resizeOverlayCanvas() {
-    if (!overlayCanvas) return;
+    if (!overlayCanvas || !overlayCtx) return;
     const dpr = window.devicePixelRatio || 1;
     overlayCanvas.width = window.innerWidth * dpr;
     overlayCanvas.height = window.innerHeight * dpr;
@@ -231,8 +256,12 @@ export namespace OCRModel {
   /**
    * 把 getInteractiveElements() 的結果畫到 overlay 上
    */
-  function markElement(elements, options) {
+  function markElement(
+    elements: InteractiveElement[],
+    options: OverlayOptions,
+  ) {
     if (!overlayCanvas || !overlayCtx) createOverlayCanvas();
+    if (!overlayCtx) return;
     clearMark();
 
     const {
@@ -249,11 +278,12 @@ export namespace OCRModel {
     const { innerWidth } = window;
 
     elements.forEach((item, idx) => {
-      let { x, y } = item.bbox;
+      let { x } = item.bbox;
+      const { y } = item.bbox;
       const overlay = x < lastX && y <= lastY - 13;
 
       if (item.element.innerText) {
-        item.oldStyle = [item.element.style.opacity];
+        item.oldStyle = { opacity: item.element.style.opacity };
         item.element.style.opacity = '0 !important';
       }
 
@@ -261,7 +291,7 @@ export namespace OCRModel {
 
       const paddingX = 4;
       const paddingY = 2;
-      const textWidth = overlayCtx.measureText(labelText).width;
+      const textWidth = overlayCtx?.measureText(labelText).width ?? 0;
       const textHeight = 13; // roughly for 12px font
 
       if (overlay) {
@@ -272,23 +302,23 @@ export namespace OCRModel {
         x = innerWidth - textWidth - 4;
       }
 
-      overlayCtx.fillStyle = labelBgColor;
-      overlayCtx.fillRect(
+      overlayCtx!.fillStyle = labelBgColor;
+      overlayCtx!.fillRect(
         x,
         y,
         textWidth + paddingX * 2,
         textHeight + paddingY * 2,
       );
 
-      overlayCtx.fillStyle = textColor;
-      overlayCtx.fillText(labelText, x + paddingX, y + paddingY);
+      overlayCtx!.fillStyle = textColor;
+      overlayCtx!.fillText(labelText, x + paddingX, y + paddingY);
 
       lastX = x + paddingX + textWidth;
       lastY = y + paddingY + textHeight;
     });
   }
 
-  export function showInteractiveOverlay(options = {}) {
+  export function showInteractiveOverlay(options: OverlayOptions = {}) {
     const elements = getInteractiveElements();
     overlayInteractive = elements;
     overlayOptions = options;
@@ -300,6 +330,7 @@ export namespace OCRModel {
     if (!overlayResizeHandler) {
       overlayResizeHandler = () => {
         resizeOverlayCanvas();
+        overlayInteractive = getInteractiveElements();
         markElement(overlayInteractive, overlayOptions || {});
       };
       window.addEventListener('resize', overlayResizeHandler);
@@ -318,7 +349,7 @@ export namespace OCRModel {
     return hideInteractiveOverlay(elements);
   }
 
-  function hideInteractiveOverlay(elements) {
+  function hideInteractiveOverlay(elements: InteractiveElement[]) {
     return () => {
       if (overlayResizeHandler) {
         window.removeEventListener('resize', overlayResizeHandler);
@@ -344,7 +375,7 @@ export namespace OCRModel {
       });
     };
   }
-  export const takeScreenshot = async () => {
+  export const takeScreenshot = async (): Promise<Blob> => {
     console.log('takeScreenshot');
     const {
       scrollX,
@@ -398,7 +429,8 @@ export namespace OCRModel {
       const canvas = new OffscreenCanvas(ttlWidth, ttlHeight);
       const ctx = canvas.getContext('2d')!;
 
-      for (const i in imgJpgs) {
+      // Iterate through each image slice and draw it onto the canvas
+      for (let i = 0; i < imgJpgs.length; i++) {
         const slice = slices[i];
         const base64Img = Buffer.from(imgJpgs[i]).toString('base64');
         const img = new Image();
