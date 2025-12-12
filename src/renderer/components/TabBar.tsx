@@ -5,7 +5,9 @@ import { useLayoutStore } from '../state/layoutStore';
 
 const baseTab =
   'flex items-center gap-2 h-10 px-3 rounded-lg text-sm font-semibold transition-colors border';
+
 const activeTab = 'bg-white text-slate-900 border-slate-200 shadow-sm';
+
 const inactiveTab = 'text-slate-600 border-transparent hover:bg-slate-100';
 
 export type TabContent = {

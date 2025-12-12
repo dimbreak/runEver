@@ -29,7 +29,7 @@
     "clean": "npm run clean:modules && npm run clean:dll",
     "clean:modules": "rm -rf node_modules",
     "clean:dll": "rm -rf .erb/dll",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "browserslist": [
     "extends browserslist-config-erb"
