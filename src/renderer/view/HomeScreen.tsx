@@ -27,7 +27,8 @@ export const HomeScreen: React.FC<{}> = () => {
   // create webview only once
   React.useEffect(() => {
     // Skip when ipc bridge is unavailable (e.g., tests or non-Electron env)
-    const hasIpc = typeof window !== 'undefined' && (window as any).electron?.ipcRenderer;
+    const hasIpc =
+      typeof window !== 'undefined' && (window as any).electron?.ipcRenderer;
     if (!hasIpc) return;
 
     if (createdRef.current) return;
