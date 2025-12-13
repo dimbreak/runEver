@@ -3,6 +3,13 @@ import * as React from 'react';
 import { useCallback } from 'react';
 import { useLayoutStore } from '../state/layoutStore';
 
+const baseTab =
+  'flex items-center gap-2 h-10 px-3 rounded-lg text-sm font-semibold transition-colors border';
+
+const activeTab = 'bg-white text-slate-900 border-slate-200 shadow-sm';
+
+const inactiveTab = 'text-slate-600 border-transparent hover:bg-slate-100';
+
 export type TabContent = {
   title: string;
   id: string;
@@ -27,11 +34,6 @@ export const TabBar: React.FC<{
       setTabConfig((s) => ({ ...s, currentTabIndex })),
     [setTabConfig],
   );
-
-  const baseTab =
-    'flex items-center gap-2 h-10 px-3 rounded-lg text-sm font-semibold transition-colors border';
-  const activeTab = 'bg-white text-slate-900 border-slate-200 shadow-sm';
-  const inactiveTab = 'text-slate-600 border-transparent hover:bg-slate-100';
 
   return (
     <ul className="flex w-full items-center gap-2 px-3">

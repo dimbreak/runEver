@@ -28,7 +28,8 @@
     "test": "jest",
     "clean": "npm run clean:modules && npm run clean:dll",
     "clean:modules": "rm -rf node_modules",
-    "clean:dll": "rm -rf .erb/dll"
+    "clean:dll": "rm -rf .erb/dll",
+    "prepare": "husky"
   },
   "browserslist": [
     "extends browserslist-config-erb"
@@ -78,6 +79,9 @@
     "transform": {
       "\\.(ts|tsx|js|jsx)$": "ts-jest"
     }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=0"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.81",
@@ -137,9 +141,11 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.6.3",
+    "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "lint-staged": "^15.2.10",
     "lucide-react": "^0.548.0",
     "mini-css-extract-plugin": "^2.9.2",
     "postcss-loader": "^8.2.0",
