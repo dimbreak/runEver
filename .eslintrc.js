@@ -32,6 +32,8 @@ module.exports = {
     '@typescript-eslint/no-shadow': 'error',
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': 'warn',
+    // allow console.info/warn/error but not console.log
+    'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     'react/function-component-definition': 'off',
     'jsx-a11y/anchor-is-valid': 'off',
     'import/prefer-default-export': 'off',
@@ -39,7 +41,7 @@ module.exports = {
     'jsx-a11y/label-has-associated-control': 'warn',
     'no-useless-constructor': 'warn',
     'no-empty-function': 'warn',
-    'lines-between-class-members': 'warn',
+    'lines-between-class-members': 'off',
     'prettier/prettier': 'warn',
     'promise/always-return': 'warn',
     'no-promise-executor-return': 'off',

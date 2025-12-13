@@ -1,37 +1,14 @@
 import './App.css';
-import { useMemo, useState } from 'react';
-import { TabBar, TabConfig } from './components/TabBar';
+import { useMemo } from 'react';
+import { TabBar } from './components/TabBar';
 import { HomeScreen } from './view/HomeScreen';
 import { AgentPanel } from './components/AgentPanel';
 import { useLayoutStore } from './state/layoutStore';
 
 export default function App() {
-  const [tabConfig, setTabConfig] = useState<TabConfig>({
-    currentTabIndex: -1,
-    tabs: [
-      {
-        id: 'tab-1',
-        title: 'Google',
-        type: 'webview',
-        url: 'https://www.google.com',
-        isRunning: true,
-      },
-      {
-        id: 'tab-2',
-        title: 'OpenAI',
-        type: 'webview',
-        url: 'https://www.openai.com',
-      },
-    ],
-  });
-
-  const {
-    isSidebarOpen: sidebarOpen,
-    sidebarWidth,
-    collapsedWidth,
-    tabbarHeight,
-  } = useLayoutStore();
-  const activeSidebarWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+  const { isSidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =
+    useLayoutStore();
+  const activeSidebarWidth = isSidebarOpen ? sidebarWidth : collapsedWidth;
 
   const leftWidthStyle = useMemo(
     () => ({ width: `calc(100% - ${activeSidebarWidth}px)` }),
@@ -48,7 +25,7 @@ export default function App() {
           className="flex items-center border-b border-slate-200 bg-white"
           style={{ height: `${tabbarHeight}px` }}
         >
-          <TabBar tabConfig={tabConfig} setTabConfig={setTabConfig} />
+          <TabBar />
         </div>
         <div className="flex-1 overflow-hidden">
           <HomeScreen />
