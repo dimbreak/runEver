@@ -58,12 +58,13 @@ const getSafeBounds = (opts: SafeBoundsOptions = {}) => {
   return { x: PADDING, y: tabbarHeight + PADDING, width, height };
 };
 
-const removeAllWebViews = () => {
-  webViewTabsById.forEach((tab) => {
-    mainWindow?.contentView.removeChildView(tab.webView);
-  });
-  webViewTabsById.clear();
-};
+// const removeAllWebViews = () => {
+//   webViewTabsById.forEach((tab) => {
+//     mainWindow?.contentView.removeChildView(tab.webView);
+//   });
+//   webViewTabsById.clear();
+//   tabIdToFrameId.clear();
+// };
 
 console.log('starting main process ipc-example');
 ipcMain.handle('ocr-preload-loaded', async (event, arg) => {
@@ -115,13 +116,12 @@ ToMianIpc.createTab.handle(async (event, detail) => {
     detail,
     event.frameId,
   );
-  removeAllWebViews();
-  // Here you can add logic to create a new tab or window as needed
   const bounds = detail.bounds ?? getSafeBounds();
   const wvTab = new TabWebView(detail.url, bounds);
-  webViewTabsById.set(wvTab.webView.webContents.id, wvTab);
+  const frameId = wvTab.webView.webContents.id;
+  webViewTabsById.set(frameId, wvTab);
   mainWindow?.contentView.addChildView(wvTab.webView);
-  return { id: wvTab.webView.webContents.id };
+  return { id: frameId };
 });
 
 ToMianIpc.operateTab.handle(async (event, detail) => {
@@ -130,13 +130,14 @@ ToMianIpc.operateTab.handle(async (event, detail) => {
     detail,
     event.frameId,
   );
-  const wvTab = webViewTabsById.get(detail.id);
+  const frameId = detail.id;
+  const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
   if (wvTab) {
     let response;
     if (detail.close) {
       wvTab.webView.setVisible(false);
       mainWindow?.contentView.removeChildView(wvTab.webView);
-      webViewTabsById.delete(detail.id);
+      webViewTabsById.delete(frameId!);
       response = 'closed';
     } else {
       if (detail.visible !== undefined) {
