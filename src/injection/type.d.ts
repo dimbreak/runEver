@@ -65,29 +65,4 @@ export interface Task {
   argumentKeyAndDescription?: [string, string];
 }
 
-export type ToBackgroundMsg =
-  | ({ type: 'INIT_WORKFLOW' } & WorkflowRecord)
-  | ({ type: 'WORKFLOW_UPDATED' } & Partial<WorkflowRecord>)
-  | { type: 'CHECK_WORKFLOW' }
-  | { type: 'SUB_NETWORK_STATUS' }
-  | { type: 'UNSUB_NETWORK_STATUS' }
-  | { type: 'SAVE_LLM_KEY'; key: string }
-  | { type: 'GET_LLM_KEY' }
-  | {
-      type: 'CALL_LLM';
-      prompt: string;
-      systemPrompt: string;
-      reasoning: 'minimal' | 'low' | 'medium' | 'high';
-      cacheKey?: string;
-    };
-
 export type LLMApiPart = { part?: string; eof?: boolean; error?: string };
-
-export type LLMApiRunner = (
-  prompt: string,
-  systemPrompt?: string,
-  cacheKey?: string,
-  reasoning?: Extract<ToBackgroundMsg, { type: 'CALL_LLM' }>['systemPrompt'],
-) => AsyncGenerator<LLMApiPart, 'NO_RETRY: no key' | undefined, void>;
-
-export type WorkflowExecutor = (rec: WorkflowRecord) => Promise<void>;

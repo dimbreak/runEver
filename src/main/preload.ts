@@ -7,6 +7,9 @@ const electronHandler = {
     invoke(channel: string, ...args: any[]) {
       return ipcRenderer.invoke(channel, ...args);
     },
+    send(channel: string, ...args: any[]) {
+      return ipcRenderer.send(channel, ...args);
+    },
     on(
       channel: string,
       func: (_event: IpcRendererEvent, ...args: any[]) => void,

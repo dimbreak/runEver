@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
-import { ToMianIpc } from '../../ipc/toMain';
+import { ToMianIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
 
 type Message = {

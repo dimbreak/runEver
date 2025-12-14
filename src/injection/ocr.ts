@@ -1,5 +1,7 @@
 import { ipcRenderer } from 'electron';
-import { ToMianIpc } from '../ipc/toMain';
+import { OcrSpaceLanguages, OcrSpaceResponse } from 'ocr-space-api-wrapper';
+import { ToMianIpc } from '../contracts/toMain';
+import { takeScreenshot } from './screenshot';
 
 export namespace OCRModel {
   type OverlayOptions = {
@@ -19,7 +21,6 @@ export namespace OCRModel {
     element: HTMLElement;
     bbox: InteractiveBBox;
     type: string;
-    label: string;
     oldStyle?: { opacity: string };
   };
   const INTERACTIVE_SELECTOR = [
@@ -29,6 +30,8 @@ export namespace OCRModel {
     'input:not([type="hidden"])',
     'textarea',
     'select',
+
+    'img[alt], img[title], img[aria-label], img[aria-labelledby]',
 
     // ARIA roles（常見 UI framework）
     '[role="button"]',
@@ -49,7 +52,11 @@ export namespace OCRModel {
     let currentChild = child;
     while (currentChild && currentChild !== document.body) {
       if (parent.contains(currentChild)) return true;
-      currentChild = currentChild.parentElement;
+      if (currentChild.parentElement) {
+        currentChild = currentChild.parentElement;
+      } else {
+        break;
+      }
     }
     return false;
   }
@@ -101,7 +108,7 @@ export namespace OCRModel {
     const labelledBy = el.getAttribute('aria-labelledby');
     if (labelledBy) {
       const labelEl = document.getElementById(labelledBy);
-      if (labelEl) {
+      if (labelEl?.textContent) {
         const text = labelEl.textContent.trim();
         if (text) return text;
       }
@@ -118,7 +125,13 @@ export namespace OCRModel {
     if (title && title.trim()) return title.trim();
 
     // 4. 自己嘅文字內容
-    const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    let text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    const tagsToIgnore = el.querySelectorAll('script, style, noscript');
+    if (tagsToIgnore.length) {
+      for (const tag of tagsToIgnore) {
+        text = text.replace(tag.textContent, '');
+      }
+    }
     if (text) return text;
 
     // 5. input 嘅 value 當 label（例如 button-like input）
@@ -161,12 +174,20 @@ export namespace OCRModel {
     if (tag === 'textarea') return 'textarea';
     if (tag === 'select') return 'select';
 
-    if (role) return `role:${role}`;
+    if (role) return `${tag} role:${role}`;
 
-    if (el.hasAttribute('contenteditable')) return 'editable';
+    if (el.hasAttribute('contenteditable')) return `${tag} editable`;
 
     if (el.hasAttribute('onclick') || el.hasAttribute('onpointerdown'))
-      return 'clickable';
+      return `${tag} clickable`;
+
+    if (tag === 'img') {
+      return el.getAttribute('aria-label') ||
+        el.getAttribute('alt') ||
+        el.getAttribute('title')
+        ? 'img'
+        : '';
+    }
 
     return 'unknown';
   }
@@ -190,17 +211,19 @@ export namespace OCRModel {
     for (const el of nodes) {
       const rect = isVisible(el);
       if (rect) {
-        elements.push({
-          element: el,
-          bbox: {
-            x: rect.left,
-            y: rect.top,
-            width: rect.width,
-            height: rect.height,
-          },
-          type: getElementType(el),
-          label: getElementLabel(el),
-        });
+        const elType = getElementType(el);
+        if (elType) {
+          elements.push({
+            element: el,
+            bbox: {
+              x: rect.left,
+              y: rect.top,
+              width: rect.width,
+              height: rect.height,
+            },
+            type: elType,
+          });
+        }
       }
     }
 
@@ -209,36 +232,8 @@ export namespace OCRModel {
 
   // ===== Overlay painter using <canvas> =====
 
-  let overlayCanvas: HTMLCanvasElement | null = null;
-  let overlayCtx: CanvasRenderingContext2D | null = null;
-  let overlayInteractive: InteractiveElement[] = [];
-  let overlayOptions: OverlayOptions | null = null;
-  let overlayResizeHandler: (() => void) | null = null;
-  let overlayScrollHandler: (() => void) | null = null;
-
-  function createOverlayCanvas() {
-    if (overlayCanvas) return overlayCanvas;
-
-    const canvas = document.createElement('canvas');
-    canvas.id = '__opea_interactive_overlay__';
-    canvas.style.position = 'fixed';
-    canvas.style.left = '0';
-    canvas.style.top = '0';
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.style.pointerEvents = 'none';
-    canvas.style.zIndex = '999999'; // 希望蓋到最上層
-    canvas.style.mixBlendMode = 'normal';
-
-    document.documentElement.appendChild(canvas);
-
-    overlayCanvas = canvas;
-    overlayCtx = canvas.getContext('2d');
-
-    resizeOverlayCanvas();
-
-    return canvas;
-  }
+  const overlayCanvas: HTMLCanvasElement | null = null;
+  const overlayCtx: CanvasRenderingContext2D | null = null;
 
   function resizeOverlayCanvas() {
     if (!overlayCanvas || !overlayCtx) return;
@@ -248,204 +243,167 @@ export namespace OCRModel {
     overlayCtx.setTransform(dpr, 0, 0, dpr, 0, 0); // 確保之後用 CSS pixel 畫
   }
 
-  function clearMark() {
-    if (!overlayCtx) return;
-    overlayCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-  }
-
-  /**
-   * 把 getInteractiveElements() 的結果畫到 overlay 上
-   */
-  function markElement(
-    elements: InteractiveElement[],
-    options: OverlayOptions,
-  ) {
-    if (!overlayCanvas || !overlayCtx) createOverlayCanvas();
-    if (!overlayCtx) return;
-    clearMark();
-
-    const {
-      font = '12px sans-serif',
-      textColor = '#fff',
-      labelBgColor = 'rgba(0, 0, 0, 0.8)',
-    } = options;
-
-    overlayCtx.font = font;
-    overlayCtx.textBaseline = 'top';
-
-    let lastX = 0;
-    let lastY = 0;
-    const { innerWidth } = window;
-
-    elements.forEach((item, idx) => {
-      let { x } = item.bbox;
-      const { y } = item.bbox;
-      const overlay = x < lastX && y <= lastY - 13;
-
-      if (item.element.innerText) {
-        item.oldStyle = { opacity: item.element.style.opacity };
-        item.element.style.opacity = '0 !important';
-      }
-
-      const labelText = `<${idx + 1}/>`;
-
-      const paddingX = 4;
-      const paddingY = 2;
-      const textWidth = overlayCtx?.measureText(labelText).width ?? 0;
-      const textHeight = 13; // roughly for 12px font
-
-      if (overlay) {
-        x = lastX;
-      }
-
-      if (x + textWidth > innerWidth) {
-        x = innerWidth - textWidth - 4;
-      }
-
-      overlayCtx!.fillStyle = labelBgColor;
-      overlayCtx!.fillRect(
-        x,
-        y,
-        textWidth + paddingX * 2,
-        textHeight + paddingY * 2,
-      );
-
-      overlayCtx!.fillStyle = textColor;
-      overlayCtx!.fillText(labelText, x + paddingX, y + paddingY);
-
-      lastX = x + paddingX + textWidth;
-      lastY = y + paddingY + textHeight;
+  function markElement(elements: InteractiveElement[]) {
+    elements.forEach((item) => {
+      item.oldStyle = { opacity: item.element.style.opacity };
+      item.element.style.opacity = '0';
     });
   }
 
-  export function showInteractiveOverlay(options: OverlayOptions = {}) {
+  export function hideInteractiveOverlay() {
     const elements = getInteractiveElements();
-    overlayInteractive = elements;
-    overlayOptions = options;
+    markElement(elements);
 
-    createOverlayCanvas();
-    markElement(elements, options);
-
-    // 自動跟住 resize / scroll 重畫
-    if (!overlayResizeHandler) {
-      overlayResizeHandler = () => {
-        resizeOverlayCanvas();
-        overlayInteractive = getInteractiveElements();
-        markElement(overlayInteractive, overlayOptions || {});
-      };
-      window.addEventListener('resize', overlayResizeHandler);
-    }
-    if (!overlayScrollHandler) {
-      overlayScrollHandler = () => {
-        // scroll 後元素位置變咗，要重新拿 rect
-        overlayInteractive = getInteractiveElements();
-        markElement(overlayInteractive, overlayOptions || {});
-      };
-      window.addEventListener('scroll', overlayScrollHandler, {
-        passive: true,
-      });
-    }
-
-    return hideInteractiveOverlay(elements);
+    return restoreInteractiveOverlay(elements);
   }
 
-  function hideInteractiveOverlay(elements: InteractiveElement[]) {
+  function restoreInteractiveOverlay(
+    elements: InteractiveElement[],
+  ): () => InteractiveElement[] {
     return () => {
-      if (overlayResizeHandler) {
-        window.removeEventListener('resize', overlayResizeHandler);
-        overlayResizeHandler = null;
-      }
-      if (overlayScrollHandler) {
-        window.removeEventListener('scroll', overlayScrollHandler);
-        overlayScrollHandler = null;
-      }
-
-      if (overlayCanvas && overlayCanvas.parentNode) {
-        overlayCanvas.parentNode.removeChild(overlayCanvas);
-      }
-      overlayCanvas = null;
-      overlayCtx = null;
-      overlayInteractive = [];
-      overlayOptions = null;
-
       elements.forEach((item) => {
         if (item.oldStyle) {
           item.element.style.opacity = item.oldStyle.opacity;
         }
       });
+      return elements;
     };
   }
-  export const takeScreenshot = async (): Promise<Blob> => {
-    console.log('takeScreenshot');
-    const {
-      scrollX,
-      scrollY,
-      document: {
-        body: {
-          style: { overflow },
-        },
-      },
-    } = window;
-    document.body.style.overflow = 'hidden';
-    const ttlHeight = Math.max(
-      document.documentElement.scrollHeight,
-      document.body.scrollHeight,
-    );
-    const ttlWidth = Math.max(
-      document.documentElement.scrollWidth,
-      document.body.scrollWidth,
-    );
-    const vpHeight = window.innerHeight;
-    const vpWidth = window.innerWidth;
 
-    const slices: { x: number; y: number }[] = [];
-    let offsetY = 0;
-    let offsetX = 0;
+  const OCR_SPACE_API_KEY = 'K89415309488957';
+  const headers = new Headers();
+  headers.append('apikey', OCR_SPACE_API_KEY);
+  const OCR_SPACE_LANGUAGE_BY_HTML_LANG: Record<
+    string,
+    OcrSpaceLanguages | 'tha' | 'ukr' | 'vnm'
+  > = {
+    ar: 'ara',
 
-    while (offsetY < ttlHeight) {
-      if (vpWidth < ttlWidth) {
-        offsetX = 0;
-        while (offsetX < ttlWidth) {
-          slices.push({ y: offsetY, x: offsetX });
-          offsetX += vpWidth;
-        }
-      } else {
-        slices.push({ y: offsetY, x: 0 });
-      }
-      offsetY += vpHeight;
-    }
+    bg: 'bul',
 
-    const imgJpgs = await ToMianIpc.takeScreenshot.invoke({
-      ttlHeight,
-      ttlWidth,
-      vpHeight,
-      vpWidth,
-      slices,
-      frameId: window.frameId ?? 0,
-    });
-    window.scrollTo(scrollX, scrollY);
-    document.body.style.overflow = overflow;
-    if (Array.isArray(imgJpgs)) {
-      const canvas = new OffscreenCanvas(ttlWidth, ttlHeight);
-      const ctx = canvas.getContext('2d')!;
+    zh: 'chs',
+    'zh-CN': 'chs',
+    'zh-SG': 'chs',
+    'zh-Hans': 'chs',
+    'zh-CHS': 'chs',
 
-      // Iterate through each image slice and draw it onto the canvas
-      for (let i = 0; i < imgJpgs.length; i++) {
-        const slice = slices[i];
-        const base64Img = Buffer.from(imgJpgs[i]).toString('base64');
-        const img = new Image();
-        img.src = `data:image/jpeg;base64,${base64Img}`;
-        await new Promise<void>((resolve) => {
-          img.onload = () => {
-            console.log('img loaded', slice);
-            ctx.drawImage(img, slice.x, slice.y);
-            resolve();
-          };
-        });
-      }
+    'zh-TW': 'cht',
+    'zh-HK': 'cht',
+    'zh-MO': 'cht',
+    'zh-Hant': 'cht',
+    'zh-CHT': 'cht',
 
-      return canvas.convertToBlob({ type: 'image/jpeg', quality: 0.8 });
-    }
-    throw new Error(`Failed to take screenshot: ${imgJpgs.error}`);
+    hr: 'hrv',
+
+    cs: 'cze',
+
+    da: 'dan',
+
+    nl: 'dut',
+
+    en: 'eng',
+    'en-US': 'eng',
+    'en-GB': 'eng',
+    'en-UK': 'eng',
+    us: 'eng',
+
+    fi: 'fin',
+
+    fr: 'fre',
+
+    de: 'ger',
+
+    el: 'gre',
+
+    hu: 'hun',
+
+    ko: 'kor',
+    kr: 'kor',
+
+    it: 'ita',
+
+    ja: 'jpn',
+    jp: 'jpn',
+
+    pl: 'pol',
+
+    pt: 'por',
+    'pt-BR': 'por',
+    'pt-PT': 'por',
+
+    ru: 'rus',
+
+    sl: 'slv',
+
+    es: 'spa',
+
+    sv: 'swe',
+
+    th: 'tha',
+
+    tr: 'tur',
+
+    uk: 'ukr',
+
+    vi: 'vnm',
+    vn: 'vnm',
   };
+
+  export type OcrResponse = {
+    els: {
+      body: string;
+      x: number;
+      y: number;
+    }[];
+    error?: string | null;
+  };
+
+  export async function getFromScreenshot(fullPage: boolean = true) {
+    const restore = hideInteractiveOverlay();
+    const imgBlob = await takeScreenshot(fullPage);
+    const body = new FormData();
+    body.append(
+      'language',
+      OCR_SPACE_LANGUAGE_BY_HTML_LANG[document.documentElement.lang] || 'eng',
+    );
+    body.append('filetype', 'JPG');
+    body.append('file', imgBlob, 'screenshot.jpg');
+    body.append('isOverlayRequired', 'true');
+    const promise = fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      headers,
+      body,
+    });
+    const interactiveEls = restore();
+    const res = await promise;
+    if (!res.ok) {
+      console.error('OCR API error', res);
+      return { els: [], error: res.statusText };
+    }
+    const ocrData: OcrSpaceResponse = await res.json();
+    const response: OcrResponse = {
+      els: ocrData.ParsedResults.map((item) =>
+        item.TextOverlay.Lines.map(
+          (line: {
+            LineText: string;
+            Words: { Left: number; Top: number }[];
+          }) => ({
+            body: line.LineText,
+            x: line.Words[0]?.Left ?? 0,
+            y: line.Words[0]?.Top ?? 0,
+          }),
+        ).flat(),
+      ).flat(),
+    };
+    response.els.push(
+      ...interactiveEls.map((el) => {
+        return {
+          body: `<${el.type}: ${getElementLabel(el.element)} />`,
+          x: el.bbox.x,
+          y: el.bbox.y,
+        };
+      }),
+    );
+    return response;
+  }
 }

@@ -4,11 +4,11 @@ export class WebTab {
   id: string;
   title: string;
   url: string;
-  type: 'webview' = 'webview';
+  type: 'webview' = 'webview'; // webTab should must be webview type?
   isRunning?: boolean;
 
   constructor(init: {
-    id: string;
+    id: string; // should it be frame id or add another field
     title: string;
     url: string;
     isRunning?: boolean;

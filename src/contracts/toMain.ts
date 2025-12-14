@@ -1,6 +1,8 @@
 import type { Rectangle } from 'electron';
 import { IpcMainContract } from './ipc';
 
+export type LlmConfig = { error?: string; api: 'openai'; key: string };
+
 export const ToMianIpc = {
   createTab: new IpcMainContract<
     [{ url: string; bounds: Rectangle }],
@@ -22,6 +24,9 @@ export const ToMianIpc = {
     ],
     { error: string } | { response: any }
   >('operate-tab'),
+  bindFrameId: new IpcMainContract<[{ id: number }], { error?: string } | void>(
+    'bind-frame-id',
+  ),
   takeScreenshot: new IpcMainContract<
     [
       {
@@ -35,4 +40,12 @@ export const ToMianIpc = {
     ],
     { error: string } | Buffer[]
   >('take-screenshot'),
+  getLlmConfig: new IpcMainContract<
+    [number], // frameId
+    LlmConfig
+  >('get-llm-config'),
+  responsePromptInput: new IpcMainContract<
+    [{ answer: Record<string, string>; id: number }],
+    undefined
+  >('response-prompt-input'),
 };

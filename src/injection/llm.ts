@@ -1,43 +1,47 @@
-import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAI, openai } from '@ai-sdk/openai';
 import z from 'zod';
+import { streamText } from 'ai';
+import { LanguageModelV2 } from '@ai-sdk/provider';
 import { ExecutorLlmResultSchema } from './roles/system/executor.schema';
-import { LLMApiPart, ToBackgroundMsg } from './type';
+import { ToMianIpc } from '../contracts/toMain';
 
-// Typed browser API fallback
-const browserApi: typeof browser | typeof chrome =
-  typeof browser !== 'undefined' ? browser : chrome;
-
-type StreamMsg = {
-  type: 'LLM_API_STREAM';
-  requestId?: string;
-  part?: string;
-  eof?: boolean;
-  error?: string;
+const getLlmConfig = async () => {
+  return ToMianIpc.getLlmConfig.invoke(window.frameId ?? 0);
 };
 
-const llmKey: Promise<string | null> = (async () => {
-  const savedKeyRes = (await browserApi.runtime.sendMessage({
-    type: 'GET_LLM_KEY',
-  })) as { success: boolean; key?: string };
-  if (savedKeyRes.success && savedKeyRes.key) {
-    return savedKeyRes.key;
-  }
-  const key = prompt('llmKey', '') || null;
-  if (key) {
-    browserApi.runtime.sendMessage({
-      type: 'SAVE_LLM_KEY',
-      key,
+let llmApiPromise: Promise<{
+  hi: LanguageModelV2;
+  mid: LanguageModelV2;
+  low: LanguageModelV2;
+} | null>;
+const getLlmApi = async (): Promise<{
+  hi: LanguageModelV2;
+  mid: LanguageModelV2;
+  low: LanguageModelV2;
+} | null> => {
+  if (!llmApiPromise) {
+    llmApiPromise = new Promise(async (resolve) => {
+      const apiConfig = await getLlmConfig();
+      if (apiConfig.error) {
+        console.error('Failed to get LLM config', apiConfig.error);
+        return null;
+      }
+      switch (apiConfig.api) {
+        case 'openai':
+          createOpenAI({ apiKey: apiConfig.key });
+          resolve({
+            hi: openai('gpt-5.2'),
+            mid: openai('gpt-5-mini'),
+            low: openai('gpt-5-nano'),
+          });
+          break;
+        default:
+          throw new Error(`Unsupported LLM API: ${apiConfig.api}`);
+      }
     });
   }
-  return key;
-})();
-
-// Keep for future direct client usage; not currently used
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const openAi = (async () => {
-  const apiKey = await llmKey;
-  return apiKey ? createOpenAI({ apiKey }) : null;
-})();
+  return llmApiPromise;
+};
 
 const queryLLMApiResultSchema = ExecutorLlmResultSchema;
 type queryLLMApiResult =
@@ -45,41 +49,43 @@ type queryLLMApiResult =
   | 'NO_RETRY: no key'
   | 'NO_RETRY: call error';
 
-const requestHandlers: Record<string, (msg: StreamMsg) => void> = {};
-
-browserApi.runtime.onMessage.addListener((msg: StreamMsg) => {
-  if (msg.type === 'LLM_API_STREAM' && msg.requestId) {
-    const handler = requestHandlers[msg.requestId];
-    if (handler) handler(msg);
-  }
-  return true;
-});
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+export type LlmModelType = 'hi' | 'mid' | 'low';
 
 export async function* queryLLMApi(
   prompt: string,
   systemPrompt = '',
   cacheKey = '',
-  reasoning: Extract<
-    ToBackgroundMsg,
-    { type: 'CALL_LLM' }
-  >['systemPrompt'] = 'low',
-): AsyncGenerator<LLMApiPart, 'NO_RETRY: no key' | undefined, void> {
-  if (await llmKey) {
-    const msg = (await browserApi.runtime.sendMessage({
-      type: 'CALL_LLM',
-      prompt,
-      systemPrompt,
-      reasoning,
-      cacheKey,
-    } as ToBackgroundMsg)) as { requestId: string };
-
-    const { requestId } = msg;
-    while (true) {
-      const part = await new Promise<LLMApiPart>((resolve) => {
-        requestHandlers[requestId] = resolve;
-      });
+  model: LlmModelType = 'mid',
+  reasoning: ReasoningEffort = 'low',
+): AsyncGenerator<string, 'NO_RETRY: no key' | undefined, void> {
+  const llmApi = await getLlmApi();
+  if (llmApi) {
+    const start = Date.now();
+    const { textStream, request } = streamText({
+      model: llmApi[model],
+      providerOptions: {
+        openai: {
+          reasoningEffort: reasoning,
+          promptCacheKey: cacheKey ?? undefined,
+        },
+      },
+      prompt: systemPrompt
+        ? [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ]
+        : prompt,
+    });
+    for await (const part of textStream) {
+      console.log('Stream', Date.now() - start, part);
       yield part;
-      if (part.eof) return;
     }
   } else {
     return 'NO_RETRY: no key';
@@ -90,11 +96,9 @@ export const queryLLMSession = (systemPrompt: string) => {
   const cacheKey = `${Math.round(Math.random() * 1000000)}`;
   return (
     prompt: string,
-    reasoning: Extract<
-      ToBackgroundMsg,
-      { type: 'CALL_LLM' }
-    >['systemPrompt'] = 'low',
+    model: 'hi' | 'mid' | 'low' = 'mid',
+    reasoning: 'minimal' | 'low' | 'medium' | 'high' = 'low',
   ) => {
-    return queryLLMApi(prompt, systemPrompt, cacheKey, reasoning);
+    return queryLLMApi(prompt, systemPrompt, cacheKey, model, reasoning);
   };
 };
