@@ -1,5 +1,5 @@
 import type { Rectangle } from 'electron';
-import { ToMianIpc } from '../../ipc/toMain';
+import { ToMianIpc } from '../../contracts/toMain';
 
 type LayoutParams = {
   frameId?: number;
