@@ -10,13 +10,13 @@
  */
 import path from 'path';
 /* eslint-disable no-await-in-loop, no-restricted-syntax, no-promise-executor-return */
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { config as configDotEnv } from 'dotenv';
+import { app, BrowserWindow } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
-import { config as configDotEnv } from 'dotenv';
+import { setupIpcHandlers } from './ipcHandlers';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import { setupIpcHandlers } from './ipcHandlers';
 
 configDotEnv();
 
@@ -101,7 +101,7 @@ const createWindow = async () => {
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(() => {
     return {
       action: 'allow',
       overrideBrowserWindowOptions: {

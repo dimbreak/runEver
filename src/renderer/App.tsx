@@ -22,7 +22,7 @@ export default function App() {
         style={{ width: `${leftWidthStyle.width}` }}
       >
         <div
-          className="flex items-center border-b border-slate-200 bg-white"
+          className="flex border-b border-slate-200 bg-white"
           style={{ height: `${tabbarHeight}px` }}
         >
           <TabBar />

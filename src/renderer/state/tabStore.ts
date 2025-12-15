@@ -29,6 +29,7 @@ type TabState = {
   closeTab: (id: string) => void;
   registerFrameId: (tabId: string, frameId: number) => void;
   removeFrameId: (tabId: string) => void;
+  updateTabUrl: (tabId: string, url: string) => void;
 };
 
 const initialTabs = [
@@ -79,4 +80,17 @@ export const useTabStore = create<TabState>((set) => ({
       next.delete(tabId);
       return { frameMap: next };
     }),
+  updateTabUrl: (tabId, url) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.id === tabId
+          ? new WebTab({
+              id: tab.id,
+              title: tab.title,
+              url,
+              isRunning: tab.isRunning,
+            })
+          : tab,
+      ),
+    })),
 }));

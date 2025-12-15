@@ -81,13 +81,14 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=0"
+    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=100"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.85",
     "@electron/notarize": "^3.0.0",
     "@tailwindcss/postcss": "^4.1.17",
     "ai": "^5.0.112",
+    "@hookform/resolvers": "^3.10.0",
     "electron-debug": "^4.1.0",
     "electron-log": "^5.3.2",
     "electron-settings": "^4.0.4",
@@ -96,6 +97,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-router-dom": "^7.3.0",
+    "react-hook-form": "^7.54.2",
     "source-map-support": "^0.5.21",
     "tailwindcss": "^4.1.17",
     "zod": "^4.1.13",

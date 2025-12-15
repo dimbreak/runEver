@@ -17,6 +17,7 @@ export const AgentPanel: React.FC = () => {
     toggleSidebar,
     sidebarWidth,
     collapsedWidth,
+    tabbarHeight,
   } = useLayoutStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
   const [messages, setMessages] = React.useState<Message[]>([
@@ -114,7 +115,6 @@ export const AgentPanel: React.FC = () => {
       const { lastFrameId } = window as any;
       if (!lastFrameId) return;
       const width = isSidebarOpen ? sidebarWidth : collapsedWidth;
-      const tabbarHeight = 56;
       try {
         await ToMianIpc.operateTab.invoke({
           id: lastFrameId,
@@ -125,7 +125,7 @@ export const AgentPanel: React.FC = () => {
         // swallow layout errors to avoid blocking UI
       }
     },
-    [collapsedWidth, sidebarWidth],
+    [collapsedWidth, sidebarWidth, tabbarHeight],
   );
 
   React.useEffect(() => {
