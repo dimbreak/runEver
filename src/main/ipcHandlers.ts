@@ -107,7 +107,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
       event.frameId,
     );
     const bounds = detail.bounds ?? getSafeBounds();
-    const wvTab = new TabWebView(detail.url, bounds);
+    const wvTab = new TabWebView(detail.url, bounds, mainWindow);
     const frameId = wvTab.webView.webContents.id;
     webViewTabsById.set(frameId, wvTab);
     mainWindow?.contentView.addChildView(wvTab.webView);

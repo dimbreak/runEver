@@ -1,4 +1,4 @@
-import { app, Rectangle, WebContentsView } from 'electron';
+import { app, BrowserWindow, Rectangle, WebContentsView } from 'electron';
 import path from 'path';
 
 export class TabWebView {
@@ -11,6 +11,7 @@ export class TabWebView {
   constructor(
     public initUrl: string,
     public bounds: Rectangle,
+    private mainWindow?: BrowserWindow,
   ) {
     this.url = initUrl;
     this.webView = new WebContentsView({
@@ -32,6 +33,12 @@ export class TabWebView {
       webView.webContents.executeJavaScript(
         `window.postMessage({ frameId: ${frameId}})`,
       );
+    });
+    webView.webContents.setWindowOpenHandler(({ url }) => {
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('open-new-tab', { url });
+      }
+      return { action: 'deny' };
     });
     webView.setBounds(this.bounds);
     webView.webContents.loadURL(this.url);

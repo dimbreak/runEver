@@ -1,26 +1,12 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, SquareTerminal } from 'lucide-react';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore, WebTab } from '../state/tabStore';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { normalizeUrlValue } from '../utils/formatter';
+import { UrlBar } from './UrlBar';
 import { TabItem } from './TabItem';
-
-const urlSchema = z.object({
-  url: z
-    .string()
-    .trim()
-    .min(1, '請輸入網址')
-    .transform((val) => normalizeUrlValue(val)),
-});
-
-type UrlFormValues = z.infer<typeof urlSchema>;
 
 const computeBounds = (
   isSidebarOpen: boolean,
@@ -67,20 +53,27 @@ export const TabBar: React.FC = () => {
   } = useTabStore();
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handler = (_: any, payload: { url: string }) => {
+      const newTab = new WebTab({
+        id: `tab-${Date.now()}`,
+        title: payload.url,
+        url: payload.url,
+      });
+      addTab(newTab);
+    };
+
+    const ipc = window.electron?.ipcRenderer;
+    const unsubscribe = ipc?.on('open-new-tab', handler);
+    return () => {
+      unsubscribe?.();
+    };
+  }, [addTab]);
+
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
     [activeTabId, tabs],
   );
-
-  const form = useForm<UrlFormValues>({
-    resolver: zodResolver(urlSchema),
-    defaultValues: { url: activeTab?.url ?? '' },
-  });
-  const { handleSubmit, register, formState, reset, setValue } = form;
-
-  useEffect(() => {
-    reset({ url: activeTab?.url ?? '' });
-  }, [activeTab, reset]);
 
   useEffect(() => {
     // Keep webview layout bounds in sync with the actual bar height.
@@ -149,12 +142,9 @@ export const TabBar: React.FC = () => {
   }, []);
 
   const handleUrlSubmit = useCallback(
-    async (data: UrlFormValues) => {
-      if (!activeTabId) return;
-      const nextUrl = data.url;
-      if (!nextUrl) return;
+    async (nextUrl: string) => {
+      if (!activeTabId || !nextUrl) return;
       updateTabUrl(activeTabId, nextUrl);
-      setValue('url', nextUrl, { shouldValidate: false });
       const frameId = frameMap.get(activeTabId);
       if (frameId) {
         await webviewService.layoutTab({
@@ -163,7 +153,7 @@ export const TabBar: React.FC = () => {
         });
       }
     },
-    [activeTabId, frameMap, setValue, updateTabUrl],
+    [activeTabId, frameMap, updateTabUrl],
   );
 
   // Manage all webviews here to avoid duplicate creations.
@@ -178,7 +168,6 @@ export const TabBar: React.FC = () => {
         tabbarHeight,
       );
 
-      // Close removed tabs/webviews
       const toClose = Array.from(frameMap.entries()).filter(
         ([tabId]) => !tabs.find((t) => t.id === tabId),
       );
@@ -274,27 +263,7 @@ export const TabBar: React.FC = () => {
           </Button>
         </div>
       </div>
-      {activeTab && (
-        <form
-          className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
-          onSubmit={handleSubmit(handleUrlSubmit)}
-        >
-          <Input
-            type="text"
-            placeholder="Enter a URL or search term"
-            className="flex-1"
-            {...register('url')}
-          />
-          <Button type="submit" disabled={formState.isSubmitting} size="sm">
-            Go
-          </Button>
-          {formState.errors.url && (
-            <span className="text-[11px] font-medium text-rose-600 px-1">
-              {formState.errors.url.message}
-            </span>
-          )}
-        </form>
-      )}
+      {activeTab && <UrlBar url={activeTab.url} onSubmit={handleUrlSubmit} />}
     </div>
   );
 };
