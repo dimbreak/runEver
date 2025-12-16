@@ -41,8 +41,6 @@ export const TabItem = memo(function TabItem({
   const handleDragOver = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
       if (!tabId) return;
-      const sourceId = event.dataTransfer.getData('text/plain');
-      if (!sourceId || sourceId === tabId) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
     },

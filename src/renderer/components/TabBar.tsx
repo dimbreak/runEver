@@ -1,4 +1,3 @@
-import { SquareTerminal } from 'lucide-react';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { webviewService } from '../services/webviewService';
@@ -43,13 +42,12 @@ export const TabBar: React.FC = () => {
   const {
     tabs,
     activeTabId,
-    setActiveTab,
     addTab,
-    closeTab,
     frameMap,
     registerFrameId,
     removeFrameId,
     updateTabUrl,
+    updateTabTitle,
   } = useTabStore();
   useEffect(() => {
     const handler = (_: any, payload: { url: string }) => {
@@ -67,6 +65,30 @@ export const TabBar: React.FC = () => {
       unsubscribe?.();
     };
   }, [addTab]);
+
+  useEffect(() => {
+    const ipc = window.electron?.ipcRenderer;
+    const handleTitleUpdate = (
+      _event: any,
+      payload: { frameId: number; title?: string; url?: string },
+    ) => {
+      const entry = Array.from(frameMap.entries()).find(
+        ([, frameId]) => frameId === payload.frameId,
+      );
+      if (!entry) return;
+      const [tabId] = entry;
+      if (payload.title) {
+        updateTabTitle(tabId, payload.title);
+      }
+      if (payload.url) {
+        updateTabUrl(tabId, payload.url);
+      }
+    };
+    const unsubscribe = ipc?.on('tab-title-updated', handleTitleUpdate);
+    return () => {
+      unsubscribe?.();
+    };
+  }, [frameMap, updateTabTitle, updateTabUrl]);
 
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,

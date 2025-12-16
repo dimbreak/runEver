@@ -34,6 +34,14 @@ export class TabWebView {
         `window.postMessage({ frameId: ${frameId}})`,
       );
     });
+    webView.webContents.on('page-title-updated', (_event, title) => {
+      const currentUrl = webView.webContents.getURL();
+      this.mainWindow?.webContents.send('tab-title-updated', {
+        frameId,
+        title,
+        url: currentUrl,
+      });
+    });
     webView.webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {
         this.mainWindow.webContents.send('open-new-tab', { url });

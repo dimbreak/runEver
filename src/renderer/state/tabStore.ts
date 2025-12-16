@@ -31,6 +31,7 @@ type TabState = {
   removeFrameId: (tabId: string) => void;
   updateTabUrl: (tabId: string, url: string) => void;
   reorderTabs: (sourceId: string, targetId: string) => void;
+  updateTabTitle: (tabId: string, title: string) => void;
 };
 
 const initialTabs = [
@@ -105,4 +106,17 @@ export const useTabStore = create<TabState>((set) => ({
       tabs.splice(toIndex, 0, moved);
       return { tabs };
     }),
+  updateTabTitle: (tabId, title) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.id === tabId
+          ? new WebTab({
+              id: tab.id,
+              title,
+              url: tab.url,
+              isRunning: tab.isRunning,
+            })
+          : tab,
+      ),
+    })),
 }));
