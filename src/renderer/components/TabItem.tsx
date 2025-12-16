@@ -1,31 +1,42 @@
 import { X } from 'lucide-react';
-import { memo } from 'react';
+import { memo, ReactNode, useCallback, DragEvent } from 'react';
+import { webviewService } from '../services/webviewService';
+import { useTabStore } from '../state/tabStore';
 import { cn } from '../utils/cn';
 
 type TabItemProps = {
-  label: React.ReactNode;
+  tabId: string;
+  label: ReactNode;
   isActive: boolean;
-  onClick: () => void;
-  onClose?: () => void;
   draggable?: boolean;
-  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
-  onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragStart?: (event: DragEvent<HTMLDivElement>) => void;
+  onDragOver?: (event: DragEvent<HTMLDivElement>) => void;
+  onDrop?: (event: DragEvent<HTMLDivElement>) => void;
   onDragEnd?: () => void;
 };
 
-export const TabItem: React.FC<TabItemProps> = memo(
-  ({
-    label,
-    isActive,
-    onClick,
-    onClose,
-    draggable = false,
-    onDragStart,
-    onDragOver,
-    onDrop,
-    onDragEnd,
-  }) => (
+export const TabItem = memo(function TabItem({
+  tabId,
+  label,
+  isActive,
+  draggable = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: TabItemProps) {
+  const { frameMap, closeTab, setActiveTab } = useTabStore();
+  const handleCloseTab = useCallback(async () => {
+    const frameId = frameMap.get(tabId);
+    await webviewService.closeTab({ frameId: frameId ?? undefined });
+    closeTab(tabId);
+  }, [closeTab, frameMap, tabId]);
+
+  const handleTabClick = useCallback(
+    () => setActiveTab(tabId),
+    [tabId, setActiveTab],
+  );
+  return (
     <li
       className={cn('shrink-0', { 'sticky left-0 z-10': isActive })}
       draggable={false}
@@ -46,22 +57,20 @@ export const TabItem: React.FC<TabItemProps> = memo(
       >
         <button
           type="button"
-          onClick={onClick}
+          onClick={handleTabClick}
           className="flex items-center gap-2"
         >
           {label}
         </button>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-            aria-label="Close tab"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleCloseTab}
+          className="rounded-md p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+          aria-label="Close tab"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
     </li>
-  ),
-);
+  );
+});

@@ -1,12 +1,12 @@
-import { Plus, SquareTerminal } from 'lucide-react';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore, WebTab } from '../state/tabStore';
+import { NewTabButton } from './NewTabButton';
+import { TabItem } from './TabItem';
 import { Button } from './ui/button';
 import { UrlBar } from './UrlBar';
-import { TabItem } from './TabItem';
 
 const computeBounds = (
   isSidebarOpen: boolean,
@@ -44,7 +44,6 @@ export const TabBar: React.FC = () => {
     activeTabId,
     setActiveTab,
     addTab,
-    closeTab,
     frameMap,
     registerFrameId,
     removeFrameId,
@@ -81,29 +80,6 @@ export const TabBar: React.FC = () => {
     const collapsedHeight = 72;
     setTabbarHeight(activeTab ? expandedHeight : collapsedHeight);
   }, [activeTab, setTabbarHeight]);
-
-  const handleTabClick = useCallback(
-    (id: string | null) => () => setActiveTab(id),
-    [setActiveTab],
-  );
-
-  const handleCloseTab = useCallback(
-    (id: string) => async () => {
-      const frameId = frameMap.get(id);
-      await webviewService.closeTab({ frameId: frameId ?? undefined });
-      closeTab(id);
-    },
-    [closeTab, frameMap],
-  );
-
-  const handleAddTab = useCallback(() => {
-    const newTab = new WebTab({
-      id: `tab-${Date.now()}`,
-      title: 'New Tab',
-      url: '',
-    });
-    addTab(newTab);
-  }, [addTab]);
 
   const orderedTabs = useMemo(() => tabs, [tabs]);
 
@@ -225,20 +201,14 @@ export const TabBar: React.FC = () => {
     <div className="flex h-full w-full flex-col gap-2 px-3 py-2 pb-3">
       <div className="flex w-full items-center gap-2">
         <Tabs>
-          <TabItem
-            label={<SquareTerminal className="w-5 h-5" />}
-            isActive={activeTabId === null}
-            onClick={handleTabClick(null)}
-          />
           {orderedTabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             return (
               <TabItem
                 key={tab.id}
+                tabId={tab.id}
                 label={tab.title}
                 isActive={isActive}
-                onClick={handleTabClick(tab.id)}
-                onClose={handleCloseTab(tab.id)}
                 draggable
                 onDragStart={handleDragStart(tab.id)}
                 onDragOver={handleDragOver(tab.id)}
@@ -249,15 +219,7 @@ export const TabBar: React.FC = () => {
           })}
         </Tabs>
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            type="button"
-            onClick={handleAddTab}
-            variant="outline"
-            className="flex items-center gap-1"
-            size="md"
-          >
-            <Plus className="w-4 h-4" /> New Tab
-          </Button>
+          <NewTabButton />
           <Button type="button" onClick={toggleSidebar} size="sm">
             Open Agent
           </Button>
