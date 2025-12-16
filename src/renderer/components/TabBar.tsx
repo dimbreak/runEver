@@ -1,29 +1,16 @@
-import { Plus, SquareTerminal, X } from 'lucide-react';
-import * as React from 'react';
-import { useCallback, useEffect, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Plus, SquareTerminal } from 'lucide-react';
+import * as React from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore, WebTab } from '../state/tabStore';
-import { webviewService } from '../services/webviewService';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
-
-const BASE_TAB_CLASS =
-  'flex items-center gap-2 h-10 pl-3 pr-2 rounded-lg text-sm font-semibold transition-colors border';
-
-const ACTIVE_TAB_CLASS = 'bg-white text-slate-900 border-slate-200 shadow-sm';
-
-const INACTIVE_TAB_CLASS =
-  'text-slate-600 border-transparent hover:bg-slate-100';
-
-const normalizeUrlValue = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed);
-  return hasProtocol ? trimmed : `https://${trimmed}`;
-};
+import { Input } from './ui/input';
+import { normalizeUrlValue } from '../utils/formatter';
+import { TabItem } from './TabItem';
 
 const urlSchema = z.object({
   url: z
@@ -51,6 +38,12 @@ const computeBounds = (
   return { x: padding, y: tabbarHeight + padding, width, height };
 };
 
+const Tabs: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ul className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-2">
+    {children}
+  </ul>
+);
+
 export const TabBar: React.FC = () => {
   const {
     toggleSidebar,
@@ -70,7 +63,9 @@ export const TabBar: React.FC = () => {
     registerFrameId,
     removeFrameId,
     updateTabUrl,
+    reorderTabs,
   } = useTabStore();
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
@@ -112,12 +107,46 @@ export const TabBar: React.FC = () => {
     const newTab = new WebTab({
       id: `tab-${Date.now()}`,
       title: 'New Tab',
-      url: 'https://www.google.com',
+      url: '',
     });
     addTab(newTab);
   }, [addTab]);
 
   const orderedTabs = useMemo(() => tabs, [tabs]);
+
+  const handleDragStart = useCallback(
+    (tabId: string) => (event: React.DragEvent<HTMLDivElement>) => {
+      setDraggingId(tabId);
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', tabId);
+    },
+    [],
+  );
+
+  const handleDragOver = useCallback(
+    (targetId: string) => (event: React.DragEvent<HTMLDivElement>) => {
+      if (!draggingId || draggingId === targetId) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+    },
+    [draggingId],
+  );
+
+  const handleDrop = useCallback(
+    (targetId: string) => (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      const sourceId =
+        draggingId ?? event.dataTransfer.getData('text/plain') ?? '';
+      if (!sourceId || sourceId === targetId) return;
+      reorderTabs(sourceId, targetId);
+      setDraggingId(null);
+    },
+    [draggingId, reorderTabs],
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingId(null);
+  }, []);
 
   const handleUrlSubmit = useCallback(
     async (data: UrlFormValues) => {
@@ -206,57 +235,31 @@ export const TabBar: React.FC = () => {
   return (
     <div className="flex h-full w-full flex-col gap-2 px-3 py-2 pb-3">
       <div className="flex w-full items-center gap-2">
-        <ul className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-2">
-          <li
-            className={`flex-shrink-0 ${
-              activeTabId === null ? 'sticky left-0 z-10' : ''
-            }`}
-          >
-            <Button
-              type="button"
-              onClick={handleTabClick(null)}
-              variant="ghost"
-              className={`${BASE_TAB_CLASS} ${
-                activeTabId === null ? ACTIVE_TAB_CLASS : INACTIVE_TAB_CLASS
-              }`}
-              title="Home"
-            >
-              <SquareTerminal className="w-5 h-5" />
-            </Button>
-          </li>
+        <Tabs>
+          <TabItem
+            label={<SquareTerminal className="w-5 h-5" />}
+            isActive={activeTabId === null}
+            onClick={handleTabClick(null)}
+          />
           {orderedTabs.map((tab) => {
             const isActive = activeTabId === tab.id;
             return (
-              <li
+              <TabItem
                 key={tab.id}
-                className={`flex-shrink-0 ${isActive ? 'sticky left-0 z-10' : ''}`}
-              >
-                <div
-                  className={`${BASE_TAB_CLASS} ${
-                    isActive ? ACTIVE_TAB_CLASS : INACTIVE_TAB_CLASS
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={handleTabClick(tab.id)}
-                    className="flex items-center gap-2"
-                  >
-                    {tab.title}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseTab(tab.id)}
-                    className="rounded-md p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                    aria-label={`Close ${tab.title}`}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </li>
+                label={tab.title}
+                isActive={isActive}
+                onClick={handleTabClick(tab.id)}
+                onClose={handleCloseTab(tab.id)}
+                draggable
+                onDragStart={handleDragStart(tab.id)}
+                onDragOver={handleDragOver(tab.id)}
+                onDrop={handleDrop(tab.id)}
+                onDragEnd={handleDragEnd}
+              />
             );
           })}
-        </ul>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        </Tabs>
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             type="button"
             onClick={handleAddTab}

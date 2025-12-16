@@ -30,6 +30,7 @@ type TabState = {
   registerFrameId: (tabId: string, frameId: number) => void;
   removeFrameId: (tabId: string) => void;
   updateTabUrl: (tabId: string, url: string) => void;
+  reorderTabs: (sourceId: string, targetId: string) => void;
 };
 
 const initialTabs = [
@@ -93,4 +94,15 @@ export const useTabStore = create<TabState>((set) => ({
           : tab,
       ),
     })),
+  reorderTabs: (sourceId, targetId) =>
+    set((state) => {
+      if (sourceId === targetId) return state;
+      const tabs = [...state.tabs];
+      const fromIndex = tabs.findIndex((t) => t.id === sourceId);
+      const toIndex = tabs.findIndex((t) => t.id === targetId);
+      if (fromIndex === -1 || toIndex === -1) return state;
+      const [moved] = tabs.splice(fromIndex, 1);
+      tabs.splice(toIndex, 0, moved);
+      return { tabs };
+    }),
 }));
