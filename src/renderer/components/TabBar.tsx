@@ -1,5 +1,6 @@
+import { SquareTerminal } from 'lucide-react';
 import * as React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore, WebTab } from '../state/tabStore';
@@ -44,14 +45,12 @@ export const TabBar: React.FC = () => {
     activeTabId,
     setActiveTab,
     addTab,
+    closeTab,
     frameMap,
     registerFrameId,
     removeFrameId,
     updateTabUrl,
-    reorderTabs,
   } = useTabStore();
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-
   useEffect(() => {
     const handler = (_: any, payload: { url: string }) => {
       const newTab = new WebTab({
@@ -82,40 +81,6 @@ export const TabBar: React.FC = () => {
   }, [activeTab, setTabbarHeight]);
 
   const orderedTabs = useMemo(() => tabs, [tabs]);
-
-  const handleDragStart = useCallback(
-    (tabId: string) => (event: React.DragEvent<HTMLDivElement>) => {
-      setDraggingId(tabId);
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', tabId);
-    },
-    [],
-  );
-
-  const handleDragOver = useCallback(
-    (targetId: string) => (event: React.DragEvent<HTMLDivElement>) => {
-      if (!draggingId || draggingId === targetId) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-    },
-    [draggingId],
-  );
-
-  const handleDrop = useCallback(
-    (targetId: string) => (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-      const sourceId =
-        draggingId ?? event.dataTransfer.getData('text/plain') ?? '';
-      if (!sourceId || sourceId === targetId) return;
-      reorderTabs(sourceId, targetId);
-      setDraggingId(null);
-    },
-    [draggingId, reorderTabs],
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setDraggingId(null);
-  }, []);
 
   const handleUrlSubmit = useCallback(
     async (nextUrl: string) => {
@@ -209,11 +174,6 @@ export const TabBar: React.FC = () => {
                 tabId={tab.id}
                 label={tab.title}
                 isActive={isActive}
-                draggable
-                onDragStart={handleDragStart(tab.id)}
-                onDragOver={handleDragOver(tab.id)}
-                onDrop={handleDrop(tab.id)}
-                onDragEnd={handleDragEnd}
               />
             );
           })}
