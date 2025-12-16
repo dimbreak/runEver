@@ -68,10 +68,12 @@ export const useTabStore = create<TabState>((set) => ({
       } else if (state.activeTabId === id) {
         nextActive = null;
       }
+      const nextFrameMap = new Map(state.frameMap);
+      nextFrameMap.delete(id);
       return {
         tabs: nextTabs,
         activeTabId: nextActive,
-        frameMap: state.frameMap,
+        frameMap: nextFrameMap,
       };
     }),
   registerFrameId: (tabId, frameId) =>
