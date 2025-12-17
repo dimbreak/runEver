@@ -25,6 +25,7 @@ module.exports = {
     'import/no-extraneous-dependencies': 'off',
     'react/react-in-jsx-scope': 'off',
     'react/jsx-filename-extension': 'off',
+    'react/prop-types': 'off', // TypeScript provides type checking
     'import/extensions': 'off',
     'import/no-unresolved': 'off',
     'import/no-import-module-exports': 'off',
@@ -57,6 +58,7 @@ module.exports = {
       'warn',
       { functions: false, classes: true, variables: true },
     ],
+    'react/jsx-props-no-spreading': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

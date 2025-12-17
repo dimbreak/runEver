@@ -29,6 +29,9 @@ type TabState = {
   closeTab: (id: string) => void;
   registerFrameId: (tabId: string, frameId: number) => void;
   removeFrameId: (tabId: string) => void;
+  updateTabUrl: (tabId: string, url: string) => void;
+  reorderTabs: (sourceId: string, targetId: string) => void;
+  updateTabTitle: (tabId: string, title: string) => void;
 };
 
 const initialTabs = [
@@ -65,10 +68,12 @@ export const useTabStore = create<TabState>((set) => ({
       } else if (state.activeTabId === id) {
         nextActive = null;
       }
+      const nextFrameMap = new Map(state.frameMap);
+      nextFrameMap.delete(id);
       return {
         tabs: nextTabs,
         activeTabId: nextActive,
-        frameMap: state.frameMap,
+        frameMap: nextFrameMap,
       };
     }),
   registerFrameId: (tabId, frameId) =>
@@ -79,4 +84,41 @@ export const useTabStore = create<TabState>((set) => ({
       next.delete(tabId);
       return { frameMap: next };
     }),
+  updateTabUrl: (tabId, url) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.id === tabId
+          ? new WebTab({
+              id: tab.id,
+              title: tab.title,
+              url,
+              isRunning: tab.isRunning,
+            })
+          : tab,
+      ),
+    })),
+  reorderTabs: (sourceId, targetId) =>
+    set((state) => {
+      if (sourceId === targetId) return state;
+      const tabs = [...state.tabs];
+      const fromIndex = tabs.findIndex((t) => t.id === sourceId);
+      const toIndex = tabs.findIndex((t) => t.id === targetId);
+      if (fromIndex === -1 || toIndex === -1) return state;
+      const [moved] = tabs.splice(fromIndex, 1);
+      tabs.splice(toIndex, 0, moved);
+      return { tabs };
+    }),
+  updateTabTitle: (tabId, title) =>
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.id === tabId
+          ? new WebTab({
+              id: tab.id,
+              title,
+              url: tab.url,
+              isRunning: tab.isRunning,
+            })
+          : tab,
+      ),
+    })),
 }));

@@ -1,0 +1,27 @@
+import { Plus } from 'lucide-react';
+import { memo, useCallback } from 'react';
+import { useTabStore, WebTab } from '../state/tabStore';
+import { Button } from './ui/button';
+
+export const NewTabButton = memo(function NewTabButton() {
+  const { addTab } = useTabStore();
+  const handleAddTab = useCallback(() => {
+    const newTab = new WebTab({
+      id: `tab-${Date.now()}`,
+      title: 'New Tab',
+      url: '',
+    });
+    addTab(newTab);
+  }, [addTab]);
+  return (
+    <Button
+      type="button"
+      onClick={handleAddTab}
+      variant="outline"
+      className="flex items-center gap-1"
+      size="md"
+    >
+      <Plus className="w-4 h-4" /> New Tab
+    </Button>
+  );
+});

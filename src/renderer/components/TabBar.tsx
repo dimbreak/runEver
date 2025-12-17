@@ -1,16 +1,12 @@
-import { Plus, SquareTerminal, X } from 'lucide-react';
 import * as React from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
+import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore, WebTab } from '../state/tabStore';
-import { webviewService } from '../services/webviewService';
-
-const baseTab =
-  'flex items-center gap-2 h-10 pl-3 pr-2 rounded-lg text-sm font-semibold transition-colors border';
-
-const activeTab = 'bg-white text-slate-900 border-slate-200 shadow-sm';
-
-const inactiveTab = 'text-slate-600 border-transparent hover:bg-slate-100';
+import { NewTabButton } from './NewTabButton';
+import { TabItem } from './TabItem';
+import { Button } from './ui/button';
+import { UrlBar } from './UrlBar';
 
 const computeBounds = (
   isSidebarOpen: boolean,
@@ -28,6 +24,12 @@ const computeBounds = (
   return { x: padding, y: tabbarHeight + padding, width, height };
 };
 
+const Tabs: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <ul className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-2">
+    {children}
+  </ul>
+);
+
 export const TabBar: React.FC = () => {
   const {
     toggleSidebar,
@@ -35,42 +37,87 @@ export const TabBar: React.FC = () => {
     collapsedWidth,
     tabbarHeight,
     isSidebarOpen,
+    setTabbarHeight,
   } = useLayoutStore();
   const {
     tabs,
     activeTabId,
-    setActiveTab,
     addTab,
-    closeTab,
     frameMap,
     registerFrameId,
     removeFrameId,
+    updateTabUrl,
+    updateTabTitle,
   } = useTabStore();
+  useEffect(() => {
+    const handler = (_: any, payload: { url: string }) => {
+      const newTab = new WebTab({
+        id: `tab-${Date.now()}`,
+        title: payload.url,
+        url: payload.url,
+      });
+      addTab(newTab);
+    };
 
-  const handleTabClick = useCallback(
-    (id: string | null) => () => setActiveTab(id),
-    [setActiveTab],
-  );
-
-  const handleCloseTab = useCallback(
-    (id: string) => async () => {
-      const frameId = frameMap.get(id);
-      await webviewService.closeTab({ frameId: frameId ?? undefined });
-      closeTab(id);
-    },
-    [closeTab, frameMap],
-  );
-
-  const handleAddTab = useCallback(() => {
-    const newTab = new WebTab({
-      id: `tab-${Date.now()}`,
-      title: 'New Tab',
-      url: 'https://www.google.com',
-    });
-    addTab(newTab);
+    const ipc = window.electron?.ipcRenderer;
+    const unsubscribe = ipc?.on('open-new-tab', handler);
+    return () => {
+      unsubscribe?.();
+    };
   }, [addTab]);
 
+  useEffect(() => {
+    const ipc = window.electron?.ipcRenderer;
+    const handleTitleUpdate = (
+      _event: any,
+      payload: { frameId: number; title?: string; url?: string },
+    ) => {
+      const entry = Array.from(frameMap.entries()).find(
+        ([, frameId]) => frameId === payload.frameId,
+      );
+      if (!entry) return;
+      const [tabId] = entry;
+      if (payload.title) {
+        updateTabTitle(tabId, payload.title);
+      }
+      if (payload.url) {
+        updateTabUrl(tabId, payload.url);
+      }
+    };
+    const unsubscribe = ipc?.on('tab-title-updated', handleTitleUpdate);
+    return () => {
+      unsubscribe?.();
+    };
+  }, [frameMap, updateTabTitle, updateTabUrl]);
+
+  const activeTab = useMemo(
+    () => tabs.find((tab) => tab.id === activeTabId) ?? null,
+    [activeTabId, tabs],
+  );
+
+  useEffect(() => {
+    // Keep webview layout bounds in sync with the actual bar height.
+    const expandedHeight = 112;
+    const collapsedHeight = 72;
+    setTabbarHeight(activeTab ? expandedHeight : collapsedHeight);
+  }, [activeTab, setTabbarHeight]);
+
   const orderedTabs = useMemo(() => tabs, [tabs]);
+
+  const handleUrlSubmit = useCallback(
+    async (nextUrl: string) => {
+      if (!activeTabId || !nextUrl) return;
+      updateTabUrl(activeTabId, nextUrl);
+      const frameId = frameMap.get(activeTabId);
+      if (frameId) {
+        await webviewService.layoutTab({
+          frameId,
+          url: nextUrl,
+        });
+      }
+    },
+    [activeTabId, frameMap, updateTabUrl],
+  );
 
   // Manage all webviews here to avoid duplicate creations.
   useEffect(() => {
@@ -84,7 +131,6 @@ export const TabBar: React.FC = () => {
         tabbarHeight,
       );
 
-      // Close removed tabs/webviews
       const toClose = Array.from(frameMap.entries()).filter(
         ([tabId]) => !tabs.find((t) => t.id === tabId),
       );
@@ -139,62 +185,29 @@ export const TabBar: React.FC = () => {
   ]);
 
   return (
-    <ul className="flex w-full items-center gap-2 px-3">
-      <li>
-        <button
-          type="button"
-          onClick={handleTabClick(null)}
-          className={`${baseTab} ${
-            activeTabId === null ? activeTab : inactiveTab
-          }`}
-          title="Home"
-        >
-          <SquareTerminal className="w-5 h-5" />
-        </button>
-      </li>
-      {orderedTabs.map((tab) => (
-        <li key={tab.id}>
-          <div
-            className={`${baseTab} ${
-              activeTabId === tab.id ? activeTab : inactiveTab
-            }`}
-          >
-            <button
-              type="button"
-              onClick={handleTabClick(tab.id)}
-              className="flex items-center gap-2"
-            >
-              {tab.title}
-            </button>
-            <button
-              type="button"
-              onClick={handleCloseTab(tab.id)}
-              className="rounded-md p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-              aria-label={`Close ${tab.title}`}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </li>
-      ))}
-      <li>
-        <button
-          type="button"
-          onClick={handleAddTab}
-          className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-        >
-          <Plus className="w-4 h-4" /> New Tab
-        </button>
-      </li>
-      <li className="ml-auto">
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="bg-blue-500 hover:bg-blue-600 text-white text-[12px] font-semibold px-3 py-1.5 rounded-md transition-colors border border-blue-500"
-        >
-          Open Agent
-        </button>
-      </li>
-    </ul>
+    <div className="flex h-full w-full flex-col gap-2 px-3 py-2 pb-3">
+      <div className="flex w-full items-center gap-2">
+        <Tabs>
+          {orderedTabs.map((tab) => {
+            const isActive = activeTabId === tab.id;
+            return (
+              <TabItem
+                key={tab.id}
+                tabId={tab.id}
+                label={tab.title}
+                isActive={isActive}
+              />
+            );
+          })}
+        </Tabs>
+        <div className="flex items-center gap-2 shrink-0">
+          <NewTabButton />
+          <Button type="button" onClick={toggleSidebar} size="sm">
+            Open Agent
+          </Button>
+        </div>
+      </div>
+      {activeTab && <UrlBar url={activeTab.url} onSubmit={handleUrlSubmit} />}
+    </div>
   );
 };

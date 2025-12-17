@@ -1,17 +1,16 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import settings from 'electron-settings';
-import path from 'path';
-import { LlmConfig, ToMianIpc } from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
-import { TabWebView } from './webView/tab';
+import { LlmConfig, ToMianIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
+import { TabWebView } from './webView/tab';
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const webViewTabsById = new Map<number, TabWebView>();
 
   const PADDING = 12;
-  const DEFAULT_TABBAR_HEIGHT = 56;
+  const DEFAULT_TABBAR_HEIGHT = 112;
   const DEFAULT_SIDEBAR_WIDTH = 430;
   const DEFAULT_DEVTOOLS_WIDTH = 360;
 
@@ -108,7 +107,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
       event.frameId,
     );
     const bounds = detail.bounds ?? getSafeBounds();
-    const wvTab = new TabWebView(detail.url, bounds);
+    const wvTab = new TabWebView(detail.url, bounds, mainWindow);
     const frameId = wvTab.webView.webContents.id;
     webViewTabsById.set(frameId, wvTab);
     mainWindow?.contentView.addChildView(wvTab.webView);
