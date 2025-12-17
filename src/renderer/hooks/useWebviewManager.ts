@@ -31,19 +31,10 @@ const computeBounds = (
  * - Responding to window resize events
  */
 export const useWebviewManager = () => {
-  const {
-    sidebarWidth,
-    collapsedWidth,
-    tabbarHeight,
-    isSidebarOpen,
-  } = useLayoutStore();
-  const {
-    tabs,
-    activeTabId,
-    frameMap,
-    registerFrameId,
-    removeFrameId,
-  } = useTabStore();
+  const { sidebarWidth, collapsedWidth, tabbarHeight, isSidebarOpen } =
+    useLayoutStore();
+  const { tabs, activeTabId, frameMap, registerFrameId, removeFrameId } =
+    useTabStore();
 
   useEffect(() => {
     // Early return if webview bridge is not ready
@@ -80,7 +71,7 @@ export const useWebviewManager = () => {
       // Create missing webviews and layout all existing ones
       const layoutTasks = tabs.map(async (tab) => {
         let frameId = frameMap.get(tab.id);
-        
+
         // Create new webview if it doesn't exist
         if (!frameId) {
           frameId = await webviewService.createTab({
@@ -90,7 +81,7 @@ export const useWebviewManager = () => {
           if (!frameId) return;
           registerFrameId(tab.id, frameId);
         }
-        
+
         // Layout the webview (show active, hide inactive)
         const isActive = activeTabId === tab.id;
         await webviewService.layoutTab({
@@ -107,7 +98,7 @@ export const useWebviewManager = () => {
     // Initial sync and setup resize listener
     syncTabs();
     window.addEventListener('resize', syncTabs);
-    
+
     return () => {
       window.removeEventListener('resize', syncTabs);
     };
@@ -123,4 +114,3 @@ export const useWebviewManager = () => {
     tabs,
   ]);
 };
-

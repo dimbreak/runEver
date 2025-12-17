@@ -1,12 +1,6 @@
 import { useEffect } from 'react';
 import { useTabStore, WebTab } from '../state/tabStore';
 
-/**
- * Custom hook to manage IPC communication between main and renderer process.
- * Handles two main IPC channels:
- * 1. 'open-new-tab' - Creates a new tab when requested from main process
- * 2. 'tab-title-updated' - Updates tab title and URL when webview navigates
- */
 export const useIpcListeners = () => {
   const { addTab, frameMap, updateTabTitle, updateTabUrl } = useTabStore();
 
@@ -47,7 +41,10 @@ export const useIpcListeners = () => {
 
     // Subscribe to both IPC events
     const unsubscribeNewTab = ipc.on('open-new-tab', handleOpenNewTab);
-    const unsubscribeTitleUpdate = ipc.on('tab-title-updated', handleTitleUpdate);
+    const unsubscribeTitleUpdate = ipc.on(
+      'tab-title-updated',
+      handleTitleUpdate,
+    );
 
     // Cleanup both subscriptions on unmount
     return () => {
@@ -56,4 +53,3 @@ export const useIpcListeners = () => {
     };
   }, [addTab, frameMap, updateTabTitle, updateTabUrl]);
 };
-
