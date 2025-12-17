@@ -1,14 +1,17 @@
 import { z } from 'zod';
+import { BrowserActionRisk } from './planner.schema';
+
+const WireWaitDomSchema = z.object({
+  t: z.union([z.literal('appear'), z.literal('disappear')]),
+  q: z.string(),
+});
 
 /** ---------------- WireWait ---------------- */
 export const WireWaitSchema = z.union([
   z.literal('idle0'),
   z.literal('idle2'),
   z.number(),
-  z.object({
-    t: z.union([z.literal('appear'), z.literal('disappear')]),
-    q: z.string(),
-  }),
+  WireWaitDomSchema,
 ]);
 
 /** ---------------- WireAction (base) ---------------- */
@@ -150,5 +153,9 @@ export const ExecutorLlmResultSchema = z.object({
 /** (Optional) inferred TS types */
 export type WireWait = z.infer<typeof WireWaitSchema>;
 export type WireAction = z.infer<typeof WireActionSchema>;
+export type WireActionWithWaitAndRisk = z.infer<
+  typeof WireActionWithWaitSchema
+> & { risk: BrowserActionRisk };
 
 export type ExecutorLlmResult = z.infer<typeof ExecutorLlmResultSchema>;
+export type WireWaitDom = z.infer<typeof WireWaitDomSchema>;

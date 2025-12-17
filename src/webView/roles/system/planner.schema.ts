@@ -14,4 +14,5 @@ export const PlannerResultSchema = z.object({
 });
 
 export type PlannerResult = z.infer<typeof PlannerResultSchema>;
+export type PlannerStep = z.infer<typeof PlannerStepSchema>;
 export type BrowserActionRisk = z.infer<typeof BrowserActionRiskSchema>;

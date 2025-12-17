@@ -1,21 +1,12 @@
-import {
-  BrowserWindow,
-  clipboard,
-  ipcMain,
-  MouseInputEvent,
-} from 'electron';
+import { BrowserWindow, clipboard, ipcMain, MouseInputEvent } from 'electron';
 import settings from 'electron-settings';
-import {
-  LlmConfig,
-  MouseWheelScrollInputEvent,
-  ToMainIpc,
-} from '../contracts/toMain';
+import { ToMainIpc } from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
-import { LlmConfig, ToMianIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
 import { TabWebView } from './webView/tab';
-import { Util } from '../injection/util';
+import { Util } from '../webView/util';
+import { LlmApi } from './llm/api';
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const isMac = process.platform === 'darwin';
@@ -65,7 +56,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     if (wvTab) {
       wvTab.frameIds.add(event.frameId);
       wvTab.webView.webContents.executeJavaScript(
-        'window.runEverDummyCursor = document.getElementById("runEver-dummy-cursor");',
+        'window.electronDummyCursor = document.getElementById("runEver-dummy-cursor");',
       );
       if (arg.scrollAdjustment) {
         settings.setSync('scrollAdjustment', arg.scrollAdjustment);
@@ -173,7 +164,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   ToMainIpc.getLlmConfig.handle(async (event, frameId) => {
     const loadedConfig = settings.getSync('llmConfig');
     if (loadedConfig) {
-      return loadedConfig as LlmConfig;
+      return loadedConfig as LlmApi.LlmConfig;
     }
     // const configFromUser = await askUserInput('LLM config', {
     //   'LLM provider': { type: 'select', options: ['OpenAI'] },
@@ -184,7 +175,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     //   key: configFromUser['LLM api key'],
     // };
 
-    const llmConfig: LlmConfig = {
+    const llmConfig: LlmApi.LlmConfig = {
       api: process.env.LLM_API_PROVIDER as 'openai',
       key: process.env.LLM_API_KEY as string,
     };
@@ -218,20 +209,13 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         if (ev.delayMs) {
           await Util.sleep(ev.delayMs);
         }
+        wc.sendInputEvent(ev);
         if (ev.type === 'mouseMove') {
-          wc.sendInputEvent(ev);
           await wc.executeJavaScript(
-            `window.runEverDummyCursor.style.left = ${ev.x} + 'px';
-window.runEverDummyCursor.style.top = ${ev.y} + 'px';`,
+            `window.electronDummyCursor.style.left = ${ev.x} + 'px';
+window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
           );
           mv = ev as MouseInputEvent;
-        } else if (
-          ev.type === 'mouseWheel' &&
-          typeof (ev as MouseWheelScrollInputEvent).scrollEl === 'string'
-        ) {
-          wc.sendInputEvent(ev);
-        } else {
-          wc.sendInputEvent(ev);
         }
       }
       if (mv) {
@@ -308,22 +292,22 @@ window.runEverDummyCursor.style.top = ${ev.y} + 'px';`,
     }
     return false;
   });
-  ToMainIpc.setActions.handle(async (event, arg) => {
-    console.log('Set actions:', arg);
-    const { frameId, actions, args } = arg;
+  ToMainIpc.actionDone.handle(async (event, arg) => {
+    console.log('Pop actions:', arg);
+    const { frameId, actionId, argsDelta } = arg;
     const wvTab = webViewTabsById.get(frameId);
     if (wvTab) {
-      await wvTab.setActions(actions, args);
+      wvTab.actionDone(actionId, argsDelta);
       return true;
     }
     return false;
   });
-  ToMainIpc.popAction.handle((event, arg) => {
+  ToMainIpc.actionError.handle(async (event, arg) => {
     console.log('Pop actions:', arg);
-    const { frameId, completed, args } = arg;
+    const { frameId, actionId, error } = arg;
     const wvTab = webViewTabsById.get(frameId);
     if (wvTab) {
-      wvTab.popAction(args, completed);
+      wvTab.actionError(error, actionId);
       return true;
     }
     return false;

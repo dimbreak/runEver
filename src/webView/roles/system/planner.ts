@@ -1,11 +1,11 @@
 import { Role } from '../role';
 import { PlannerResult, PlannerResultSchema } from './planner.schema';
-import { Session } from '../session';
+import { LlmSession } from '../llmSession';
 
 export class Planner extends Role<PlannerResult> {
   systemPrompt = ``;
 
-  newSession(): Session<PlannerResult> {
+  newSession(): LlmSession<PlannerResult> {
     this.systemPrompt = this.buildSystemPrompt({});
     return super.newSession();
   }

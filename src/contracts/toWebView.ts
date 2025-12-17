@@ -1,5 +1,5 @@
 import { IcpRendererContract, IpcWebViewContract } from './ipc';
-import { LlmModelType, ReasoningEffort } from '../injection/llm';
+import { LlmModelType, ReasoningEffort } from '../webView/llm';
 
 export const ToWebView = {
   RunPrompt: new IpcWebViewContract<
@@ -13,6 +13,7 @@ export const ToWebView = {
         modelType?: LlmModelType;
         requestId: number;
         stream?: boolean;
+        args?: Record<string, string>;
       },
     ],
     { response: any }

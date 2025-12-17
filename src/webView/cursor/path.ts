@@ -12,9 +12,13 @@ type HumanMoveOpts = {
 
 function mulberry32(seed: number) {
   return function () {
+    // eslint-disable-next-line no-multi-assign,no-param-reassign
     let t = (seed += 0x6d2b79f5);
+    // eslint-disable-next-line no-bitwise
     t = Math.imul(t ^ (t >>> 15), t | 1);
+    // eslint-disable-next-line no-bitwise
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    // eslint-disable-next-line no-bitwise
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
@@ -173,9 +177,9 @@ export function buildHumanCursorPath(
   }
 
   // finalize: integer pixels
-  const finalPoints = points.map((p) => ({
-    x: Math.round(p.x),
-    y: Math.round(p.y),
+  const finalPoints = points.map((pt) => ({
+    x: Math.round(pt.x),
+    y: Math.round(pt.y),
   }));
   const finalTimes = times.map((t) => Math.max(0, t));
 

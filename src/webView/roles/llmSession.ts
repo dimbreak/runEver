@@ -5,7 +5,7 @@ const promptedCache: Record<string, string> = JSON.parse(
   localStorage.getItem('runEver_prompt_cache') ?? '{}',
 );
 
-export class Session<R> {
+export class LlmSession<R> {
   systemPrompt: string;
   promptRunner: ReturnType<typeof queryLLMSession>;
   conversations: ([string] | [string, string])[] = [];

@@ -99,6 +99,7 @@ export const getDeltaHtml = () => {
     let thisEl: Element | null = el;
     const { body } = document;
     while (thisEl && thisEl !== body) {
+      // eslint-disable-next-line no-loop-func
       if (addedEls.find((addedEl) => addedEl === thisEl)) return true;
       thisEl = el.parentElement;
     }

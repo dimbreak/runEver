@@ -1,12 +1,21 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import { ToMainIpc } from '../../contracts/toMain';
-import { ToWebView } from '../../contracts/toWebView';
-import { defaultExecutor, defaultPlanner } from '../../injection/roles/default';
-import { OCRModel } from '../../injection/ocr';
-import { dummyCursor } from '../../injection/cursor/cursor';
-import { BrowserActions } from '../../injection/actions';
-import { Util } from '../../injection/util';
-import { replaceJsTpl } from '../../injection/selector';
+import { ToMainIpc } from '../contracts/toMain';
+import { ToWebView } from '../contracts/toWebView';
+import { defaultExecutor, defaultPlanner } from './roles/default';
+import { OCRModel } from './ocr';
+import { dummyCursor } from './cursor/cursor';
+import { BrowserActions } from './actions';
+import { Util } from './util';
+import { Network } from './network';
+import { PlannerStep } from './roles/system/planner.schema';
+import { LlmSession } from './roles/llmSession';
+import {
+  ExecutorLlmResult,
+  WireActionWithWaitAndRisk,
+} from './roles/system/executor.schema';
+import { getDeltaHtml, getHtml } from './html';
+
+Network.initMonitor();
 
 const electronHandler = {
   ipcRenderer: {
@@ -38,38 +47,31 @@ const electronHandler = {
   },
 };
 
+const webViewHandler = {
+  getHtml() {
+    return getHtml();
+  },
+  getDeltaHtml() {
+    return getDeltaHtml();
+  },
+  getOcr(fullPage = false) {
+    return OCRModel.getFromScreenshot(fullPage);
+  },
+  execActions(
+    actions: WireActionWithWaitAndRisk[],
+    args: Record<string, string>,
+  ) {
+    return BrowserActions.execActions(actions, args);
+  },
+};
+
 contextBridge.exposeInMainWorld('electron', electronHandler);
+contextBridge.exposeInMainWorld('webView', electronHandler);
 
 window.electron = electronHandler;
+window.webView = webViewHandler;
 
-const testScrollAdjustment = async (frameId: number) => {
-  return new Promise<number>(async (resolve) => {
-    const { scrollX, scrollY } = window;
-    const scrollHandler = (e: WheelEvent) => {
-      if (e.deltaY === -1 && e.deltaX === -1) {
-        resolve(-1);
-      } else {
-        resolve(1);
-      }
-      window.scrollTo(scrollX, scrollY);
-      window.removeEventListener('wheel', scrollHandler);
-    };
-    window.addEventListener('wheel', scrollHandler);
-    await ToMainIpc.dispatchEvents.invoke({
-      frameId,
-      events: [
-        {
-          type: 'mouseWheel',
-          deltaX: 1,
-          deltaY: 1,
-          x: 0,
-          y: 0,
-          scrollEl: '',
-        },
-      ],
-    });
-  });
-};
+export type WebViewHandler = typeof webViewHandler;
 
 window.onload = async () => {
   const handleFrameId = async (event: MessageEvent) => {
@@ -78,7 +80,7 @@ window.onload = async () => {
       dummyCursor.init(event.data.mouseX, event.data.mouseY);
       let scrollAdjustment: number | undefined;
       if (event.data.scrollAdjustment === 0) {
-        scrollAdjustment = await testScrollAdjustment(event.data.frameId);
+        scrollAdjustment = await Util.testScrollAdjustment(event.data.frameId);
       }
       Util.scrollAdjustmentLock.unlock(
         scrollAdjustment ?? event.data.scrollAdjustment,
@@ -90,35 +92,38 @@ window.onload = async () => {
       console.log('Setting in preload:', event.data);
 
       window.removeEventListener('message', handleFrameId);
-      if (
-        event.data.actions &&
-        Array.isArray(event.data.actions) &&
-        event.data.actions.length
-      ) {
-        console.log('Got actions from main:', event.data.actions);
-        BrowserActions.runSet(
-          event.data.actions,
-          event.data.actionArgs ?? {},
-          true,
-        );
-      } else if (window.location.href === 'https://www.google.com/') {
+      if (window.location.href === 'https://www.google.com/') {
+        await Network.networkIdle2;
         setTimeout(() => {
-          BrowserActions.runSet(
+          BrowserActions.execActions(
             [
-              { k: 'input', v: '${args.keyword}', q: 'textarea' },
+              {
+                k: 'input',
+                // eslint-disable-next-line no-template-curly-in-string
+                v: '${args.keyword}',
+                q: 'textarea',
+                risk: 'l',
+                id: 0,
+              },
               {
                 k: 'key',
                 key: 'Enter',
                 q: 'textarea',
                 a: 'keyPress',
+                risk: 'l',
+                id: 1,
               },
               {
                 k: 'mouse',
+                // eslint-disable-next-line no-template-curly-in-string
                 q: 'a.zReHs:html_contains(${args.website})',
                 a: 'click',
+                risk: 'l',
+                w: 'idle0',
+                id: 2,
               },
             ],
-            { keyword: 'openai', website: 'Wikipedia' },
+            { keyword: 'openai', website: 'LinkedIn' },
           );
         }, 2000);
       }
@@ -154,10 +159,35 @@ ${req.prompt}`);
         JSON.stringify(plannerCache),
       );
     }
-
     const executorSession = defaultExecutor.newSession();
-    const executorRes = await executorSession.newPrompt(`[steps]
-${plannerRes.steps
+
+    const args = req.args ?? {};
+
+    while (true) {
+      if (plannerRes.steps.length) {
+        await runExecutor(executorSession, plannerRes.steps, args);
+      }
+      if (plannerRes.todo) {
+      }
+    }
+
+    return {
+      response: 1,
+    };
+  });
+
+  // await new Promise((resolve) => setTimeout(resolve, 1000));
+  // const ocrRes = await OCRModel.getFromScreenshot();
+  // console.log('OCR preload screenshot response:', ocrRes);
+};
+
+const runExecutor = async (
+  executorSession: LlmSession<ExecutorLlmResult>,
+  steps: PlannerStep[],
+  args: Record<string, any>,
+) => {
+  const executorRes = await executorSession.newPrompt(`[steps]
+${steps
   .map((step) => {
     switch (step.risk) {
       case 'h':
@@ -170,14 +200,15 @@ ${plannerRes.steps
   })
   .join('\n')}`);
 
-    console.log('Executor preload response:', executorRes);
-
-    return {
-      response: executorRes,
-    };
-  });
-
-  // await new Promise((resolve) => setTimeout(resolve, 1000));
-  // const ocrRes = await OCRModel.getFromScreenshot();
-  // console.log('OCR preload screenshot response:', ocrRes);
+  if (executorRes.a.length && executorRes.a.length <= steps.length) {
+    await BrowserActions.execActions(
+      executorRes.a.map((action, i) => ({
+        ...action,
+        risk: steps[i].risk,
+        id: 0,
+      })),
+      args ?? {},
+    );
+  }
+  console.log('Executor preload response:', executorRes);
 };

@@ -1,19 +1,23 @@
-import { getHtml } from '../../html';
+import { WebContents } from 'electron';
 import {
   type ExecutorLlmResult,
   ExecutorLlmResultSchema,
 } from './executor.schema';
-import { Role } from '../role';
-import { Session } from '../session';
+import { LlmApi } from '../../api';
+import { PlannerStep } from './planner.schema';
 
-export class Executor extends Role<ExecutorLlmResult> {
-  newSession(): Session<ExecutorLlmResult> {
-    this.systemPrompt = this.buildSystemPrompt();
-    return super.newSession(this.promptTransformer());
+export class ExeSession {
+  runner: Promise<ReturnType<typeof LlmApi.queryLLMSession>>;
+  constructor(private webContents: WebContents) {
+    this.runner = new Promise(async (resolve) => {
+      resolve(LlmApi.queryLLMSession(await this.buildSystemPrompt()));
+    });
   }
-
-  promptTransformer(args: Record<string, string> = {}) {
-    return (prompt: string) => `
+  async execSteps(
+    steps: PlannerStep[],
+    args: Record<string, string> = {},
+  ): Promise<ExecutorLlmResult> {
+    const runPrompt = `
 [url] 
 ${window.location.href} 
 
@@ -29,10 +33,26 @@ ${Object.keys(args)
     : ''
 }
 
-${prompt}`;
+[steps]
+${steps
+  .map((step) => {
+    switch (step.risk) {
+      case 'h':
+        return `-BE CAREFUL high risk: ${step.action}`;
+      case 'm':
+        return `-medium risk: ${step.action}`;
+      default:
+        return `-${step.action}`;
+    }
+  })
+  .join('\n')}`;
+    const stream = (await this.runner)(runPrompt);
+    return ExecutorLlmResultSchema.parse(
+      JSON.parse(await LlmApi.wrapStream(stream)),
+    );
   }
 
-  buildSystemPrompt() {
+  async buildSystemPrompt() {
     return `[system]
 a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.
 
@@ -153,7 +173,13 @@ make the action dynamic by using argument keys, try using '$args:'+key to refer 
 try the possible action first, then ends with followup WireAction tell what is missed in afterPromptContext to Planner to reconsider.
 
 [customised html]
-${getHtml()}`;
+${await this.webContents.executeJavaScript('window.webView.getHtml()')}`;
+  }
+}
+
+export class Executor {
+  newExeSession(webContents: WebContents): ExeSession {
+    return new ExeSession(webContents);
   }
 
   parseLLMResult(result: string): ExecutorLlmResult {

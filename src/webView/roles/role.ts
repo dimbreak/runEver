@@ -1,10 +1,10 @@
-import { Session } from './session';
+import { LlmSession } from './llmSession';
 
 export abstract class Role<R = any> {
   systemPrompt!: string;
 
-  newSession(promptTransformer = defaultPromptTransformer): Session<R> {
-    return new Session(this, promptTransformer);
+  newSession(promptTransformer = defaultPromptTransformer): LlmSession<R> {
+    return new LlmSession(this, promptTransformer);
   }
 
   abstract parseLLMResult(result: string): R;

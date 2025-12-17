@@ -5,6 +5,7 @@ export const querySelectAll = (
   args: Record<string, string> = {},
   root: HTMLElement = document.body,
 ) => {
+  console.log('querySelectAll', selector, args, root);
   if (selector.includes(':html_contains(')) {
     const matches = findAllHtmlContains(selector);
     let toSplit = selector;
@@ -25,11 +26,11 @@ export const querySelectAll = (
       }
       if (quoteRx.test(search)) search = search.slice(1, -1);
 
-      console.log('elements', elements, search, args);
       elements = elements.filter((element) => {
         return element.innerHTML.includes(search);
       });
     });
+    console.log('elements', elements, matches, args);
     return elements;
   }
   let querySelector = selector;

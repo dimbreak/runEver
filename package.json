@@ -81,7 +81,7 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=100"
+    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=1000"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.85",

@@ -37,7 +37,7 @@ class DummyCursor {
     // svg by puppylinux https://github.com/puppylinux-woof-CE/puppy_icon_theme
     this.dom.innerHTML = `<svg width="20px" height="20px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" version="1.1"><path style="stroke:#111;stroke-width:4;fill:#ddd;" d="M 5,5 90,30 65,50 95,80 80,95 50,65 30,90 z"/></svg>`;
     document.body.appendChild(this.dom);
-    window.runEverDummyCursor = this.dom;
+    window.electronDummyCursor = this.dom;
   }
   async scrollTo(el: Element, rect?: DOMRect) {
     const { x, y } = rect ?? el.getBoundingClientRect();
@@ -87,7 +87,7 @@ class DummyCursor {
         deltaY: deltaY * scorllAdjust,
         x: this.x,
         y: this.y,
-        delayMs: 60 + Math.random() * 60,
+        delayMs: 1 + Math.random() * 50,
         scrollEl,
       });
       offsetY -= deltaY;
@@ -108,7 +108,16 @@ class DummyCursor {
   ) {
     const { x: clientX, y: clientY } = this;
     if (el) {
-      const rect = el.getBoundingClientRect();
+      let thisEl = el as HTMLElement;
+      if (thisEl instanceof HTMLElement) {
+        while (
+          thisEl.children.length &&
+          window.getComputedStyle(thisEl).display === 'inline'
+        ) {
+          thisEl = thisEl.children[0] as HTMLElement;
+        }
+      }
+      const rect = thisEl.getBoundingClientRect();
       const { x, y, width, height } = rect;
       if (
         clientX < x ||
@@ -116,7 +125,7 @@ class DummyCursor {
         clientY < y ||
         clientY > y + height
       ) {
-        await this.moveToEl(el, rect);
+        await this.moveToEl(thisEl, rect);
       }
     }
     let events: MouseInputEventWithDelay[] = [];

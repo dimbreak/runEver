@@ -1,8 +1,9 @@
 import { app, BrowserWindow, Rectangle, WebContentsView } from 'electron';
 import path from 'path';
 import settings from 'electron-settings';
-import { WireAction } from '../../injection/roles/system/executor.schema';
-import { Util } from '../../injection/util';
+import { WireActionWithWaitAndRisk } from '../../webView/roles/system/executor.schema';
+import { Network } from '../../webView/network';
+import { WebViewLlmSession } from './session';
 
 export class TabWebView {
   url: string;
@@ -14,14 +15,9 @@ export class TabWebView {
   mouseX: number = -1;
   mouseY: number = -1;
 
-  actionSet: WireAction[] = [];
-  actionSetArgs: Record<string, string> | undefined;
-  actionSetLock: { wait: Promise<void>; unlock: () => void } = {
-    wait: Promise.resolve(),
-    unlock: () => {},
-  };
-
   scrollAdjustment: number;
+
+  llmSession: WebViewLlmSession;
 
   constructor(
     public initUrl: string,
@@ -40,50 +36,91 @@ export class TabWebView {
     this.scrollAdjustment =
       (settings.getSync('scrollAdjustment') as number | null) ?? 0;
     this.initView();
+    this.llmSession = new WebViewLlmSession(this);
   }
 
-  async setActions(actions: WireAction[], args: Record<string, string>) {
-    await this.actionSetLock.wait;
-    this.actionSet = actions;
-    this.actionSetArgs = args;
-    if (actions.length) {
-      this.actionSetLock = Util.newLock();
-    }
+  async pushActions() {
+    this.webView.webContents.executeJavaScript(
+      `window.webView.addActions(${JSON.stringify(this.llmSession.getRemainActions())}, ${JSON.stringify(this.llmSession.args)})`,
+    );
   }
 
-  popAction(args: Record<string, string>, count = 1) {
-    this.actionSet.splice(0, count);
-    this.actionSetArgs = args;
-    if (this.actionSet.length === 0) {
-      this.actionSetLock.unlock();
-    }
+  actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
+    this.llmSession.actionDone(actionId, argsDelta);
+  }
+
+  actionError(error: string, actionId: number) {
+    this.llmSession.actionError(actionId, error);
   }
 
   initView() {
-    const { webView } = this;
-    const frameId = webView.webContents.id;
+    const {
+      webView: { webContents },
+    } = this;
+    const frameId = webContents.id;
     this.frameIds.add(frameId);
-    webView.webContents.on('did-frame-navigate', () => {
-      webView.webContents.executeJavaScript(
-        `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}${this.actionSet.length ? `, actionArgs: ${JSON.stringify(this.actionSetArgs ?? {})}, actions: ${JSON.stringify(this.actionSet)}` : ''}})`,
+    let inflight = new Set<string>();
+    webContents.on('did-frame-navigate', () => {
+      inflight = new Set<string>();
+      webContents.executeJavaScript(
+        `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
       );
+      if (this.llmSession.actions.length) {
+        this.pushActions();
+      }
     });
-    webView.webContents.on('page-title-updated', (_event, title) => {
-      const currentUrl = webView.webContents.getURL();
+    webContents.on('page-title-updated', (_event, title) => {
+      const currentUrl = webContents.getURL();
       this.mainWindow?.webContents.send('tab-title-updated', {
         frameId,
         title,
         url: currentUrl,
       });
     });
-    webView.webContents.setWindowOpenHandler(({ url }) => {
+    webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {
         this.mainWindow.webContents.send('open-new-tab', { url });
       }
       return { action: 'deny' };
     });
-    webView.setBounds(this.bounds);
-    webView.webContents.loadURL(this.url);
-    webView.webContents.openDevTools();
+    this.webView.setBounds(this.bounds);
+    webContents.loadURL(this.url);
+    webContents.openDevTools();
+    webContents.debugger.attach('1.3');
+
+    webContents.debugger
+      .sendCommand('Network.enable')
+      .then(() => {
+        const idle2Timer: NodeJS.Timeout | null = null;
+        const idle0Timer: NodeJS.Timeout | null = null;
+
+        webContents.debugger.on('message', (_event, method, params) => {
+          if (method === 'Network.requestWillBeSent') {
+            if (Network.networkRequestFilter(params.request.url, params.type)) {
+              inflight.add(params.requestId);
+              if (inflight.size === 1) {
+                if (idle2Timer) clearTimeout(idle2Timer);
+                if (idle0Timer) clearTimeout(idle0Timer);
+              }
+            } else {
+              return;
+            }
+          } else if (
+            !(
+              method === 'Network.loadingFinished' ||
+              method === 'Network.loadingFailed'
+            ) ||
+            !inflight.delete(params.requestId)
+          ) {
+            return;
+          }
+          if (inflight.size < 4) {
+            webContents.executeJavaScript(
+              `window.postMessage({network: {inflight: ${inflight.size}}})`,
+            );
+          }
+        });
+      })
+      .catch(console.error);
   }
 }

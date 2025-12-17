@@ -1,9 +1,14 @@
-import { WireAction } from './roles/system/executor.schema';
+import {
+  WireAction,
+  WireActionWithWaitAndRisk,
+  WireWaitDom,
+} from './roles/system/executor.schema';
 import { querySelectAll, replaceJsTpl } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import { ToMainIpc } from '../contracts/toMain';
 import { BrowserActionRisk } from './roles/system/planner.schema';
 import { Util } from './util';
+import { Network } from './network';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -28,65 +33,172 @@ const TypingDelayMsHalf = 60;
 
 const SAFE_KEYPRESS_RE = /^[a-zA-Z0-9 `~!@#$%^&*()\-_=+[\]{};:'",.<>/?]*$/;
 
+const DEFAULT_TIMEOUT_MS = 10000;
+
 export namespace BrowserActions {
-  export const runSet = async (
-    actions: WireAction[],
+  export const ErrWaitTimeout = new Error('Run action wait timeout');
+  let runningActionSet: WireActionWithWaitAndRisk[] | null = null;
+  export const execActions = async (
+    actions: WireActionWithWaitAndRisk[],
     args: Record<string, string>,
-    isContinue = false,
   ) => {
-    if (!isContinue) {
-      await ToMainIpc.setActions.invoke({
-        frameId: window.frameId!,
-        actions,
-        args,
-      });
+    if (runningActionSet?.length) {
+      runningActionSet.push(...actions);
+    } else {
+      runningActionSet = actions;
     }
     let canContinue = true;
-    const popAction = async () =>
-      ToMainIpc.popAction.invoke({
+    let lastPopedActionId = -1;
+    const popAction = async (
+      actionId: number,
+      argsDelta?: Record<string, string>,
+    ) => {
+      if (lastPopedActionId === actionId) return;
+      lastPopedActionId = actionId;
+      return ToMainIpc.actionDone.invoke({
         frameId: window.frameId!,
-        completed: 1,
-        args,
+        actionId,
+        argsDelta,
       });
-    const onbeforeunload = () => {
-      canContinue = false;
-      popAction();
     };
-    for (const action of actions) {
+    const onbeforeunload = (i: number) => () => {
+      canContinue = false;
+      popAction(i);
+    };
+    let action: WireActionWithWaitAndRisk;
+    const checkDomDisappear = async (selector: string) => {
+      let el = document.querySelector(selector);
+      while (true) {
+        if (
+          !el ||
+          el.getBoundingClientRect().height === 0 ||
+          window.getComputedStyle(el).opacity === '0'
+        ) {
+          return;
+        }
+        await Util.sleep(100);
+        el = document.querySelector(selector);
+      }
+    };
+    const checkDomAppear = async (selector: string) => {
+      let el = document.querySelector(selector);
+      while (true) {
+        if (
+          el &&
+          el.getBoundingClientRect().height > 0 &&
+          window.getComputedStyle(el).opacity !== '0'
+        ) {
+          return;
+        }
+        await Util.sleep(100);
+        if (!el) {
+          el = document.querySelector(selector);
+        }
+      }
+    };
+    let argsDelta: Record<string, string> | undefined;
+    for (let i = 0, c = actions.length; i < c; i++) {
       if (!canContinue) {
         console.log('actions not continue');
         break;
       }
+      action = actions[i];
+      argsDelta = undefined;
       console.log('actions continue', action);
-      window.onbeforeunload = onbeforeunload;
-      switch (action.k) {
-        case 'url':
-          await navigate(action, 'l', args);
-          break;
-        case 'dragAndDrop':
-          await dragAndDrop(action, 'l', args);
-          break;
-        case 'scroll':
-          await scroll(action, 'l', args);
-          break;
-        case 'focus':
-          await focus(action, 'l', args);
-          break;
-        case 'input':
-          await input(action, 'l', args);
-          break;
-        case 'key':
-          await key(action, 'l', args);
-          break;
-        case 'mouse':
-          await mouse(action, 'l', args);
-          break;
-        default:
-          console.warn('Unknown action', action);
+      try {
+        if (action.w) {
+          let waitPromise;
+          switch (typeof action.w) {
+            case 'number':
+              await Util.sleep(action.w);
+              break;
+            case 'string':
+              if (action.w === 'idle0') {
+                waitPromise = Network.networkIdle0.wait;
+              } else if (action.w === 'idle2') {
+                waitPromise = Network.networkIdle2.wait;
+              }
+              break;
+            case 'object': {
+              const wait = action.w as WireWaitDom;
+              waitPromise =
+                wait.t === 'appear'
+                  ? checkDomAppear(wait.q)
+                  : checkDomDisappear(wait.q);
+            }
+            default:
+              throw new Error('Unknown wait type');
+          }
+          console.log('wait', action.w, waitPromise);
+          if (
+            waitPromise &&
+            (await Util.awaitWithTimeout(
+              waitPromise,
+              action.to ?? DEFAULT_TIMEOUT_MS,
+            )) === Util.WaitTimeout
+          ) {
+            throw ErrWaitTimeout;
+          }
+        }
+        window.onbeforeunload = onbeforeunload(action.id);
+        switch (action.k) {
+          case 'url':
+            await navigate(action, action.risk, args);
+            break;
+          case 'dragAndDrop':
+            await dragAndDrop(action, action.risk, args);
+            break;
+          case 'scroll':
+            await scroll(action, action.risk, args);
+            break;
+          case 'focus':
+            await focus(action, action.risk, args);
+            break;
+          case 'input':
+            await input(action, action.risk, args);
+            break;
+          case 'key':
+            await key(action, action.risk, args);
+            break;
+          case 'mouse':
+            await mouse(action, action.risk, args);
+            break;
+          case 'setArgument': {
+            const { v } = action;
+            if (!v && action.rc) {
+              const el = getElement(action.rc, action.risk, args);
+              if (!action.attr) {
+                args[action.a] = el.textContent ?? '';
+              } else {
+                args[action.a] = el.getAttribute(action.attr) ?? '';
+              }
+            } else {
+              args[action.a] = v ?? '';
+            }
+            argsDelta = { [action.a]: args[action.a] };
+            console.log('setArgument', action, args[action.a]);
+          }
+          case 'setCtx':
+            // todo
+            break;
+          default:
+            console.warn('Unknown action', action);
+        }
+        window.onbeforeunload = null;
+        await popAction(action.id, argsDelta);
+      } catch (e) {
+        await ToMainIpc.actionError.invoke({
+          frameId: window.frameId!,
+          actionId: action.id,
+          error:
+            e instanceof Error
+              ? `${e.message}: ${JSON.stringify(e)}`
+              : JSON.stringify(e),
+        });
+        canContinue = false;
       }
-      window.onbeforeunload = null;
-      await popAction();
-      await Util.sleep(100);
+
+      c = actions.length;
     }
   };
   export const navigate = async (

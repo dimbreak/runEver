@@ -5,9 +5,9 @@ import type {
   KeyboardInputEvent,
 } from 'electron';
 import { IpcMainContract } from './ipc';
-import { WireAction } from '../injection/roles/system/executor.schema';
+import { WireAction } from '../webView/roles/system/executor.schema';
+import { LlmApi } from '../main/llm/api';
 
-export type LlmConfig = { error?: string; api: 'openai'; key: string };
 export type MouseWheelScrollInputEvent = MouseWheelInputEvent & {
   scrollEl: string;
 };
@@ -57,7 +57,7 @@ export namespace ToMainIpc {
   >('take-screenshot');
   export const getLlmConfig = new IpcMainContract<
     [number], // frameId
-    LlmConfig
+    LlmApi.LlmConfig
   >('get-llm-config');
   export const responsePromptInput = new IpcMainContract<
     [{ answer: Record<string, string>; id: number }],
@@ -81,24 +81,24 @@ export namespace ToMainIpc {
     ],
     boolean
   >('paste-input');
-  export const setActions = new IpcMainContract<
+  export const actionDone = new IpcMainContract<
     [
       {
         frameId: number;
-        actions: WireAction[];
-        args: Record<string, string>;
+        actionId: number;
+        argsDelta?: Record<string, string>;
       },
     ],
     boolean
-  >('set-actions');
-  export const popAction = new IpcMainContract<
+  >('action-done');
+  export const actionError = new IpcMainContract<
     [
       {
         frameId: number;
-        completed?: number;
-        args: Record<string, string>;
+        actionId: number;
+        error: string;
       },
     ],
     boolean
-  >('pop-action');
+  >('action-error');
 }
