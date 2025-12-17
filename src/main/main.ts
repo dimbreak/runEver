@@ -20,7 +20,6 @@ import { resolveHtmlPath } from './util';
 
 configDotEnv();
 
-console.log('process.env.NODE_ENV', process.env);
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';

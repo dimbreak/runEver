@@ -1,5 +1,6 @@
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
+import { ToWebView } from '../../contracts/toWebView';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from './layoutStore';
 import { resolveInitialUrl } from '../utils/formatter';
@@ -10,6 +11,7 @@ export class WebTab {
   url: string;
   type: 'webview' = 'webview';
   isRunning?: boolean;
+  frameId: number = -1;
 
   constructor(init: {
     id: string;
@@ -21,6 +23,12 @@ export class WebTab {
     this.title = init.title;
     this.url = init.url;
     this.isRunning = init.isRunning;
+  }
+  async runPrompt(prompt: string) {
+    return ToWebView.RunPrompt.invoke(this.frameId!, {
+      prompt,
+      requestId: 0,
+    });
   }
 }
 

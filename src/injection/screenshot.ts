@@ -1,4 +1,4 @@
-import { ToMianIpc } from '../contracts/toMain';
+import { ToMainIpc } from '../contracts/toMain';
 
 export const takeScreenshot = async (
   fullPage: boolean = true,
@@ -43,7 +43,7 @@ export const takeScreenshot = async (
     offsetY += vpHeight;
   }
 
-  const imgs = await ToMianIpc.takeScreenshot.invoke({
+  const imgs = await ToMainIpc.takeScreenshot.invoke({
     frameId: window.frameId ?? 0,
     ttlHeight,
     ttlWidth,

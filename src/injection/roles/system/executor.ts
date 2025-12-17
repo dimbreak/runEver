@@ -14,7 +14,7 @@ export class Executor extends Role<ExecutorLlmResult> {
 
   promptTransformer(args: Record<string, string> = {}) {
     return (prompt: string) => `
-[web url] 
+[url] 
 ${window.location.href} 
 
 [viewport] 
@@ -29,7 +29,6 @@ ${Object.keys(args)
     : ''
 }
 
-[task guide]
 ${prompt}`;
   }
 
@@ -44,6 +43,13 @@ you are an executor, working on task with web page. takes action guide and html 
 [task guide]
 each task given to you will contain a few steps.
 each step will has a atomic human browser interaction, compile them into browser actions to preform on the web page according to the data structure given.
+argument may be used for keeping result or reusing in other steps, use setArgument with v for absolute value or rc+attr for dynamic value.
+
+[dynamic action]
+when the task prompt asks to select element base on argument, you should try to make the query selector dynamic as javascript template string like \`#a[title='prefix \${args.linkTitle}\`'].
+if the dynamic selector requires html lookup, you may use custom built-in pseudo class :html_contains('text') to query the element.
+javascript string methods may apply to args in string template, like args.linkTitle.toLowerCase().replace(/\\s+/g, '-')
+string template with argument may also be use in other string value like input value or url path.
 
 [customised html rule]
 each tag has w=width, h=height hls=highlightStyle. 
@@ -54,12 +60,6 @@ use only the elements provided, don't guess.
 
 [response format]
 
-type SearchInSelector = {
-  q:string, // querySelector
-  f:string, // argument key to search
-  a?:string[], // search in attributes, default only in html
-}
-
 type WireWait =
   | 'idle0'            // networkIdle0
   | 'idle2'            // networkIdle2
@@ -69,35 +69,30 @@ type WireWait =
 type WireAction =
   {
       k: 'mouse';
-      a: 'click' | 'dblclick' | 'mouseover' | 'mousedown' | 'mouseup' | 'mouseout' | 'mouseenter' | 'mouseleave' | 'mousemove';
-      q: SearchInSelector|string;      // querySelector
+      a: 'click' | 'dblclick' | 'mouseover' | 'mouseDown' | 'mouseUp' | 'mouseenter' | 'mousemove';
+      q: string;      // querySelector
     }
   | {
       k: 'scroll';
       x?: number;
       y?: number;
-      ap?: string;    // rePromptContext after scroll
+      q: string;
     }
   | {
       k: 'focus';
-      q: SearchInSelector|string;
-      w?: WireWait;
-      to?: number;
+      q: string;
     }
   | {
-      k: 'blur';
-    }
-  | {
-      k: 'dnd';
-      sq: SearchInSelector|string;     // src QuerySelector
-      dq?: SearchInSelector|string;    // dst QuerySelector
+      k: 'dragAndDrop';
+      sq: string;     // src QuerySelector
+      dq?: string;    // dst QuerySelector
       mv?: { x: number; y: number } | null;
     }
   | {
       k: 'key';
       key: string;
-      a: 'keydown' | 'keyup' | 'keypress'; //always use press, unless required/need delay
-      q?: SearchInSelector|string;
+      a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press, unless required/need delay
+      q?: string;
       c?: boolean;    // ctrl
       al?: boolean;   // alt
       s?: boolean;    // shift
@@ -105,7 +100,7 @@ type WireAction =
     }
   | {
       k: 'input';
-      q: SearchInSelector|string;
+      q: string;
       v: string;      // input value
     }
   | {
@@ -126,16 +121,13 @@ type WireAction =
   | {
       k: 'setArgument';
       a: string; // argument key
-      v: string;
+      v?: string;
+      rc?: string;
+      attr?: string;
     }
   | {
       k: 'url';
       u: 'next' | 'forward' | 'reload' | string; // string is go to specific url
-    }
-  | {
-      k: 'requireFullHtml';
-      q: string;
-      rc: string;
     }
   | {
       k: 'followup';
@@ -158,8 +150,7 @@ try your best to make the action reusable without calling you again to speed up 
 make the action dynamic by using argument keys, try using '$args:'+key to refer them in v / SearchInSelector.f.
 
 [if blocked]
-try the possible action first, then ends with followup WireAction tell what is missed in afterPromptContext for retry.
-the engine will resend update status.
+try the possible action first, then ends with followup WireAction tell what is missed in afterPromptContext to Planner to reconsider.
 
 [customised html]
 ${getHtml()}`;

@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
-import { ToMianIpc } from '../../contracts/toMain';
+import { ToMainIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
+import { useTabStore } from '../state/tabStore';
 
 type Message = {
   id: number;
@@ -19,7 +20,9 @@ export const AgentPanel: React.FC = () => {
     collapsedWidth,
     tabbarHeight,
   } = useLayoutStore();
+  const { tabs, activeTabId } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+  const [messageInput, setMessageInput] = React.useState('');
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
@@ -44,6 +47,22 @@ export const AgentPanel: React.FC = () => {
       tag: 'Ready',
     },
   ]);
+
+  const handlePrompt = React.useCallback(async () => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: 'user',
+        text: messageInput,
+      },
+    ]);
+    console.log('send prompt:', messageInput);
+    const res = await tabs
+      .find((t) => t.id === activeTabId)
+      ?.runPrompt(messageInput);
+    console.log('prompt result', res);
+  }, [activeTabId, tabs, messageInput]);
 
   const handleCapture = async () => {
     try {
@@ -73,7 +92,7 @@ export const AgentPanel: React.FC = () => {
         slices: [{ x: 0, y: 0 }],
       };
 
-      const imgJpgs = await ToMianIpc.takeScreenshot.invoke(payload);
+      const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
       if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
         const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
         setMessages((prev) => [
@@ -116,7 +135,7 @@ export const AgentPanel: React.FC = () => {
       if (!lastFrameId) return;
       const width = isSidebarOpen ? sidebarWidth : collapsedWidth;
       try {
-        await ToMianIpc.operateTab.invoke({
+        await ToMainIpc.operateTab.invoke({
           id: lastFrameId,
           sidebarWidth: width,
           tabbarHeight,
@@ -222,10 +241,19 @@ export const AgentPanel: React.FC = () => {
               className="flex-1 min-h-[44px] max-h-28 resize-none border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
               placeholder="Describe what you want to automate..."
               rows={1}
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handlePrompt();
+                }
+              }}
             />
             <button
               type="button"
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1893ff] text-white shadow-lg shadow-sky-200/60 transition hover:bg-[#0d7fe6]"
+              onClick={handlePrompt}
             >
               <span className="text-sm font-bold">Go</span>
             </button>

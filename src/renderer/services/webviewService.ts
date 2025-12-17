@@ -1,5 +1,5 @@
 import type { Rectangle } from 'electron';
-import { ToMianIpc } from '../../contracts/toMain';
+import { ToMainIpc } from '../../contracts/toMain';
 
 type LayoutParams = {
   frameId?: number;
@@ -22,7 +22,7 @@ export const webviewService = {
   async createTab(params: { url: string; bounds?: Rectangle }) {
     if (!hasIpc()) return undefined;
     console.info('createTab', params?.url, params?.bounds);
-    const res = await ToMianIpc.createTab.invoke({
+    const res = await ToMainIpc.createTab.invoke({
       url: params.url,
       bounds: params.bounds,
     });
@@ -35,7 +35,7 @@ export const webviewService = {
     const { frameId, tabId } = params;
     if (!frameId && !tabId) return;
     console.info('layoutTab', frameId, tabId, params.bounds);
-    await ToMianIpc.operateTab.invoke({
+    await ToMainIpc.operateTab.invoke({
       id: frameId ?? -1,
       bounds: params.bounds,
       sidebarWidth: params.sidebarWidth,
@@ -51,7 +51,7 @@ export const webviewService = {
     const { frameId } = params;
     if (!frameId) return;
     console.info('closeTab', frameId);
-    await ToMianIpc.operateTab.invoke({
+    await ToMainIpc.operateTab.invoke({
       id: frameId ?? -1,
       close: true,
     });

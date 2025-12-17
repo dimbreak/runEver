@@ -1,12 +1,24 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import {
+  BrowserWindow,
+  clipboard,
+  ipcMain,
+  MouseInputEvent,
+} from 'electron';
 import settings from 'electron-settings';
+import {
+  LlmConfig,
+  MouseWheelScrollInputEvent,
+  ToMainIpc,
+} from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
 import { LlmConfig, ToMianIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
 import { TabWebView } from './webView/tab';
+import { Util } from '../injection/util';
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
+  const isMac = process.platform === 'darwin';
   const webViewTabsById = new Map<number, TabWebView>();
 
   const PADDING = 12;
@@ -45,30 +57,25 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   // };
 
   console.log('starting main process ipc-example');
-  ipcMain.handle('ocr-preload-loaded', async (event, arg) => {
-    const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-    console.log('handle', msgTemplate(arg), event.frameId);
-    return msgTemplate('ocr pong');
-  });
-
-  ipcMain.handle('ipc-example', async (event, arg) => {
-    const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-    console.log(msgTemplate(arg));
-    return msgTemplate('pong');
-  });
-
   initIpcMain(ipcMain, webViewTabsById);
 
-  ToMianIpc.bindFrameId.handle(async (event, arg) => {
+  ToMainIpc.bindFrameId.handle(async (event, arg) => {
     const wvTab = webViewTabsById.get(arg.id);
     console.log('bindFrameId in main process:', event.frameId, arg);
     if (wvTab) {
       wvTab.frameIds.add(event.frameId);
+      wvTab.webView.webContents.executeJavaScript(
+        'window.runEverDummyCursor = document.getElementById("runEver-dummy-cursor");',
+      );
+      if (arg.scrollAdjustment) {
+        settings.setSync('scrollAdjustment', arg.scrollAdjustment);
+        wvTab.scrollAdjustment = arg.scrollAdjustment;
+      }
     }
     return { error: 'Tab not found' };
   });
 
-  ToMianIpc.takeScreenshot.handle(async (event, arg) => {
+  ToMainIpc.takeScreenshot.handle(async (event, arg) => {
     const { slices, ttlWidth, vpWidth, ttlHeight, vpHeight, frameId } = arg;
     console.log('takeScreenshot in main process:', frameId);
     const wvTab = webViewTabsById.get(frameId);
@@ -99,7 +106,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { error: 'Tab not found' };
   });
 
-  ToMianIpc.createTab.handle(async (event, detail) => {
+  ToMainIpc.createTab.handle(async (event, detail) => {
     console.log(
       'Create tab request received in main process:',
       detail,
@@ -113,7 +120,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { id: frameId };
   });
 
-  ToMianIpc.operateTab.handle(async (event, detail) => {
+  ToMainIpc.operateTab.handle(async (event, detail) => {
     console.log(
       'Operate tab request received in main process:',
       detail,
@@ -163,7 +170,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { error: 'Tab not found' };
   });
 
-  ToMianIpc.getLlmConfig.handle(async (event, frameId) => {
+  ToMainIpc.getLlmConfig.handle(async (event, frameId) => {
     const loadedConfig = settings.getSync('llmConfig');
     if (loadedConfig) {
       return loadedConfig as LlmConfig;
@@ -191,12 +198,135 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     (v: Record<string, string> | PromiseLike<Record<string, string>>) => void
   > = {};
 
-  ToMianIpc.responsePromptInput.handle(async (event, arg) => {
+  ToMainIpc.responsePromptInput.handle(async (event, arg) => {
     const handler = userInputHandlers[arg.id];
     if (handler) {
       handler(arg.answer);
       delete userInputHandlers[arg.id];
     }
+  });
+
+  ToMainIpc.dispatchEvents.handle(async (event, arg) => {
+    const { frameId, events } = arg;
+    const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
+    if (wvTab) {
+      const wc = wvTab.webView.webContents;
+      wc.focus();
+      let mv: MouseInputEvent | undefined;
+      console.log('Dispatch events in main process:', arg);
+      for (const ev of events) {
+        if (ev.delayMs) {
+          await Util.sleep(ev.delayMs);
+        }
+        if (ev.type === 'mouseMove') {
+          wc.sendInputEvent(ev);
+          await wc.executeJavaScript(
+            `window.runEverDummyCursor.style.left = ${ev.x} + 'px';
+window.runEverDummyCursor.style.top = ${ev.y} + 'px';`,
+          );
+          mv = ev as MouseInputEvent;
+        } else if (
+          ev.type === 'mouseWheel' &&
+          typeof (ev as MouseWheelScrollInputEvent).scrollEl === 'string'
+        ) {
+          wc.sendInputEvent(ev);
+        } else {
+          wc.sendInputEvent(ev);
+        }
+      }
+      if (mv) {
+        wvTab.mouseX = mv.x;
+        wvTab.mouseY = mv.y;
+      }
+      return true;
+    }
+    console.warn('Failed Dispatch events in main process:', arg);
+    return false;
+  });
+
+  let clipboardLock: Promise<void> = Promise.resolve();
+
+  ToMainIpc.pasteInput.handle(async (event, arg) => {
+    console.log('Paste input:', arg);
+    const { frameId, input } = arg;
+    const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
+    if (wvTab) {
+      await clipboardLock;
+      clipboardLock = new Promise(async (resolve) => {
+        clipboard.writeText(input);
+        const wc = wvTab.webView.webContents;
+        wc.focus();
+        if (isMac) {
+          wc.sendInputEvent({
+            type: 'keyDown',
+            keyCode: 'Meta',
+          });
+          await Util.sleep(50 + Math.random() * 50);
+          wc.sendInputEvent({
+            type: 'keyDown',
+            keyCode: 'v',
+            modifiers: ['meta'],
+          });
+          await Util.sleep(150 + Math.random() * 150);
+          wc.sendInputEvent({
+            type: 'keyUp',
+            keyCode: 'v',
+            modifiers: ['meta'],
+          });
+          await Util.sleep(50 + Math.random() * 50);
+          wc.sendInputEvent({
+            type: 'keyUp',
+            keyCode: 'Meta',
+          });
+        } else {
+          wc.sendInputEvent({
+            type: 'keyDown',
+            keyCode: 'Control',
+          });
+          await Util.sleep(50 + Math.random() * 50);
+          wc.sendInputEvent({
+            type: 'keyDown',
+            keyCode: 'v',
+            modifiers: ['control'],
+          });
+          await Util.sleep(150 + Math.random() * 150);
+          wc.sendInputEvent({
+            type: 'keyUp',
+            keyCode: 'v',
+            modifiers: ['control'],
+          });
+          await Util.sleep(50 + Math.random() * 50);
+          wc.sendInputEvent({
+            type: 'keyUp',
+            keyCode: 'Control',
+          });
+        }
+        resolve();
+      });
+
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.setActions.handle(async (event, arg) => {
+    console.log('Set actions:', arg);
+    const { frameId, actions, args } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      await wvTab.setActions(actions, args);
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.popAction.handle((event, arg) => {
+    console.log('Pop actions:', arg);
+    const { frameId, completed, args } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.popAction(args, completed);
+      return true;
+    }
+    return false;
   });
 
   async function askUserInput<

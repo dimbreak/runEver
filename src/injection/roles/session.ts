@@ -33,12 +33,7 @@ export class Session<R> {
     const parts = [];
     for await (const part of stream) {
       console.log('part', Date.now() - startTs, part);
-      parts.push(part.part ?? '');
-      if (part.error) {
-        throw new Error(part.error);
-      } else if (part.eof) {
-        break;
-      }
+      parts.push(part ?? '');
     }
     const resp = parts.join('');
     promptedCache[rr[0]] = resp;

@@ -10,9 +10,4 @@ export abstract class Role<R = any> {
   abstract parseLLMResult(result: string): R;
 }
 
-const defaultPromptTransformer = (prompt: string) => `[url]
-${window.location.href}
-
-[user prompt]
-${prompt}
-`;
+const defaultPromptTransformer = (prompt: string) => prompt;

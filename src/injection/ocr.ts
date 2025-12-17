@@ -1,6 +1,6 @@
 import { ipcRenderer } from 'electron';
 import { OcrSpaceLanguages, OcrSpaceResponse } from 'ocr-space-api-wrapper';
-import { ToMianIpc } from '../contracts/toMain';
+import { ToMainIpc } from '../contracts/toMain';
 import { takeScreenshot } from './screenshot';
 
 export namespace OCRModel {

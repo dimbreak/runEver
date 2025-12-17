@@ -15,6 +15,6 @@ export const ToWebView = {
         stream?: boolean;
       },
     ],
-    { response: string }
+    { response: any }
   >('run-prompt'),
 };

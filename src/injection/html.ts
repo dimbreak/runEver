@@ -94,11 +94,25 @@ export const getHtml = () => {
 
 export const getDeltaHtml = () => {
   const htmls: string[] = [];
-  mutatedElement.forEach((el) => {
+  const addedEls: Element[] = [];
+  const checkIfAdded = (el: Element) => {
+    let thisEl: Element | null = el;
+    const { body } = document;
+    while (thisEl && thisEl !== body) {
+      if (addedEls.find((addedEl) => addedEl === thisEl)) return true;
+      thisEl = el.parentElement;
+    }
+    return false;
+  };
+  mutatedElement.forEach((el, idx) => {
     const styles: {
       font: Record<string, number>;
       highlight: Record<string, number>;
     } = { font: {}, highlight: {} };
+    if (checkIfAdded(el)) {
+      return;
+    }
+    addedEls.push(el);
     htmls.push(
       `${getQuerySelector(el, mutatedElement)}: ${cleanHtml(processElement(el as HTMLElement, null, window.innerWidth, window.innerHeight, styles, [])?.outerHTML ?? `<${el.tagName.toLowerCase()}/>`)}`,
     );
