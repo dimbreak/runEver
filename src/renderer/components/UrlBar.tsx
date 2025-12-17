@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { normalizeUrlValue } from '../utils/formatter';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { webviewService } from '../services/webviewService';
+import { useTabStore } from '../state/tabStore';
 
 const urlSchema = z.object({
   url: z
@@ -19,10 +21,10 @@ type UrlFormValues = z.infer<typeof urlSchema>;
 
 type UrlBarProps = {
   url?: string | null;
-  onSubmit: (url: string) => Promise<void> | void;
 };
 
-export const UrlBar: React.FC<UrlBarProps> = ({ url = '', onSubmit }) => {
+export const UrlBar: React.FC<UrlBarProps> = ({ url = '' }) => {
+  const { activeTabId, updateTabUrl, frameMap } = useTabStore();
   const { register, handleSubmit, formState, reset } = useForm<UrlFormValues>({
     resolver: zodResolver(urlSchema),
     defaultValues: { url: url ?? '' },
@@ -33,13 +35,22 @@ export const UrlBar: React.FC<UrlBarProps> = ({ url = '', onSubmit }) => {
   }, [reset, url]);
 
   const onFormSubmit = async (data: UrlFormValues) => {
-    await onSubmit(data.url);
-    reset({ url: data.url });
+    const nextUrl = data.url;
+    if (!activeTabId || !nextUrl) return;
+    updateTabUrl(activeTabId, nextUrl);
+    const frameId = frameMap.get(activeTabId);
+    if (frameId) {
+      await webviewService.layoutTab({
+        frameId,
+        url: nextUrl,
+      });
+    }
+    reset({ url: nextUrl });
   };
 
   return (
     <form
-      className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2"
+      className="flex w-full items-center gap-2 rounded-lg border-slate-200 bg-white"
       onSubmit={handleSubmit(onFormSubmit)}
     >
       <Input

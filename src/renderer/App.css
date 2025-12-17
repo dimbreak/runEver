@@ -1,1 +1,24 @@
 @import 'tailwindcss';
+
+@layer utilities {
+  .scroll-shadows {
+    background:
+      linear-gradient(90deg, white 30%, transparent) left,
+      linear-gradient(90deg, transparent, white 70%) right,
+      radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.15), transparent)
+        left,
+      radial-gradient(
+          farthest-side at 100% 50%,
+          rgba(0, 0, 0, 0.15),
+          transparent
+        )
+        right;
+    background-repeat: no-repeat;
+    background-size:
+      20px 100%,
+      20px 100%,
+      8px 100%,
+      8px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+}
