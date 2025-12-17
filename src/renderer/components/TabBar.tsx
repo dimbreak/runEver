@@ -49,6 +49,7 @@ export const TabBar: React.FC = () => {
     updateTabUrl,
     updateTabTitle,
   } = useTabStore();
+
   useEffect(() => {
     const handler = (_: any, payload: { url: string }) => {
       const newTab = new WebTab({
