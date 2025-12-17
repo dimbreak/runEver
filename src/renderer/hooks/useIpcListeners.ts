@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useTabStore, WebTab } from '../state/tabStore';
+import { useLayoutStore } from '../state/layoutStore';
 
 export const useIpcListeners = () => {
   const { addTab, frameMap, updateTabTitle, updateTabUrl } = useTabStore();
-
+  const { bounds } = useLayoutStore();
   useEffect(() => {
     const ipc = window.electron?.ipcRenderer;
     if (!ipc) return;
@@ -15,7 +16,7 @@ export const useIpcListeners = () => {
         title: payload.url,
         url: payload.url,
       });
-      addTab(newTab);
+      addTab(newTab, bounds);
     };
 
     const handleTitleUpdate = (
@@ -47,5 +48,5 @@ export const useIpcListeners = () => {
       unsubscribeNewTab?.();
       unsubscribeTitleUpdate?.();
     };
-  }, [addTab, frameMap, updateTabTitle, updateTabUrl]);
+  }, [addTab, frameMap, updateTabTitle, updateTabUrl, bounds]);
 };

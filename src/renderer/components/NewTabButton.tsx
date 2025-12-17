@@ -2,17 +2,20 @@ import { Plus } from 'lucide-react';
 import { memo, useCallback } from 'react';
 import { useTabStore, WebTab } from '../state/tabStore';
 import { Button } from './ui/button';
+import { useLayoutStore } from '../state/layoutStore';
 
 export const NewTabButton = memo(function NewTabButton() {
   const { addTab } = useTabStore();
+  const { bounds, toggleUrlBar } = useLayoutStore();
   const handleAddTab = useCallback(() => {
     const newTab = new WebTab({
       id: `tab-${Date.now()}`,
       title: 'New Tab',
       url: '',
     });
-    addTab(newTab);
-  }, [addTab]);
+    addTab(newTab, bounds);
+    toggleUrlBar(true);
+  }, [addTab, bounds, toggleUrlBar]);
   return (
     <Button
       type="button"

@@ -30,7 +30,7 @@ type TabState = {
   frameMap: Map<string, number | undefined>;
   initialTabs: () => Promise<void>;
   setActiveTab: (id: string | null) => void;
-  addTab: (tab: WebTab) => Promise<void>;
+  addTab: (tab: WebTab, bounds: Rectangle) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
   closeAllTabs: () => Promise<void>;
   registerFrameId: (tabId: string, frameId: number) => void;
@@ -61,17 +61,6 @@ const initialTabs = [
   }),
 ];
 
-const getLayoutSnapshot = () => {
-  const { bounds, tabbarHeight, isSidebarOpen, sidebarWidth, collapsedWidth } =
-    useLayoutStore.getState();
-
-  return {
-    bounds: bounds as Rectangle,
-    tabbarHeight,
-    sidebarWidth: isSidebarOpen ? sidebarWidth : collapsedWidth,
-  };
-};
-
 export const useTabStore = create<TabState>((set, get) => ({
   tabs: initialTabs.map((tab) => new WebTab(tab)),
   activeTabId: initialTabs[0]?.id ?? null,
@@ -79,7 +68,6 @@ export const useTabStore = create<TabState>((set, get) => ({
   initialTabs: async () => {
     if (!webviewService.hasBridge()) return;
 
-    const { sidebarWidth, tabbarHeight } = getLayoutSnapshot();
     const { tabs, frameMap } = get();
 
     for (const [tabId, frameId] of frameMap.entries()) {
@@ -100,8 +88,6 @@ export const useTabStore = create<TabState>((set, get) => ({
           await webviewService.layoutTab({
             frameId,
             visible: get().activeTabId === tab.id,
-            sidebarWidth,
-            tabbarHeight,
           });
         }
       }
@@ -110,26 +96,20 @@ export const useTabStore = create<TabState>((set, get) => ({
   setActiveTab: (id) => {
     set(() => ({ activeTabId: id }));
   },
-  addTab: async (tab) => {
-    set((state) => {
-      const nextTabs = [...state.tabs, new WebTab(tab)];
-      return { tabs: nextTabs, activeTabId: tab.id };
-    });
-
+  addTab: async (tab, bounds: Rectangle) => {
     if (!webviewService.hasBridge()) return;
 
-    const { sidebarWidth, tabbarHeight } = getLayoutSnapshot();
     const frameId = await webviewService.createTab({
       url: resolveInitialUrl(tab.url),
+      bounds,
     });
     if (!frameId) return;
 
     get().registerFrameId(tab.id, frameId);
-    await webviewService.layoutTab({
-      frameId,
-      visible: true,
-      sidebarWidth,
-      tabbarHeight,
+    set((state) => {
+      const nextTabs = [...state.tabs, new WebTab(tab)];
+      console.log('new tab', nextTabs);
+      return { tabs: nextTabs, activeTabId: tab.id };
     });
   },
   closeTab: async (id) => {
