@@ -9,11 +9,15 @@ export const useWebviewManager = () => {
     useTabStore();
 
   useEffect(() => {
+    console.log('initialTabs');
     initialTabs();
 
-    return () => {
+    const cleanup = () => {
       closeAllTabs();
     };
+
+    window.addEventListener('beforeunload', cleanup);
+    return () => window.removeEventListener('beforeunload', cleanup);
   }, [initialTabs, closeAllTabs]);
 
   useEffect(() => {
