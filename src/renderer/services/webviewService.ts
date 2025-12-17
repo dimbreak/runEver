@@ -9,7 +9,7 @@ type LayoutParams = {
   tabbarHeight?: number;
   visible?: boolean;
   url?: string;
-  devtoolsWidth?: number;
+  viewportWidth?: number;
 };
 
 const hasIpc = () =>
@@ -24,7 +24,7 @@ export const webviewService = {
     console.info('createTab', params?.url, params?.bounds);
     const res = await ToMianIpc.createTab.invoke({
       url: params.url,
-      bounds: params.bounds ?? ({} as Rectangle),
+      bounds: params.bounds,
     });
     if ('id' in res) return res.id;
     throw new Error(res.error ?? 'Failed to create tab');
@@ -42,7 +42,7 @@ export const webviewService = {
       tabbarHeight: params.tabbarHeight,
       visible: params.visible,
       url: params.url,
-      devtoolsWidth: params.devtoolsWidth,
+      viewportWidth: params.viewportWidth,
     });
   },
 

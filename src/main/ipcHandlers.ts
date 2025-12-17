@@ -12,20 +12,19 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const PADDING = 12;
   const DEFAULT_TABBAR_HEIGHT = 112;
   const DEFAULT_SIDEBAR_WIDTH = 430;
-  const DEFAULT_DEVTOOLS_WIDTH = 360;
 
   type SafeBoundsOptions = {
     sidebarWidth?: number;
     tabbarHeight?: number;
-    devtoolsWidth?: number;
+    viewportWidth?: number;
   };
 
   const getSafeBounds = (opts: SafeBoundsOptions = {}) => {
     const sidebarWidth = opts.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH;
     const tabbarHeight = opts.tabbarHeight ?? DEFAULT_TABBAR_HEIGHT;
-    const devtoolsWidth = opts.devtoolsWidth ?? 0;
 
     const win = mainWindow?.getBounds();
+    const devtoolsWidth = win.width - (opts.viewportWidth ?? 0);
     const width = Math.max(
       320,
       (win?.width ?? 1024) - sidebarWidth - devtoolsWidth - PADDING * 2,
@@ -128,6 +127,9 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         wvTab.webView.setVisible(false);
         mainWindow?.contentView.removeChildView(wvTab.webView);
         webViewTabsById.delete(frameId!);
+        if (!wvTab.webView.webContents.isDestroyed()) {
+          wvTab.webView.webContents.close();
+        }
         response = 'closed';
       } else {
         if (detail.visible !== undefined) {
@@ -136,14 +138,11 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         if (detail.bounds) {
           wvTab.webView.setBounds(detail.bounds);
         } else if (!detail.url && !detail.exeScript) {
-          const devtoolsWidth = wvTab.webView.webContents.isDevToolsOpened()
-            ? DEFAULT_DEVTOOLS_WIDTH
-            : 0;
           wvTab.webView.setBounds(
             getSafeBounds({
               sidebarWidth: detail.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH,
               tabbarHeight: detail.tabbarHeight ?? DEFAULT_TABBAR_HEIGHT,
-              devtoolsWidth,
+              viewportWidth: detail.viewportWidth,
             }),
           );
         }
