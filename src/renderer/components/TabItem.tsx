@@ -3,7 +3,6 @@ import { memo, ReactNode, useCallback, useState } from 'react';
 import type { DragEvent } from 'react';
 import { cn } from '../utils/cn';
 import { useTabStore } from '../state/tabStore';
-import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from '../state/layoutStore';
 
 type TabItemProps = {
@@ -27,10 +26,11 @@ export const TabItem = memo(function TabItem({
   }, [setActiveTab, tabId, toggleUrlBar]);
 
   const handleCloseTab = useCallback(async () => {
-    const frameId = frameMap.get(tabId);
-    await webviewService.closeTab({ frameId: frameId ?? undefined });
-    closeTab(tabId);
-  }, [closeTab, frameMap, tabId]);
+    await closeTab(tabId);
+    if (frameMap.size === 1) {
+      toggleUrlBar(false);
+    }
+  }, [closeTab, frameMap, tabId, toggleUrlBar]);
 
   const handleDragStart = useCallback(
     (event: DragEvent<HTMLDivElement>) => {

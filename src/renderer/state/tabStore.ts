@@ -1,14 +1,18 @@
+import type { Rectangle } from 'electron';
 import { create } from 'zustand';
+import { webviewService } from '../services/webviewService';
+import { useLayoutStore } from './layoutStore';
+import { resolveInitialUrl } from '../utils/formatter';
 
 export class WebTab {
   id: string;
   title: string;
   url: string;
-  type: 'webview' = 'webview'; // webTab should must be webview type?
+  type: 'webview' = 'webview';
   isRunning?: boolean;
 
   constructor(init: {
-    id: string; // should it be frame id or add another field
+    id: string;
     title: string;
     url: string;
     isRunning?: boolean;
@@ -24,12 +28,21 @@ type TabState = {
   tabs: WebTab[];
   activeTabId: string | null;
   frameMap: Map<string, number | undefined>;
+  initialTabs: () => Promise<void>;
   setActiveTab: (id: string | null) => void;
-  addTab: (tab: WebTab) => void;
-  closeTab: (id: string) => void;
+  addTab: (tab: WebTab) => Promise<void>;
+  closeTab: (id: string) => Promise<void>;
+  closeAllTabs: () => Promise<void>;
   registerFrameId: (tabId: string, frameId: number) => void;
   removeFrameId: (tabId: string) => void;
   updateTabUrl: (tabId: string, url: string) => void;
+  navigateTab: (tabId: string, url: string) => Promise<void>;
+  layoutTabs: (params: {
+    viewportWidth: number;
+    bounds?: Rectangle;
+    sidebarWidth?: number;
+    tabbarHeight?: number;
+  }) => Promise<void>;
   reorderTabs: (sourceId: string, targetId: string) => void;
   updateTabTitle: (tabId: string, title: string) => void;
 };
@@ -48,17 +61,81 @@ const initialTabs = [
   }),
 ];
 
-export const useTabStore = create<TabState>((set) => ({
-  tabs: initialTabs,
+const getLayoutSnapshot = () => {
+  const { bounds, tabbarHeight, isSidebarOpen, sidebarWidth, collapsedWidth } =
+    useLayoutStore.getState();
+
+  return {
+    bounds: bounds as Rectangle,
+    tabbarHeight,
+    sidebarWidth: isSidebarOpen ? sidebarWidth : collapsedWidth,
+  };
+};
+
+export const useTabStore = create<TabState>((set, get) => ({
+  tabs: initialTabs.map((tab) => new WebTab(tab)),
   activeTabId: initialTabs[0]?.id ?? null,
   frameMap: new Map(),
-  setActiveTab: (id) => set(() => ({ activeTabId: id })),
-  addTab: (tab) =>
+  initialTabs: async () => {
+    if (!webviewService.hasBridge()) return;
+
+    const { sidebarWidth, tabbarHeight } = getLayoutSnapshot();
+    const { tabs, frameMap } = get();
+
+    for (const [tabId, frameId] of frameMap.entries()) {
+      if (!tabs.find((t) => t.id === tabId)) {
+        await webviewService.closeTab({ frameId });
+        get().removeFrameId(tabId);
+      }
+    }
+
+    for (const tab of tabs) {
+      const existingFrameId = get().frameMap.get(tab.id);
+      if (!existingFrameId) {
+        const frameId = await webviewService.createTab({
+          url: resolveInitialUrl(tab.url),
+        });
+        if (frameId) {
+          get().registerFrameId(tab.id, frameId);
+          await webviewService.layoutTab({
+            frameId,
+            visible: get().activeTabId === tab.id,
+            sidebarWidth,
+            tabbarHeight,
+          });
+        }
+      }
+    }
+  },
+  setActiveTab: (id) => {
+    set(() => ({ activeTabId: id }));
+  },
+  addTab: async (tab) => {
     set((state) => {
-      const nextTabs = [...state.tabs, tab];
+      const nextTabs = [...state.tabs, new WebTab(tab)];
       return { tabs: nextTabs, activeTabId: tab.id };
-    }),
-  closeTab: (id) =>
+    });
+
+    if (!webviewService.hasBridge()) return;
+
+    const { sidebarWidth, tabbarHeight } = getLayoutSnapshot();
+    const frameId = await webviewService.createTab({
+      url: resolveInitialUrl(tab.url),
+    });
+    if (!frameId) return;
+
+    get().registerFrameId(tab.id, frameId);
+    await webviewService.layoutTab({
+      frameId,
+      visible: true,
+      sidebarWidth,
+      tabbarHeight,
+    });
+  },
+  closeTab: async (id) => {
+    const { frameMap } = get();
+    const frameId = frameMap.get(id);
+    await webviewService.closeTab({ frameId: frameId ?? undefined });
     set((state) => {
       const nextTabs = state.tabs.filter((t) => t.id !== id);
       const wasActive = state.activeTabId === id;
@@ -75,7 +152,27 @@ export const useTabStore = create<TabState>((set) => ({
         activeTabId: nextActive,
         frameMap: nextFrameMap,
       };
-    }),
+    });
+  },
+
+  closeAllTabs: async () => {
+    if (!webviewService.hasBridge()) return;
+
+    const { frameMap } = get();
+
+    const closePromises = Array.from(frameMap.entries()).map(
+      async ([tabId, frameId]) => {
+        if (frameId !== undefined) {
+          console.log('closing tab', tabId, frameId);
+          await webviewService.closeTab({ frameId });
+        }
+      },
+    );
+
+    await Promise.all(closePromises);
+
+    set(() => ({ activeTabId: null, frameMap: new Map() }));
+  },
   registerFrameId: (tabId, frameId) =>
     set((state) => ({ frameMap: new Map(state.frameMap).set(tabId, frameId) })),
   removeFrameId: (tabId) =>
@@ -97,6 +194,40 @@ export const useTabStore = create<TabState>((set) => ({
           : tab,
       ),
     })),
+  navigateTab: async (tabId, url) => {
+    const nextUrl = url.trim();
+    if (!nextUrl) return;
+
+    get().updateTabUrl(tabId, nextUrl);
+
+    const frameId = get().frameMap.get(tabId);
+    if (!frameId) return;
+
+    await webviewService.layoutTab({
+      frameId,
+      url: nextUrl,
+    });
+  },
+  layoutTabs: async (params) => {
+    if (!webviewService.hasBridge()) return;
+    const { tabs, activeTabId, frameMap } = get();
+
+    await Promise.all(
+      tabs.map(async (tab) => {
+        const frameId = frameMap.get(tab.id);
+        if (!frameId) return;
+
+        await webviewService.layoutTab({
+          frameId,
+          visible: activeTabId === tab.id,
+          sidebarWidth: params.sidebarWidth,
+          tabbarHeight: params.tabbarHeight,
+          viewportWidth: params.viewportWidth,
+          bounds: params.bounds,
+        });
+      }),
+    );
+  },
   reorderTabs: (sourceId, targetId) =>
     set((state) => {
       if (sourceId === targetId) return state;

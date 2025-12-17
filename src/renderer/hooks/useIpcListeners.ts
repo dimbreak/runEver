@@ -18,7 +18,6 @@ export const useIpcListeners = () => {
       addTab(newTab);
     };
 
-    // Handler for tab title/url updates from webview navigation
     const handleTitleUpdate = (
       _event: any,
       payload: { frameId: number; title?: string; url?: string },
@@ -30,7 +29,6 @@ export const useIpcListeners = () => {
       if (!entry) return;
 
       const [tabId] = entry;
-      // Update title and URL if provided
       if (payload.title) {
         updateTabTitle(tabId, payload.title);
       }
@@ -39,14 +37,12 @@ export const useIpcListeners = () => {
       }
     };
 
-    // Subscribe to both IPC events
     const unsubscribeNewTab = ipc.on('open-new-tab', handleOpenNewTab);
     const unsubscribeTitleUpdate = ipc.on(
       'tab-title-updated',
       handleTitleUpdate,
     );
 
-    // Cleanup both subscriptions on unmount
     return () => {
       unsubscribeNewTab?.();
       unsubscribeTitleUpdate?.();

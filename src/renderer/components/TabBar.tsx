@@ -24,7 +24,7 @@ export const TabBar: React.FC = () => {
   useWebviewManager();
 
   return (
-    <div className="flex h-full w-full flex-col gap-2 px-3 py-2 pb-3">
+    <div className="flex h-full w-full flex-col gap-2 px-3 pt-2">
       <div className="flex w-full items-center gap-2">
         <TabList>
           {orderedTabs.map((tab) => {

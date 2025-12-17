@@ -5,7 +5,7 @@ export type LlmConfig = { error?: string; api: 'openai'; key: string };
 
 export const ToMianIpc = {
   createTab: new IpcMainContract<
-    [{ url: string; bounds: Rectangle }],
+    [{ url: string; bounds?: Rectangle }],
     { id: number } | { error: string }
   >('create-tab'),
   operateTab: new IpcMainContract<
@@ -14,12 +14,12 @@ export const ToMianIpc = {
         id: number;
         bounds?: Rectangle;
         url?: string;
+        viewportWidth?: number;
         exeScript?: string;
         close?: boolean;
         visible?: boolean;
         sidebarWidth?: number;
         tabbarHeight?: number;
-        devtoolsWidth?: number;
       },
     ],
     { error: string } | { response: any }

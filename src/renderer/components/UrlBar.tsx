@@ -6,7 +6,6 @@ import { z } from 'zod';
 import { normalizeUrlValue } from '../utils/formatter';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { webviewService } from '../services/webviewService';
 import { useTabStore } from '../state/tabStore';
 
 const urlSchema = z.object({
@@ -24,7 +23,7 @@ type UrlBarProps = {
 };
 
 export const UrlBar: React.FC<UrlBarProps> = ({ url = '' }) => {
-  const { activeTabId, updateTabUrl, frameMap } = useTabStore();
+  const { activeTabId, navigateTab } = useTabStore();
   const { register, handleSubmit, formState, reset } = useForm<UrlFormValues>({
     resolver: zodResolver(urlSchema),
     defaultValues: { url: url ?? '' },
@@ -37,14 +36,7 @@ export const UrlBar: React.FC<UrlBarProps> = ({ url = '' }) => {
   const onFormSubmit = async (data: UrlFormValues) => {
     const nextUrl = data.url;
     if (!activeTabId || !nextUrl) return;
-    updateTabUrl(activeTabId, nextUrl);
-    const frameId = frameMap.get(activeTabId);
-    if (frameId) {
-      await webviewService.layoutTab({
-        frameId,
-        url: nextUrl,
-      });
-    }
+    await navigateTab(activeTabId, nextUrl);
     reset({ url: nextUrl });
   };
 
@@ -56,7 +48,7 @@ export const UrlBar: React.FC<UrlBarProps> = ({ url = '' }) => {
       <Input
         type="text"
         placeholder="Enter a URL or search term"
-        className="flex-1"
+        className="flex-1 border-none focus:ring-0 shadow-none focus:border-none"
         {...register('url')}
       />
       <Button type="submit" disabled={formState.isSubmitting} size="sm">
