@@ -5,7 +5,6 @@ import type {
   KeyboardInputEvent,
 } from 'electron';
 import { IpcMainContract } from './ipc';
-import { WireAction } from '../webView/roles/system/executor.schema';
 import { LlmApi } from '../main/llm/api';
 
 export type MouseWheelScrollInputEvent = MouseWheelInputEvent & {
@@ -101,4 +100,34 @@ export namespace ToMainIpc {
     ],
     boolean
   >('action-error');
+  export const runPrompt = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        prompt: string;
+        reasoningEffort?: LlmApi.ReasoningEffort;
+        modelType?: LlmApi.LlmModelType;
+        requestId: number;
+        streamReturn?: boolean;
+        args?: Record<string, string>;
+      },
+    ],
+    { error?: string }
+  >('run-prompt');
+  export const auditAction = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        actionId: number;
+        html: string;
+        selector: string;
+        screenshotRect: Rectangle;
+        extraInfo: Record<string, string>;
+      },
+    ],
+    {
+      approved: boolean;
+      error: string | null;
+    }
+  >('audit-action');
 }

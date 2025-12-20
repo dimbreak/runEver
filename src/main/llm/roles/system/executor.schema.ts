@@ -1,18 +1,32 @@
 import { z } from 'zod';
 import { BrowserActionRisk } from './planner.schema';
 
+const WireWaitNetworkSchema = z.object({
+  t: z.literal('network'),
+  a: z.union([z.literal('idle0'), z.literal('idle2')]),
+});
 const WireWaitDomSchema = z.object({
   t: z.union([z.literal('appear'), z.literal('disappear')]),
   q: z.string(),
 });
+const WireWaitNavigationSchema = z.object({
+  t: z.literal('navigation'),
+  url: z.string().optional(), // for main assign current url
+});
+const WireWaitTimeSchema = z.object({
+  t: z.literal('time'),
+  ms: z.number(),
+});
 
 /** ---------------- WireWait ---------------- */
-export const WireWaitSchema = z.union([
-  z.literal('idle0'),
-  z.literal('idle2'),
-  z.number(),
-  WireWaitDomSchema,
-]);
+export const WireWaitSchema = z
+  .union([
+    WireWaitNetworkSchema,
+    WireWaitDomSchema,
+    WireWaitTimeSchema,
+    WireWaitNavigationSchema,
+  ])
+  .and(z.object({ to: z.number().optional().nullable() }));
 
 /** ---------------- WireAction (base) ---------------- */
 const MouseActionSchema = z.object({
@@ -69,11 +83,6 @@ const InputActionSchema = z.object({
   v: z.string(),
 });
 
-const GetScreenshotActionSchema = z.object({
-  k: z.literal('getScreenshot'),
-  rc: z.string(),
-});
-
 const NotifyUserActionSchema = z.object({
   k: z.literal('notifyUser'),
   msg: z.string(),
@@ -117,30 +126,37 @@ const UrlActionSchema = z.object({
 
 const FollowupActionSchema = z.object({
   k: z.literal('followup'),
-  rc: z.union([z.string(), z.null()]).optional(),
+  rc: z.string(),
+  sc: z.boolean().optional(),
+  htmQ: z.string().optional(),
 });
 
 /** Discriminated union by `k` */
-export const WireActionSchema = z.discriminatedUnion('k', [
-  MouseActionSchema,
-  ScrollActionSchema,
-  FocusActionSchema,
-  DndActionSchema,
-  KeyActionSchema,
-  InputActionSchema,
-  GetScreenshotActionSchema,
-  NotifyUserActionSchema,
-  SetCtxActionSchema,
-  SetArgumentActionSchema,
-  UrlActionSchema,
-  FollowupActionSchema,
-]);
+export const WireActionSchema = z
+  .discriminatedUnion('k', [
+    MouseActionSchema,
+    ScrollActionSchema,
+    FocusActionSchema,
+    DndActionSchema,
+    KeyActionSchema,
+    InputActionSchema,
+    NotifyUserActionSchema,
+    SetCtxActionSchema,
+    SetArgumentActionSchema,
+    UrlActionSchema,
+    FollowupActionSchema,
+  ])
+  .and(
+    z.object({
+      step: z.number(),
+    }),
+  );
 
 /** WireAction & { w?: WireWait; to?: number } */
 export const WireActionWithWaitSchema = WireActionSchema.and(
   z.object({
-    w: WireWaitSchema.optional(),
-    to: z.number().optional(),
+    pre: WireWaitSchema.optional(),
+    post: WireWaitSchema.optional(),
   }),
 );
 
@@ -155,7 +171,8 @@ export type WireWait = z.infer<typeof WireWaitSchema>;
 export type WireAction = z.infer<typeof WireActionSchema>;
 export type WireActionWithWaitAndRisk = z.infer<
   typeof WireActionWithWaitSchema
-> & { risk: BrowserActionRisk };
+> & { risk: BrowserActionRisk; id: number };
+export type WireFollowupAction = z.infer<typeof FollowupActionSchema>;
 
 export type ExecutorLlmResult = z.infer<typeof ExecutorLlmResultSchema>;
 export type WireWaitDom = z.infer<typeof WireWaitDomSchema>;

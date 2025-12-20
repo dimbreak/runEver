@@ -1,7 +1,71 @@
-import { Role } from '../role';
+import { NativeImage } from 'electron';
 import { AuditResult, AuditResultSchema } from './auditor.schema';
+import { LlmApi } from '../../api';
+import { WireActionWithWaitAndRiskAndRec } from '../../../webView/session';
 
-export class Auditor extends Role<AuditResult> {
+export class AuditorSession {
+  runner: ReturnType<typeof LlmApi.queryLLMSession>;
+  constructor() {
+    this.runner = LlmApi.queryLLMSession(this.systemPrompt, 'auditor_');
+  }
+
+  async auditAction(
+    plannerPrompt: string,
+    steps: string[],
+    action: WireActionWithWaitAndRiskAndRec,
+    elementHtml: string,
+    screenshot: NativeImage,
+    args: Record<string, string> = {},
+    extraInfo: Record<string, string> = {},
+  ): Promise<AuditResult> {
+    const pureAction: Partial<WireActionWithWaitAndRiskAndRec> = { ...action };
+    delete pureAction.stepPrompt;
+    delete pureAction.planId;
+    delete pureAction.risk;
+    delete pureAction.error;
+    delete pureAction.id;
+    const stram = this.runner(
+      `[planner prompt]
+${plannerPrompt}
+
+[planned steps]
+-${steps.join('\n-')}
+
+[current action]
+step prompt:${action.stepPrompt}
+action: ${JSON.stringify(pureAction)}
+
+[selected element html]
+${elementHtml}${
+        Object.keys(args).length
+          ? `
+[arguments]
+${Object.entries(args)
+  .map(([k, v]) => `${k}: ${v}`)
+  .join('\n')}`
+          : ''
+      }${
+        Object.keys(extraInfo).length
+          ? `
+[extra info]
+${Object.entries(extraInfo)
+  .map(([k, v]) => `${k}: ${v}`)
+  .join('\n')}`
+          : ''
+      }
+
+**attached screenshot jpeg**
+`,
+      [
+        {
+          type: 'image',
+          image: screenshot.toJPEG(80),
+          mediaType: 'image/jpeg',
+        },
+      ],
+    );
+    return AuditResultSchema.parse(JSON.parse(await LlmApi.wrapStream(stram)));
+  }
   systemPrompt = `[system]
 a web base agentic task running engine, perform action in agent browser according to user task prompt.
 
@@ -33,19 +97,17 @@ Auditing principles:
 - If context is insufficient (e.g., multi-step destructive flows, ambiguous buttons like “Continue” or “Confirm”), request extra HTML levels or a larger screenshot.
 - If ambiguity persists and action appears very high risk, request explicit user approval.
 
-Response format:
+[Response format]
 type AuditResult =
   {'result':'approved'} |
   {'result':'reject', 'reason':string} |
   {'result':'requireExtraDetail', 'htmlExtraLevel'?:true, 'largerScreenshot'?:true} |
   {'result':'requireUserApproval', 'messageToUser':string};
-
-
 `;
+}
 
-  // Implements abstract method from Role; 'this' not required for parsing
-  // eslint-disable-next-line class-methods-use-this
-  parseLLMResult(result: string): AuditResult {
-    return AuditResultSchema.parse(JSON.parse(result));
+export class Auditor {
+  newAuditorSession(): AuditorSession {
+    return new AuditorSession();
   }
 }

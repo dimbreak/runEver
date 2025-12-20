@@ -8,8 +8,9 @@ type Message = {
   id: number;
   role: 'user' | 'assistant';
   text: string;
+  llmResponding?: boolean;
   tag?: string;
-  image?: string;
+  image?: string; // todo multiple images? other types of files?
 };
 
 export const AgentPanel: React.FC = () => {
@@ -48,20 +49,50 @@ export const AgentPanel: React.FC = () => {
     },
   ]);
 
-  const handlePrompt = React.useCallback(async () => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        role: 'user',
-        text: messageInput,
-      },
-    ]);
-    console.log('send prompt:', messageInput);
-    const res = await tabs
+  const handlePrompt = React.useCallback(() => {
+    console.log('send prompt:', messageInput, tabs);
+    const id = Date.now();
+    const respondiongMessage: Message = {
+      id: id + 1,
+      role: 'assistant',
+      text: '',
+      llmResponding: true,
+    };
+    let idx = -1;
+    setMessages((prev) => {
+      idx =
+        prev.push(
+          {
+            id,
+            role: 'user',
+            text: messageInput,
+          },
+          respondiongMessage,
+        ) - 1;
+      return prev.slice();
+    });
+    tabs
       .find((t) => t.id === activeTabId)
-      ?.runPrompt(messageInput);
-    console.log('prompt result', res);
+      ?.runPrompt(
+        messageInput,
+        { keyword: 'openai', website: 'wikipedia' },
+        (chunk) => {
+          console.log('prompt chunk:', chunk);
+          // todo use ref? feel really low efficiency here
+          setMessages((prev) => {
+            prev[idx].text += chunk;
+            return prev.slice();
+          });
+        },
+      )
+      .then((err) => {
+        setMessages((prev) => {
+          prev[idx].llmResponding = false;
+          return prev.slice();
+        });
+        // todo handle error
+        console.log('prompt result', err);
+      });
   }, [activeTabId, tabs, messageInput]);
 
   const handleCapture = async () => {
@@ -219,7 +250,10 @@ export const AgentPanel: React.FC = () => {
                     {msg.tag}
                   </span>
                 )}
-                <div className="whitespace-pre-line">{msg.text}</div>
+                <div className="whitespace-pre-line">
+                  {msg.text}
+                  {msg.llmResponding && <div>...</div>}
+                </div>
                 {msg.image && (
                   <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     <img

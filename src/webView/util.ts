@@ -3,13 +3,38 @@ import { ToMainIpc } from '../contracts/toMain';
 export namespace Util {
   export class Lock<T = void> {
     wait: Promise<T> = Promise.resolve() as Promise<T>;
+    private unlockTo: NodeJS.Timeout | null = null;
+    constructor(private logName?: string) {}
     unlocker: ((...v: T extends void ? [] : [T]) => void) | null = null;
     unlock(...v: T extends void ? [] : [T]) {
+      if (this.logName) {
+        console.log(`${this.logName} Unlock `, this.unlocker, ...v);
+      }
       if (this.unlocker) {
         this.unlocker(...v);
+        this.unlocker = null;
+      }
+    }
+    delayUnlock(delayMs: number, ...v: T extends void ? [] : [T]) {
+      if (this.logName) {
+        console.log(
+          `${this.logName} Delay unlock `,
+          delayMs,
+          this.unlocker,
+          ...v,
+        );
+      }
+      if (this.unlocker && this.unlockTo === null) {
+        this.unlockTo = setTimeout(() => {
+          this.unlock(...v);
+          this.unlockTo = null;
+        }, delayMs);
       }
     }
     async lock() {
+      if (this.logName) {
+        console.log(`${this.logName} Lock `);
+      }
       if (this.unlocker) {
         await this.wait;
       }
@@ -22,6 +47,9 @@ export namespace Util {
       return this.doLock();
     }
     tryLock() {
+      if (this.logName) {
+        console.log(`${this.logName} Try lock `, this.unlocker);
+      }
       if (!this.unlocker) {
         this.doLock();
         return true;
@@ -29,6 +57,13 @@ export namespace Util {
       return false;
     }
     private doLock() {
+      if (this.logName) {
+        console.log(`${this.logName} Do lock `, this.unlockTo);
+      }
+      if (this.unlockTo !== null) {
+        clearTimeout(this.unlockTo);
+        this.unlockTo = null;
+      }
       this.wait = new Promise<T>((resolve: (...v: any[]) => void) => {
         this.unlocker = (...v: T extends void ? [] : [T]) => {
           resolve(...v);
@@ -41,8 +76,8 @@ export namespace Util {
 
   export const sleep = (ms: number) =>
     new Promise<void>((resolve) => setTimeout(resolve, ms));
-  export const newLock = <T = void>() => {
-    return new Lock<T>();
+  export const newLock = <T = void>(logName?: string) => {
+    return new Lock<T>(logName);
   };
   export const WaitTimeout: symbol = Symbol('WaitTimeout');
   export const awaitWithTimeout = async <T>(
@@ -81,4 +116,10 @@ export namespace Util {
       });
     });
   };
+  export const formatError = (error: unknown) => {
+    return error instanceof Error
+      ? `${error.message}: ${JSON.stringify(error)}`
+      : JSON.stringify(error);
+  };
+  export const isMac = process.platform === 'darwin';
 }

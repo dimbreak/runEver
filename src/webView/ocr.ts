@@ -4,6 +4,9 @@ import { ToMainIpc } from '../contracts/toMain';
 import { takeScreenshot } from './screenshot';
 
 export namespace OCRModel {
+  const ocrCache: Record<string, OcrResponse> = JSON.parse(
+    localStorage.getItem('runever-ocr-cache') || '{}',
+  );
   type OverlayOptions = {
     font?: string;
     textColor?: string;
@@ -359,6 +362,8 @@ export namespace OCRModel {
   };
 
   export async function getFromScreenshot(fullPage: boolean = true) {
+    const cached = ocrCache[window.location.href];
+    if (cached) return cached;
     const restore = hideInteractiveOverlay();
     const imgBlob = await takeScreenshot(fullPage);
     const body = new FormData();
@@ -369,6 +374,7 @@ export namespace OCRModel {
     body.append('filetype', 'JPG');
     body.append('file', imgBlob, 'screenshot.jpg');
     body.append('isOverlayRequired', 'true');
+    console.log('OCR API request');
     const promise = fetch('https://api.ocr.space/parse/image', {
       method: 'POST',
       headers,
@@ -376,34 +382,45 @@ export namespace OCRModel {
     });
     const interactiveEls = restore();
     const res = await promise;
+    console.log('OCR API request done');
     if (!res.ok) {
       console.error('OCR API error', res);
       return { els: [], error: res.statusText };
     }
-    const ocrData: OcrSpaceResponse = await res.json();
-    const response: OcrResponse = {
-      els: ocrData.ParsedResults.map((item) =>
-        item.TextOverlay.Lines.map(
-          (line: {
-            LineText: string;
-            Words: { Left: number; Top: number }[];
-          }) => ({
-            body: line.LineText,
-            x: line.Words[0]?.Left ?? 0,
-            y: line.Words[0]?.Top ?? 0,
-          }),
+    let ocrData: OcrSpaceResponse | null = null;
+    try {
+      ocrData = await res.json();
+      const response: OcrResponse = {
+        els: ocrData!.ParsedResults.map((item) =>
+          (
+            item?.TextOverlay?.Lines.map(
+              (line: {
+                LineText: string;
+                Words: { Left: number; Top: number }[];
+              }) => ({
+                body: line.LineText,
+                x: line.Words[0]?.Left ?? 0,
+                y: line.Words[0]?.Top ?? 0,
+              }),
+            ) ?? []
+          ).flat(),
         ).flat(),
-      ).flat(),
-    };
-    response.els.push(
-      ...interactiveEls.map((el) => {
-        return {
-          body: `<${el.type}: ${getElementLabel(el.element)} />`,
-          x: el.bbox.x,
-          y: el.bbox.y,
-        };
-      }),
-    );
-    return response;
+      };
+      response.els.push(
+        ...interactiveEls.map((el) => {
+          return {
+            body: `<${el.type}: ${getElementLabel(el.element)} />`,
+            x: el.bbox.x,
+            y: el.bbox.y,
+          };
+        }),
+      );
+      ocrCache[window.location.href] = response;
+      localStorage.setItem('runever-ocr-cache', JSON.stringify(ocrCache));
+      return response;
+    } catch (e) {
+      console.error('OCR API error', ocrData, e);
+      return { els: [], error: 'OCR API error' };
+    }
   }
 }

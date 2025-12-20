@@ -1,5 +1,6 @@
 import type { Rectangle } from 'electron';
 import { ToMainIpc } from '../../contracts/toMain';
+import { ToRendererIpc } from '../../contracts/toRenderer';
 
 type LayoutParams = {
   frameId?: number;
@@ -16,8 +17,29 @@ const hasIpc = () =>
   typeof window !== 'undefined' &&
   Boolean((window as any).electron?.ipcRenderer);
 
+let promptResponseHandlers: Record<number, (response: string) => void> | null =
+  null;
 export const webviewService = {
   hasBridge: hasIpc,
+
+  registerPromptResponseHandler(
+    thisRequestId: number,
+    handler: (response: string) => void,
+  ) {
+    if (promptResponseHandlers === null) {
+      promptResponseHandlers = {};
+      ToRendererIpc.promptResponse.on((_, response) => {
+        console.log('promptResponse', response);
+        const { requestId, chunk } = response;
+        const registeredHandler = promptResponseHandlers![requestId];
+        if (registeredHandler) registeredHandler(chunk);
+      });
+    }
+    promptResponseHandlers[thisRequestId] = handler;
+    return () => {
+      delete promptResponseHandlers![thisRequestId];
+    };
+  },
 
   async createTab(params: { url: string; bounds?: Rectangle }) {
     if (!hasIpc()) return undefined;

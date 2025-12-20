@@ -41,7 +41,7 @@ class DummyCursor {
   }
   async scrollTo(el: Element, rect?: DOMRect) {
     const { x, y } = rect ?? el.getBoundingClientRect();
-    const scorllAdjust = await Util.scrollAdjustmentLock.wait;
+    const scrollAdjust = await Util.scrollAdjustmentLock.wait;
     let clientHeight: number;
     let clientWidth: number;
     let scrollEl = '';
@@ -68,7 +68,7 @@ class DummyCursor {
     while (offsetX !== 0) {
       events.push({
         type: 'mouseWheel',
-        deltaX: deltaX * scorllAdjust,
+        deltaX: deltaX * scrollAdjust,
         deltaY: 0,
         x: this.x,
         y: this.y,
@@ -84,7 +84,7 @@ class DummyCursor {
       events.push({
         type: 'mouseWheel',
         deltaX: 0,
-        deltaY: deltaY * scorllAdjust,
+        deltaY: deltaY * scrollAdjust,
         x: this.x,
         y: this.y,
         delayMs: 1 + Math.random() * 50,

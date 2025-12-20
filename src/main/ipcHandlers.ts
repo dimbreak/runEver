@@ -9,7 +9,6 @@ import { Util } from '../webView/util';
 import { LlmApi } from './llm/api';
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
-  const isMac = process.platform === 'darwin';
   const webViewTabsById = new Map<number, TabWebView>();
 
   const PADDING = 12;
@@ -54,14 +53,10 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     const wvTab = webViewTabsById.get(arg.id);
     console.log('bindFrameId in main process:', event.frameId, arg);
     if (wvTab) {
-      wvTab.frameIds.add(event.frameId);
+      wvTab.pageLoaded(event.frameId, arg.scrollAdjustment);
       wvTab.webView.webContents.executeJavaScript(
         'window.electronDummyCursor = document.getElementById("runEver-dummy-cursor");',
       );
-      if (arg.scrollAdjustment) {
-        settings.setSync('scrollAdjustment', arg.scrollAdjustment);
-        wvTab.scrollAdjustment = arg.scrollAdjustment;
-      }
     }
     return { error: 'Tab not found' };
   });
@@ -76,18 +71,18 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         await wvTab.webView.webContents.executeJavaScript(
           `window.scrollTo(${slice.x}, ${slice.y});`,
         );
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await Util.sleep(100);
         const width =
           vpWidth + slice.x > ttlWidth ? ttlWidth - slice.x : vpWidth;
         const height =
           vpHeight + slice.y > ttlHeight ? ttlHeight - slice.y : vpHeight;
         imgs.push(
-          await wvTab.webView.webContents.capturePage({
-            x: vpWidth - width,
-            y: vpHeight - height,
+          await wvTab.screenshot(
+            vpWidth - width,
+            vpHeight - height,
             width,
             height,
-          }),
+          ),
         );
       }
 
@@ -146,9 +141,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         }
         if (detail.url) {
           wvTab.webView.webContents.loadURL(detail.url);
-          await new Promise((resolve) => {
-            setTimeout(resolve, 1000);
-          });
+          await Util.sleep(1000);
         }
         if (detail.exeScript) {
           response = await wvTab.webView.webContents.executeJavaScript(
@@ -228,66 +221,12 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
     return false;
   });
 
-  let clipboardLock: Promise<void> = Promise.resolve();
-
   ToMainIpc.pasteInput.handle(async (event, arg) => {
     console.log('Paste input:', arg);
     const { frameId, input } = arg;
     const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
     if (wvTab) {
-      await clipboardLock;
-      clipboardLock = new Promise(async (resolve) => {
-        clipboard.writeText(input);
-        const wc = wvTab.webView.webContents;
-        wc.focus();
-        if (isMac) {
-          wc.sendInputEvent({
-            type: 'keyDown',
-            keyCode: 'Meta',
-          });
-          await Util.sleep(50 + Math.random() * 50);
-          wc.sendInputEvent({
-            type: 'keyDown',
-            keyCode: 'v',
-            modifiers: ['meta'],
-          });
-          await Util.sleep(150 + Math.random() * 150);
-          wc.sendInputEvent({
-            type: 'keyUp',
-            keyCode: 'v',
-            modifiers: ['meta'],
-          });
-          await Util.sleep(50 + Math.random() * 50);
-          wc.sendInputEvent({
-            type: 'keyUp',
-            keyCode: 'Meta',
-          });
-        } else {
-          wc.sendInputEvent({
-            type: 'keyDown',
-            keyCode: 'Control',
-          });
-          await Util.sleep(50 + Math.random() * 50);
-          wc.sendInputEvent({
-            type: 'keyDown',
-            keyCode: 'v',
-            modifiers: ['control'],
-          });
-          await Util.sleep(150 + Math.random() * 150);
-          wc.sendInputEvent({
-            type: 'keyUp',
-            keyCode: 'v',
-            modifiers: ['control'],
-          });
-          await Util.sleep(50 + Math.random() * 50);
-          wc.sendInputEvent({
-            type: 'keyUp',
-            keyCode: 'Control',
-          });
-        }
-        resolve();
-      });
-
+      await wvTab.pasteText(input);
       return true;
     }
     return false;
@@ -311,6 +250,40 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
       return true;
     }
     return false;
+  });
+  ToMainIpc.runPrompt.handle(async (event, arg) => {
+    console.log('Run prompt:', arg);
+    const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
+      arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      const error = await wvTab.runPrompt(
+        requestId,
+        prompt,
+        args,
+        reasoningEffort,
+        modelType,
+      );
+      return { error };
+    }
+    return { error: 'Tab not found' };
+  });
+  ToMainIpc.auditAction.handle(async (event, arg) => {
+    console.log('Audit action', arg);
+    const { frameId, actionId, html, screenshotRect, extraInfo, selector } =
+      arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      const error = await wvTab.auditAction(
+        actionId,
+        selector,
+        html,
+        screenshotRect,
+        extraInfo,
+      );
+      return { error, approved: error === null };
+    }
+    return { error: 'Tab not found', approved: false };
   });
 
   async function askUserInput<
@@ -336,7 +309,7 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
       },
     );
 
-    ToRendererIpc.ToUser.send(mainWindow.webContents, {
+    ToRendererIpc.toUser.send(mainWindow.webContents, {
       type: 'prompt',
       message,
       questions,

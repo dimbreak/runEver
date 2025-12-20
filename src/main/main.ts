@@ -17,6 +17,7 @@ import { autoUpdater } from 'electron-updater';
 import { setupIpcHandlers } from './ipcHandlers';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { LlmApi } from './llm/api';
 
 configDotEnv();
 

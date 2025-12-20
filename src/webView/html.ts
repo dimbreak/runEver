@@ -22,7 +22,7 @@ const IGNORE_TAGS = new Set(['script', 'style', 'noscript']);
 const SIMPLE_TAGS = new Set(['option']);
 const CONTAINER_TAGS = new Set(['ul', 'div']);
 
-const getHtmlFromNode = (root: HTMLElement, getDelta = false) => {
+export const getHtmlFromNode = (root: HTMLElement, getDelta = false) => {
   const styles: {
     font: Record<string, number>;
     highlight: Record<string, number>;
@@ -62,7 +62,9 @@ const getHtmlFromNode = (root: HTMLElement, getDelta = false) => {
 };
 
 export const getHtml = () => {
+  console.log('getHtml');
   const html = getHtmlFromNode(document.body);
+  console.log('getHtml', html.length);
   if (observer) {
     mutatedElement.clear();
     observer.disconnect();

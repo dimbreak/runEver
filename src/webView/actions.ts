@@ -1,14 +1,15 @@
 import {
   WireAction,
   WireActionWithWaitAndRisk,
-  WireWaitDom,
-} from './roles/system/executor.schema';
+  WireWait,
+} from '../main/llm/roles/system/executor.schema';
 import { querySelectAll, replaceJsTpl } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import { ToMainIpc } from '../contracts/toMain';
-import { BrowserActionRisk } from './roles/system/planner.schema';
+import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
 import { Util } from './util';
 import { Network } from './network';
+import { getHtmlFromNode } from './html';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -26,7 +27,7 @@ const getElement = (
   } else if (els.length > 1 && risk === 'h') {
     throw ErrMultipleElementsSelectedForHighRisk;
   }
-  return els[0];
+  return els[0] as HTMLElement;
 };
 
 const TypingDelayMsHalf = 60;
@@ -38,15 +39,89 @@ const DEFAULT_TIMEOUT_MS = 10000;
 export namespace BrowserActions {
   export const ErrWaitTimeout = new Error('Run action wait timeout');
   let runningActionSet: WireActionWithWaitAndRisk[] | null = null;
+  const checkDomDisappear = async (selector: string) => {
+    let el = document.querySelector(selector);
+    while (true) {
+      if (
+        !el ||
+        el.getBoundingClientRect().height === 0 ||
+        window.getComputedStyle(el).opacity === '0'
+      ) {
+        return;
+      }
+      await Util.sleep(100);
+      el = document.querySelector(selector);
+    }
+  };
+  const checkDomAppear = async (selector: string) => {
+    let el = document.querySelector(selector);
+    while (true) {
+      if (
+        el &&
+        el.getBoundingClientRect().height > 0 &&
+        window.getComputedStyle(el).opacity !== '0'
+      ) {
+        return;
+      }
+      await Util.sleep(100);
+      if (!el) {
+        el = document.querySelector(selector);
+      }
+    }
+  };
+  const waitAction = async (wait: WireWait | undefined) => {
+    if (wait) {
+      let waitPromise;
+      switch (wait.t) {
+        case 'time':
+          await Util.sleep(wait.ms);
+          break;
+        case 'network':
+          if (wait.a === 'idle0') {
+            waitPromise = Network.waitForNetworkIdle0();
+          } else if (wait.a === 'idle2') {
+            waitPromise = Network.networkIdle2.wait;
+          }
+          break;
+        case 'appear':
+          waitPromise = checkDomAppear(wait.q);
+          break;
+        case 'disappear':
+          waitPromise = checkDomDisappear(wait.q);
+          break;
+        case 'navigation':
+          if (wait.url === window.location.href) {
+            return; // let it re-push after navigation
+          }
+          break;
+        default:
+          throw new Error('Unknown wait type');
+      }
+      console.log('wait', wait, waitPromise);
+      if (
+        waitPromise &&
+        (await Util.awaitWithTimeout(
+          waitPromise,
+          wait.to ?? DEFAULT_TIMEOUT_MS,
+        )) === Util.WaitTimeout
+      ) {
+        throw ErrWaitTimeout;
+      }
+    }
+  };
   export const execActions = async (
     actions: WireActionWithWaitAndRisk[],
     args: Record<string, string>,
   ) => {
     if (runningActionSet?.length) {
-      runningActionSet.push(...actions);
-    } else {
-      runningActionSet = actions;
+      const lastId = runningActionSet[runningActionSet.length - 1].id;
+      const toAdd = actions.filter((a) => a.id > lastId);
+      console.log('actions added', actions.length, toAdd);
+      runningActionSet.push(...toAdd);
+      return;
     }
+    runningActionSet = actions;
+
     let canContinue = true;
     let lastPopedActionId = -1;
     const popAction = async (
@@ -66,36 +141,6 @@ export namespace BrowserActions {
       popAction(i);
     };
     let action: WireActionWithWaitAndRisk;
-    const checkDomDisappear = async (selector: string) => {
-      let el = document.querySelector(selector);
-      while (true) {
-        if (
-          !el ||
-          el.getBoundingClientRect().height === 0 ||
-          window.getComputedStyle(el).opacity === '0'
-        ) {
-          return;
-        }
-        await Util.sleep(100);
-        el = document.querySelector(selector);
-      }
-    };
-    const checkDomAppear = async (selector: string) => {
-      let el = document.querySelector(selector);
-      while (true) {
-        if (
-          el &&
-          el.getBoundingClientRect().height > 0 &&
-          window.getComputedStyle(el).opacity !== '0'
-        ) {
-          return;
-        }
-        await Util.sleep(100);
-        if (!el) {
-          el = document.querySelector(selector);
-        }
-      }
-    };
     let argsDelta: Record<string, string> | undefined;
     for (let i = 0, c = actions.length; i < c; i++) {
       if (!canContinue) {
@@ -106,39 +151,8 @@ export namespace BrowserActions {
       argsDelta = undefined;
       console.log('actions continue', action);
       try {
-        if (action.w) {
-          let waitPromise;
-          switch (typeof action.w) {
-            case 'number':
-              await Util.sleep(action.w);
-              break;
-            case 'string':
-              if (action.w === 'idle0') {
-                waitPromise = Network.networkIdle0.wait;
-              } else if (action.w === 'idle2') {
-                waitPromise = Network.networkIdle2.wait;
-              }
-              break;
-            case 'object': {
-              const wait = action.w as WireWaitDom;
-              waitPromise =
-                wait.t === 'appear'
-                  ? checkDomAppear(wait.q)
-                  : checkDomDisappear(wait.q);
-            }
-            default:
-              throw new Error('Unknown wait type');
-          }
-          console.log('wait', action.w, waitPromise);
-          if (
-            waitPromise &&
-            (await Util.awaitWithTimeout(
-              waitPromise,
-              action.to ?? DEFAULT_TIMEOUT_MS,
-            )) === Util.WaitTimeout
-          ) {
-            throw ErrWaitTimeout;
-          }
+        if (action.pre) {
+          await waitAction(action.pre);
         }
         window.onbeforeunload = onbeforeunload(action.id);
         switch (action.k) {
@@ -154,13 +168,13 @@ export namespace BrowserActions {
           case 'focus':
             await focus(action, action.risk, args);
             break;
-          case 'input':
+          case 'input': // audit
             await input(action, action.risk, args);
             break;
-          case 'key':
+          case 'key': // audit
             await key(action, action.risk, args);
             break;
-          case 'mouse':
+          case 'mouse': // audit
             await mouse(action, action.risk, args);
             break;
           case 'setArgument': {
@@ -186,6 +200,9 @@ export namespace BrowserActions {
         }
         window.onbeforeunload = null;
         await popAction(action.id, argsDelta);
+        if (action.post) {
+          await waitAction(action.post);
+        }
       } catch (e) {
         await ToMainIpc.actionError.invoke({
           frameId: window.frameId!,
@@ -196,10 +213,13 @@ export namespace BrowserActions {
               : JSON.stringify(e),
         });
         canContinue = false;
+        break;
       }
 
       c = actions.length;
+      console.log('actions continue', action, c);
     }
+    runningActionSet = null;
   };
   export const navigate = async (
     action: Extract<WireAction, { k: 'url' }>,
@@ -259,7 +279,7 @@ export namespace BrowserActions {
     await dummyCursor.mouseEvent('click', el);
   };
   export const input = async (
-    action: Extract<WireAction, { k: 'input' }>,
+    action: Extract<WireActionWithWaitAndRisk, { k: 'input' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
@@ -268,6 +288,12 @@ export namespace BrowserActions {
       await dummyCursor.mouseEvent('click', el);
     }
     const value = replaceJsTpl(action.v, args);
+    if (action.risk === 'h') {
+      if (!(await auditBeforeEvents(action, action.q, el, { input: value }))) {
+        runningActionSet = null;
+        return;
+      }
+    }
     if (value.length < 64 && SAFE_KEYPRESS_RE.test(value)) {
       await ToMainIpc.dispatchEvents.invoke({
         frameId: window.frameId!,
@@ -297,7 +323,7 @@ export namespace BrowserActions {
     }
   };
   export const key = async (
-    action: Extract<WireAction, { k: 'key' }>,
+    action: Extract<WireActionWithWaitAndRisk, { k: 'key' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
@@ -312,6 +338,17 @@ export namespace BrowserActions {
     if (action.c === true) modifiers.push('control');
     if (action.m === true) modifiers.push('meta');
     if (action.s === true) modifiers.push('shift');
+
+    if (action.risk === 'h') {
+      if (
+        !(await auditBeforeEvents(action, action.q ?? 'body', el, {
+          modifiers: modifiers.join(','),
+        }))
+      ) {
+        runningActionSet = null;
+        return;
+      }
+    }
 
     await ToMainIpc.dispatchEvents.invoke({
       frameId: window.frameId!,
@@ -346,11 +383,17 @@ export namespace BrowserActions {
     });
   };
   export const mouse = async (
-    action: Extract<WireAction, { k: 'mouse' }>,
+    action: Extract<WireActionWithWaitAndRisk, { k: 'mouse' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
     const el = getElement(action.q, risk, args);
+    if (action.risk === 'h') {
+      if (!(await auditBeforeEvents(action, action.q, el))) {
+        runningActionSet = null;
+        return;
+      }
+    }
     switch (action.a) {
       case 'click':
       case 'dblclick':
@@ -366,5 +409,36 @@ export namespace BrowserActions {
       default:
         break;
     }
+  };
+  const auditBeforeEvents = async (
+    action: WireActionWithWaitAndRisk,
+    selector: string,
+    el: HTMLElement,
+    extraInfo: Record<string, string> = {},
+  ): Promise<boolean> => {
+    let pickedEl = el;
+    if ((el as HTMLInputElement).form) {
+      pickedEl = (el as HTMLInputElement).form ?? el.parentElement ?? el;
+    } else {
+      pickedEl = el.parentElement ?? el;
+    }
+    const html = await getHtmlFromNode(pickedEl);
+    const elHtml = await getHtmlFromNode(el);
+    if (html !== elHtml) {
+      html.replace(
+        elHtml,
+        elHtml.replace(/^<([^\s\r\n>]+)/, '<$1 runever-selected="true"'),
+      );
+    }
+    const result = await ToMainIpc.auditAction.invoke({
+      frameId: window.frameId!,
+      selector,
+      actionId: action.id,
+      html: await getHtmlFromNode(pickedEl),
+      screenshotRect: pickedEl.getBoundingClientRect(),
+      extraInfo,
+    });
+    console.log('audit result', result);
+    return result.approved;
   };
 }

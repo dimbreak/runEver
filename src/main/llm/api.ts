@@ -1,12 +1,15 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, generateText } from 'ai';
 import { LanguageModelV2 } from '@ai-sdk/provider';
 import settings from 'electron-settings';
+import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
+import { Util } from '../../webView/util';
 
 export namespace LlmApi {
   export type LlmConfig = { error?: string; api: 'openai'; key: string };
   export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
   export type LlmModelType = 'hi' | 'mid' | 'low';
+  export type Attachment = ImagePart | FilePart;
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
@@ -60,9 +63,40 @@ export namespace LlmApi {
     return llmApiPromise;
   };
 
+  const dummyReturns: string[] = [];
+  let streamQueryer = streamText;
+
+  const streamDummy: any = (
+    ...arg: typeof streamText extends (...v: infer T) => any ? T : never
+  ) => {
+    const res = dummyReturns.shift();
+    if (dummyReturns.length === 0) {
+      streamQueryer = streamText;
+    }
+    return {
+      request: arg[0],
+      textStream: (async function* () {
+        let remain = res!;
+        let end = 0;
+        while (remain.length) {
+          end = Math.min(remain.length, Math.floor(Math.random() * 5 + 1));
+          yield remain.slice(0, end);
+          remain = remain.slice(end);
+          await Util.sleep(Math.random() * 200);
+        }
+      })(),
+    } as any as ReturnType<typeof streamText>;
+  };
+
+  export const addDummyReturn = (text: string) => {
+    dummyReturns.push(text);
+    streamQueryer = streamDummy;
+  };
+
   export async function* queryLLMApi(
     prompt: string,
     systemPrompt = '',
+    attachments: Attachment[] | null = null,
     cacheKey = '',
     model: LlmModelType = 'mid',
     reasoning: ReasoningEffort = 'low',
@@ -70,7 +104,7 @@ export namespace LlmApi {
     const llmApi = await getLlmApi();
     if (llmApi) {
       const start = Date.now();
-      const { textStream, request } = streamText({
+      const { textStream } = streamQueryer({
         model: llmApi[model],
         providerOptions: {
           openai: {
@@ -86,13 +120,25 @@ export namespace LlmApi {
               },
               {
                 role: 'user',
-                content: prompt,
+                content: attachments
+                  ? [
+                      {
+                        type: 'text',
+                        text: prompt,
+                      },
+                      ...attachments,
+                    ]
+                  : prompt,
               },
             ]
           : prompt,
       });
+      let first = true;
       for await (const part of textStream) {
-        console.log('Stream', Date.now() - start, part);
+        if (first) {
+          console.log('Stream first token', cacheKey, Date.now() - start, part);
+          first = false;
+        }
         yield part;
       }
     } else {
@@ -100,14 +146,25 @@ export namespace LlmApi {
     }
   }
 
-  export const queryLLMSession = (systemPrompt: string) => {
-    const cacheKey = `${Math.round(Math.random() * 1000000)}`;
+  export const queryLLMSession = (
+    systemPrompt: string,
+    cacheKeyPrefix = '',
+  ) => {
+    const cacheKey = `${cacheKeyPrefix}${Math.round(Math.random() * 1000000)}`;
     return (
       prompt: string,
+      attachments: Attachment[] | null = null,
       model: 'hi' | 'mid' | 'low' = 'mid',
       reasoning: 'minimal' | 'low' | 'medium' | 'high' = 'low',
     ) => {
-      return queryLLMApi(prompt, systemPrompt, cacheKey, model, reasoning);
+      return queryLLMApi(
+        prompt,
+        systemPrompt,
+        attachments,
+        cacheKey,
+        model,
+        reasoning,
+      );
     };
   };
 
