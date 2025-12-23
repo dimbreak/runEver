@@ -9,11 +9,13 @@ import {
 import path from 'path';
 import settings from 'electron-settings';
 import { Network } from '../../webView/network';
-import { WebViewLlmSession } from './session';
+import {
+  WebViewLlmSession,
+  WireActionWithWaitAndRec,
+} from '../../agentic/session';
 import { LlmApi } from '../llm/api';
 import { Util } from '../../webView/util';
 import { ToRendererIpc } from '../../contracts/toRenderer';
-import { WireActionWithWaitAndRisk } from '../llm/roles/system/executor.schema';
 
 export class TabWebView {
   url: string;
@@ -56,7 +58,7 @@ export class TabWebView {
     this.llmSession = new WebViewLlmSession(this);
   }
 
-  async pushActions(actions: WireActionWithWaitAndRisk[] | null = null) {
+  async pushActions(actions?: WireActionWithWaitAndRec[]) {
     const pushActions = actions ?? this.llmSession.getRemainActions();
     console.log('pushActions:', pushActions);
     return this.webView.webContents.executeJavaScript(
@@ -155,7 +157,10 @@ export class TabWebView {
       return { action: 'deny' };
     });
     this.webView.setBounds(this.bounds);
-    webContents.loadURL(this.url);
+    webContents.loadURL(
+      this.initUrl,
+      // `file://${path.resolve(__dirname, '../../testHtml/moveDom.html')}`,
+    );
     webContents.openDevTools();
     [this.networkIdle0, this.networkIdle2] = Network.initMonitor(
       webContents,
@@ -259,21 +264,5 @@ export class TabWebView {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
-  }
-
-  async auditAction(
-    actionId: number,
-    selector: string,
-    html: string,
-    screenshotRect: Electron.Rectangle,
-    extraInfo: Record<string, string>,
-  ): Promise<string | null> {
-    return this.llmSession.auditAction(
-      actionId,
-      selector,
-      html,
-      screenshotRect,
-      extraInfo,
-    );
   }
 }

@@ -8,6 +8,46 @@ import { TabWebView } from './webView/tab';
 import { Util } from '../webView/util';
 import { LlmApi } from './llm/api';
 
+function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
+  ToMainIpc.actionDone.handle(async (event, arg) => {
+    console.log('Pop actions:', arg);
+    const { frameId, actionId, argsDelta } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.actionDone(actionId, argsDelta);
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.actionError.handle(async (event, arg) => {
+    console.log('Pop actions:', arg);
+    const { frameId, actionId, error } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.actionError(error, actionId);
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.runPrompt.handle(async (event, arg) => {
+    console.log('Run prompt:', arg);
+    const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
+      arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      const error = await wvTab.runPrompt(
+        requestId,
+        prompt,
+        args,
+        reasoningEffort,
+        modelType,
+      );
+      return { error };
+    }
+    return { error: 'Tab not found' };
+  });
+}
+
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const webViewTabsById = new Map<number, TabWebView>();
 
@@ -231,60 +271,7 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
     }
     return false;
   });
-  ToMainIpc.actionDone.handle(async (event, arg) => {
-    console.log('Pop actions:', arg);
-    const { frameId, actionId, argsDelta } = arg;
-    const wvTab = webViewTabsById.get(frameId);
-    if (wvTab) {
-      wvTab.actionDone(actionId, argsDelta);
-      return true;
-    }
-    return false;
-  });
-  ToMainIpc.actionError.handle(async (event, arg) => {
-    console.log('Pop actions:', arg);
-    const { frameId, actionId, error } = arg;
-    const wvTab = webViewTabsById.get(frameId);
-    if (wvTab) {
-      wvTab.actionError(error, actionId);
-      return true;
-    }
-    return false;
-  });
-  ToMainIpc.runPrompt.handle(async (event, arg) => {
-    console.log('Run prompt:', arg);
-    const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
-      arg;
-    const wvTab = webViewTabsById.get(frameId);
-    if (wvTab) {
-      const error = await wvTab.runPrompt(
-        requestId,
-        prompt,
-        args,
-        reasoningEffort,
-        modelType,
-      );
-      return { error };
-    }
-    return { error: 'Tab not found' };
-  });
-  ToMainIpc.auditAction.handle(async (event, arg) => {
-    console.log('Audit action', arg);
-    const { frameId, actionId, html, screenshotRect, extraInfo, selector } =
-      arg;
-    const wvTab = webViewTabsById.get(frameId);
-    if (wvTab) {
-      const error = await wvTab.auditAction(
-        actionId,
-        selector,
-        html,
-        screenshotRect,
-        extraInfo,
-      );
-      return { error, approved: error === null };
-    }
-    return { error: 'Tab not found', approved: false };
-  });
+  initPromptIpc(webViewTabsById);
 
   async function askUserInput<
     Q extends Record<

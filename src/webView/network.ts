@@ -67,7 +67,7 @@ export namespace Network {
     window.addEventListener('message', (e) => {
       if (e.data.network) {
         const { inflight } = e.data.network;
-        console.log('network inflight', inflight);
+        // console.log('network inflight', inflight);
         // maintain for webview
         if (inflight <= 2) {
           networkIdle2.delayUnlock(500);

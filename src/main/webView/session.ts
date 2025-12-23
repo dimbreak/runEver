@@ -136,16 +136,16 @@ export class WebViewLlmSession {
     // LlmApi.addDummyReturn('{"e":":) no more steps"}');
     // LlmApi.addDummyReturn('{"e":":) no more steps"}');
 
-    setInterval(() => {
-      console.log(
-        'All locks',
-        this.browserActionLock,
-        this.browserActionLockOk,
-        this.compilePromise,
-        this.fixingAction,
-        this.breakPlanningForExeErr,
-      );
-    }, 2000);
+    // setInterval(() => {
+    //   console.log(
+    //     'All locks',
+    //     this.browserActionLock,
+    //     this.browserActionLockOk,
+    //     this.compilePromise,
+    //     this.fixingAction,
+    //     this.breakPlanningForExeErr,
+    //   );
+    // }, 2000);
   }
   async *userPrompt(
     prompt: string,
