@@ -23,24 +23,25 @@ type onExecCompleteHandler = (
 const PlanAfterNavigation: symbol = Symbol('PlanAfterNavigation');
 const PlanAfterRerender: symbol = Symbol('PlanAfterRerender');
 
-const ExecutionMaxRetry = 1;
-//
+const ExecutionMaxRetry = 3;
+
 // LlmApi.addDummyReturn(
 //   JSON.stringify({
 //     a: [
 //       {
-//         intent: 'fill search box with the provided keyword',
+//         intent: 'fill search box with the keyword',
 //         risk: 'm',
 //         action: {
 //           k: 'input',
 //           q: {
 //             id: 'APjFqb',
+//             argKeys: ['keyword'],
 //           },
 //           v: '${args.keyword}',
 //         },
 //       },
 //       {
-//         intent: 'submit the search (press Enter) to load results',
+//         intent: 'submit the search (press Enter)',
 //         risk: 'm',
 //         pre: {
 //           t: 'time',
@@ -52,6 +53,7 @@ const ExecutionMaxRetry = 1;
 //           a: 'keyPress',
 //           q: {
 //             id: 'APjFqb',
+//             argKeys: ['keyword'],
 //           },
 //         },
 //         post: {
@@ -60,8 +62,46 @@ const ExecutionMaxRetry = 1;
 //       },
 //     ],
 //     todo: {
-//       rc: "After the search results load, click the first result link whose URL contains the string in ${args.website}. If multiple results match, choose the top-most one. (I can't find result links on the current page — perform this after the results page content is available.)",
+//       rc: 'On the search results page, click the first result link whose domain contains the argument website (${args.website}). If links are in a list, choose the topmost result matching that domain and click it.',
 //     },
+//     clearQueue: false,
+//   }),
+// );
+//
+// LlmApi.addDummyReturn(
+//   JSON.stringify({
+//     a: [
+//       {
+//         intent: 'click the first result link that goes to Wikipedia',
+//         risk: 'l',
+//         action: {
+//           k: 'mouse',
+//           a: 'click',
+//           q: '___8z',
+//         },
+//       },
+//     ],
+//     clearQueue: false,
+//   }),
+// );
+//
+// LlmApi.addDummyReturn(
+//   JSON.stringify({
+//     a: [
+//       {
+//         intent:
+//           'click the first result link that goes to Wikipedia (use anchor id __78)',
+//         risk: 'l',
+//         action: {
+//           k: 'mouse',
+//           a: 'click',
+//           q: '__78',
+//         },
+//         post: {
+//           t: 'navigation',
+//         },
+//       },
+//     ],
 //     clearQueue: true,
 //   }),
 // );
@@ -159,15 +199,18 @@ export class WebViewLlmSession {
     void,
     void
   > {
-    const promptId = this.prompts.push(prompt);
+    console.log('Prompt queue:', this.promptQueue.length);
+    const promptId = this.prompts.push(prompt) - 1;
+    console.log('Prompt queue:', promptId, this.promptQueue.length);
     if (this.promptQueue.length) {
       if (unshift) {
-        this.promptQueue.unshift({ prompt, onExecComplete });
+        this.promptQueue.splice(1, 0, { prompt, onExecComplete });
       } else {
         this.promptQueue.push({ prompt, onExecComplete });
       }
       return;
     }
+    console.log('Prompt start:', prompt);
     this.promptQueue.push({ prompt, onExecComplete });
     this.breakPromptForExeErr = false;
     this.args = args;
@@ -266,7 +309,7 @@ ${runPrompt}`,
           }
         }
       }
-      console.log(Date.now() - start, 'exec done');
+      console.log(Date.now() - start, 'exec done', this.promptQueue.length);
     }
   }
 
@@ -312,6 +355,7 @@ ${runPrompt}`,
   actionError(actionId: number, error: string) {
     if (this.actions.length === 0) return;
     const currentAction = this.actions[this.currentAction];
+    console.log('Action error:', actionId, error, currentAction);
     if (currentAction.id !== actionId) {
       console.warn(
         'Actions error out of order:',
@@ -333,22 +377,29 @@ ${runPrompt}`,
     this.fixingAction = true;
     const actionToFix = this.actions[this.currentAction];
     if (actionToFix.error && actionToFix.error.length >= ExecutionMaxRetry) {
+      console.log('Too many error, skip fixing');
       this.breakPromptForExeErr = true;
       return;
     }
-    this.execPrompt(
+    console.log('Try fix error:', actionToFix);
+
+    const stream = this.execPrompt(
       `**fix the execution error in [action error]**
       
 [action error]
-${JSON.stringify(actionToFix)}
+${JSON.stringify(actionToFix)}${
+        this.actions.length > this.currentAction + 1
+          ? `
 
 [upcoming actions]
 - ${this.actions
-        .slice(this.currentAction + 1)
-        .map((a) => a.intent)
-        .join('\n- ')}
+              .slice(this.currentAction + 1)
+              .map((a) => a.intent)
+              .join('\n- ')}
         
-if you found any of the above actions is wrong, press LlmWireResult.clearQueue: true in result and send the new actions.
+if you found any of the above actions is wrong, press LlmWireResult.clearQueue: true in result and send the new actions.`
+          : ''
+      }
 
 [original prompt for ref]
 ${this.prompts[actionToFix.promptId!]}
@@ -357,6 +408,7 @@ ${this.prompts[actionToFix.promptId!]}
       this.args,
       true,
       async (newActions, promptId, clearQueue) => {
+        let resp = '';
         if (clearQueue) {
           this.actions.splice(
             this.currentAction,
@@ -377,40 +429,51 @@ ${this.prompts[actionToFix.promptId!]}
             })),
           );
           this.actionId = actionToFix.id + newActions.length;
-          return `Fix exection error, clear queue and got new actions: 
+          resp = `Fix exection error, clear queue and got new actions: 
+-${newActions.map((a) => a.intent).join('\n-')}`;
+        } else {
+          this.actions.splice(
+            this.currentAction,
+            1,
+            {
+              ...newActions[0],
+              promptId,
+              stepPrompt: actionToFix.stepPrompt,
+              risk: actionToFix.risk,
+              id: actionToFix.id,
+            },
+            ...newActions.slice(1).map((newAction, i) => ({
+              ...newAction,
+              promptId,
+              stepPrompt: actionToFix.stepPrompt,
+              risk: actionToFix.risk,
+              id: actionToFix.id + i + 1,
+            })),
+          );
+          const extraId = newActions.length - 1;
+          this.actionId -= newActions.length - extraId;
+          if (extraId) {
+            this.actions
+              .slice(this.currentAction + extraId + 1)
+              .forEach((a) => {
+                a.id += extraId;
+              });
+          }
+          resp = `Fix exection error, got new actions: 
 -${newActions.map((a) => a.intent).join('\n-')}`;
         }
-        this.actions.splice(
-          this.currentAction,
-          1,
-          {
-            ...newActions[0],
-            promptId,
-            stepPrompt: actionToFix.stepPrompt,
-            risk: actionToFix.risk,
-            id: actionToFix.id,
-          },
-          ...newActions.slice(1).map((newAction, i) => ({
-            ...newAction,
-            promptId,
-            stepPrompt: actionToFix.stepPrompt,
-            risk: actionToFix.risk,
-            id: actionToFix.id + i + 1,
-          })),
-        );
-        const extraId = newActions.length - 1;
-        this.actionId -= newActions.length - extraId;
-        if (extraId) {
-          this.actions.slice(this.currentAction + extraId + 1).forEach((a) => {
-            a.id += extraId;
-          });
-        }
-        return `Fix exection error, got new actions: 
--${newActions.map((a) => a.intent).join('\n-')}`;
-
         this.fixingAction = false;
+        console.log('Fixing action done');
         this.execActions();
+        return resp;
       },
     );
+
+    let step;
+    while ((step = await stream.next())) {
+      if (step.done) {
+        break;
+      }
+    }
   }
 }

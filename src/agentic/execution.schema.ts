@@ -21,7 +21,7 @@ const WireSelectorSchema = z.union([
   z.string(),
   z.object({
     id: z.string(),
-    args: z.array(z.string()).optional(),
+    argKeys: z.array(z.string().nullable()).optional(),
   }),
 ]);
 

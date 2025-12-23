@@ -1,14 +1,10 @@
-import { querySelectAll, replaceJsTpl } from './selector';
+import { replaceJsTpl } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import { ToMainIpc } from '../contracts/toMain';
 import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
 import { Util } from './util';
 import { Network } from './network';
-import {
-  WireAction,
-  WireWait,
-  WireSelector,
-} from '../agentic/execution.schema';
+import { WireAction, WireWait } from '../agentic/execution.schema';
 import { WireActionWithWaitAndRec } from '../agentic/session';
 import { MiniHtml } from './miniHtml';
 
@@ -134,6 +130,7 @@ export namespace BrowserActions {
       runningActionSet.push(...toAdd);
       return;
     }
+    window.webView.getHtmlParser(); // make sure html parser is ready before actions start
     runningActionSet = actions;
 
     let canContinue = true;

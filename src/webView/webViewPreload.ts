@@ -49,12 +49,6 @@ const webViewHandler = {
     }
     return htmlParser;
   },
-  getMiniHtml() {
-    if (!htmlParser) {
-      htmlParser = MiniHtml.getHtmlParser();
-    }
-    return htmlParser.genFullHtml();
-  },
   getHtml(select: MiniHtml.Selector | null = null, outerLevel = 0) {
     if (!htmlParser) {
       htmlParser = MiniHtml.getHtmlParser();
@@ -66,7 +60,7 @@ const webViewHandler = {
   },
   getDeltaHtml() {
     if (!htmlParser) {
-      return webViewHandler.getMiniHtml();
+      return webViewHandler.getHtml();
     }
     return htmlParser.genDeltaHtml();
   },
