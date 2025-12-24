@@ -4,6 +4,7 @@ import { initIpcMain } from '../contracts/ipc';
 import { LlmConfig, ToMianIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
+import { openBrowserWindowDialog, showSystemMessageBox } from './dialogs';
 import { TabWebView } from './webView/tab';
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
@@ -97,6 +98,14 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     }
     console.log('takeScreenshot error:', frameId, webViewTabsById);
     return { error: 'Tab not found' };
+  });
+
+  ToMianIpc.showSystemMessageBox.handle(async (_event, opts) => {
+    return showSystemMessageBox(mainWindow, opts);
+  });
+
+  ToMianIpc.openBrowserWindowDialog.handle(async (_event, opts) => {
+    return openBrowserWindowDialog(mainWindow, opts);
   });
 
   ToMianIpc.createTab.handle(async (event, detail) => {

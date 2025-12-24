@@ -44,6 +44,27 @@ export const ToMianIpc = {
     [number], // frameId
     LlmConfig
   >('get-llm-config'),
+  showSystemMessageBox: new IpcMainContract<
+    [
+      {
+        title?: string;
+        message: string;
+        detail?: string;
+        type?: 'none' | 'info' | 'error' | 'question' | 'warning';
+        buttons?: string[];
+      },
+    ],
+    { response: number } | { error: string }
+  >('show-system-message-box'),
+  openBrowserWindowDialog: new IpcMainContract<
+    [
+      {
+        title?: string;
+        message?: string;
+      },
+    ],
+    { result: 'ok' | 'cancel' | 'closed' } | { error: string }
+  >('open-browserwindow-dialog'),
   responsePromptInput: new IpcMainContract<
     [{ answer: Record<string, string>; id: number }],
     undefined

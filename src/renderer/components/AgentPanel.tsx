@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
 import { ToMianIpc } from '../../contracts/toMain';
+import { useDialogs } from '../hooks/useDialogs';
 import { useLayoutStore } from '../state/layoutStore';
+import { MarkdownComposer } from './MarkdownComposer';
+import { MarkdownText } from './MarkdownText';
 
 type Message = {
   id: number;
@@ -20,6 +23,8 @@ export const AgentPanel: React.FC = () => {
     tabbarHeight,
   } = useLayoutStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+  const dialogs = useDialogs();
+  const [input, setInput] = React.useState('');
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
@@ -110,6 +115,68 @@ export const AgentPanel: React.FC = () => {
     }
   };
 
+  const handleShowSystemDialog = async () => {
+    try {
+      const response = await dialogs.showSystemMessageBox({
+        title: 'dialog.showMessageBox(mainWindow)',
+        message: 'This is an OS-native system dialog.',
+        detail: 'Use it as a baseline to compare with a BrowserWindow modal.',
+        type: 'info',
+        buttons: ['OK', 'Cancel'],
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: `System dialog response index: ${response}`,
+          tag: 'Dialog',
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: `System dialog error: ${(err as Error).message}`,
+          tag: 'Error',
+        },
+      ]);
+    }
+  };
+
+  const handleShowBrowserWindowDialog = async () => {
+    try {
+      const result = await dialogs.openBrowserWindowDialog({
+        title: 'BrowserWindow (modal)',
+        message:
+          'This modal is rendered by a BrowserWindow (custom HTML/CSS UI).',
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: `BrowserWindow dialog result: ${result}`,
+          tag: 'Dialog',
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          text: `BrowserWindow dialog error: ${(err as Error).message}`,
+          tag: 'Error',
+        },
+      ]);
+    }
+  };
+
   const updateWebViewLayout = React.useCallback(
     async (isSidebarOpen: boolean) => {
       const { lastFrameId } = window as any;
@@ -127,6 +194,20 @@ export const AgentPanel: React.FC = () => {
     },
     [collapsedWidth, sidebarWidth, tabbarHeight],
   );
+
+  const handleSubmit = React.useCallback(() => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: 'user',
+        text: input,
+      },
+    ]);
+    setInput('');
+  }, [input]);
 
   React.useEffect(() => {
     updateWebViewLayout(sidebarOpen);
@@ -161,9 +242,17 @@ export const AgentPanel: React.FC = () => {
             </button>
             <button
               type="button"
+              onClick={handleShowSystemDialog}
               className="rounded-xl bg-[#3aa5ff] px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-sky-200/60 transition hover:-translate-y-[1px] hover:bg-[#1893ff]"
             >
-              New Chat
+              System Dialog
+            </button>
+            <button
+              type="button"
+              onClick={handleShowBrowserWindowDialog}
+              className="rounded-xl bg-violet-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-violet-200/60 transition hover:-translate-y-[1px] hover:bg-violet-700"
+            >
+              BrowserWindow
             </button>
           </div>
           <button
@@ -200,7 +289,10 @@ export const AgentPanel: React.FC = () => {
                     {msg.tag}
                   </span>
                 )}
-                <div className="whitespace-pre-line">{msg.text}</div>
+                <MarkdownText
+                  text={msg.text}
+                  variant={msg.role === 'user' ? 'inverse' : 'default'}
+                />
                 {msg.image && (
                   <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     <img
@@ -216,21 +308,12 @@ export const AgentPanel: React.FC = () => {
         </div>
 
         {/* Input */}
-        <div className="border-t border-slate-100 bg-white px-4 py-3">
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 shadow-inner shadow-slate-200">
-            <textarea
-              className="flex-1 min-h-[44px] max-h-28 resize-none border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Describe what you want to automate..."
-              rows={1}
-            />
-            <button
-              type="button"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1893ff] text-white shadow-lg shadow-sky-200/60 transition hover:bg-[#0d7fe6]"
-            >
-              <span className="text-sm font-bold">Go</span>
-            </button>
-          </div>
-        </div>
+        <MarkdownComposer
+          value={input}
+          onChange={setInput}
+          onSubmit={handleSubmit}
+          placeholder="Describe what you want to automate..."
+        />
       </div>
     </div>
   );
