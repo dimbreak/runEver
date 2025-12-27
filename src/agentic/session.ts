@@ -1,6 +1,11 @@
-import { ExecutionSession } from './execution';
+import { ExecutionPrompter } from './execution';
 import { TabWebView } from '../main/webView/tab';
-import { WireActionWithWait, ExecutorLlmResult } from './execution.schema';
+import {
+  WireActionWithWait,
+  ExecutorLlmResult,
+  WireSubTask,
+  RiskOrComplexityLevel,
+} from './execution.schema';
 import { LlmApi } from './api';
 import { Util } from '../webView/util';
 import { Network } from '../webView/network';
@@ -14,76 +19,92 @@ export type WireActionWithWaitAndRec = WireActionWithWait & {
   id: number;
 };
 
-type onExecCompleteHandler = (
-  actions: WireActionWithWait[],
-  promptId: number,
-  clearQueue?: boolean,
-) => Promise<string | null>;
-
 const PlanAfterNavigation: symbol = Symbol('PlanAfterNavigation');
 const PlanAfterRerender: symbol = Symbol('PlanAfterRerender');
 
 const ExecutionMaxRetry = 3;
 
 // LlmApi.addDummyReturn(
-//   JSON.stringify({
-//     a: [
-//       {
-//         intent: 'fill search box with the keyword',
-//         risk: 'm',
-//         action: {
-//           k: 'input',
-//           q: {
-//             id: 'APjFqb',
-//             argKeys: ['keyword'],
-//           },
-//           v: '${args.keyword}',
-//         },
+//   `{
+//   "shouldSpiltTask": "yes: form has multiple fields and calendar interaction (likely >5 actions and uncertain UI)",
+//   "a": [
+//     {
+//       "subTaskPrompt": "Fill full name and work email with provided values",
+//       "addArgs": {
+//         "fullName": "Jamie Parker",
+//         "workEmail": "jamie.parker+742@example.com"
 //       },
-//       {
-//         intent: 'submit the search (press Enter)',
-//         risk: 'm',
-//         pre: {
-//           t: 'time',
-//           ms: 100,
-//         },
-//         action: {
-//           k: 'key',
-//           key: 'Enter',
-//           a: 'keyPress',
-//           q: {
-//             id: 'APjFqb',
-//             argKeys: ['keyword'],
-//           },
-//         },
-//         post: {
-//           t: 'navigation',
-//         },
-//       },
-//     ],
-//     todo: {
-//       rc: 'On the search results page, click the first result link whose domain contains the argument website (${args.website}). If links are in a list, choose the topmost result matching that domain and click it.',
+//       "complexity": "m"
 //     },
-//     clearQueue: false,
-//   }),
-// );
-//
-// LlmApi.addDummyReturn(
-//   JSON.stringify({
-//     a: [
-//       {
-//         intent: 'click the first result link that goes to Wikipedia',
-//         risk: 'l',
-//         action: {
-//           k: 'mouse',
-//           a: 'click',
-//           q: '___8z',
-//         },
+//     {
+//       "subTaskPrompt": "Set birthday in the calendar to \${birthYear}-\${birthMonth}-\${birthDay}",
+//       "addArgs": {
+//         "birthYear": "2000",
+//         "birthMonth": "01",
+//         "birthDay": "15"
 //       },
-//     ],
-//     clearQueue: false,
-//   }),
+//       "complexity": "h"
+//     },
+//     {
+//       "subTaskPrompt": "Fill password and confirm password with the provided password",
+//       "addArgs": {
+//         "password": "S3cureP@ssw0rd!"
+//       },
+//       "complexity": "m"
+//     }
+//   ],
+//   "todo": {
+//     "sc": false,
+//     "rc": "Verify that inputs fullName, workEmail, birthYear/birthMonth/birthDay, and password were filled correctly; if correct, click the 'Create account' button to submit."
+//   },
+//   "clearQueue": false
+// }`,
 // );
+// LlmApi.addDummyReturn(`{
+//   "shouldSpiltTask": "no - only two obvious input fields to fill",
+//   "a": [
+//     {
+//       "intent": "fill Full name with \${args.fullName}",
+//       "risk": "m",
+//       "action": {
+//         "k": "input",
+//         "q": {
+//           "id": "__7",
+//           "argKeys": [
+//             "fullName"
+//           ]
+//         },
+//         "v": "\${args.fullName}"
+//       }
+//     },
+//     {
+//       "intent": "fill Work email with \${args.workEmail}",
+//       "risk": "m",
+//       "action": {
+//         "k": "input",
+//         "q": {
+//           "id": "__9",
+//           "argKeys": [
+//             "workEmail"
+//           ]
+//         },
+//         "v": "\${args.workEmail}"
+//       }
+//     }
+//   ],
+//   "clearQueue": false
+// }`);
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
 //
 // LlmApi.addDummyReturn(
 //   JSON.stringify({
@@ -106,17 +127,219 @@ const ExecutionMaxRetry = 3;
 //   }),
 // );
 
+type Prompt = {
+  id: number;
+  parentId?: number;
+  sessionId?: number;
+  goalPrompt: string;
+  subPrompt?: string;
+  argsAdded?: Record<string, string> | null;
+  complexity?: RiskOrComplexityLevel;
+};
+
+const estimatePromptComplexity = (prompt: string) => {
+  const p = prompt.toLowerCase();
+  if (/verify|confirm|make sure|\[action error]/.test(p)) return 'h';
+  // eslint-disable-next-line no-nested-ternary
+  return p.length < 64 ? 'l' : p.length > 256 ? 'h' : 'm';
+};
+
+class ExecutionSession {
+  subSessionQueue: ExecutionSession[];
+  breakPromptForExeErr = false;
+  constructor(
+    public id: number,
+    public promptQueue: Prompt[],
+    private wvSession: WebViewLlmSession,
+    public parent?: ExecutionSession,
+  ) {
+    this.subSessionQueue = [];
+  }
+  async *exec(): AsyncGenerator<
+    string | symbol | WireActionWithWait,
+    void,
+    void
+  > {
+    console.log('Prompt start:', this.promptQueue[0].goalPrompt);
+    let requireScreenshot = false;
+    const { wvSession, promptQueue, id } = this;
+    const { tab, executionSession, args, actions, browserActionLock } =
+      wvSession;
+    let { url } = tab;
+    let stepsStream: AsyncGenerator<
+      WireActionWithWait | WireSubTask,
+      ExecutorLlmResult,
+      void
+    >;
+    const finish = wvSession.setRunningStatus(this);
+    if (promptQueue.length === 0) {
+      yield* this.execSubSessionQueue();
+      finish();
+      return;
+    }
+    while (promptQueue.length) {
+      const promptItem = promptQueue.shift()!;
+      const {
+        subPrompt: runSubPrompt,
+        goalPrompt: runGoalPrompt,
+        id: promptId,
+        complexity,
+      } = promptItem;
+      const start = Date.now();
+      try {
+        stepsStream = executionSession.execPrompt(
+          runGoalPrompt,
+          args,
+          runSubPrompt &&
+            runSubPrompt.includes(`[performed actions]
+-`)
+            ? runSubPrompt.replace(
+                `[performed actions]
+-`,
+                `[performed actions]
+- ${actions.map((s) => s.intent).join('\n- ')}`,
+              )
+            : runSubPrompt,
+          requireScreenshot,
+          complexity,
+        );
+
+        let res:
+          | IteratorYieldResult<WireActionWithWait | WireSubTask>
+          | IteratorReturnResult<ExecutorLlmResult>;
+        while ((res = await stepsStream.next())) {
+          if (res.done) {
+            if (wvSession.fixingAction?.promptId === promptId) {
+              console.log('Fixing action done');
+              wvSession.fixingAction = null;
+              wvSession.execActions();
+            }
+            console.log(Date.now() - start, 'Waiting for complete prompt');
+            // todo fix error sometimes block here
+            await browserActionLock.wait;
+
+            yield* this.execSubSessionQueue();
+
+            if (res.value.todo) {
+              console.log('Waiting for potential page load');
+              await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+              if (tab.url === url) {
+                yield PlanAfterRerender;
+                console.log(Date.now() - start, 'Waiting for page re-render');
+                await Network.waitForNetworkIdle0(
+                  tab.networkIdle0,
+                  tab.networkIdle2,
+                ).then(() => Util.sleep(1000));
+              } else {
+                yield PlanAfterNavigation;
+                console.log(
+                  Date.now() - start,
+                  'Waiting for page to load:',
+                  url,
+                );
+                await tab.pageLoadedLock.wait;
+                executionSession.resetSystemPrompt();
+              }
+              if (this.breakPromptForExeErr) {
+                console.log(
+                  Date.now() - start,
+                  'break prompting for exe err todo',
+                );
+                this.breakPromptForExeErr = false;
+                break;
+              }
+              url = tab.url;
+              requireScreenshot = res.value.todo.sc ?? false;
+              const subPrompt = `**todo from last executor maybe wrong as page state changed, adjust if it conflict with the [goal]**
+${res.value.todo.rc}
+              
+[performed actions]
+-
+`;
+              const newPrompt = wvSession.createPrompt(
+                runGoalPrompt,
+                {},
+                id,
+                estimatePromptComplexity(runGoalPrompt + subPrompt),
+                subPrompt,
+              );
+
+              promptQueue.push(newPrompt);
+              console.log(
+                Date.now() - start,
+                'push todo:',
+                newPrompt.id,
+                promptQueue,
+              );
+            }
+            break;
+          } else {
+            if (this.breakPromptForExeErr) {
+              console.log(Date.now() - start, 'break prompting for exe err');
+              this.breakPromptForExeErr = false;
+              break;
+            }
+            if ((res.value as WireActionWithWait).intent) {
+              console.log(Date.now() - start, 'exec actions:', res.value);
+              wvSession.addAction({
+                ...(res.value as WireActionWithWait),
+                promptId,
+                id: wvSession.actionId++,
+              });
+              wvSession.execActions();
+              yield res.value as WireActionWithWait;
+            } else {
+              console.log(Date.now() - start, 'exec add sub task:', res.value);
+              const newPrompt = wvSession.createPrompt(
+                `${(res.value as WireSubTask).subTaskPrompt}
+**do not add subtask**`,
+                (res.value as WireSubTask).addArgs ?? undefined,
+                id,
+                (res.value as WireSubTask).complexity,
+              );
+              this.addNewSubSession([newPrompt]);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error in exec prompt:', e);
+        finish();
+        throw e;
+      }
+      console.log(Date.now() - start, 'exec done', this.promptQueue.length);
+    }
+    finish();
+  }
+  async *execSubSessionQueue() {
+    const { subSessionQueue } = this;
+    const finished = [];
+    while (subSessionQueue.length) {
+      const subSession = subSessionQueue.shift()!;
+      yield* subSession.exec();
+      finished.push(subSession);
+    }
+    subSessionQueue.push(...finished);
+  }
+  addNewSubSession(queue: Prompt[]) {
+    this.subSessionQueue.push(this.wvSession.createSession(queue, this));
+  }
+}
+
 export class WebViewLlmSession {
-  executionSession: ExecutionSession;
+  executionSession: ExecutionPrompter;
   args: Record<string, any> = {};
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
   actionId = 0;
   browserActionLock = Util.newLock('browserActionLock');
   browserActionLockOk = false;
-  prompts: string[] = [];
-  constructor(private tab: TabWebView) {
-    this.executionSession = new ExecutionSession(tab);
+  prompts: Prompt[] = [];
+  rootSession: ExecutionSession;
+  sessionQueue: ExecutionSession[] = [];
+  runningSession: ExecutionSession[] = [];
+  constructor(public tab: TabWebView) {
+    this.executionSession = new ExecutionPrompter(tab);
+    this.rootSession = new ExecutionSession(0, [], this);
 
     // LlmApi.addDummyReturn(
     //   JSON.stringify({
@@ -134,43 +357,46 @@ export class WebViewLlmSession {
     //   );
     // }, 2000);
   }
-  async *userPrompt(
-    prompt: string,
+  async *initPrompt(
+    promptTxt: string,
     args?: Record<string, string>,
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ): AsyncGenerator<string, void, void> {
     // todo check stage prompt to correct session
+    const { rootSession } = this;
     if (true) {
-      const stepStrem = this.execPrompt(prompt, args);
-      let step;
+      const prompt: Prompt = this.createPrompt(promptTxt, args, 0, 'l');
+      rootSession.promptQueue.push(prompt);
+      const stream = rootSession.exec();
+      let streamChunk;
       let returnStr;
-      while ((step = await stepStrem.next())) {
-        if (!step.done) {
-          switch (typeof step.value) {
+      while ((streamChunk = await stream.next())) {
+        if (!streamChunk.done) {
+          switch (typeof streamChunk.value) {
             case 'object':
-              switch (step.value.risk) {
+              switch (streamChunk.value.risk) {
                 case 'h':
-                  returnStr = `High risk: ${step.value.intent}`;
+                  returnStr = `High risk: ${streamChunk.value.intent}`;
                   break;
                 case 'm':
-                  returnStr = `Medium risk: ${step.value.intent}`;
+                  returnStr = `Medium risk: ${streamChunk.value.intent}`;
                   break;
                 default:
-                  returnStr = step.value.intent ?? '';
+                  returnStr = streamChunk.value.intent ?? '';
                   break;
               }
               yield returnStr;
               break;
             case 'symbol':
-              if (step.value === PlanAfterNavigation) {
+              if (streamChunk.value === PlanAfterNavigation) {
                 yield 'Wait for navigating to a new page';
-              } else if (step.value === PlanAfterRerender) {
+              } else if (streamChunk.value === PlanAfterRerender) {
                 yield 'Wait for rerender the page';
               }
               break;
             default:
-              yield step.value;
+              yield streamChunk.value;
               break;
           }
         } else {
@@ -180,143 +406,12 @@ export class WebViewLlmSession {
     }
   }
 
-  promptQueue: {
-    prompt: string;
-    onExecComplete: onExecCompleteHandler | null;
-  }[] = [];
   breakPromptForExeErr = false;
 
-  async *execPrompt(
-    prompt: string,
-    args: Record<string, any> = {},
-    unshift = false,
-    onExecComplete: null | onExecCompleteHandler = null,
-  ): AsyncGenerator<
-    | WireActionWithWait
-    | string
-    | typeof PlanAfterNavigation
-    | typeof PlanAfterRerender,
-    void,
-    void
-  > {
-    console.log('Prompt queue:', this.promptQueue.length);
-    const promptId = this.prompts.push(prompt) - 1;
-    console.log('Prompt queue:', promptId, this.promptQueue.length);
-    if (this.promptQueue.length) {
-      if (unshift) {
-        this.promptQueue.splice(1, 0, { prompt, onExecComplete });
-      } else {
-        this.promptQueue.push({ prompt, onExecComplete });
-      }
-      return;
-    }
-    console.log('Prompt start:', prompt);
-    this.promptQueue.push({ prompt, onExecComplete });
-    this.breakPromptForExeErr = false;
-    this.args = args;
-    let requireScreenshot = false;
-    let { url } = this.tab;
-    let stepsStream: AsyncGenerator<
-      WireActionWithWait,
-      ExecutorLlmResult,
-      void
-    >;
-    while (this.promptQueue.length) {
-      const { prompt: runPrompt, onExecComplete: onExecCompleteHandler } =
-        this.promptQueue[0];
-      stepsStream = await this.executionSession.execPrompt(
-        runPrompt,
-        this.args,
-        requireScreenshot,
-      );
-
-      let res;
-      const start = Date.now();
-      while ((res = await stepsStream.next())) {
-        if (res.done) {
-          if (onExecCompleteHandler) {
-            const handlerResp = await onExecCompleteHandler(
-              res.value.a,
-              promptId,
-              res.value.clearQueue,
-            );
-            if (handlerResp) {
-              yield handlerResp;
-            }
-          }
-          if (res.value.todo) {
-            console.log(Date.now() - start, 'Waiting for run todo');
-            await this.browserActionLock.wait;
-            console.log('Waiting for potential page load');
-            await Promise.race([
-              Util.sleep(2000),
-              this.tab.pageLoadedLock.wait,
-            ]);
-            if (this.tab.url === url) {
-              yield PlanAfterRerender;
-              console.log(Date.now() - start, 'Waiting for page re-render');
-              await Network.waitForNetworkIdle0(
-                this.tab.networkIdle0,
-                this.tab.networkIdle2,
-              ).then(() => Util.sleep(1000));
-            } else {
-              yield PlanAfterNavigation;
-              console.log(Date.now() - start, 'Waiting for page to load:', url);
-              await this.tab.pageLoadedLock.wait;
-              this.executionSession.resetSystemPrompt();
-            }
-            if (this.breakPromptForExeErr) {
-              console.log(
-                Date.now() - start,
-                'break prompting for exe err todo',
-              );
-              this.breakPromptForExeErr = false;
-              break;
-            }
-            url = this.tab.url;
-            requireScreenshot = res.value.todo.sc ?? false;
-            this.promptQueue.push({
-              prompt: `follow up the task in [todo prompt]
-              
-[performed actions]
-- ${this.actions.map((s) => s.intent).join('\n- ')}
-
-[todo prompt]
-${res.value.todo.rc}
-
-[original prompt for ref]
-${runPrompt}`,
-              onExecComplete: onExecCompleteHandler,
-            });
-          }
-          this.promptQueue.shift();
-          break;
-        } else {
-          if (this.breakPromptForExeErr) {
-            console.log(Date.now() - start, 'break prompting for exe err');
-            this.breakPromptForExeErr = false;
-            break;
-          }
-          if (!onExecCompleteHandler) {
-            console.log(Date.now() - start, 'exec actions:', res.value);
-            this.actions.push({
-              ...res.value,
-              promptId,
-              id: this.actionId++,
-            });
-            this.execActions();
-            yield res.value;
-          }
-        }
-      }
-      console.log(Date.now() - start, 'exec done', this.promptQueue.length);
-    }
-  }
-
   async execActions() {
-    this.browserActionLockOk = false;
-    this.browserActionLock.tryLock();
     if (!this.fixingAction) {
+      this.browserActionLockOk = false;
+      this.browserActionLock.tryLock();
       this.tab.pushActions();
     }
   }
@@ -324,6 +419,24 @@ ${runPrompt}`,
   getRemainActions(): WireActionWithWaitAndRec[] {
     const actions = this.actions.slice(this.currentAction);
     return actions;
+  }
+
+  addAction(action: WireActionWithWaitAndRec) {
+    if (this.fixingAction) {
+      const { fixingAction } = this;
+      if (fixingAction!.offset === 0) {
+        this.actions[fixingAction!.offset + this.currentAction] = action;
+      } else {
+        this.actions.splice(
+          fixingAction!.offset + this.currentAction,
+          0,
+          action,
+        );
+      }
+      fixingAction!.offset++;
+      return;
+    }
+    this.actions.push(action);
   }
 
   actionDone(
@@ -369,12 +482,16 @@ ${runPrompt}`,
     } else {
       currentAction.error = [error];
     }
+
     this.fixAction();
   }
 
-  fixingAction = false;
+  fixingAction: {
+    action: WireActionWithWaitAndRec;
+    offset: number;
+    promptId: number;
+  } | null = null;
   async fixAction() {
-    this.fixingAction = true;
     const actionToFix = this.actions[this.currentAction];
     if (actionToFix.error && actionToFix.error.length >= ExecutionMaxRetry) {
       console.log('Too many error, skip fixing');
@@ -383,97 +500,88 @@ ${runPrompt}`,
     }
     console.log('Try fix error:', actionToFix);
 
-    const stream = this.execPrompt(
-      `**fix the execution error in [action error]**
+    const { sessionId } = this.prompts[actionToFix.promptId!];
+
+    if (sessionId) {
+      const session = this.sessionQueue[sessionId];
+      const prompt = this.createPrompt(
+        this.prompts[actionToFix.promptId!].goalPrompt,
+        undefined,
+        sessionId,
+        'h',
+        `**fix the execution error in [action error]**
       
 [action error]
 ${JSON.stringify(actionToFix)}${
-        this.actions.length > this.currentAction + 1
-          ? `
+          this.actions.length > this.currentAction + 1
+            ? `
 
-[upcoming actions]
+[planed actions]
 - ${this.actions
-              .slice(this.currentAction + 1)
-              .map((a) => a.intent)
-              .join('\n- ')}
+                .slice(this.currentAction + 1)
+                .map((a) => a.intent)
+                .join('\n- ')}
         
-if you found any of the above actions is wrong, press LlmWireResult.clearQueue: true in result and send the new actions.`
-          : ''
-      }
+these actions are blocking by this error, if you found any of the above actions will affected by the fix, press LlmWireResult.clearQueue: true in result and send the new actions.`
+            : ''
+        }`,
+      );
+      session.promptQueue.unshift(prompt);
+      this.fixingAction = {
+        action: actionToFix,
+        offset: 0,
+        promptId: prompt.id,
+      };
 
-[original prompt for ref]
-${this.prompts[actionToFix.promptId!]}
-
-`,
-      this.args,
-      true,
-      async (newActions, promptId, clearQueue) => {
-        let resp = '';
-        if (clearQueue) {
-          this.actions.splice(
-            this.currentAction,
-            this.actions.length - this.currentAction,
-            {
-              ...newActions[0],
-              promptId,
-              stepPrompt: actionToFix.stepPrompt,
-              risk: actionToFix.risk,
-              id: actionToFix.id,
-            },
-            ...newActions.slice(1).map((newAction, i) => ({
-              ...newAction,
-              promptId,
-              stepPrompt: actionToFix.stepPrompt,
-              risk: actionToFix.risk,
-              id: actionToFix.id + i + 1,
-            })),
-          );
-          this.actionId = actionToFix.id + newActions.length;
-          resp = `Fix exection error, clear queue and got new actions: 
--${newActions.map((a) => a.intent).join('\n-')}`;
-        } else {
-          this.actions.splice(
-            this.currentAction,
-            1,
-            {
-              ...newActions[0],
-              promptId,
-              stepPrompt: actionToFix.stepPrompt,
-              risk: actionToFix.risk,
-              id: actionToFix.id,
-            },
-            ...newActions.slice(1).map((newAction, i) => ({
-              ...newAction,
-              promptId,
-              stepPrompt: actionToFix.stepPrompt,
-              risk: actionToFix.risk,
-              id: actionToFix.id + i + 1,
-            })),
-          );
-          const extraId = newActions.length - 1;
-          this.actionId -= newActions.length - extraId;
-          if (extraId) {
-            this.actions
-              .slice(this.currentAction + extraId + 1)
-              .forEach((a) => {
-                a.id += extraId;
-              });
-          }
-          resp = `Fix exection error, got new actions: 
--${newActions.map((a) => a.intent).join('\n-')}`;
-        }
-        this.fixingAction = false;
-        console.log('Fixing action done');
-        this.execActions();
-        return resp;
-      },
-    );
-
-    let step;
-    while ((step = await stream.next())) {
-      if (step.done) {
-        break;
-      }
+      this.browserActionLock.unlock();
     }
+  }
+
+  createSession(
+    queue: Prompt[],
+    parent: ExecutionSession | undefined = undefined,
+  ) {
+    const session = new ExecutionSession(0, queue, this, parent);
+    const sessionId = this.sessionQueue.push(session) - 1;
+    session.id = sessionId;
+    queue.forEach((p) => {
+      p.sessionId = sessionId;
+    });
+    return session;
+  }
+
+  createPrompt(
+    goalPrompt: string,
+    argsAdded: Record<string, string> | undefined = undefined,
+    sessionId: number | undefined = undefined,
+    complexity: RiskOrComplexityLevel | undefined = undefined,
+    subPrompt: string | undefined = undefined,
+  ): Prompt {
+    const prompt: Prompt = {
+      id: 0,
+      sessionId,
+      goalPrompt,
+      subPrompt,
+      argsAdded,
+      complexity:
+        complexity ??
+        estimatePromptComplexity(`${goalPrompt} ${subPrompt ?? ''}`),
+    };
+    prompt.id = this.prompts.push(prompt) - 1;
+    if (argsAdded) {
+      this.args = { ...this.args, ...argsAdded };
+    }
+
+    return prompt;
+  }
+
+  setRunningStatus(session: ExecutionSession) {
+    this.runningSession.unshift(session);
+    return () => {
+      this.runningSession = this.runningSession.slice(
+        this.runningSession.indexOf(session),
+        this.runningSession.length,
+      );
+    };
   }
 }

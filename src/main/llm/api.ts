@@ -172,8 +172,17 @@ export namespace LlmApi {
     stream: AsyncGenerator<string, any, void>,
   ) => {
     const result: string[] = [];
+    const start = Date.now();
+    let firstToken = -1;
     for await (const part of stream) {
+      if (firstToken === -1) {
+        firstToken = Date.now() - start;
+      }
       result.push(part);
+    }
+    const done = Date.now() - start;
+    if (result[0][0] === '{') {
+      result[0] = `{ "firstToken": ${firstToken}, "done": ${done}, ${result[0].slice(1)}`;
     }
     return result.join('');
   };

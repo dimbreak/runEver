@@ -82,7 +82,7 @@ export namespace LlmApi {
           end = Math.min(remain.length, Math.floor(Math.random() * 5 + 1));
           yield remain.slice(0, end);
           remain = remain.slice(end);
-          await Util.sleep(Math.random() * 200);
+          await Util.sleep(Math.random() * 100);
         }
       })(),
     } as any as ReturnType<typeof streamText>;
@@ -104,6 +104,8 @@ export namespace LlmApi {
     const llmApi = await getLlmApi();
     if (llmApi) {
       const start = Date.now();
+      // console.log('Query LLM', prompt);
+      // throw new Error('Not implemented');
       const { textStream } = streamQueryer({
         model: llmApi[model],
         providerOptions: {
@@ -134,8 +136,17 @@ export namespace LlmApi {
           : prompt,
       });
       let first = true;
+      const interval = setInterval(() => {
+        console.log(
+          'Waiting for first token',
+          cacheKey,
+          Date.now() - start,
+          first,
+        );
+      }, 3000);
       for await (const part of textStream) {
         if (first) {
+          clearInterval(interval);
           console.log('Stream first token', cacheKey, Date.now() - start, part);
           first = false;
         }
@@ -154,8 +165,8 @@ export namespace LlmApi {
     return (
       prompt: string,
       attachments: Attachment[] | null = null,
-      model: 'hi' | 'mid' | 'low' = 'mid',
-      reasoning: 'minimal' | 'low' | 'medium' | 'high' = 'low',
+      model: LlmModelType = 'mid',
+      reasoning: ReasoningEffort = 'low',
     ) => {
       return queryLLMApi(
         prompt,

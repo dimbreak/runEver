@@ -6,7 +6,6 @@ import { BrowserActions } from './actions';
 import { Util } from './util';
 import { Network } from './network';
 import { MiniHtml } from './miniHtml';
-import { WireActionWithWait } from '../agentic/execution.schema';
 import { WireActionWithWaitAndRec } from '../agentic/session';
 
 Network.initListener();
@@ -41,34 +40,28 @@ const electronHandler = {
   },
 };
 
-let htmlParser: MiniHtml.Parser | undefined;
 const webViewHandler = {
+  htmlParser: undefined as MiniHtml.Parser | undefined,
   getHtmlParser() {
-    if (!htmlParser) {
-      htmlParser = MiniHtml.getHtmlParser();
-    }
-    return htmlParser;
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return this.htmlParser;
   },
   getHtml(select: MiniHtml.Selector | null = null, outerLevel = 0) {
-    if (!htmlParser) {
-      htmlParser = MiniHtml.getHtmlParser();
-    }
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     if (select) {
-      return htmlParser.genHtmlFormId(select, outerLevel);
+      return dummyCursor.hide(() =>
+        this.htmlParser!.genHtmlFormId(select, outerLevel),
+      );
     }
-    return htmlParser!.genFullHtml();
+    return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
   },
   getDeltaHtml() {
-    if (!htmlParser) {
-      return webViewHandler.getHtml();
-    }
-    return htmlParser.genDeltaHtml();
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return dummyCursor.hide(() => this.htmlParser!.genDeltaHtml());
   },
   getEl(select: MiniHtml.Selector) {
-    if (!htmlParser) {
-      htmlParser = MiniHtml.getHtmlParser();
-    }
-    return htmlParser.getElementFormId(select);
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return this.htmlParser.getElementFormId(select);
   },
   getOcr(fullPage = false) {
     return OCRModel.getFromScreenshot(fullPage);
@@ -83,11 +76,13 @@ const webViewHandler = {
   },
 };
 
+contextBridge.exposeInMainWorld('isPreloadContext', false);
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('webView', webViewHandler);
 
 window.electron = electronHandler;
 window.webView = webViewHandler;
+window.isPreloadContext = true;
 
 export type WebViewHandler = typeof webViewHandler;
 

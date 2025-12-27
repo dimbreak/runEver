@@ -1,4 +1,5 @@
 import { replaceJsTpl } from './selector';
+import { dummyCursor } from './cursor/cursor';
 
 export namespace MiniHtml {
   const PRINT_ATTRS = ['disabled', 'type', 'name', 'method'];
@@ -17,6 +18,7 @@ export namespace MiniHtml {
     label: string;
     visible: DomVisible;
     parent?: MeaningfulElement;
+    bodyDepth: number;
   };
   type DomVisible = DOMRect & {
     visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0';
@@ -59,8 +61,8 @@ export namespace MiniHtml {
     const { scrollX, scrollY, innerWidth, innerHeight } = window;
 
     if (
-      rect.x < scrollX ||
-      rect.y < scrollY ||
+      rect.x < -scrollX ||
+      rect.y < -scrollY ||
       (style.position === 'fixed' &&
         (rect.bottom > innerHeight || rect.right > innerWidth))
     ) {
@@ -152,6 +154,7 @@ export namespace MiniHtml {
     idToEl = new Map<string, MeaningfulElement>();
     observer: MutationObserver | undefined;
     mutatedElements = new Map<Element, MeaningfulElement | null>();
+    lastFullHtml: string | undefined;
     constructor() {
       this.reset();
     }
@@ -159,8 +162,10 @@ export namespace MiniHtml {
       meaningfulEl: MeaningfulElement,
       childLevel: number,
       notShow = false,
-      parentHighlightStyle = '',
+      parentHighlightStyle: string = '',
+      renderedHtml: null | Map<MeaningfulElement, string> = null,
     ): string {
+      if (meaningfulEl.element.isConnected === false) return '';
       const attrs = PRINT_ATTRS.map((attr) => [
         attr,
         meaningfulEl.element.getAttribute(attr),
@@ -203,12 +208,18 @@ export namespace MiniHtml {
         element.scrollHeight - visible.height > 5
           ? `sh=${Math.round(element.scrollHeight)}`
           : '',
+        (tagName === 'input' ||
+          tagName === 'textarea' ||
+          tagName === 'select') &&
+        (element as HTMLInputElement).value
+          ? `val=${quoteAttrVal((element as HTMLInputElement).value)}`
+          : '',
         ...attrs,
       ]
         .filter((str) => str.length)
         .join(' ');
+      const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
       if (visible.visible === true) {
-        const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
         if (parentHighlightStyle && parentHighlightStyle !== highlightStyle) {
           let i = this.styles.highlight[highlightStyle];
           if (i === undefined) {
@@ -221,7 +232,19 @@ export namespace MiniHtml {
       let innerHtml = meaningfulEl.nodes
         ?.map((node) => {
           if (typeof node === 'string') return node.trim();
-          return this.genHtml(node, childLevel - 1, visible?.visible !== true);
+          if (renderedHtml && renderedHtml.has(node)) {
+            const rendered = renderedHtml.get(node);
+            console.log('reusing rendered html', rendered);
+            renderedHtml.delete(node);
+            return rendered;
+          }
+          return this.genHtml(
+            node,
+            childLevel - 1,
+            visible?.visible !== true,
+            highlightStyle,
+            renderedHtml,
+          );
         })
         .join('')
         .replace(spaceRx, ' ')
@@ -236,141 +259,259 @@ export namespace MiniHtml {
         ? `<${tagHtmls}>${innerHtml}</${tagName}>`
         : `<${tagHtmls} />`;
     }
+    findMeaningfulFromParent(el: Element): MeaningfulElement | null {
+      let parent: Element | null = el;
+      while (parent) {
+        const meaningfulEl = this.meaningFulElementByEl.get(parent);
+        if (meaningfulEl) return meaningfulEl;
+        parent = parent.parentElement;
+      }
+      return null;
+    }
+    positionByMutationRecord(
+      record: Node,
+      nodes: (string | MeaningfulElement)[],
+    ): number {
+      if (record.previousSibling === null) {
+        return 0;
+      }
+      if (record.nextSibling === null) {
+        return nodes.length;
+      }
+      let previousToFind: MeaningfulElement | string | null = null;
+      if (record.previousSibling?.nodeType === Node.TEXT_NODE) {
+        previousToFind = record.previousSibling?.textContent;
+      } else if (record.previousSibling?.nodeType === Node.ELEMENT_NODE) {
+        previousToFind =
+          this.meaningFulElementByEl.get(record.previousSibling as Element) ??
+          null;
+      }
+      if (previousToFind) {
+        return nodes.indexOf(previousToFind);
+      }
+      return nodes.length;
+    }
+    handleMutations = (mutations: MutationRecord[]) => {
+      let meaningfulEl: MeaningfulElement | null = null;
+      console.log('mutations', mutations, window.isPreloadContext);
+      mutations.forEach((record) => {
+        if (record.target === dummyCursor.dom) {
+          return;
+        }
+        switch (record.target.nodeType) {
+          case Node.TEXT_NODE:
+            if (record.target.parentElement) {
+              meaningfulEl =
+                this.meaningFulElementByEl.get(record.target.parentElement) ??
+                null;
+              this.mutatedElements.set(
+                record.target.parentElement,
+                meaningfulEl,
+              );
+              if (meaningfulEl) {
+                if (meaningfulEl.nodes === undefined) {
+                  meaningfulEl.nodes = [record.target.textContent!];
+                } else {
+                  const pos = this.positionByMutationRecord(
+                    record.target,
+                    meaningfulEl.nodes,
+                  );
+                  if (pos !== undefined && pos !== -1) {
+                    meaningfulEl.nodes[pos] = record.target.textContent ?? '';
+                  }
+                }
+              }
+            }
+            console.log(
+              'txt update',
+              record.target,
+              record.target.parentElement,
+              meaningfulEl,
+            );
+            return;
+          default:
+            if (record.target instanceof Element) {
+              meaningfulEl =
+                this.findMeaningfulFromParent(record.target) ?? null;
+              if (record.type === 'childList') {
+                if (record.removedNodes.length) {
+                  let toRemove: MeaningfulElement | string | undefined;
+                  Array.from(record.removedNodes).forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                      const stackEl = [node as Element];
+                      let el: Element;
+                      while (stackEl.length) {
+                        el = stackEl.shift()!;
+                        toRemove = this.meaningFulElementByEl.get(el);
+                        if (toRemove) {
+                          this.mutatedElements.set(
+                            node as Element,
+                            toRemove as MeaningfulElement,
+                          );
+                          break;
+                        }
+                        stackEl.push(
+                          ...(Array.from(el.childNodes).filter(
+                            (n) => n.nodeType === Node.ELEMENT_NODE,
+                          ) as Element[]),
+                        );
+                      }
+                      if (toRemove && meaningfulEl) {
+                        meaningfulEl.nodes?.splice(
+                          meaningfulEl.nodes?.indexOf(toRemove),
+                          1,
+                        );
+                      }
+                    } else if (node.nodeType === Node.TEXT_NODE) {
+                      toRemove = node.textContent ?? undefined;
+                    } else {
+                      return;
+                    }
+                    if (toRemove) {
+                      if (meaningfulEl) {
+                        const pos = meaningfulEl.nodes?.indexOf(toRemove);
+                        if (pos !== undefined && pos !== -1) {
+                          meaningfulEl.nodes?.splice(pos, 1);
+                        }
+                      } else if (
+                        typeof toRemove === 'object' &&
+                        toRemove.parent
+                      ) {
+                        const pos = toRemove.parent.nodes?.indexOf(toRemove);
+                        if (pos !== undefined && pos !== -1) {
+                          toRemove.parent.nodes?.splice(pos, 1);
+                        }
+                      }
+                    }
+                  });
+                }
+                if (record.addedNodes.length) {
+                  let toAdd: (MeaningfulElement | string)[] | null;
+                  Array.from(record.addedNodes).forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                      const found = this.meaningFulElementByEl.get(
+                        node as Element,
+                      );
+                      toAdd = found ? [found] : null;
+                      if (!toAdd) {
+                        toAdd = [];
+                        this.parseElement(node as HTMLElement, toAdd);
+                      }
+                      console.log('adding', toAdd, meaningfulEl);
+                      toAdd.forEach((addedEl) => {
+                        this.mutatedElements.set(
+                          (addedEl as MeaningfulElement).element,
+                          addedEl as MeaningfulElement,
+                        );
+                        if ((addedEl as MeaningfulElement).parent) {
+                          this.mutatedElements.set(
+                            (addedEl as MeaningfulElement).parent!.element,
+                            (addedEl as MeaningfulElement).parent!,
+                          );
+                        }
+                      });
+                    } else if (node.nodeType === Node.TEXT_NODE) {
+                      toAdd = node.textContent ? [node.textContent] : null;
+                    } else {
+                      return;
+                    }
+                    if (toAdd && meaningfulEl) {
+                      if (meaningfulEl.nodes === undefined) {
+                        meaningfulEl.nodes = toAdd;
+                      } else {
+                        let el = node as Element;
+                        const childNodes = Array.from(
+                          meaningfulEl.element.childNodes,
+                        );
+                        while (el !== document.body && el.parentElement) {
+                          if (childNodes.includes(el)) {
+                            const pos = this.positionByMutationRecord(
+                              el,
+                              meaningfulEl.nodes,
+                            );
+                            console.log(
+                              'pos',
+                              pos,
+                              node.previousSibling,
+                              node.nextSibling,
+                              toAdd,
+                              meaningfulEl.nodes,
+                            );
+                            if (pos !== undefined && pos !== -1) {
+                              meaningfulEl?.nodes?.splice(pos, 0, ...toAdd);
+                            }
+                            break;
+                          }
+                          el = el.parentElement!;
+                        }
+                      }
+                    }
+                  });
+                }
+              }
+              this.mutatedElements.set(record.target, meaningfulEl);
+            }
+        }
+      });
+
+      console.log(
+        'mutatedElements',
+        this.mutatedElements.size,
+        window.isPreloadContext,
+      );
+    };
     initObserve() {
       if (this.observer) {
         this.mutatedElements.clear();
         return;
       }
-      this.observer = new MutationObserver((mutations) => {
-        let meaningfulEl: MeaningfulElement | null = null;
-        mutations.forEach((record) => {
-          switch (record.target.nodeType) {
-            case Node.TEXT_NODE:
-              if (record.target.parentElement) {
-                meaningfulEl =
-                  this.mutatedElements.get(record.target.parentElement) ?? null;
-                this.mutatedElements.set(
-                  record.target.parentElement,
-                  meaningfulEl,
-                );
-              }
-              return;
-            default:
-              if (record.target instanceof Element) {
-                meaningfulEl =
-                  this.meaningFulElementByEl.get(record.target) ?? null;
-                if (meaningfulEl) {
-                  if (record.type === 'childList') {
-                    if (record.removedNodes.length) {
-                      let toRemove: MeaningfulElement | string | null;
-                      Array.from(record.removedNodes).forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                          toRemove =
-                            this.meaningFulElementByEl.get(node as Element) ??
-                            null;
-                        } else if (node.nodeType === Node.TEXT_NODE) {
-                          toRemove = node.textContent;
-                        } else {
-                          return;
-                        }
-                        if (toRemove) {
-                          const pos = meaningfulEl?.nodes?.indexOf(toRemove);
-                          if (pos !== undefined && pos !== -1) {
-                            meaningfulEl?.nodes?.splice(pos, 1);
-                          }
-                        }
-                      });
-                    }
-                    if (record.addedNodes.length) {
-                      let toAdd: (MeaningfulElement | string)[] | null;
-                      let previousToFind: MeaningfulElement | string | null;
-                      Array.from(record.addedNodes).forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                          const found = this.meaningFulElementByEl.get(
-                            node as Element,
-                          );
-                          toAdd = found ? [found] : null;
-                          if (!toAdd) {
-                            toAdd = [];
-                            this.parseElement(node as HTMLElement, toAdd);
-                          }
-                        } else if (node.nodeType === Node.TEXT_NODE) {
-                          toAdd = node.textContent ? [node.textContent] : null;
-                        } else {
-                          return;
-                        }
-                        if (toAdd) {
-                          if (record.nextSibling === null) {
-                            meaningfulEl?.nodes?.push(...toAdd);
-                          } else if (record.previousSibling === null) {
-                            meaningfulEl?.nodes?.unshift(...toAdd);
-                          } else {
-                            if (
-                              record.previousSibling?.nodeType ===
-                              Node.TEXT_NODE
-                            ) {
-                              previousToFind =
-                                record.previousSibling?.textContent;
-                            } else if (
-                              record.previousSibling?.nodeType ===
-                              Node.ELEMENT_NODE
-                            ) {
-                              previousToFind =
-                                this.meaningFulElementByEl.get(
-                                  record.previousSibling as Element,
-                                ) ?? null;
-                            }
-                            if (previousToFind) {
-                              const previous =
-                                meaningfulEl?.nodes?.indexOf(previousToFind);
-                              if (previous !== undefined && previous !== -1) {
-                                meaningfulEl?.nodes?.splice(
-                                  previous,
-                                  0,
-                                  ...toAdd,
-                                );
-                                return;
-                              }
-                            }
-                            meaningfulEl?.nodes?.push(...toAdd);
-                          }
-                        }
-                      });
-                    }
-                  }
-                }
-                console.log(record.target, meaningfulEl);
-                this.mutatedElements.set(record.target, meaningfulEl);
-              }
-          }
-        });
-      });
+      this.observer = new MutationObserver(this.handleMutations);
       this.observer.observe(document.body, {
         childList: true,
         subtree: true,
         attributes: true,
         characterData: true,
       });
+      document.body.addEventListener('input', (e) => {
+        const meaningfulEl = this.meaningFulElementByEl.get(
+          e.target as Element,
+        );
+        if (meaningfulEl) {
+          this.mutatedElements.set(e.target as Element, meaningfulEl);
+        }
+      });
     }
-    genDeltaHtml(clearMutated = false) {
-      const html = Array.from(this.mutatedElements.entries())
-        .map(([el, meaningfulEl]) => {
+    genDeltaHtml = (clearMutated = false) => {
+      const renderedHtml = new Map<MeaningfulElement, string>();
+      console.log(
+        this.mutatedElements,
+        Array.from(this.mutatedElements.entries()).sort(
+          (a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)),
+        ),
+      );
+      Array.from(this.mutatedElements.entries())
+        .sort((a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)))
+        .forEach(([el, meaningfulEl]) => {
+          if (el.isConnected === false) return '';
           if (meaningfulEl) {
             this.updateElement(meaningfulEl);
-            return this.genHtml(meaningfulEl!, 1, false);
+            renderedHtml.set(
+              meaningfulEl!,
+              this.genHtml(meaningfulEl!, 1, false, '', renderedHtml),
+            );
           }
-          // shouldn't happen
           const toAdd: (MeaningfulElement | string)[] = [];
           this.parseElement(el as HTMLElement, toAdd);
-          return toAdd
-            .map((addedEl) =>
-              typeof addedEl === 'string'
-                ? addedEl
-                : this.genHtml(addedEl, 9999, false),
-            )
-            .join('');
-        })
-        .join('');
+          toAdd.forEach((addedEl) => {
+            if (typeof addedEl === 'object') {
+              renderedHtml.set(
+                addedEl!,
+                this.genHtml(addedEl, 9999, false, '', renderedHtml),
+              );
+            }
+          });
+        });
+      const html = Array.from(renderedHtml.values()).join('');
       const { styles, initStyles } = this;
       const newHighlight = Object.entries(styles.highlight).filter(
         ([style]) => initStyles!.highlight![style] === undefined,
@@ -383,15 +524,16 @@ export namespace MiniHtml {
         this.initStyles!.font = { ...styles.font };
         this.mutatedElements.clear();
       }
-      return `<script>const font = ${JSON.stringify(
-        newFont.reduce(
-          (acc, s) => {
-            acc[`ff${s[1]}`] = s[0];
-            return acc;
-          },
-          {} as Record<string, string>,
-        ),
-      )};
+      return html
+        ? `<script>const font = ${JSON.stringify(
+            newFont.reduce(
+              (acc, s) => {
+                acc[`ff${s[1]}`] = s[0];
+                return acc;
+              },
+              {} as Record<string, string>,
+            ),
+          )};
   const hls = ${JSON.stringify(
     newHighlight.reduce(
       (acc, s) => {
@@ -400,9 +542,11 @@ export namespace MiniHtml {
       },
       {} as Record<string, string>,
     ),
-  )};</script>${html}`;
-    }
+  )};</script>${html}`
+        : '';
+    };
     reset() {
+      this.lastFullHtml = undefined;
       this.idToEl.clear();
       this.meaningFulElementByEl.clear();
       this.meaningFulElements = [];
@@ -414,11 +558,16 @@ export namespace MiniHtml {
       };
       this.initObserve();
     }
-    genFullHtml() {
+    genFullHtml = () => {
       const style = window.getComputedStyle(document.body);
       const { styles } = this;
       this.styles.font[style.fontFamily] = 0;
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff0`)} ${rgbToHex(style.color)}`;
+      console.log(
+        'this.meaningFulElements',
+        this.meaningFulElements,
+        window.isPreloadContext,
+      );
       const html = this.meaningFulElements
         .map((el) =>
           typeof el === 'string'
@@ -426,6 +575,7 @@ export namespace MiniHtml {
             : this.genHtml(el, 9999, false, highlightStyle),
         )
         .join('');
+      this.lastFullHtml = html;
       return `<script>const font = ${JSON.stringify(
         Object.entries(styles.font).reduce(
           (acc, s) => {
@@ -443,8 +593,8 @@ export namespace MiniHtml {
       },
       {} as Record<string, string>,
     ),
-  )};</script>${html}`;
-    }
+  )};</script>${html} //${window.isPreloadContext} ${this.mutatedElements.size}`;
+    };
     genId(id: string | undefined) {
       let thisId = id || `__${(this.added++).toString(36)}`;
       let i = 0;
@@ -457,8 +607,33 @@ export namespace MiniHtml {
       element: HTMLElement,
       meaningFulElements: (MeaningfulElement | string)[] = this
         .meaningFulElements,
-      parentMeaningfulEl: MeaningfulElement | undefined = undefined,
+      parentMeaningfulElement: MeaningfulElement | undefined = undefined,
+      bodyDep = 0,
     ) {
+      let bodyDepth = bodyDep;
+      let parentMeaningfulEl = parentMeaningfulElement;
+      if (bodyDepth === 0 && element !== document.body) {
+        let bodyLookup = element;
+        if (parentMeaningfulEl) {
+          while (bodyLookup !== document.body && bodyLookup.parentElement) {
+            bodyLookup = bodyLookup.parentElement;
+            bodyDepth++;
+          }
+        } else {
+          let foundEl: MeaningfulElement | undefined;
+          while (bodyLookup !== document.body && bodyLookup.parentElement) {
+            bodyLookup = bodyLookup.parentElement;
+            foundEl = this.meaningFulElementByEl.get(bodyLookup);
+            if (foundEl) {
+              parentMeaningfulEl = foundEl;
+              bodyDepth += foundEl.bodyDepth;
+              break;
+            }
+            bodyDepth++;
+          }
+        }
+      }
+
       const tagName = element.tagName.toLowerCase();
       if (
         tagName === 'script' ||
@@ -476,6 +651,7 @@ export namespace MiniHtml {
         visible: checkVisible(element),
         label,
         parent: parentMeaningfulEl,
+        bodyDepth,
       };
 
       Array.from(element.childNodes).forEach((child) => {
@@ -495,6 +671,7 @@ export namespace MiniHtml {
             child as HTMLElement,
             placeholder.nodes,
             placeholder,
+            bodyDepth + 1,
           );
         }
       });
@@ -519,6 +696,7 @@ export namespace MiniHtml {
           meaningfulEl = this.addMeaningfulElement(placeholder);
           meaningFulElements.push(meaningfulEl);
         } else if (placeholder.nodes) {
+          console.log('skipped placeholder', placeholder);
           meaningFulElements.push(...placeholder.nodes);
           placeholder.nodes.forEach((node) => {
             if (typeof node === 'object') {
@@ -548,11 +726,24 @@ export namespace MiniHtml {
         );
         const filterFn =
           Parser.contentFilterFns[selector.filterWith ?? 'default'](filter);
-        meaningfulEl = meaningfulEl?.nodes
-          ?.filter((el) => typeof el === 'object')
-          .find(filterFn);
+        let nodes: MeaningfulElement[] = [];
+        let nextNodes = meaningfulEl?.nodes ?? [];
+        let node: MeaningfulElement;
+        while (nextNodes.length && !meaningfulEl) {
+          nodes = nextNodes.filter((el) => typeof el === 'object');
+          nextNodes = [];
+          meaningfulEl = nodes.find(filterFn);
+          for (node of nodes) {
+            if (filterFn(node)) {
+              meaningfulEl = node;
+            }
+            if (node.nodes) {
+              nextNodes.push(...node.nodes);
+            }
+          }
+        }
       }
-      if (!meaningfulEl) {
+      if (!meaningfulEl || meaningfulEl.element.isConnected === false) {
         throw Parser.ErrIdNotFound;
       }
       return meaningfulEl;
@@ -570,12 +761,10 @@ export namespace MiniHtml {
     }
 
     private addMeaningfulElement(
-      meaningfulElParts: Omit<MeaningfulElement, 'id'>,
+      meaningfulElParts: Omit<MeaningfulElement, 'id'> & { id?: string },
     ): MeaningfulElement {
-      const meaningfulEl = {
-        ...meaningfulElParts,
-        id: this.genId(meaningfulElParts.element.id),
-      };
+      meaningfulElParts.id = this.genId(meaningfulElParts.id);
+      const meaningfulEl = meaningfulElParts as MeaningfulElement;
       this.idToEl.set(meaningfulEl.id, meaningfulEl);
       this.meaningFulElementByEl.set(meaningfulEl.element, meaningfulEl);
       return meaningfulEl;
@@ -589,8 +778,12 @@ export namespace MiniHtml {
       );
     }
   }
+  let htmlParser: Parser | undefined;
   export const getHtmlParser = () => {
-    const parser = new Parser();
-    return parser;
+    if (!htmlParser) {
+      console.log('creating html parser');
+      htmlParser = new Parser();
+    }
+    return htmlParser;
   };
 }

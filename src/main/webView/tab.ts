@@ -2,12 +2,12 @@ import {
   app,
   BrowserWindow,
   clipboard,
-  ipcRenderer,
   Rectangle,
   WebContentsView,
 } from 'electron';
 import path from 'path';
 import settings from 'electron-settings';
+import fs from 'fs';
 import { Network } from '../../webView/network';
 import {
   WebViewLlmSession,
@@ -16,6 +16,8 @@ import {
 import { LlmApi } from '../llm/api';
 import { Util } from '../../webView/util';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+
+const testPrompt: { user: string; system: string } | null = null;
 
 export class TabWebView {
   url: string;
@@ -29,7 +31,7 @@ export class TabWebView {
 
   scrollAdjustment: number;
 
-  llmSession: WebViewLlmSession;
+  llmSession: WebViewLlmSession | undefined;
 
   pageLoadedLock = Util.newLock();
   pageStartLoadingLock = Util.newLock();
@@ -55,23 +57,24 @@ export class TabWebView {
     this.scrollAdjustment =
       (settings.getSync('scrollAdjustment') as number | null) ?? 0;
     this.initView();
-    this.llmSession = new WebViewLlmSession(this);
   }
 
   async pushActions(actions?: WireActionWithWaitAndRec[]) {
-    const pushActions = actions ?? this.llmSession.getRemainActions();
-    console.log('pushActions:', pushActions);
-    return this.webView.webContents.executeJavaScript(
-      `(async ()=>await window.webView.execActions(${JSON.stringify(pushActions)}, ${JSON.stringify(this.llmSession.args)}))()`,
-    );
+    if (this.llmSession) {
+      const pushActions = actions ?? this.llmSession.getRemainActions();
+      console.log('pushActions:', pushActions);
+      return this.webView.webContents.executeJavaScript(
+        `(async ()=>await window.webView.execActions(${JSON.stringify(pushActions)}, ${JSON.stringify(this.llmSession.args)}))()`,
+      );
+    }
   }
 
   actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
-    this.llmSession.actionDone(actionId, argsDelta);
+    this.llmSession?.actionDone(actionId, argsDelta);
   }
 
   actionError(error: string, actionId: number) {
-    this.llmSession.actionError(actionId, error);
+    this.llmSession?.actionError(actionId, error);
   }
 
   async screenshot(x = 0, y = 0, capWidth = 0, capHeight = 0) {
@@ -135,9 +138,11 @@ export class TabWebView {
           webContents.executeJavaScript(
             `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
-          const actions = this.llmSession.getRemainActions();
-          if (actions.length) {
-            this.pushActions(actions);
+          if (this.llmSession) {
+            const actions = this.llmSession.getRemainActions();
+            if (actions.length) {
+              this.pushActions(actions);
+            }
           }
         }
       },
@@ -175,23 +180,48 @@ export class TabWebView {
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ): Promise<string | undefined> {
-    try {
-      const stream = this.llmSession.userPrompt(
-        prompt,
-        args,
-        reasoningEffort,
-        modelType,
-      );
-      let response;
-      while ((response = await stream.next())) {
-        if (!response.done) {
-          this.pushPromptResponse(requestId, response.value);
-        } else {
-          break;
+    if (this.llmSession) {
+      if (prompt === 'run test' && testPrompt) {
+        const promises: Promise<string>[] = [];
+        const query = LlmApi.queryLLMSession(testPrompt.system, 'test');
+        for (let i = 0; i < 3; i++) {
+          const stream = query(testPrompt.user, null, 'mid', 'low');
+          promises.push(LlmApi.wrapStream(stream));
+        }
+        const result: string[] = await Promise.all(promises);
+        console.log(
+          'result:',
+          `${app.getPath('userData')}/prompt-lab/test${new Date().toString()}.json`,
+          result,
+        );
+        try {
+          fs.mkdirSync(`${app.getPath('userData')}/prompt-lab`);
+        } catch (e) {}
+        fs.writeFileSync(
+          `${app.getPath('userData')}/prompt-lab/test${new Date().toISOString()}.json`,
+          JSON.stringify(result, null, 2),
+        );
+      } else {
+        try {
+          const stream = this.llmSession.initPrompt(
+            prompt,
+            args,
+            reasoningEffort,
+            modelType,
+          );
+          let response;
+          while ((response = await stream.next())) {
+            if (!response.done) {
+              this.pushPromptResponse(requestId, response.value);
+            } else {
+              break;
+            }
+          }
+        } catch (e) {
+          console.error('runPrompt error:', e);
+          return Util.formatError(e);
         }
       }
-    } catch (e) {
-      return Util.formatError(e);
     }
   }
   pushPromptResponse(requestId: number, chunk: string) {
@@ -264,5 +294,6 @@ export class TabWebView {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
+    this.llmSession = new WebViewLlmSession(this);
   }
 }

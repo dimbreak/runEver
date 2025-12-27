@@ -8,6 +8,7 @@ declare global {
     webView: WebViewHandler;
     frameId?: number;
     electronDummyCursor?: HTMLDivElement;
+    isPreloadContext?: boolean;
   }
 }
 
