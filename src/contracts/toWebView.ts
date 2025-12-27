@@ -1,6 +1,3 @@
-import { IcpRendererContract, IpcWebViewContract } from './ipc';
-import { LlmModelType, ReasoningEffort } from '../webView/llm';
-
 export const ToWebView = {
   // RunPrompt: new IpcWebViewContract<
   //   [

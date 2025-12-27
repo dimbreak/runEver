@@ -14,6 +14,8 @@ export const isElectron =
 
 export const isMain = isElectron && (process as any).type === 'browser';
 
+const ipcWebViewHandlers: Record<string, (res: any) => void> = {};
+
 class IcpContract<REQ extends Array<any>, RES = any> {
   protected _types?: { req: REQ; res: RES };
 
@@ -29,7 +31,7 @@ export function initIpcMain(main: IpcMain, tabsById: Map<number, TabWebView>) {
   ipcMain = main;
   webViewTabsById = tabsById;
   onIpcMainInitialisedHandlers.forEach((handler) => handler());
-  ipcMain.on('ipcToWebViewResponse', (event, handlerId: number, res) => {
+  ipcMain.on('ipcToWebViewResponse', (_, handlerId: number, res) => {
     const handler = ipcWebViewHandlers[handlerId];
     if (handler) {
       handler(res);
@@ -87,8 +89,6 @@ export class IcpRendererContract<
   }
 }
 type Tail<T extends any[]> = T extends [any, ...infer R] ? R : never;
-
-const ipcWebViewHandlers: Record<string, (res: any) => void> = {};
 
 export class IpcWebViewContract<
   REQ extends [number, ...any],
