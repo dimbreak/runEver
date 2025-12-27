@@ -1,17 +1,28 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
+import type { JSONContent } from '@tiptap/core';
 import { ToMianIpc } from '../../contracts/toMain';
-import { useDialogs } from '../hooks/useDialogs';
 import { useLayoutStore } from '../state/layoutStore';
-import { MarkdownComposer } from './MarkdownComposer';
-import { MarkdownText } from './MarkdownText';
+import { TiptapComposer } from './TiptapComposer';
+import { TiptapContent } from './TiptapContent';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
-  text: string;
+  content: JSONContent;
   tag?: string;
   image?: string;
+};
+
+const textToDoc = (text: string): JSONContent => {
+  const paragraphs = text.split(/\n{2,}/);
+  return {
+    type: 'doc',
+    content: paragraphs.map((paragraph) => ({
+      type: 'paragraph',
+      content: paragraph.length ? [{ type: 'text', text: paragraph }] : [],
+    })),
+  };
 };
 
 export const AgentPanel: React.FC = () => {
@@ -23,29 +34,31 @@ export const AgentPanel: React.FC = () => {
     tabbarHeight,
   } = useLayoutStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
-  const dialogs = useDialogs();
-  const [input, setInput] = React.useState('');
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
       role: 'user',
-      text: 'I want to generate a list of automated tasks to run daily sales summary.',
+      content: textToDoc(
+        'I want to generate a list of automated tasks to run daily sales summary.',
+      ),
     },
     {
       id: 2,
       role: 'assistant',
-      text: 'I will connect to the API, provide daily revenue, order count, and KPI detection.',
+      content: textToDoc(
+        'I will connect to the API, provide daily revenue, order count, and KPI detection.',
+      ),
       tag: 'Plan',
     },
     {
       id: 3,
       role: 'user',
-      text: 'Add "low-margin product" warning, and output CSV.',
+      content: textToDoc('Add "low-margin product" warning, and output CSV.'),
     },
     {
       id: 4,
       role: 'assistant',
-      text: 'Added warning, and pushed CSV to your cloud at 7am.',
+      content: textToDoc('Added warning, and pushed CSV to your cloud at 7am.'),
       tag: 'Ready',
     },
   ]);
@@ -62,7 +75,7 @@ export const AgentPanel: React.FC = () => {
           {
             id: Date.now(),
             role: 'assistant',
-            text: 'No active tab to capture.',
+            content: textToDoc('No active tab to capture.'),
             tag: 'Error',
           },
         ]);
@@ -86,7 +99,7 @@ export const AgentPanel: React.FC = () => {
           {
             id: Date.now(),
             role: 'assistant',
-            text: 'Captured current view.',
+            content: textToDoc('Captured current view.'),
             image: `data:image/jpeg;base64,${base64Img}`,
             tag: 'Screenshot',
           },
@@ -97,7 +110,7 @@ export const AgentPanel: React.FC = () => {
           {
             id: Date.now(),
             role: 'assistant',
-            text: 'Failed to capture screenshot.',
+            content: textToDoc('Failed to capture screenshot.'),
             tag: 'Error',
           },
         ]);
@@ -108,69 +121,7 @@ export const AgentPanel: React.FC = () => {
         {
           id: Date.now(),
           role: 'assistant',
-          text: `Capture error: ${(err as Error).message}`,
-          tag: 'Error',
-        },
-      ]);
-    }
-  };
-
-  const handleShowSystemDialog = async () => {
-    try {
-      const response = await dialogs.showSystemMessageBox({
-        title: 'dialog.showMessageBox(mainWindow)',
-        message: 'This is an OS-native system dialog.',
-        detail: 'Use it as a baseline to compare with a BrowserWindow modal.',
-        type: 'info',
-        buttons: ['OK', 'Cancel'],
-      });
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: 'assistant',
-          text: `System dialog response index: ${response}`,
-          tag: 'Dialog',
-        },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: 'assistant',
-          text: `System dialog error: ${(err as Error).message}`,
-          tag: 'Error',
-        },
-      ]);
-    }
-  };
-
-  const handleShowBrowserWindowDialog = async () => {
-    try {
-      const result = await dialogs.openBrowserWindowDialog({
-        title: 'BrowserWindow (modal)',
-        message:
-          'This modal is rendered by a BrowserWindow (custom HTML/CSS UI).',
-      });
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: 'assistant',
-          text: `BrowserWindow dialog result: ${result}`,
-          tag: 'Dialog',
-        },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: 'assistant',
-          text: `BrowserWindow dialog error: ${(err as Error).message}`,
+          content: textToDoc(`Capture error: ${(err as Error).message}`),
           tag: 'Error',
         },
       ]);
@@ -195,19 +146,16 @@ export const AgentPanel: React.FC = () => {
     [collapsedWidth, sidebarWidth, tabbarHeight],
   );
 
-  const handleSubmit = React.useCallback(() => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  const handleSubmit = React.useCallback((content: JSONContent) => {
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
         role: 'user',
-        text: input,
+        content,
       },
     ]);
-    setInput('');
-  }, [input]);
+  }, []);
 
   React.useEffect(() => {
     updateWebViewLayout(sidebarOpen);
@@ -239,20 +187,6 @@ export const AgentPanel: React.FC = () => {
               className="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-amber-200/60 transition hover:-translate-y-[1px] hover:bg-amber-600"
             >
               Capture View
-            </button>
-            <button
-              type="button"
-              onClick={handleShowSystemDialog}
-              className="rounded-xl bg-[#3aa5ff] px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-sky-200/60 transition hover:-translate-y-[1px] hover:bg-[#1893ff]"
-            >
-              System Dialog
-            </button>
-            <button
-              type="button"
-              onClick={handleShowBrowserWindowDialog}
-              className="rounded-xl bg-violet-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-violet-200/60 transition hover:-translate-y-[1px] hover:bg-violet-700"
-            >
-              BrowserWindow
             </button>
           </div>
           <button
@@ -289,8 +223,8 @@ export const AgentPanel: React.FC = () => {
                     {msg.tag}
                   </span>
                 )}
-                <MarkdownText
-                  text={msg.text}
+                <TiptapContent
+                  content={msg.content}
                   variant={msg.role === 'user' ? 'inverse' : 'default'}
                 />
                 {msg.image && (
@@ -307,10 +241,7 @@ export const AgentPanel: React.FC = () => {
           ))}
         </div>
 
-        {/* Input */}
-        <MarkdownComposer
-          value={input}
-          onChange={setInput}
+        <TiptapComposer
           onSubmit={handleSubmit}
           placeholder="Describe what you want to automate..."
         />
