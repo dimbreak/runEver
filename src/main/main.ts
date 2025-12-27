@@ -17,10 +17,10 @@ import { autoUpdater } from 'electron-updater';
 import { setupIpcHandlers } from './ipcHandlers';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { LlmApi } from './llm/api';
 
 configDotEnv();
 
-console.log('process.env.NODE_ENV', process.env);
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';

@@ -1,8 +1,10 @@
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
+import { ToWebView } from '../../contracts/toWebView';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from './layoutStore';
 import { resolveInitialUrl } from '../utils/formatter';
+import { ToMainIpc } from '../../contracts/toMain';
 
 export class WebTab {
   id: string;
@@ -10,17 +12,39 @@ export class WebTab {
   url: string;
   type: 'webview' = 'webview';
   isRunning?: boolean;
+  frameId: number = -1;
 
   constructor(init: {
     id: string;
     title: string;
     url: string;
     isRunning?: boolean;
+    frameId?: number;
   }) {
     this.id = init.id;
     this.title = init.title;
     this.url = init.url;
     this.isRunning = init.isRunning;
+    this.frameId = init.frameId ?? -1;
+  }
+  async runPrompt(
+    prompt: string,
+    args: Record<string, string>,
+    handleResponse: (response: string) => void,
+  ) {
+    const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
+    const finish = webviewService.registerPromptResponseHandler(
+      requestId,
+      handleResponse,
+    );
+    const err = await ToMainIpc.runPrompt.invoke({
+      frameId: this.frameId,
+      prompt,
+      requestId,
+      args,
+    });
+    finish();
+    return err;
   }
 }
 
@@ -84,6 +108,7 @@ export const useTabStore = create<TabState>((set, get) => ({
           url: resolveInitialUrl(tab.url),
         });
         if (frameId) {
+          tab.frameId = frameId;
           get().registerFrameId(tab.id, frameId);
           await webviewService.layoutTab({
             frameId,
@@ -92,6 +117,7 @@ export const useTabStore = create<TabState>((set, get) => ({
         }
       }
     }
+    set(() => ({ tabs: tabs.slice() }));
   },
   setActiveTab: (id) => {
     set(() => ({ activeTabId: id }));
@@ -105,6 +131,7 @@ export const useTabStore = create<TabState>((set, get) => ({
     });
     if (!frameId) return;
 
+    tab.frameId = frameId;
     get().registerFrameId(tab.id, frameId);
     set((state) => {
       const nextTabs = [...state.tabs, new WebTab(tab)];
@@ -165,11 +192,13 @@ export const useTabStore = create<TabState>((set, get) => ({
     set((state) => ({
       tabs: state.tabs.map((tab) =>
         tab.id === tabId
-          ? new WebTab({
+          ? // todo is this suggested practice? looks weird
+            new WebTab({
               id: tab.id,
               title: tab.title,
               url,
               isRunning: tab.isRunning,
+              frameId: tab.frameId,
             })
           : tab,
       ),
@@ -228,6 +257,7 @@ export const useTabStore = create<TabState>((set, get) => ({
               title,
               url: tab.url,
               isRunning: tab.isRunning,
+              frameId: tab.frameId,
             })
           : tab,
       ),

@@ -1,14 +1,16 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
-import { ToMianIpc } from '../../contracts/toMain';
+import { ToMainIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
+import { useTabStore } from '../state/tabStore';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
   text: string;
+  llmResponding?: boolean;
   tag?: string;
-  image?: string;
+  image?: string; // todo multiple images? other types of files?
 };
 
 export const AgentPanel: React.FC = () => {
@@ -19,7 +21,9 @@ export const AgentPanel: React.FC = () => {
     collapsedWidth,
     tabbarHeight,
   } = useLayoutStore();
+  const { tabs, activeTabId } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+  const [messageInput, setMessageInput] = React.useState('');
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
@@ -44,6 +48,52 @@ export const AgentPanel: React.FC = () => {
       tag: 'Ready',
     },
   ]);
+
+  const handlePrompt = React.useCallback(() => {
+    console.log('send prompt:', messageInput, tabs);
+    const id = Date.now();
+    const respondiongMessage: Message = {
+      id: id + 1,
+      role: 'assistant',
+      text: '',
+      llmResponding: true,
+    };
+    let idx = -1;
+    setMessages((prev) => {
+      idx =
+        prev.push(
+          {
+            id,
+            role: 'user',
+            text: messageInput,
+          },
+          respondiongMessage,
+        ) - 1;
+      return prev.slice();
+    });
+    tabs
+      .find((t) => t.id === activeTabId)
+      ?.runPrompt(
+        messageInput,
+        { keyword: 'openai', website: 'wikipedia' },
+        (chunk) => {
+          console.log('prompt chunk:', chunk);
+          // todo use ref? feel really low efficiency here
+          setMessages((prev) => {
+            prev[idx].text += chunk;
+            return prev.slice();
+          });
+        },
+      )
+      .then((err) => {
+        setMessages((prev) => {
+          prev[idx].llmResponding = false;
+          return prev.slice();
+        });
+        // todo handle error
+        console.log('prompt result', err);
+      });
+  }, [activeTabId, tabs, messageInput]);
 
   const handleCapture = async () => {
     try {
@@ -73,7 +123,7 @@ export const AgentPanel: React.FC = () => {
         slices: [{ x: 0, y: 0 }],
       };
 
-      const imgJpgs = await ToMianIpc.takeScreenshot.invoke(payload);
+      const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
       if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
         const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
         setMessages((prev) => [
@@ -116,7 +166,7 @@ export const AgentPanel: React.FC = () => {
       if (!lastFrameId) return;
       const width = isSidebarOpen ? sidebarWidth : collapsedWidth;
       try {
-        await ToMianIpc.operateTab.invoke({
+        await ToMainIpc.operateTab.invoke({
           id: lastFrameId,
           sidebarWidth: width,
           tabbarHeight,
@@ -200,7 +250,10 @@ export const AgentPanel: React.FC = () => {
                     {msg.tag}
                   </span>
                 )}
-                <div className="whitespace-pre-line">{msg.text}</div>
+                <div className="whitespace-pre-line">
+                  {msg.text}
+                  {msg.llmResponding && <div>...</div>}
+                </div>
                 {msg.image && (
                   <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     <img
@@ -222,10 +275,19 @@ export const AgentPanel: React.FC = () => {
               className="flex-1 min-h-[44px] max-h-28 resize-none border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
               placeholder="Describe what you want to automate..."
               rows={1}
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handlePrompt();
+                }
+              }}
             />
             <button
               type="button"
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1893ff] text-white shadow-lg shadow-sky-200/60 transition hover:bg-[#0d7fe6]"
+              onClick={handlePrompt}
             >
               <span className="text-sm font-bold">Go</span>
             </button>

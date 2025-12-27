@@ -1,12 +1,12 @@
-import { createOpenAI, openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import z from 'zod';
 import { streamText } from 'ai';
 import { LanguageModelV2 } from '@ai-sdk/provider';
 import { ExecutorLlmResultSchema } from './roles/system/executor.schema';
-import { ToMianIpc } from '../contracts/toMain';
+import { ToMainIpc } from '../contracts/toMain';
 
 const getLlmConfig = async () => {
-  return ToMianIpc.getLlmConfig.invoke(window.frameId ?? 0);
+  return ToMainIpc.getLlmConfig.invoke(window.frameId ?? 0);
 };
 
 let llmApiPromise: Promise<{
@@ -22,19 +22,21 @@ const getLlmApi = async (): Promise<{
   if (!llmApiPromise) {
     llmApiPromise = new Promise(async (resolve) => {
       const apiConfig = await getLlmConfig();
+      console.log('apiConfig', apiConfig);
       if (apiConfig.error) {
         console.error('Failed to get LLM config', apiConfig.error);
         return null;
       }
       switch (apiConfig.api) {
-        case 'openai':
-          createOpenAI({ apiKey: apiConfig.key });
+        case 'openai': {
+          const openai = createOpenAI({ apiKey: apiConfig.key });
           resolve({
             hi: openai('gpt-5.2'),
             mid: openai('gpt-5-mini'),
             low: openai('gpt-5-nano'),
           });
           break;
+        }
         default:
           throw new Error(`Unsupported LLM API: ${apiConfig.api}`);
       }

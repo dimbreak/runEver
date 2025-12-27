@@ -1,10 +1,12 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, clipboard, ipcMain, MouseInputEvent } from 'electron';
 import settings from 'electron-settings';
+import { ToMainIpc } from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
-import { LlmConfig, ToMianIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
 import { TabWebView } from './webView/tab';
+import { Util } from '../webView/util';
+import { LlmApi } from './llm/api';
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const webViewTabsById = new Map<number, TabWebView>();
@@ -45,30 +47,21 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   // };
 
   console.log('starting main process ipc-example');
-  ipcMain.handle('ocr-preload-loaded', async (event, arg) => {
-    const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-    console.log('handle', msgTemplate(arg), event.frameId);
-    return msgTemplate('ocr pong');
-  });
-
-  ipcMain.handle('ipc-example', async (event, arg) => {
-    const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
-    console.log(msgTemplate(arg));
-    return msgTemplate('pong');
-  });
-
   initIpcMain(ipcMain, webViewTabsById);
 
-  ToMianIpc.bindFrameId.handle(async (event, arg) => {
+  ToMainIpc.bindFrameId.handle(async (event, arg) => {
     const wvTab = webViewTabsById.get(arg.id);
     console.log('bindFrameId in main process:', event.frameId, arg);
     if (wvTab) {
-      wvTab.frameIds.add(event.frameId);
+      wvTab.pageLoaded(event.frameId, arg.scrollAdjustment);
+      wvTab.webView.webContents.executeJavaScript(
+        'window.electronDummyCursor = document.getElementById("runEver-dummy-cursor");',
+      );
     }
     return { error: 'Tab not found' };
   });
 
-  ToMianIpc.takeScreenshot.handle(async (event, arg) => {
+  ToMainIpc.takeScreenshot.handle(async (event, arg) => {
     const { slices, ttlWidth, vpWidth, ttlHeight, vpHeight, frameId } = arg;
     console.log('takeScreenshot in main process:', frameId);
     const wvTab = webViewTabsById.get(frameId);
@@ -78,18 +71,18 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         await wvTab.webView.webContents.executeJavaScript(
           `window.scrollTo(${slice.x}, ${slice.y});`,
         );
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await Util.sleep(100);
         const width =
           vpWidth + slice.x > ttlWidth ? ttlWidth - slice.x : vpWidth;
         const height =
           vpHeight + slice.y > ttlHeight ? ttlHeight - slice.y : vpHeight;
         imgs.push(
-          await wvTab.webView.webContents.capturePage({
-            x: vpWidth - width,
-            y: vpHeight - height,
+          await wvTab.screenshot(
+            vpWidth - width,
+            vpHeight - height,
             width,
             height,
-          }),
+          ),
         );
       }
 
@@ -99,7 +92,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { error: 'Tab not found' };
   });
 
-  ToMianIpc.createTab.handle(async (event, detail) => {
+  ToMainIpc.createTab.handle(async (event, detail) => {
     console.log(
       'Create tab request received in main process:',
       detail,
@@ -113,7 +106,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { id: frameId };
   });
 
-  ToMianIpc.operateTab.handle(async (event, detail) => {
+  ToMainIpc.operateTab.handle(async (event, detail) => {
     console.log(
       'Operate tab request received in main process:',
       detail,
@@ -148,9 +141,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
         }
         if (detail.url) {
           wvTab.webView.webContents.loadURL(detail.url);
-          await new Promise((resolve) => {
-            setTimeout(resolve, 1000);
-          });
+          await Util.sleep(1000);
         }
         if (detail.exeScript) {
           response = await wvTab.webView.webContents.executeJavaScript(
@@ -163,10 +154,10 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { error: 'Tab not found' };
   });
 
-  ToMianIpc.getLlmConfig.handle(async (event, frameId) => {
+  ToMainIpc.getLlmConfig.handle(async (event, frameId) => {
     const loadedConfig = settings.getSync('llmConfig');
     if (loadedConfig) {
-      return loadedConfig as LlmConfig;
+      return loadedConfig as LlmApi.LlmConfig;
     }
     // const configFromUser = await askUserInput('LLM config', {
     //   'LLM provider': { type: 'select', options: ['OpenAI'] },
@@ -177,7 +168,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     //   key: configFromUser['LLM api key'],
     // };
 
-    const llmConfig: LlmConfig = {
+    const llmConfig: LlmApi.LlmConfig = {
       api: process.env.LLM_API_PROVIDER as 'openai',
       key: process.env.LLM_API_KEY as string,
     };
@@ -191,12 +182,108 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     (v: Record<string, string> | PromiseLike<Record<string, string>>) => void
   > = {};
 
-  ToMianIpc.responsePromptInput.handle(async (event, arg) => {
+  ToMainIpc.responsePromptInput.handle(async (event, arg) => {
     const handler = userInputHandlers[arg.id];
     if (handler) {
       handler(arg.answer);
       delete userInputHandlers[arg.id];
     }
+  });
+
+  ToMainIpc.dispatchEvents.handle(async (event, arg) => {
+    const { frameId, events } = arg;
+    const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
+    if (wvTab) {
+      const wc = wvTab.webView.webContents;
+      wc.focus();
+      let mv: MouseInputEvent | undefined;
+      console.log('Dispatch events in main process:', arg);
+      for (const ev of events) {
+        if (ev.delayMs) {
+          await Util.sleep(ev.delayMs);
+        }
+        wc.sendInputEvent(ev);
+        if (ev.type === 'mouseMove') {
+          await wc.executeJavaScript(
+            `window.electronDummyCursor.style.left = ${ev.x} + 'px';
+window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
+          );
+          mv = ev as MouseInputEvent;
+        }
+      }
+      if (mv) {
+        wvTab.mouseX = mv.x;
+        wvTab.mouseY = mv.y;
+      }
+      return true;
+    }
+    console.warn('Failed Dispatch events in main process:', arg);
+    return false;
+  });
+
+  ToMainIpc.pasteInput.handle(async (event, arg) => {
+    console.log('Paste input:', arg);
+    const { frameId, input } = arg;
+    const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
+    if (wvTab) {
+      await wvTab.pasteText(input);
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.actionDone.handle(async (event, arg) => {
+    console.log('Pop actions:', arg);
+    const { frameId, actionId, argsDelta } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.actionDone(actionId, argsDelta);
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.actionError.handle(async (event, arg) => {
+    console.log('Pop actions:', arg);
+    const { frameId, actionId, error } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.actionError(error, actionId);
+      return true;
+    }
+    return false;
+  });
+  ToMainIpc.runPrompt.handle(async (event, arg) => {
+    console.log('Run prompt:', arg);
+    const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
+      arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      const error = await wvTab.runPrompt(
+        requestId,
+        prompt,
+        args,
+        reasoningEffort,
+        modelType,
+      );
+      return { error };
+    }
+    return { error: 'Tab not found' };
+  });
+  ToMainIpc.auditAction.handle(async (event, arg) => {
+    console.log('Audit action', arg);
+    const { frameId, actionId, html, screenshotRect, extraInfo, selector } =
+      arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      const error = await wvTab.auditAction(
+        actionId,
+        selector,
+        html,
+        screenshotRect,
+        extraInfo,
+      );
+      return { error, approved: error === null };
+    }
+    return { error: 'Tab not found', approved: false };
   });
 
   async function askUserInput<
@@ -222,7 +309,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
       },
     );
 
-    ToRendererIpc.ToUser.send(mainWindow.webContents, {
+    ToRendererIpc.toUser.send(mainWindow.webContents, {
       type: 'prompt',
       message,
       questions,

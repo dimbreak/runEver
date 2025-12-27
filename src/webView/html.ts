@@ -22,7 +22,7 @@ const IGNORE_TAGS = new Set(['script', 'style', 'noscript']);
 const SIMPLE_TAGS = new Set(['option']);
 const CONTAINER_TAGS = new Set(['ul', 'div']);
 
-const getHtmlFromNode = (root: HTMLElement, getDelta = false) => {
+export const getHtmlFromNode = (root: HTMLElement, getDelta = false) => {
   const styles: {
     font: Record<string, number>;
     highlight: Record<string, number>;
@@ -62,7 +62,9 @@ const getHtmlFromNode = (root: HTMLElement, getDelta = false) => {
 };
 
 export const getHtml = () => {
+  console.log('getHtml');
   const html = getHtmlFromNode(document.body);
+  console.log('getHtml', html.length);
   if (observer) {
     mutatedElement.clear();
     observer.disconnect();
@@ -94,11 +96,26 @@ export const getHtml = () => {
 
 export const getDeltaHtml = () => {
   const htmls: string[] = [];
-  mutatedElement.forEach((el) => {
+  const addedEls: Element[] = [];
+  const checkIfAdded = (el: Element) => {
+    let thisEl: Element | null = el;
+    const { body } = document;
+    while (thisEl && thisEl !== body) {
+      // eslint-disable-next-line no-loop-func
+      if (addedEls.find((addedEl) => addedEl === thisEl)) return true;
+      thisEl = el.parentElement;
+    }
+    return false;
+  };
+  mutatedElement.forEach((el, idx) => {
     const styles: {
       font: Record<string, number>;
       highlight: Record<string, number>;
     } = { font: {}, highlight: {} };
+    if (checkIfAdded(el)) {
+      return;
+    }
+    addedEls.push(el);
     htmls.push(
       `${getQuerySelector(el, mutatedElement)}: ${cleanHtml(processElement(el as HTMLElement, null, window.innerWidth, window.innerHeight, styles, [])?.outerHTML ?? `<${el.tagName.toLowerCase()}/>`)}`,
     );
