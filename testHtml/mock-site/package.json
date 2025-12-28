@@ -1,0 +1,26 @@
+{
+  "name": "mock-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "quill": "^2.0.3",
+    "react": "^19.2.1",
+    "react-autosuggest": "^10.1.0",
+    "react-calendar": "^5.1.0",
+    "react-dom": "^19.2.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.1",
+    "@types/react-autosuggest": "^10.1.11",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.8.2",
+    "vite": "^6.1.0"
+  }
+}

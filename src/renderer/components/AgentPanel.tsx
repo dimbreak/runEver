@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { Buffer } from 'buffer';
 import type { JSONContent } from '@tiptap/core';
-import { ToMianIpc } from '../../contracts/toMain';
+import { ToMainIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
+import { useTabStore } from '../state/tabStore';
 import { TiptapComposer } from './TiptapComposer';
 import { TiptapContent } from './TiptapContent';
 
@@ -10,8 +11,10 @@ type Message = {
   id: number;
   role: 'user' | 'assistant';
   content: JSONContent;
+  text?: string;
+  llmResponding?: boolean;
   tag?: string;
-  image?: string;
+  image?: string; // todo multiple images? other types of files?
 };
 
 const textToDoc = (text: string): JSONContent => {
@@ -33,6 +36,7 @@ export const AgentPanel: React.FC = () => {
     collapsedWidth,
     tabbarHeight,
   } = useLayoutStore();
+  const { tabs, activeTabId } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
   const [messages, setMessages] = React.useState<Message[]>([
     {
@@ -63,6 +67,65 @@ export const AgentPanel: React.FC = () => {
     },
   ]);
 
+  const handlePrompt = React.useCallback(
+    (content: JSONContent) => {
+      const userText =
+        content.content
+          ?.map((node) =>
+            node.content?.map((n) => n.text ?? '').join('') ?? '',
+          )
+          .join('\n\n') ?? '';
+      console.log('send prompt:', userText, tabs);
+      const id = Date.now();
+      const respondiongMessage: Message = {
+        id: id + 1,
+        role: 'assistant',
+        content: textToDoc(''),
+        text: '',
+        llmResponding: true,
+      };
+      let idx = -1;
+      setMessages((prev) => {
+        idx =
+          prev.push(
+            {
+              id,
+              role: 'user',
+              content,
+            },
+            respondiongMessage,
+          ) - 1;
+        return prev.slice();
+      });
+      tabs
+        .find((t) => t.id === activeTabId)
+        ?.runPrompt(
+          userText,
+          {
+            // keyword: 'openai', website: 'wikipedia'
+          },
+          (chunk) => {
+            console.log('prompt chunk:', chunk);
+            // todo use ref? feel really low efficiency here
+            setMessages((prev) => {
+              prev[idx].text = (prev[idx].text ?? '') + chunk;
+              prev[idx].content = textToDoc(prev[idx].text ?? '');
+              return prev.slice();
+            });
+          },
+        )
+        .then((err) => {
+          setMessages((prev) => {
+            prev[idx].llmResponding = false;
+            return prev.slice();
+          });
+          // todo handle error
+          console.log('prompt result', err);
+        });
+    },
+    [activeTabId, tabs],
+  );
+
   const handleCapture = async () => {
     try {
       // frameId/bounds from window (set in App.tsx useEffect)
@@ -91,7 +154,7 @@ export const AgentPanel: React.FC = () => {
         slices: [{ x: 0, y: 0 }],
       };
 
-      const imgJpgs = await ToMianIpc.takeScreenshot.invoke(payload);
+      const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
       if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
         const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
         setMessages((prev) => [
@@ -134,7 +197,7 @@ export const AgentPanel: React.FC = () => {
       if (!lastFrameId) return;
       const width = isSidebarOpen ? sidebarWidth : collapsedWidth;
       try {
-        await ToMianIpc.operateTab.invoke({
+        await ToMainIpc.operateTab.invoke({
           id: lastFrameId,
           sidebarWidth: width,
           tabbarHeight,
@@ -146,16 +209,12 @@ export const AgentPanel: React.FC = () => {
     [collapsedWidth, sidebarWidth, tabbarHeight],
   );
 
-  const handleSubmit = React.useCallback((content: JSONContent) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        role: 'user',
-        content,
-      },
-    ]);
-  }, []);
+  const handleSubmit = React.useCallback(
+    (content: JSONContent) => {
+      handlePrompt(content);
+    },
+    [handlePrompt],
+  );
 
   React.useEffect(() => {
     updateWebViewLayout(sidebarOpen);
@@ -227,6 +286,9 @@ export const AgentPanel: React.FC = () => {
                   content={msg.content}
                   variant={msg.role === 'user' ? 'inverse' : 'default'}
                 />
+                {msg.llmResponding && (
+                  <div className="mt-1 text-xs opacity-60">...</div>
+                )}
                 {msg.image && (
                   <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     <img
