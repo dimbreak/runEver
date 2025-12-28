@@ -75,14 +75,14 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Google',
-    url: 'https://www.google.com',
+    url: 'http://localhost:5175/?flow=register',
     isRunning: true,
   }),
-  new WebTab({
-    id: 'tab-2',
-    title: 'OpenAI',
-    url: 'https://www.openai.com',
-  }),
+  // new WebTab({
+  //   id: 'tab-2',
+  //   title: 'OpenAI',
+  //   url: 'https://www.openai.com',
+  // }),
 ];
 
 export const useTabStore = create<TabState>((set, get) => ({

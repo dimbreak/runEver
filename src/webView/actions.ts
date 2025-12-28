@@ -1,36 +1,46 @@
-import {
-  WireAction,
-  WireActionWithWaitAndRisk,
-  WireWait,
-} from '../main/llm/roles/system/executor.schema';
-import { querySelectAll, replaceJsTpl } from './selector';
+import { replaceJsTpl } from './selector';
 import { dummyCursor } from './cursor/cursor';
-import { ToMainIpc } from '../contracts/toMain';
+import { EventWithDelay, ToMainIpc } from '../contracts/toMain';
 import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
 import { Util } from './util';
 import { Network } from './network';
-import { getHtmlFromNode } from './html';
+import { WireAction, WireWait } from '../agentic/execution.schema';
+import { WireActionWithWaitAndRec } from '../agentic/session';
+import { MiniHtml } from './miniHtml';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
   'High risk action only accept selector for unique element',
 );
 
-const getElement = (
-  selector: string,
+//
+// const getElement = (
+//   selector: string,
+//   risk: BrowserActionRisk,
+//   args: Record<string, string> = {},
+// ) => {
+//   const els = querySelectAll(selector, args);
+//   if (els.length === 0) {
+//     throw ErrElementNotSelected;
+//   } else if (els.length > 1 && risk === 'h') {
+//     throw ErrMultipleElementsSelectedForHighRisk;
+//   }
+//   return els[0] as HTMLElement;
+// };
+
+const getElementById = (
+  selector: MiniHtml.Selector,
   risk: BrowserActionRisk,
   args: Record<string, string> = {},
 ) => {
-  const els = querySelectAll(selector, args);
-  if (els.length === 0) {
+  const el = window.webView.getEl(selector);
+  if (!el?.element) {
     throw ErrElementNotSelected;
-  } else if (els.length > 1 && risk === 'h') {
-    throw ErrMultipleElementsSelectedForHighRisk;
   }
-  return els[0] as HTMLElement;
+  return el.element;
 };
 
-const TypingDelayMsHalf = 60;
+const TypingDelayMsHalf = 40;
 
 const SAFE_KEYPRESS_RE = /^[a-zA-Z0-9 `~!@#$%^&*()\-_=+[\]{};:'",.<>/?]*$/;
 
@@ -38,34 +48,34 @@ const DEFAULT_TIMEOUT_MS = 10000;
 
 export namespace BrowserActions {
   export const ErrWaitTimeout = new Error('Run action wait timeout');
-  let runningActionSet: WireActionWithWaitAndRisk[] | null = null;
-  const checkDomDisappear = async (selector: string) => {
-    let el = document.querySelector(selector);
+  let runningActionSet: WireActionWithWaitAndRec[] | null = null;
+  const checkDomDisappear = async (selector: MiniHtml.Selector) => {
+    let el = window.webView.getEl(selector);
     while (true) {
       if (
-        !el ||
-        el.getBoundingClientRect().height === 0 ||
-        window.getComputedStyle(el).opacity === '0'
+        !el.element ||
+        el.element.getBoundingClientRect().height === 0 ||
+        window.getComputedStyle(el.element).opacity === '0'
       ) {
         return;
       }
       await Util.sleep(100);
-      el = document.querySelector(selector);
+      el = window.webView.getEl(selector);
     }
   };
-  const checkDomAppear = async (selector: string) => {
-    let el = document.querySelector(selector);
+  const checkDomAppear = async (selector: MiniHtml.Selector) => {
+    let el = window.webView.getEl(selector);
     while (true) {
       if (
-        el &&
-        el.getBoundingClientRect().height > 0 &&
-        window.getComputedStyle(el).opacity !== '0'
+        el.element &&
+        el.element.getBoundingClientRect().height > 0 &&
+        window.getComputedStyle(el.element).opacity !== '0'
       ) {
         return;
       }
       await Util.sleep(100);
       if (!el) {
-        el = document.querySelector(selector);
+        el = window.webView.getEl(selector);
       }
     }
   };
@@ -110,7 +120,7 @@ export namespace BrowserActions {
     }
   };
   export const execActions = async (
-    actions: WireActionWithWaitAndRisk[],
+    actions: WireActionWithWaitAndRec[],
     args: Record<string, string>,
   ) => {
     if (runningActionSet?.length) {
@@ -120,6 +130,7 @@ export namespace BrowserActions {
       runningActionSet.push(...toAdd);
       return;
     }
+    window.webView.getHtmlParser(); // make sure html parser is ready before actions start
     runningActionSet = actions;
 
     let canContinue = true;
@@ -140,57 +151,64 @@ export namespace BrowserActions {
       canContinue = false;
       popAction(i);
     };
-    let action: WireActionWithWaitAndRisk;
+    let rec: WireActionWithWaitAndRec;
+    let action: WireAction;
     let argsDelta: Record<string, string> | undefined;
     for (let i = 0, c = actions.length; i < c; i++) {
       if (!canContinue) {
         console.log('actions not continue');
         break;
       }
-      action = actions[i];
+      rec = actions[i];
+      action = rec.action;
       argsDelta = undefined;
       console.log('actions continue', action);
       try {
-        if (action.pre) {
-          await waitAction(action.pre);
+        if (rec.pre) {
+          await waitAction(rec.pre);
         }
-        window.onbeforeunload = onbeforeunload(action.id);
+        window.onbeforeunload = onbeforeunload(rec.id);
         switch (action.k) {
           case 'url':
-            await navigate(action, action.risk, args);
+            await navigate(action, rec.risk, args);
             break;
           case 'dragAndDrop':
-            await dragAndDrop(action, action.risk, args);
+            await dragAndDrop(action, rec.risk, args);
             break;
           case 'scroll':
-            await scroll(action, action.risk, args);
+            await scroll(action, rec.risk, args);
             break;
           case 'focus':
-            await focus(action, action.risk, args);
+            await focus(action, rec.risk, args);
             break;
           case 'input': // audit
-            await input(action, action.risk, args);
+            await input(action, rec.risk, args);
             break;
           case 'key': // audit
-            await key(action, action.risk, args);
+            await key(action, rec.risk, args);
             break;
           case 'mouse': // audit
-            await mouse(action, action.risk, args);
+            await mouse(action, rec.risk, args);
             break;
-          case 'setArgument': {
-            const { v } = action;
-            if (!v && action.rc) {
-              const el = getElement(action.rc, action.risk, args);
-              if (!action.attr) {
-                args[action.a] = el.textContent ?? '';
-              } else {
-                args[action.a] = el.getAttribute(action.attr) ?? '';
+          case 'setArg': {
+            const { kv } = action;
+            // eslint-disable-next-line no-loop-func
+            Object.entries(kv).forEach(([k, v]) => {
+              if (typeof v === 'string') {
+                args[k] = replaceJsTpl(v, args);
+              } else if (typeof v === 'object') {
+                const el = getElementById(v.q, rec.risk, args);
+                if (!v.attr) {
+                  args[k] = el.textContent ?? '';
+                } else if (v.attr === 'textContent') {
+                  args[k] = el.textContent ?? '';
+                } else {
+                  args[k] = el.getAttribute(v.attr) ?? '';
+                }
               }
-            } else {
-              args[action.a] = v ?? '';
-            }
-            argsDelta = { [action.a]: args[action.a] };
-            console.log('setArgument', action, args[action.a]);
+              argsDelta = { ...argsDelta, [k]: args[k] };
+            });
+            console.log('setArgument', action, argsDelta);
           }
           case 'setCtx':
             // todo
@@ -199,14 +217,14 @@ export namespace BrowserActions {
             console.warn('Unknown action', action);
         }
         window.onbeforeunload = null;
-        await popAction(action.id, argsDelta);
-        if (action.post) {
-          await waitAction(action.post);
+        await popAction(rec.id, argsDelta);
+        if (rec.post) {
+          await waitAction(rec.post);
         }
       } catch (e) {
         await ToMainIpc.actionError.invoke({
           frameId: window.frameId!,
-          actionId: action.id,
+          actionId: rec.id,
           error:
             e instanceof Error
               ? `${e.message}: ${JSON.stringify(e)}`
@@ -245,9 +263,9 @@ export namespace BrowserActions {
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
-    const srcEl = getElement(action.sq, risk, args);
+    const srcEl = getElementById(action.sq, risk, args);
     if (action.dq) {
-      const destEl = getElement(action.dq, risk, args);
+      const destEl = getElementById(action.dq, risk, args);
       await dummyCursor.mouseEvent('mouseDown', srcEl);
       await dummyCursor.moveToEl(destEl);
       await dummyCursor.mouseEvent('mouseUp');
@@ -266,7 +284,7 @@ export namespace BrowserActions {
     args: Record<string, string> = {},
   ) => {
     await dummyCursor.scrollTo(
-      action.q ? getElement(action.q, risk, args) : document.body,
+      action.q ? getElementById(action.q, risk, args) : document.body,
       new DOMRect(action.x ?? 0, action.y ?? 0, 0, 0),
     );
   };
@@ -275,26 +293,22 @@ export namespace BrowserActions {
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
-    const el = getElement(action.q, risk, args);
+    const el = getElementById(action.q, risk, args);
     await dummyCursor.mouseEvent('click', el);
   };
   export const input = async (
-    action: Extract<WireActionWithWaitAndRisk, { k: 'input' }>,
+    action: Extract<WireAction, { k: 'input' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
-    const el = getElement(action.q, risk, args);
+    const el = getElementById(action.q, risk, args);
+    console.log('input', action, el);
     if (document.activeElement !== el && el !== document.body) {
       await dummyCursor.mouseEvent('click', el);
     }
     const value = replaceJsTpl(action.v, args);
-    if (action.risk === 'h') {
-      if (!(await auditBeforeEvents(action, action.q, el, { input: value }))) {
-        runningActionSet = null;
-        return;
-      }
-    }
     if (value.length < 64 && SAFE_KEYPRESS_RE.test(value)) {
+      // todo need fix
       await ToMainIpc.dispatchEvents.invoke({
         frameId: window.frameId!,
         events: value.split('').flatMap((keyCode) => [
@@ -323,11 +337,13 @@ export namespace BrowserActions {
     }
   };
   export const key = async (
-    action: Extract<WireActionWithWaitAndRisk, { k: 'key' }>,
+    action: Extract<WireAction, { k: 'key' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
+    repeat = 0,
   ) => {
-    const el = action.q ? getElement(action.q, risk, args) : document.body;
+    const el = action.q ? getElementById(action.q, risk, args) : document.body;
+    console.log('key', action, el);
     if (document.activeElement !== el && el !== document.body) {
       await dummyCursor.mouseEvent('click', el);
     }
@@ -339,106 +355,69 @@ export namespace BrowserActions {
     if (action.m === true) modifiers.push('meta');
     if (action.s === true) modifiers.push('shift');
 
-    if (action.risk === 'h') {
-      if (
-        !(await auditBeforeEvents(action, action.q ?? 'body', el, {
-          modifiers: modifiers.join(','),
-        }))
-      ) {
-        runningActionSet = null;
-        return;
+    const events: EventWithDelay[] =
+      action.a === 'keyPress'
+        ? [
+            {
+              type: 'keyDown',
+              keyCode: action.key,
+              modifiers,
+            },
+            {
+              type: 'char',
+              keyCode: action.key,
+              delayMs: 0,
+              modifiers,
+            },
+            {
+              type: 'keyUp',
+              keyCode: action.key,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+              modifiers,
+            },
+          ]
+        : [
+            {
+              type: action.a,
+              keyCode: action.key,
+              modifiers,
+            },
+          ];
+
+    if (repeat) {
+      events[0].delayMs = Math.random() * 150 + 150;
+      const toClone = events.slice();
+      for (let i = 1; i < repeat; i++) {
+        events.push(...toClone);
       }
+      events[0] = { ...events[0], delayMs: 0 };
     }
 
     await ToMainIpc.dispatchEvents.invoke({
       frameId: window.frameId!,
-      events:
-        action.a === 'keyPress'
-          ? [
-              {
-                type: 'keyDown',
-                keyCode: action.key,
-                modifiers,
-              },
-              {
-                type: 'char',
-                keyCode: action.key,
-                delayMs: 0,
-                modifiers,
-              },
-              {
-                type: 'keyUp',
-                keyCode: action.key,
-                delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-                modifiers,
-              },
-            ]
-          : [
-              {
-                type: action.a,
-                keyCode: action.key,
-                modifiers,
-              },
-            ],
+      events,
     });
   };
   export const mouse = async (
-    action: Extract<WireActionWithWaitAndRisk, { k: 'mouse' }>,
+    action: Extract<WireAction, { k: 'mouse' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
   ) => {
-    const el = getElement(action.q, risk, args);
-    if (action.risk === 'h') {
-      if (!(await auditBeforeEvents(action, action.q, el))) {
-        runningActionSet = null;
-        return;
-      }
-    }
+    const el = getElementById(action.q, risk, args);
+    console.log('mouse', action, el);
     switch (action.a) {
       case 'click':
       case 'dblclick':
       case 'mouseDown':
       case 'mouseUp':
-      case 'mouseEnter':
-      case 'mouseMove':
-        await dummyCursor.mouseEvent(action.a, el);
+        await dummyCursor.mouseEvent(action.a, el, action.repeat ?? 0);
         break;
+      case 'mouseenter':
       case 'mouseover':
         await dummyCursor.moveToEl(el);
         break;
       default:
         break;
     }
-  };
-  const auditBeforeEvents = async (
-    action: WireActionWithWaitAndRisk,
-    selector: string,
-    el: HTMLElement,
-    extraInfo: Record<string, string> = {},
-  ): Promise<boolean> => {
-    let pickedEl = el;
-    if ((el as HTMLInputElement).form) {
-      pickedEl = (el as HTMLInputElement).form ?? el.parentElement ?? el;
-    } else {
-      pickedEl = el.parentElement ?? el;
-    }
-    const html = await getHtmlFromNode(pickedEl);
-    const elHtml = await getHtmlFromNode(el);
-    if (html !== elHtml) {
-      html.replace(
-        elHtml,
-        elHtml.replace(/^<([^\s\r\n>]+)/, '<$1 runever-selected="true"'),
-      );
-    }
-    const result = await ToMainIpc.auditAction.invoke({
-      frameId: window.frameId!,
-      selector,
-      actionId: action.id,
-      html: await getHtmlFromNode(pickedEl),
-      screenshotRect: pickedEl.getBoundingClientRect(),
-      extraInfo,
-    });
-    console.log('audit result', result);
-    return result.approved;
   };
 }

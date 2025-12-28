@@ -105,6 +105,7 @@ class DummyCursor {
   async mouseEvent(
     action: MouseInputEvent['type'] | 'click' | 'dblclick',
     el?: Element,
+    repeat: number = 0,
   ) {
     const { x: clientX, y: clientY } = this;
     if (el) {
@@ -174,7 +175,7 @@ class DummyCursor {
             x: this.x,
             y: this.y,
             delayMs: Math.random() * 50 + 50,
-            clickCount: 2,
+            clickCount: 1,
           },
           {
             type: 'mouseUp',
@@ -182,7 +183,7 @@ class DummyCursor {
             x: this.x,
             y: this.y,
             delayMs: Math.random() * 50 + 50,
-            clickCount: 2,
+            clickCount: 1,
           },
         ];
         break;
@@ -199,6 +200,14 @@ class DummyCursor {
           },
         ];
     }
+    if (repeat) {
+      events[0].delayMs = Math.random() * 150 + 150;
+      const toClone = events.slice();
+      for (let i = 1; i < repeat; i++) {
+        events.push(...toClone);
+      }
+      events[0] = { ...events[0], delayMs: 0 };
+    }
     await ToMainIpc.dispatchEvents.invoke({
       frameId: window.frameId!,
       events,
@@ -208,7 +217,7 @@ class DummyCursor {
     const thisRect = rect ?? el.getBoundingClientRect();
     let { x, y } = thisRect;
     const { width, height } = thisRect;
-    if (x > window.innerWidth || y > window.innerHeight) {
+    if (x > window.innerWidth || y > window.innerHeight || x < 0 || y < 0) {
       const scrolled = await this.scrollTo(document.body, thisRect);
       x -= scrolled.x;
       y -= scrolled.y;
@@ -246,6 +255,12 @@ class DummyCursor {
     this.y = y;
     this.dom!.style.top = `${y + 1}px`;
     this.dom!.style.left = `${x + 1}px`;
+  }
+  hide<A extends any[], T>(fn: () => T): T {
+    this.dom!.style.display = 'none';
+    const ret = fn();
+    this.dom!.style.display = '';
+    return ret;
   }
 }
 

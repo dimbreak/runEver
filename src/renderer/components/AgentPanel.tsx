@@ -75,7 +75,9 @@ export const AgentPanel: React.FC = () => {
       .find((t) => t.id === activeTabId)
       ?.runPrompt(
         messageInput,
-        { keyword: 'openai', website: 'wikipedia' },
+        {
+          // keyword: 'openai', website: 'wikipedia'
+        },
         (chunk) => {
           console.log('prompt chunk:', chunk);
           // todo use ref? feel really low efficiency here

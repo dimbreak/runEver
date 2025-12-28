@@ -5,9 +5,8 @@ import { dummyCursor } from './cursor/cursor';
 import { BrowserActions } from './actions';
 import { Util } from './util';
 import { Network } from './network';
-import { WireActionWithWaitAndRisk } from '../main/llm/roles/system/executor.schema';
-import { getDeltaHtml, getHtml, getHtmlFromNode } from './html';
-import { querySelectAll } from './selector';
+import { MiniHtml } from './miniHtml';
+import { WireActionWithWaitAndRec } from '../agentic/session';
 
 Network.initListener();
 
@@ -42,37 +41,33 @@ const electronHandler = {
 };
 
 const webViewHandler = {
-  getHtml(
-    selector: string | null = null,
-    args: Record<string, string> = {},
-    outerLevel = 0,
-  ) {
-    if (selector) {
-      return querySelectAll(selector, args)
-        .map((el) => {
-          let thisEl = el;
-          if (outerLevel) {
-            for (let i = 0; i < outerLevel; i++) {
-              if (!thisEl.parentElement || thisEl === document.body) {
-                break;
-              }
-              thisEl = thisEl.parentElement;
-            }
-          }
-          return getHtmlFromNode(thisEl as HTMLElement);
-        })
-        .join('\n');
+  htmlParser: undefined as MiniHtml.Parser | undefined,
+  getHtmlParser() {
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return this.htmlParser;
+  },
+  getHtml(select: MiniHtml.Selector | null = null, outerLevel = 0) {
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    if (select) {
+      return dummyCursor.hide(() =>
+        this.htmlParser!.genHtmlFormId(select, outerLevel),
+      );
     }
-    return getHtml();
+    return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
   },
   getDeltaHtml() {
-    return getDeltaHtml();
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return dummyCursor.hide(() => this.htmlParser!.genDeltaHtml());
+  },
+  getEl(select: MiniHtml.Selector) {
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return this.htmlParser.getElementFormId(select);
   },
   getOcr(fullPage = false) {
     return OCRModel.getFromScreenshot(fullPage);
   },
   async execActions(
-    actions: WireActionWithWaitAndRisk[],
+    actions: WireActionWithWaitAndRec[],
     args: Record<string, string>,
   ) {
     if (actions.length) {
@@ -81,11 +76,13 @@ const webViewHandler = {
   },
 };
 
+contextBridge.exposeInMainWorld('isPreloadContext', false);
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('webView', webViewHandler);
 
 window.electron = electronHandler;
 window.webView = webViewHandler;
+window.isPreloadContext = true;
 
 export type WebViewHandler = typeof webViewHandler;
 

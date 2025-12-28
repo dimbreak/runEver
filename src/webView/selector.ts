@@ -221,8 +221,12 @@ export const replaceJsTpl = (
     if (tpl[0] !== '`') {
       js = `\`${js}\``;
     }
+    // todo run in iframe sandbox
     // eslint-disable-next-line no-eval
-    return eval(`((args)=>${js})(${JSON.stringify(args)})`) as string;
+    return eval(`((args)=>{
+    const window = undefined, document = undefined;
+    return ${js};
+    })(${JSON.stringify(args)})`) as string;
   }
   return tpl;
 };

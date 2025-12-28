@@ -4,6 +4,7 @@ export enum JsonStreamingEventType {
   Number = 'number',
   Keyword = 'keyword',
   Array = 'array',
+  Error = 'error',
 }
 
 export type JsonStreamingEvent =
@@ -31,6 +32,11 @@ export type JsonStreamingEvent =
       type: JsonStreamingEventType.Object;
       key: number | string | null;
       endValue?: Record<string, any>;
+    }
+  | {
+      type: JsonStreamingEventType.Error;
+      detail: string;
+      offset?: number;
     };
 
 type Frame =
@@ -84,8 +90,11 @@ export class JsonStreamingParser {
 
   private numBuf = '';
   private kwBuf = '';
+  private pendingStringValue: string | null = null;
+  private pendingStringNeedsConcat = false;
 
   private chunks: string[] = [];
+  private totalOffset = 0;
 
   constructor(private readonly buildValues: boolean = false) {}
 
@@ -97,122 +106,155 @@ export class JsonStreamingParser {
     const events: JsonStreamingEvent[] = [];
     if (this.rootDone) return events;
     this.chunks.push(chunk);
-    for (let i = 0; i < chunk.length; i++) {
-      const ch = chunk[i];
+    const baseOffset = this.totalOffset;
+    let i = 0;
+    try {
+      for (i = 0; i < chunk.length; i++) {
+        const ch = chunk[i];
 
-      // If we're inside a token mode, handle it first
-      if (this.mode === Mode.STRING) {
-        this.consumeStringChar(ch, events);
-        continue;
-      }
-      if (this.mode === Mode.NUMBER) {
-        // number ends when we hit a non-number char (but we must NOT consume it)
-        if (this.isNumberChar(ch)) {
-          this.numBuf += ch;
+        // If we're inside a token mode, handle it first
+        if (this.mode === Mode.STRING) {
+          this.consumeStringChar(ch, events);
           continue;
-        } else {
-          this.finishNumber(events);
+        }
+        if (this.mode === Mode.NUMBER) {
+          // number ends when we hit a non-number char (but we must NOT consume it)
+          if (this.isNumberChar(ch)) {
+            this.numBuf += ch;
+            continue;
+          } else {
+            this.finishNumber(events);
+            i--; // reprocess this char in DEFAULT mode
+            continue;
+          }
+        }
+        if (this.mode === Mode.KEYWORD) {
+          // keyword is [a-z]
+          if (/[a-z]/i.test(ch)) {
+            this.kwBuf += ch;
+            // we can early-finish if exact match true/false/null and next char boundary arrives
+            continue;
+          } else {
+            this.finishKeyword(events);
+            i--; // reprocess boundary char
+            continue;
+          }
+        }
+
+        if (this.pendingStringValue !== null) {
+          if (this.isWS(ch)) continue;
+          if (ch === '+') {
+            this.pendingStringNeedsConcat = true;
+            continue;
+          }
+          if (this.pendingStringNeedsConcat) {
+            if (ch === '"') {
+              // start concatenated string segment
+              this.mode = Mode.STRING;
+              this.strBuf = '';
+              this.strEsc = false;
+              this.strUnicodeNeeded = 0;
+              this.strUnicodeHex = '';
+              this.strIsKey = false;
+              continue;
+            }
+            throw new Error(`Expected string after '+'`);
+          }
+          this.flushPendingString(events);
           i--; // reprocess this char in DEFAULT mode
           continue;
         }
-      }
-      if (this.mode === Mode.KEYWORD) {
-        // keyword is [a-z]
-        if (/[a-z]/i.test(ch)) {
-          this.kwBuf += ch;
-          // we can early-finish if exact match true/false/null and next char boundary arrives
+
+        // DEFAULT mode
+        if (this.isWS(ch)) continue;
+
+        if (ch === '"') {
+          // start string (could be a key or a value depending on context)
+          this.mode = Mode.STRING;
+          this.strBuf = '';
+          this.strEsc = false;
+          this.strUnicodeNeeded = 0;
+          this.strUnicodeHex = '';
+          this.strIsKey = this.isExpectingObjectKey();
           continue;
-        } else {
-          this.finishKeyword(events);
-          i--; // reprocess boundary char
+        }
+
+        if (ch === '{') {
+          this.onContainerStart(JsonStreamingEventType.Object, events);
+          this.stack.push({
+            kind: JsonStreamingEventType.Object,
+            state: ObjectState.EXPECT_KEY_OR_END,
+            ...(this.buildValues ? { value: {} } : {}),
+          });
           continue;
         }
-      }
 
-      // DEFAULT mode
-      if (this.isWS(ch)) continue;
-
-      if (ch === '"') {
-        // start string (could be a key or a value depending on context)
-        this.mode = Mode.STRING;
-        this.strBuf = '';
-        this.strEsc = false;
-        this.strUnicodeNeeded = 0;
-        this.strUnicodeHex = '';
-        this.strIsKey = this.isExpectingObjectKey();
-        continue;
-      }
-
-      if (ch === '{') {
-        this.onContainerStart(JsonStreamingEventType.Object, events);
-        this.stack.push({
-          kind: JsonStreamingEventType.Object,
-          state: ObjectState.EXPECT_KEY_OR_END,
-          ...(this.buildValues ? { value: {} } : {}),
-        });
-        continue;
-      }
-
-      if (ch === '[') {
-        this.onContainerStart(JsonStreamingEventType.Array, events);
-        this.stack.push({
-          kind: JsonStreamingEventType.Array,
-          state: ArrayState.EXPECT_VALUE_OR_END,
-          index: 0,
-          ...(this.buildValues ? { value: [] } : {}),
-        });
-        continue;
-      }
-
-      if (ch === '}' || ch === ']') {
-        this.onContainerEnd(ch, events);
-        continue;
-      }
-
-      if (ch === ':') {
-        const top = this.peek();
-        if (
-          !top ||
-          top.kind !== 'object' ||
-          top.state !== ObjectState.EXPECT_COLON
-        ) {
-          throw new Error(`Unexpected ':'`);
+        if (ch === '[') {
+          this.onContainerStart(JsonStreamingEventType.Array, events);
+          this.stack.push({
+            kind: JsonStreamingEventType.Array,
+            state: ArrayState.EXPECT_VALUE_OR_END,
+            index: 0,
+            ...(this.buildValues ? { value: [] } : {}),
+          });
+          continue;
         }
-        top.state = ObjectState.EXPECT_VALUE;
-        continue;
-      }
 
-      if (ch === ',') {
-        const top = this.peek();
-        if (!top) throw new Error(`Unexpected ',' at root`);
-        if (top.kind === 'object') {
-          if (top.state !== ObjectState.AFTER_VALUE)
-            throw new Error(`Unexpected ',' in object`);
-          top.state = ObjectState.EXPECT_KEY_OR_END;
-          top.pendingKey = undefined;
-        } else {
-          if (top.state !== ArrayState.AFTER_VALUE)
-            throw new Error(`Unexpected ',' in array`);
-          top.state = ArrayState.EXPECT_VALUE_OR_END;
+        if (ch === '}' || ch === ']') {
+          this.onContainerEnd(ch, events);
+          continue;
         }
-        continue;
-      }
 
-      // number start
-      if (ch === '-' || (ch >= '0' && ch <= '9')) {
-        this.mode = Mode.NUMBER;
-        this.numBuf = ch;
-        continue;
-      }
+        if (ch === ':') {
+          const top = this.peek();
+          if (
+            !top ||
+            top.kind !== 'object' ||
+            top.state !== ObjectState.EXPECT_COLON
+          ) {
+            throw new Error(`Unexpected ':'`);
+          }
+          top.state = ObjectState.EXPECT_VALUE;
+          continue;
+        }
 
-      // keyword start (true/false/null)
-      if (/[tfn]/i.test(ch)) {
-        this.mode = Mode.KEYWORD;
-        this.kwBuf = ch;
-        continue;
-      }
+        if (ch === ',') {
+          const top = this.peek();
+          if (!top) throw new Error(`Unexpected ',' at root`);
+          if (top.kind === 'object') {
+            if (top.state !== ObjectState.AFTER_VALUE)
+              throw new Error(`Unexpected ',' in object`);
+            top.state = ObjectState.EXPECT_KEY_OR_END;
+            top.pendingKey = undefined;
+          } else {
+            if (top.state !== ArrayState.AFTER_VALUE)
+              throw new Error(`Unexpected ',' in array`);
+            top.state = ArrayState.EXPECT_VALUE_OR_END;
+          }
+          continue;
+        }
 
-      throw new Error(`Unexpected char '${ch}'`);
+        // number start
+        if (ch === '-' || (ch >= '0' && ch <= '9')) {
+          this.mode = Mode.NUMBER;
+          this.numBuf = ch;
+          continue;
+        }
+
+        // keyword start (true/false/null)
+        if (/[tfn]/i.test(ch)) {
+          this.mode = Mode.KEYWORD;
+          this.kwBuf = ch;
+          continue;
+        }
+
+        throw new Error(`Unexpected char '${ch}'`);
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.emitError(events, detail, baseOffset + i);
+    } finally {
+      this.totalOffset = baseOffset + (this.rootDone ? i : chunk.length);
     }
 
     // chunk ended: if in NUMBER/KEYWORD we keep buffering; STRING too.
@@ -222,10 +264,31 @@ export class JsonStreamingParser {
   end(): JsonStreamingEvent[] {
     // call at stream end to flush number/keyword if they ended exactly at EOF
     const events: JsonStreamingEvent[] = [];
-    if (this.mode === Mode.NUMBER) this.finishNumber(events);
-    if (this.mode === Mode.KEYWORD) this.finishKeyword(events);
-    if (this.mode === Mode.STRING)
-      throw new Error('Unterminated string at end()');
+    if (this.rootDone) return events;
+    try {
+      if (this.mode === Mode.NUMBER) this.finishNumber(events);
+      if (this.mode === Mode.KEYWORD) this.finishKeyword(events);
+      if (this.mode === Mode.STRING)
+        this.emitError(
+          events,
+          'Unterminated string at end()',
+          this.totalOffset,
+        );
+      if (this.pendingStringValue !== null) {
+        if (this.pendingStringNeedsConcat) {
+          this.emitError(
+            events,
+            "Expected string after '+'",
+            this.totalOffset,
+          );
+        } else {
+          this.flushPendingString(events);
+        }
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this.emitError(events, detail, this.totalOffset);
+    }
     return events;
   }
 
@@ -233,6 +296,29 @@ export class JsonStreamingParser {
 
   private peek(): Frame | undefined {
     return this.stack.length ? this.stack[this.stack.length - 1] : undefined;
+  }
+
+  private emitError(
+    events: JsonStreamingEvent[],
+    detail: string,
+    offset?: number,
+  ) {
+    events.push({
+      type: JsonStreamingEventType.Error,
+      detail,
+      ...(offset !== undefined ? { offset } : {}),
+    });
+    this.rootDone = true;
+    this.mode = Mode.DEFAULT;
+    this.strBuf = '';
+    this.numBuf = '';
+    this.kwBuf = '';
+    this.strIsKey = false;
+    this.strEsc = false;
+    this.strUnicodeNeeded = 0;
+    this.strUnicodeHex = '';
+    this.pendingStringValue = null;
+    this.pendingStringNeedsConcat = false;
   }
 
   private isWS(ch: string) {
@@ -308,12 +394,12 @@ export class JsonStreamingParser {
   }
 
   private onValueFinished(
-    type: JsonStreamingEvent['type'],
+    type: JsonStreamingEventType,
     value: any,
     events: JsonStreamingEvent[],
   ) {
     const key = this.currentKey();
-    events.push({ type, key, endValue: value });
+    events.push({ type, key, endValue: value } as JsonStreamingEvent);
 
     if (!this.rootStarted) this.rootStarted = true;
 
@@ -344,6 +430,24 @@ export class JsonStreamingParser {
     } else {
       this.markObjectValueDone();
     }
+  }
+
+  private queueStringValue(value: string) {
+    if (this.pendingStringValue === null) {
+      this.pendingStringValue = value;
+      this.pendingStringNeedsConcat = false;
+      return;
+    }
+    this.pendingStringValue += value;
+    this.pendingStringNeedsConcat = false;
+  }
+
+  private flushPendingString(events: JsonStreamingEvent[]) {
+    if (this.pendingStringValue === null) return;
+    const value = this.pendingStringValue;
+    this.pendingStringValue = null;
+    this.pendingStringNeedsConcat = false;
+    this.onValueFinished(JsonStreamingEventType.String, value, events);
   }
 
   private onContainerStart(
@@ -473,11 +577,11 @@ export class JsonStreamingParser {
       this.mode = Mode.DEFAULT;
       this.strBuf = '';
 
-      if (this.strIsKey) {
-        // this string is an object key
-        const top = this.peek();
-        if (
-          !top ||
+    if (this.strIsKey) {
+      // this string is an object key
+      const top = this.peek();
+      if (
+        !top ||
           top.kind !== 'object' ||
           top.state !== ObjectState.EXPECT_KEY_OR_END
         ) {
@@ -486,7 +590,7 @@ export class JsonStreamingParser {
         top.pendingKey = s;
         top.state = ObjectState.EXPECT_COLON;
       } else {
-        this.onValueFinished(JsonStreamingEventType.String, s, events);
+        this.queueStringValue(s);
       }
       return;
     }
