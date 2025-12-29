@@ -31,10 +31,11 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     return false;
   });
   ToMainIpc.runPrompt.handle(async (event, arg) => {
-    console.log('Run prompt:', arg);
+    console.info('Run prompt:', arg);
     const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
       arg;
     const wvTab = webViewTabsById.get(frameId);
+    console.info('runPrompt in main process:', arg);
     if (wvTab) {
       const error = await wvTab.runPrompt(
         requestId,

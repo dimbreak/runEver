@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Buffer } from 'buffer';
 import type { JSONContent } from '@tiptap/core';
 import { ToMainIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
@@ -35,6 +34,7 @@ export const AgentPanel: React.FC = () => {
     sidebarWidth,
     collapsedWidth,
     tabbarHeight,
+    bounds,
   } = useLayoutStore();
   const { tabs, activeTabId } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
@@ -71,9 +71,7 @@ export const AgentPanel: React.FC = () => {
     (content: JSONContent) => {
       const userText =
         content.content
-          ?.map((node) =>
-            node.content?.map((n) => n.text ?? '').join('') ?? '',
-          )
+          ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
           .join('\n\n') ?? '';
       console.log('send prompt:', userText, tabs);
       const id = Date.now();
@@ -97,42 +95,32 @@ export const AgentPanel: React.FC = () => {
           ) - 1;
         return prev.slice();
       });
-      tabs
-        .find((t) => t.id === activeTabId)
-        ?.runPrompt(
-          userText,
-          {
-            // keyword: 'openai', website: 'wikipedia'
-          },
-          (chunk) => {
-            console.log('prompt chunk:', chunk);
-            // todo use ref? feel really low efficiency here
-            setMessages((prev) => {
-              prev[idx].text = (prev[idx].text ?? '') + chunk;
-              prev[idx].content = textToDoc(prev[idx].text ?? '');
-              return prev.slice();
-            });
-          },
-        )
-        .then((err) => {
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      try {
+        currentTab?.runPrompt(userText, {}, (chunk) => {
+          console.info('prompt chunk:', chunk);
           setMessages((prev) => {
-            prev[idx].llmResponding = false;
+            prev[idx].text = (prev[idx].text ?? '') + chunk;
+            prev[idx].content = textToDoc(prev[idx].text ?? '');
             return prev.slice();
           });
-          // todo handle error
-          console.log('prompt result', err);
         });
+      } catch (err) {
+        console.error('prompt error:', err);
+        setMessages((prev) => {
+          prev[idx].llmResponding = false;
+          return prev.slice();
+        });
+      }
     },
     [activeTabId, tabs],
   );
 
   const handleCapture = async () => {
     try {
-      // frameId/bounds from window (set in App.tsx useEffect)
-      const { lastFrameId, lastTabBounds } = window as any;
-      const frameId: number | undefined = lastFrameId;
-      const bounds = lastTabBounds || { width: 800, height: 600 };
-      if (!frameId) {
+      // Get the active tab
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (!currentTab) {
         setMessages((prev) => [
           ...prev,
           {
@@ -145,25 +133,17 @@ export const AgentPanel: React.FC = () => {
         return;
       }
 
-      const payload = {
-        frameId,
-        ttlHeight: bounds.height,
-        ttlWidth: bounds.width,
-        vpHeight: bounds.height,
-        vpWidth: bounds.width,
-        slices: [{ x: 0, y: 0 }],
-      };
+      // Capture screenshot using WebTab method
+      const imageDataUri = await currentTab.captureScreenshot(bounds);
 
-      const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
-      if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
-        const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
+      if (imageDataUri) {
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now(),
             role: 'assistant',
             content: textToDoc('Captured current view.'),
-            image: `data:image/jpeg;base64,${base64Img}`,
+            image: imageDataUri,
             tag: 'Screenshot',
           },
         ]);
