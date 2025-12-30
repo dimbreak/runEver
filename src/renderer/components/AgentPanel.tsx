@@ -68,7 +68,7 @@ export const AgentPanel: React.FC = () => {
   ]);
 
   const handlePrompt = React.useCallback(
-    (content: JSONContent) => {
+    async (content: JSONContent) => {
       const userText =
         content.content
           ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
@@ -97,7 +97,7 @@ export const AgentPanel: React.FC = () => {
       });
       const currentTab = tabs.find((t) => t.id === activeTabId);
       try {
-        currentTab?.runPrompt(userText, {}, (chunk) => {
+        await currentTab?.runPrompt(userText, {}, (chunk) => {
           console.info('prompt chunk:', chunk);
           setMessages((prev) => {
             prev[idx].text = (prev[idx].text ?? '') + chunk;
