@@ -206,25 +206,16 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
 
   ToMainIpc.getLlmConfig.handle(async (event, frameId) => {
     const loadedConfig = settings.getSync('llmConfig');
-    if (loadedConfig) {
-      return loadedConfig as LlmApi.LlmConfig;
+    try {
+      return LlmApi.llmConfigSchema.parse(loadedConfig) as LlmApi.LlmConfig;
+    } catch (error) {
+      const llmConfig: LlmApi.LlmConfig = {
+        api: process.env.LLM_API_PROVIDER as 'openai',
+        key: process.env.LLM_API_KEY as string,
+      };
+      settings.setSync('llmConfig', llmConfig);
+      return llmConfig;
     }
-    // const configFromUser = await askUserInput('LLM config', {
-    //   'LLM provider': { type: 'select', options: ['OpenAI'] },
-    //   'LLM api key': { type: 'string' },
-    // });
-    // const llmConfig: LlmConfig = {
-    //   api: configFromUser['LLM provider'].toLowerCase() as 'openai',
-    //   key: configFromUser['LLM api key'],
-    // };
-
-    const llmConfig: LlmApi.LlmConfig = {
-      api: process.env.LLM_API_PROVIDER as 'openai',
-      key: process.env.LLM_API_KEY as string,
-    };
-
-    settings.setSync('llmConfig', llmConfig);
-    return llmConfig;
   });
 
   const userInputHandlers: Record<

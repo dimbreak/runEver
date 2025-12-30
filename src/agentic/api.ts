@@ -3,10 +3,17 @@ import { LanguageModelV2 } from '@ai-sdk/provider';
 import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import settings from 'electron-settings';
+import z from 'zod';
+import { envSchema, envVars } from '../schema/env';
 import { Util } from '../webView/util';
 
 export namespace LlmApi {
-  export type LlmConfig = { error?: string; api: 'openai'; key: string };
+  export const llmConfigSchema = z.object({
+    api: envSchema.shape.provider,
+    key: envSchema.shape.apiKey,
+    error: z.string().optional(),
+  });
+  export type LlmConfig = z.infer<typeof llmConfigSchema>;
   export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
   export type LlmModelType = 'hi' | 'mid' | 'low';
   export type Attachment = ImagePart | FilePart;
@@ -15,16 +22,17 @@ export namespace LlmApi {
 
   const getLlmConfig = async () => {
     const loadedConfig = settings.getSync('llmConfig');
-    if (loadedConfig) {
-      return loadedConfig as LlmConfig;
+    try {
+      return llmConfigSchema.parse(loadedConfig) as LlmConfig;
+    } catch (error) {
+      const llmConfig: LlmConfig = {
+        api: envVars.provider,
+        key: envVars.apiKey,
+        error: error instanceof Error ? error.message : undefined,
+      };
+      settings.setSync('llmConfig', llmConfig);
+      return llmConfig;
     }
-    const llmConfig: LlmConfig = {
-      api: process.env.LLM_API_PROVIDER as 'openai',
-      key: process.env.LLM_API_KEY as string,
-    };
-
-    settings.setSync('llmConfig', llmConfig);
-    return llmConfig;
   };
 
   let llmApiPromise: Promise<{
@@ -40,6 +48,7 @@ export namespace LlmApi {
     if (!llmApiPromise) {
       llmApiPromise = new Promise(async (resolve) => {
         const apiConfig = await getLlmConfig();
+        console.info('apiConfig:', apiConfig);
         console.log('apiConfig', apiConfig);
         if (apiConfig.error) {
           console.error('Failed to get LLM config', apiConfig.error);
@@ -47,6 +56,7 @@ export namespace LlmApi {
         }
         switch (apiConfig.api) {
           case 'openai': {
+            console.info('createOpenAI', apiConfig.key);
             const openai = createOpenAI({ apiKey: apiConfig.key });
             resolve({
               hi: openai('gpt-5.2'),
@@ -102,6 +112,7 @@ export namespace LlmApi {
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
+    console.info('llmApi:', llmApi);
     if (llmApi) {
       const start = Date.now();
       // console.log('Query LLM', prompt);
@@ -145,6 +156,7 @@ export namespace LlmApi {
         );
       }, 3000);
       for await (const part of textStream) {
+        console.info('textStream part:', part);
         if (first) {
           clearInterval(interval);
           console.log('Stream first token', cacheKey, Date.now() - start, part);

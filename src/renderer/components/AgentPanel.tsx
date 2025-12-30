@@ -73,7 +73,7 @@ export const AgentPanel: React.FC = () => {
         content.content
           ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
           .join('\n\n') ?? '';
-      console.log('send prompt:', userText, tabs);
+      console.info('send prompt:', userText, tabs);
       const id = Date.now();
       const respondiongMessage: Message = {
         id: id + 1,
