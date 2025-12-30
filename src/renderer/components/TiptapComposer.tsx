@@ -25,24 +25,30 @@ const getIsEmpty = (content: JSONContent) => {
   });
 };
 
-const ListEnterBehavior = Extension.create({
-  name: 'listEnterBehavior',
+const EnterSubmitBehavior = Extension.create({
+  name: 'enterSubmitBehavior',
   addKeyboardShortcuts() {
     return {
       Enter: () => {
         const isList =
           this.editor.isActive('bulletList') ||
           this.editor.isActive('orderedList');
-        if (!isList) return false;
 
-        const { $from } = this.editor.state.selection;
-        const isEmptyParagraph =
-          $from.parent.type.name === 'paragraph' && !$from.parent.textContent;
+        if (isList) {
+          const { $from } = this.editor.state.selection;
+          const isEmptyParagraph =
+            $from.parent.type.name === 'paragraph' && !$from.parent.textContent;
 
-        if (isEmptyParagraph) {
-          return this.editor.commands.liftListItem('listItem');
+          if (isEmptyParagraph) {
+            return this.editor.commands.liftListItem('listItem');
+          }
+          return this.editor.commands.splitListItem('listItem');
         }
-        return this.editor.commands.splitListItem('listItem');
+
+        return false;
+      },
+      'Shift-Enter': () => {
+        return this.editor.commands.setHardBreak();
       },
     };
   },
@@ -54,10 +60,21 @@ export function TiptapComposer({
   disabled,
   className,
 }: TiptapComposerProps) {
+  const editorRef = React.useRef<any>(null);
+
+  const submit = React.useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const json = editor.getJSON();
+    if (getIsEmpty(json)) return;
+    onSubmit(json);
+    editor.commands.clearContent(true);
+  }, [onSubmit]);
+
   const editor = useEditor({
     editable: !disabled,
     extensions: [
-      ListEnterBehavior,
+      EnterSubmitBehavior,
       StarterKit.configure({
         heading: false,
         blockquote: false,
@@ -72,16 +89,28 @@ export function TiptapComposer({
         class:
           'tiptap-content tiptap-default min-h-[44px] max-h-40 overflow-y-auto px-2 py-2 text-sm text-slate-700',
       },
+      // Handle Enter key press to submit
+      handleKeyDown: (view, event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          const isList =
+            view.state.doc.resolve(view.state.selection.$from.pos).parent.type
+              .name === 'listItem';
+          // Only submit if not in a list
+          if (!isList) {
+            event.preventDefault();
+            submit();
+            return true;
+          }
+        }
+        return false;
+      },
     },
   });
 
-  const submit = React.useCallback(() => {
-    if (!editor) return;
-    const json = editor.getJSON();
-    if (getIsEmpty(json)) return;
-    onSubmit(json);
-    editor.commands.clearContent(true);
-  }, [editor, onSubmit]);
+  // Store editor reference for submit callback
+  React.useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   return (
     <div
