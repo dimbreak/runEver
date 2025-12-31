@@ -58,6 +58,27 @@ export namespace ToMainIpc {
     [number], // frameId
     LlmApi.LlmConfig
   >('get-llm-config');
+  export const showSystemMessageBox = new IpcMainContract<
+    [
+      {
+        title?: string;
+        message: string;
+        detail?: string;
+        type?: 'none' | 'info' | 'error' | 'question' | 'warning';
+        buttons?: string[];
+      },
+    ],
+    { response: number } | { error: string }
+  >('show-system-message-box');
+  export const openBrowserWindowDialog = new IpcMainContract<
+    [
+      {
+        title?: string;
+        message?: string;
+      },
+    ],
+    { result: 'ok' | 'cancel' | 'closed' } | { error: string }
+  >('open-browserwindow-dialog');
   export const responsePromptInput = new IpcMainContract<
     [{ answer: Record<string, string>; id: number }],
     undefined

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
+import type { KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import FlowFrame from '../FlowFrame';
 
 const emails = [
@@ -8,26 +9,26 @@ const emails = [
     id: 'em-101',
     from: 'Product Studio',
     subject: 'Your onboarding kit is ready',
-    preview: 'Grab the checklist, assets, and launch plan.'
+    preview: 'Grab the checklist, assets, and launch plan.',
   },
   {
     id: 'em-102',
     from: 'Billing',
     subject: 'Invoice paid - March 2025',
-    preview: 'Thank you! Receipt attached for your records.'
+    preview: 'Thank you! Receipt attached for your records.',
   },
   {
     id: 'em-103',
     from: 'Ava Mora',
     subject: 'Weekly growth experiment notes',
-    preview: 'We should test the new discovery surfaces.'
+    preview: 'We should test the new discovery surfaces.',
   },
   {
     id: 'em-104',
     from: 'Support',
     subject: 'Ticket #4421 resolved',
-    preview: 'Your domain verification cleared successfully.'
-  }
+    preview: 'Your domain verification cleared successfully.',
+  },
 ];
 
 export default function EmailListFlow() {
@@ -40,26 +41,29 @@ export default function EmailListFlow() {
       toolbar: [
         ['bold', 'italic', 'underline'],
         [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link']
-      ]
+        ['link'],
+      ],
     }),
-    []
+    [],
   );
-  const isEditorEmpty = messageBody.replace(/<(.|\n)*?>/g, '').trim().length === 0;
+  const isEditorEmpty =
+    messageBody.replace(/<(.|\n)*?>/g, '').trim().length === 0;
   const closeComposer = () => {
     setIsComposerOpen(false);
     setMessageBody('');
   };
 
+  // Initialise Quill editor when composer opens
   useEffect(() => {
     if (!isComposerOpen || !editorRef.current || quillRef.current) {
-      return;
+      return undefined; // No cleanup needed if editor isn't initialised
     }
 
-    const quill = new Quill(editorRef.current, {
+    const editorElement = editorRef.current; // Capture ref value for cleanup
+    const quill = new Quill(editorElement, {
       theme: 'snow',
       modules: quillModules,
-      placeholder: 'Start typing your message...'
+      placeholder: 'Start typing your message...',
     });
 
     quill.on('text-change', () => {
@@ -67,13 +71,20 @@ export default function EmailListFlow() {
     });
 
     quillRef.current = quill;
+
     return () => {
       quillRef.current = null;
-      if (editorRef.current) {
-        editorRef.current.innerHTML = '';
+      if (editorElement) {
+        editorElement.innerHTML = '';
       }
     };
   }, [isComposerOpen, quillModules]);
+  const handleBackdropKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      closeComposer();
+    }
+  };
   return (
     <FlowFrame title="Inbox" subtitle="Flow: email_list" theme="mail">
       <div className="mail">
@@ -82,14 +93,24 @@ export default function EmailListFlow() {
             <button className="btn btn--ghost" type="button">
               Delete
             </button>
-            <button className="btn btn--primary" type="button" onClick={() => setIsComposerOpen(true)}>
+            <button
+              className="btn btn--primary"
+              type="button"
+              onClick={() => setIsComposerOpen(true)}
+            >
               New message
             </button>
           </div>
           <div className="mail__filters">
-            <button className="pill pill--active">Priority</button>
-            <button className="pill">Unread</button>
-            <button className="pill">Team</button>
+            <button type="button" className="pill pill--active">
+              Priority
+            </button>
+            <button type="button" className="pill">
+              Unread
+            </button>
+            <button type="button" className="pill">
+              Team
+            </button>
           </div>
         </div>
         <div className="mail__list">
@@ -108,7 +129,14 @@ export default function EmailListFlow() {
       </div>
       {isComposerOpen && (
         <div className="modal" role="dialog" aria-modal="true">
-          <div className="modal__backdrop" onClick={closeComposer} />
+          <div
+            className="modal__backdrop"
+            onClick={closeComposer}
+            onKeyDown={handleBackdropKeyDown}
+            role="button"
+            tabIndex={0}
+            aria-label="Close modal"
+          />
           <div className="modal__content">
             <div className="modal__header">
               <h3>New message</h3>
@@ -117,15 +145,24 @@ export default function EmailListFlow() {
               </button>
             </div>
             <div className="modal__body">
-              <label className="field">
+              <label className="field" htmlFor="to">
                 To
-                <input type="email" placeholder="team@signalstack.io" />
+                <input type="email" placeholder="team@signalstack.io" id="to" />
               </label>
-              <label className="field">
+              <label className="field" htmlFor="subject">
                 Subject
-                <input type="text" placeholder="Quarterly update" />
+                <input
+                  type="text"
+                  placeholder="Quarterly update"
+                  id="subject"
+                />
               </label>
-              <div className="editor" role="textbox" aria-multiline="true">
+              <div
+                className="editor"
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Message body"
+              >
                 <div ref={editorRef} />
               </div>
             </div>
@@ -133,7 +170,11 @@ export default function EmailListFlow() {
               <button className="btn btn--ghost" type="button">
                 Save draft
               </button>
-              <button className="btn btn--primary" type="button" disabled={isEditorEmpty}>
+              <button
+                className="btn btn--primary"
+                type="button"
+                disabled={isEditorEmpty}
+              >
                 Send
               </button>
             </div>

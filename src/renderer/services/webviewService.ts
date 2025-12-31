@@ -56,7 +56,6 @@ export const webviewService = {
     if (!hasIpc()) return;
     const { frameId, tabId } = params;
     if (!frameId && !tabId) return;
-    console.info('layoutTab', frameId, tabId, params.bounds);
     await ToMainIpc.operateTab.invoke({
       id: frameId ?? -1,
       bounds: params.bounds,

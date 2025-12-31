@@ -1,5 +1,6 @@
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
+import { Buffer } from 'buffer';
 import { ToWebView } from '../../contracts/toWebView';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from './layoutStore';
@@ -37,14 +38,45 @@ export class WebTab {
       requestId,
       handleResponse,
     );
-    const err = await ToMainIpc.runPrompt.invoke({
+    const { error } = await ToMainIpc.runPrompt.invoke({
       frameId: this.frameId,
       prompt,
       requestId,
       args,
     });
     finish();
-    return err;
+    if (error) throw new Error(error);
+  }
+
+  async captureScreenshot(bounds: {
+    width: number;
+    height: number;
+  }): Promise<string | null> {
+    // Validate frameId is set
+    if (this.frameId === -1) {
+      throw new Error('No active tab to capture - frameId not set');
+    }
+
+    // Prepare screenshot payload
+    const payload = {
+      frameId: this.frameId,
+      ttlHeight: bounds.height,
+      ttlWidth: bounds.width,
+      vpHeight: bounds.height,
+      vpWidth: bounds.width,
+      slices: [{ x: 0, y: 0 }],
+    };
+
+    // Request screenshot from main process
+    const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
+
+    // Validate response and convert to base64
+    if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
+      const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
+      return `data:image/jpeg;base64,${base64Img}`;
+    }
+
+    return null;
   }
 }
 

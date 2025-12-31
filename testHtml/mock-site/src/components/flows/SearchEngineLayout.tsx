@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import Autosuggest, { type SuggestionsFetchRequestedParams } from 'react-autosuggest';
+import Autosuggest, {
+  type SuggestionsFetchRequestedParams,
+} from 'react-autosuggest';
 import FlowFrame from '../FlowFrame';
 
 const suggestionMap: Record<string, string[]> = {
@@ -7,34 +9,142 @@ const suggestionMap: Record<string, string[]> = {
   B: ['budgeting', 'brand kit', 'business plan', 'backend', 'billing'],
   C: ['customer success', 'crm', 'cloud storage', 'compliance', 'conversion'],
   D: ['dashboards', 'data lake', 'design system', 'devops', 'deliverability'],
-  E: ['engagement', 'etl pipeline', 'email templates', 'experiments', 'ecosystem'],
-  F: ['forecasting', 'feature flags', 'feedback loops', 'finops', 'fraud checks'],
+  E: [
+    'engagement',
+    'etl pipeline',
+    'email templates',
+    'experiments',
+    'ecosystem',
+  ],
+  F: [
+    'forecasting',
+    'feature flags',
+    'feedback loops',
+    'finops',
+    'fraud checks',
+  ],
   G: ['growth metrics', 'go-to-market', 'graphql', 'governance', 'gdpr'],
   H: ['help center', 'heatmaps', 'hiring plan', 'hybrid cloud', 'heuristics'],
-  I: ['integrations', 'incident response', 'inbox zero', 'identity', 'infrastructure'],
-  J: ['journey mapping', 'job postings', 'jwt auth', 'jira sync', 'json schema'],
+  I: [
+    'integrations',
+    'incident response',
+    'inbox zero',
+    'identity',
+    'infrastructure',
+  ],
+  J: [
+    'journey mapping',
+    'job postings',
+    'jwt auth',
+    'jira sync',
+    'json schema',
+  ],
   K: ['kpis', 'knowledge base', 'key accounts', 'kubernetes', 'kanban boards'],
-  L: ['lead scoring', 'lifecycle email', 'load testing', 'latency', 'log analysis'],
-  M: ['market sizing', 'metrics stack', 'marketing ops', 'machine learning', 'mrr'],
-  N: ['nps tracking', 'notion sync', 'network policy', 'newsletter', 'notifications'],
-  O: ['onboarding', 'okr templates', 'observability', 'ops review', 'optimization'],
+  L: [
+    'lead scoring',
+    'lifecycle email',
+    'load testing',
+    'latency',
+    'log analysis',
+  ],
+  M: [
+    'market sizing',
+    'metrics stack',
+    'marketing ops',
+    'machine learning',
+    'mrr',
+  ],
+  N: [
+    'nps tracking',
+    'notion sync',
+    'network policy',
+    'newsletter',
+    'notifications',
+  ],
+  O: [
+    'onboarding',
+    'okr templates',
+    'observability',
+    'ops review',
+    'optimization',
+  ],
   P: [
     'pricing model',
     'product roadmap',
     'pipeline velocity',
     'payment retry',
-    'personalization'
+    'personalization',
   ],
-  Q: ['quarterly review', 'query optimizer', 'quality assurance', 'quota planning', 'queue metrics'],
-  R: ['retention', 'revenue model', 'risk scoring', 'rollout plan', 'reporting'],
-  S: ['support macros', 'sales enablement', 'search ranking', 'segmentation', 'security audit'],
-  T: ['trial conversion', 'telemetry', 'task automation', 'team goals', 'time to value'],
-  U: ['usage analytics', 'user research', 'uptime status', 'unified inbox', 'ux audit'],
-  V: ['velocity report', 'vendor review', 'vision deck', 'value prop', 'voice of customer'],
-  W: ['workflow builder', 'webhooks', 'weekly summary', 'warehouse sync', 'win loss'],
-  X: ['x-ray insights', 'xml feeds', 'x-platform sdk', 'xdr security', 'x-axis charts'],
-  Y: ['yearly planning', 'yield forecast', 'yoy growth', 'yammer alternatives', 'yarn workspace'],
-  Z: ['zero trust', 'zendesk sync', 'zapier alternatives', 'zone routing', 'z-score']
+  Q: [
+    'quarterly review',
+    'query optimizer',
+    'quality assurance',
+    'quota planning',
+    'queue metrics',
+  ],
+  R: [
+    'retention',
+    'revenue model',
+    'risk scoring',
+    'rollout plan',
+    'reporting',
+  ],
+  S: [
+    'support macros',
+    'sales enablement',
+    'search ranking',
+    'segmentation',
+    'security audit',
+  ],
+  T: [
+    'trial conversion',
+    'telemetry',
+    'task automation',
+    'team goals',
+    'time to value',
+  ],
+  U: [
+    'usage analytics',
+    'user research',
+    'uptime status',
+    'unified inbox',
+    'ux audit',
+  ],
+  V: [
+    'velocity report',
+    'vendor review',
+    'vision deck',
+    'value prop',
+    'voice of customer',
+  ],
+  W: [
+    'workflow builder',
+    'webhooks',
+    'weekly summary',
+    'warehouse sync',
+    'win loss',
+  ],
+  X: [
+    'x-ray insights',
+    'xml feeds',
+    'x-platform sdk',
+    'xdr security',
+    'x-axis charts',
+  ],
+  Y: [
+    'yearly planning',
+    'yield forecast',
+    'yoy growth',
+    'yammer alternatives',
+    'yarn workspace',
+  ],
+  Z: [
+    'zero trust',
+    'zendesk sync',
+    'zapier alternatives',
+    'zone routing',
+    'z-score',
+  ],
 };
 
 type Suggestion = {
@@ -47,12 +157,14 @@ export default function SearchEngineFlow() {
       Object.values(suggestionMap)
         .flat()
         .map((label) => ({ label })),
-    []
+    [],
   );
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
 
-  const onSuggestionsFetchRequested = ({ value }: SuggestionsFetchRequestedParams) => {
+  const onSuggestionsFetchRequested = ({
+    value,
+  }: SuggestionsFetchRequestedParams) => {
     const nextValue = value.trim().toLowerCase();
     if (!nextValue) {
       setSuggestions(allSuggestions.slice(0, 10));
@@ -69,7 +181,11 @@ export default function SearchEngineFlow() {
   };
 
   return (
-    <FlowFrame title="Northstar Search" subtitle="Flow: search_engine" theme="search">
+    <FlowFrame
+      title="Northstar Search"
+      subtitle="Flow: search_engine"
+      theme="search"
+    >
       <div className="search">
         <div className="search__header">
           <div className="search__logo">NS</div>
@@ -83,17 +199,19 @@ export default function SearchEngineFlow() {
               inputProps={{
                 value: query,
                 onChange: (_, { newValue }) => setQuery(newValue),
-                placeholder: 'Search for metrics, docs, or answers'
+                placeholder: 'Search for metrics, docs, or answers',
               }}
               theme={{
                 container: 'autosuggest',
                 input: 'autosuggest__input',
                 suggestionsContainer: 'autosuggest__menu',
                 suggestion: 'autosuggest__item',
-                suggestionHighlighted: 'autosuggest__item--highlighted'
+                suggestionHighlighted: 'autosuggest__item--highlighted',
               }}
             />
-            <button className="btn btn--primary">Search</button>
+            <button className="btn btn--primary" type="button">
+              Search
+            </button>
           </div>
         </div>
         <div className="search__chips">

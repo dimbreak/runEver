@@ -252,7 +252,7 @@ class ExecutionSession {
               requireScreenshot = res.value.todo.sc ?? false;
               const subPrompt = `**todo from last executor maybe wrong as page state changed, adjust if it conflict with the [goal]**
 ${res.value.todo.rc}
-              
+
 [performed actions]
 -
 `;
@@ -504,13 +504,19 @@ export class WebViewLlmSession {
 
     if (sessionId) {
       const session = this.sessionQueue[sessionId];
+      const selectedPrompt = this.prompts[actionToFix.promptId!];
+      if (!selectedPrompt) {
+        console.error('Selected prompt not found:', actionToFix.promptId);
+        return;
+      }
+      const goalPrompt = selectedPrompt.goalPrompt;
       const prompt = this.createPrompt(
-        this.prompts[actionToFix.promptId!].goalPrompt,
+        goalPrompt,
         undefined,
         sessionId,
         'h',
         `**fix the execution error in [action error]**
-      
+
 [action error]
 ${JSON.stringify(actionToFix)}${
           this.actions.length > this.currentAction + 1
@@ -521,7 +527,7 @@ ${JSON.stringify(actionToFix)}${
                 .slice(this.currentAction + 1)
                 .map((a) => a.intent)
                 .join('\n- ')}
-        
+
 these actions are blocking by this error, if you found any of the above actions will affected by the fix, press LlmWireResult.clearQueue: true in result and send the new actions.`
             : ''
         }`,

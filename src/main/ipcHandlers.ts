@@ -4,6 +4,7 @@ import { ToMainIpc } from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
+import { openBrowserWindowDialog, showSystemMessageBox } from './dialogs';
 import { TabWebView } from './webView/tab';
 import { Util } from '../webView/util';
 import { LlmApi } from './llm/api';
@@ -30,10 +31,11 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     return false;
   });
   ToMainIpc.runPrompt.handle(async (event, arg) => {
-    console.log('Run prompt:', arg);
+    console.info('Run prompt:', arg);
     const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
       arg;
     const wvTab = webViewTabsById.get(frameId);
+    console.info('runPrompt in main process:', arg);
     if (wvTab) {
       const error = await wvTab.runPrompt(
         requestId,
@@ -132,6 +134,14 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return { error: 'Tab not found' };
   });
 
+  ToMainIpc.showSystemMessageBox.handle(async (_event, opts) => {
+    return showSystemMessageBox(mainWindow, opts);
+  });
+
+  ToMainIpc.openBrowserWindowDialog.handle(async (_event, opts) => {
+    return openBrowserWindowDialog(mainWindow, opts);
+  });
+
   ToMainIpc.createTab.handle(async (event, detail) => {
     console.log(
       'Create tab request received in main process:',
@@ -196,25 +206,16 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
 
   ToMainIpc.getLlmConfig.handle(async (event, frameId) => {
     const loadedConfig = settings.getSync('llmConfig');
-    if (loadedConfig) {
-      return loadedConfig as LlmApi.LlmConfig;
+    try {
+      return LlmApi.llmConfigSchema.parse(loadedConfig) as LlmApi.LlmConfig;
+    } catch (error) {
+      const llmConfig: LlmApi.LlmConfig = {
+        api: process.env.LLM_API_PROVIDER as 'openai',
+        key: process.env.LLM_API_KEY as string,
+      };
+      settings.setSync('llmConfig', llmConfig);
+      return llmConfig;
     }
-    // const configFromUser = await askUserInput('LLM config', {
-    //   'LLM provider': { type: 'select', options: ['OpenAI'] },
-    //   'LLM api key': { type: 'string' },
-    // });
-    // const llmConfig: LlmConfig = {
-    //   api: configFromUser['LLM provider'].toLowerCase() as 'openai',
-    //   key: configFromUser['LLM api key'],
-    // };
-
-    const llmConfig: LlmApi.LlmConfig = {
-      api: process.env.LLM_API_PROVIDER as 'openai',
-      key: process.env.LLM_API_KEY as string,
-    };
-
-    settings.setSync('llmConfig', llmConfig);
-    return llmConfig;
   });
 
   const userInputHandlers: Record<

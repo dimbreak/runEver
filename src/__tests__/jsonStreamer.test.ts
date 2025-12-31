@@ -1,4 +1,7 @@
-import { JsonStreamingEventType, JsonStreamingParser } from '../main/llm/jsonStreamer';
+import {
+  JsonStreamingEventType,
+  JsonStreamingParser,
+} from '../main/llm/jsonStreamer';
 
 const collectEvents = (input: string) => {
   const parser = new JsonStreamingParser();

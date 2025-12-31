@@ -1,16 +1,30 @@
 import * as React from 'react';
-import { Buffer } from 'buffer';
+import type { JSONContent } from '@tiptap/core';
 import { ToMainIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore } from '../state/tabStore';
+import { TiptapComposer } from './TiptapComposer';
+import { TiptapContent } from './TiptapContent';
 
 type Message = {
   id: number;
   role: 'user' | 'assistant';
-  text: string;
+  content: JSONContent;
+  text?: string;
   llmResponding?: boolean;
   tag?: string;
   image?: string; // todo multiple images? other types of files?
+};
+
+const textToDoc = (text: string): JSONContent => {
+  const paragraphs = text.split(/\n{2,}/);
+  return {
+    type: 'doc',
+    content: paragraphs.map((paragraph) => ({
+      type: 'paragraph',
+      content: paragraph.length ? [{ type: 'text', text: paragraph }] : [],
+    })),
+  };
 };
 
 export const AgentPanel: React.FC = () => {
@@ -20,121 +34,116 @@ export const AgentPanel: React.FC = () => {
     sidebarWidth,
     collapsedWidth,
     tabbarHeight,
+    bounds,
   } = useLayoutStore();
   const { tabs, activeTabId } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
-  const [messageInput, setMessageInput] = React.useState('');
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
       role: 'user',
-      text: 'I want to generate a list of automated tasks to run daily sales summary.',
+      content: textToDoc(
+        'I want to generate a list of automated tasks to run daily sales summary.',
+      ),
     },
     {
       id: 2,
       role: 'assistant',
-      text: 'I will connect to the API, provide daily revenue, order count, and KPI detection.',
+      content: textToDoc(
+        'I will connect to the API, provide daily revenue, order count, and KPI detection.',
+      ),
       tag: 'Plan',
     },
     {
       id: 3,
       role: 'user',
-      text: 'Add "low-margin product" warning, and output CSV.',
+      content: textToDoc('Add "low-margin product" warning, and output CSV.'),
     },
     {
       id: 4,
       role: 'assistant',
-      text: 'Added warning, and pushed CSV to your cloud at 7am.',
+      content: textToDoc('Added warning, and pushed CSV to your cloud at 7am.'),
       tag: 'Ready',
     },
   ]);
 
-  const handlePrompt = React.useCallback(() => {
-    console.log('send prompt:', messageInput, tabs);
-    const id = Date.now();
-    const respondiongMessage: Message = {
-      id: id + 1,
-      role: 'assistant',
-      text: '',
-      llmResponding: true,
-    };
-    let idx = -1;
-    setMessages((prev) => {
-      idx =
-        prev.push(
-          {
-            id,
-            role: 'user',
-            text: messageInput,
-          },
-          respondiongMessage,
-        ) - 1;
-      return prev.slice();
-    });
-    tabs
-      .find((t) => t.id === activeTabId)
-      ?.runPrompt(
-        messageInput,
-        {
-          // keyword: 'openai', website: 'wikipedia'
-        },
-        (chunk) => {
-          console.log('prompt chunk:', chunk);
-          // todo use ref? feel really low efficiency here
+  const handlePrompt = React.useCallback(
+    async (content: JSONContent) => {
+      const userText =
+        content.content
+          ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
+          .join('\n\n') ?? '';
+      console.info('send prompt:', userText, tabs);
+      const id = Date.now();
+      const respondiongMessage: Message = {
+        id: id + 1,
+        role: 'assistant',
+        content: textToDoc(''),
+        text: '',
+        llmResponding: true,
+      };
+      let idx = -1;
+      setMessages((prev) => {
+        idx =
+          prev.push(
+            {
+              id,
+              role: 'user',
+              content,
+            },
+            respondiongMessage,
+          ) - 1;
+        return prev.slice();
+      });
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      try {
+        await currentTab?.runPrompt(userText, {}, (chunk) => {
+          console.info('prompt chunk:', chunk);
           setMessages((prev) => {
-            prev[idx].text += chunk;
+            prev[idx].text = (prev[idx].text ?? '') + chunk;
+            prev[idx].content = textToDoc(prev[idx].text ?? '');
             return prev.slice();
           });
-        },
-      )
-      .then((err) => {
+        });
+      } catch (err) {
+        console.error('prompt error:', err);
         setMessages((prev) => {
           prev[idx].llmResponding = false;
           return prev.slice();
         });
-        // todo handle error
-        console.log('prompt result', err);
-      });
-  }, [activeTabId, tabs, messageInput]);
+      }
+    },
+    [activeTabId, tabs],
+  );
 
   const handleCapture = async () => {
     try {
-      // frameId/bounds from window (set in App.tsx useEffect)
-      const { lastFrameId, lastTabBounds } = window as any;
-      const frameId: number | undefined = lastFrameId;
-      const bounds = lastTabBounds || { width: 800, height: 600 };
-      if (!frameId) {
+      // Get the active tab
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (!currentTab) {
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now(),
             role: 'assistant',
-            text: 'No active tab to capture.',
+            content: textToDoc('No active tab to capture.'),
             tag: 'Error',
           },
         ]);
         return;
       }
 
-      const payload = {
-        frameId,
-        ttlHeight: bounds.height,
-        ttlWidth: bounds.width,
-        vpHeight: bounds.height,
-        vpWidth: bounds.width,
-        slices: [{ x: 0, y: 0 }],
-      };
+      // Capture screenshot using WebTab method
+      const imageDataUri = await currentTab.captureScreenshot(bounds);
 
-      const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
-      if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
-        const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
+      if (imageDataUri) {
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now(),
             role: 'assistant',
-            text: 'Captured current view.',
-            image: `data:image/jpeg;base64,${base64Img}`,
+            content: textToDoc('Captured current view.'),
+            image: imageDataUri,
             tag: 'Screenshot',
           },
         ]);
@@ -144,7 +153,7 @@ export const AgentPanel: React.FC = () => {
           {
             id: Date.now(),
             role: 'assistant',
-            text: 'Failed to capture screenshot.',
+            content: textToDoc('Failed to capture screenshot.'),
             tag: 'Error',
           },
         ]);
@@ -155,7 +164,7 @@ export const AgentPanel: React.FC = () => {
         {
           id: Date.now(),
           role: 'assistant',
-          text: `Capture error: ${(err as Error).message}`,
+          content: textToDoc(`Capture error: ${(err as Error).message}`),
           tag: 'Error',
         },
       ]);
@@ -178,6 +187,13 @@ export const AgentPanel: React.FC = () => {
       }
     },
     [collapsedWidth, sidebarWidth, tabbarHeight],
+  );
+
+  const handleSubmit = React.useCallback(
+    (content: JSONContent) => {
+      handlePrompt(content);
+    },
+    [handlePrompt],
   );
 
   React.useEffect(() => {
@@ -210,12 +226,6 @@ export const AgentPanel: React.FC = () => {
               className="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-amber-200/60 transition hover:-translate-y-[1px] hover:bg-amber-600"
             >
               Capture View
-            </button>
-            <button
-              type="button"
-              className="rounded-xl bg-[#3aa5ff] px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-sky-200/60 transition hover:-translate-y-[1px] hover:bg-[#1893ff]"
-            >
-              New Chat
             </button>
           </div>
           <button
@@ -252,10 +262,13 @@ export const AgentPanel: React.FC = () => {
                     {msg.tag}
                   </span>
                 )}
-                <div className="whitespace-pre-line">
-                  {msg.text}
-                  {msg.llmResponding && <div>...</div>}
-                </div>
+                <TiptapContent
+                  content={msg.content}
+                  variant={msg.role === 'user' ? 'inverse' : 'default'}
+                />
+                {msg.llmResponding && (
+                  <div className="mt-1 text-xs opacity-60">...</div>
+                )}
                 {msg.image && (
                   <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                     <img
@@ -270,31 +283,10 @@ export const AgentPanel: React.FC = () => {
           ))}
         </div>
 
-        {/* Input */}
-        <div className="border-t border-slate-100 bg-white px-4 py-3">
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 shadow-inner shadow-slate-200">
-            <textarea
-              className="flex-1 min-h-[44px] max-h-28 resize-none border-none bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
-              placeholder="Describe what you want to automate..."
-              rows={1}
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handlePrompt();
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1893ff] text-white shadow-lg shadow-sky-200/60 transition hover:bg-[#0d7fe6]"
-              onClick={handlePrompt}
-            >
-              <span className="text-sm font-bold">Go</span>
-            </button>
-          </div>
-        </div>
+        <TiptapComposer
+          onSubmit={handleSubmit}
+          placeholder="Describe what you want to automate..."
+        />
       </div>
     </div>
   );

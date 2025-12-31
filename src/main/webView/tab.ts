@@ -180,6 +180,10 @@ export class TabWebView {
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ): Promise<string | undefined> {
+    console.info('====>');
+    console.info(this.llmSession);
+    console.info('prompt:', prompt);
+    console.info('testPrompt:', testPrompt);
     if (this.llmSession) {
       if (prompt === 'run test' && testPrompt) {
         const promises: Promise<string>[] = [];
@@ -189,7 +193,7 @@ export class TabWebView {
           promises.push(LlmApi.wrapStream(stream));
         }
         const result: string[] = await Promise.all(promises);
-        console.log(
+        console.info(
           'result:',
           `${app.getPath('userData')}/prompt-lab/test${new Date().toString()}.json`,
           result,
@@ -210,8 +214,10 @@ export class TabWebView {
             modelType,
           );
           let response;
+          console.info('stream:', stream);
           while ((response = await stream.next())) {
             if (!response.done) {
+              console.info('pushPromptResponse:', response.value);
               this.pushPromptResponse(requestId, response.value);
             } else {
               break;

@@ -4,18 +4,19 @@ const results = [
   {
     title: 'Customer retention benchmarks 2025',
     url: 'northstar.io/insights/retention-2025',
-    snippet: 'See how top SaaS teams reduced churn with in-product milestones.'
+    snippet: 'See how top SaaS teams reduced churn with in-product milestones.',
   },
   {
     title: 'Onboarding checklist template',
     url: 'northstar.io/templates/onboarding',
-    snippet: 'A ready-to-run onboarding plan for your new product launches.'
+    snippet: 'A ready-to-run onboarding plan for your new product launches.',
   },
   {
     title: 'Pipeline velocity calculator',
     url: 'northstar.io/tools/pipeline',
-    snippet: 'Estimate revenue impact across stages using real conversion ratios.'
-  }
+    snippet:
+      'Estimate revenue impact across stages using real conversion ratios.',
+  },
 ];
 
 export default function SearchResultFlow() {
@@ -24,13 +25,22 @@ export default function SearchResultFlow() {
       <div className="results">
         <div className="results__summary">
           <p>
-            About <strong>12,430</strong> results for <strong>"pipeline velocity"</strong>
+            About <strong>12,430</strong> results for{' '}
+            <strong>&quot;pipeline velocity&quot;</strong>
           </p>
           <div className="results__filters">
-            <button className="pill pill--active">All</button>
-            <button className="pill">Recent</button>
-            <button className="pill">Verified</button>
-            <button className="pill">Images</button>
+            <button type="button" className="pill pill--active">
+              All
+            </button>
+            <button type="button" className="pill">
+              Recent
+            </button>
+            <button type="button" className="pill">
+              Verified
+            </button>
+            <button type="button" className="pill">
+              Images
+            </button>
           </div>
         </div>
         <div className="results__list">

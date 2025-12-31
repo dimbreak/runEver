@@ -1,3 +1,4 @@
+import { KeyboardEvent } from 'react';
 import FlowFrame from '../FlowFrame';
 
 type Product = {
@@ -24,8 +25,15 @@ export default function EcommerceLayout({
   onSelectProduct,
   onCloseProduct,
   onOpenBasket,
-  onCloseBasket
+  onCloseBasket,
 }: EcommerceLayoutProps) {
+  const handleBackdropKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onCloseProduct();
+    }
+  };
+
   return (
     <FlowFrame title="Marketplace" subtitle="Flow: ecommerce" theme="results">
       <div className="shop">
@@ -38,7 +46,11 @@ export default function EcommerceLayout({
             <button className="btn btn--ghost" type="button">
               Filter
             </button>
-            <button className="btn btn--primary" type="button" onClick={onOpenBasket}>
+            <button
+              className="btn btn--primary"
+              type="button"
+              onClick={onOpenBasket}
+            >
               Basket (2)
             </button>
           </div>
@@ -68,7 +80,14 @@ export default function EcommerceLayout({
 
       {activeProduct && (
         <div className="modal" role="dialog" aria-modal="true">
-          <div className="modal__backdrop" onClick={onCloseProduct} />
+          <div
+            className="modal__backdrop"
+            onClick={onCloseProduct}
+            onKeyDown={handleBackdropKeyDown}
+            role="button"
+            tabIndex={0}
+            aria-label="Close modal"
+          />
           <div className="modal__content">
             <div className="modal__header">
               <h3>{activeProduct.name}</h3>
@@ -93,7 +112,11 @@ export default function EcommerceLayout({
               <button className="btn btn--ghost" type="button">
                 Add to wishlist
               </button>
-              <button className="btn btn--primary" type="button" onClick={onOpenBasket}>
+              <button
+                className="btn btn--primary"
+                type="button"
+                onClick={onOpenBasket}
+              >
                 Add to basket
               </button>
             </div>

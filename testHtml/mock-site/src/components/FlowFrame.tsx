@@ -7,7 +7,12 @@ type FlowFrameProps = {
   children: ReactNode;
 };
 
-export default function FlowFrame({ title, subtitle, theme, children }: FlowFrameProps) {
+export default function FlowFrame({
+  title,
+  subtitle,
+  theme,
+  children,
+}: FlowFrameProps) {
   return (
     <section className={`flow flow--${theme}`}>
       <div className="flow__header flow__header--hidden">
