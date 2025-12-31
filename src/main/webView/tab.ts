@@ -116,8 +116,8 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
-    app.commandLine.appendSwitch('remote-debugging-port', '8315');
-    app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+    webContents.userAgent =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
     webContents.on('did-start-navigation', (details) => {
       if (
         details.isMainFrame &&
@@ -192,10 +192,10 @@ export class TabWebView {
         webContents.debugger.attach('1.3');
       }
 
-      webContents.debugger.sendCommand("DOM.enable").then(() => webContents.debugger.sendCommand("Page.enable")).catch(console.error);
-
-
-
+      webContents.debugger
+        .sendCommand('DOM.enable')
+        .then(() => webContents.debugger.sendCommand('Page.enable'))
+        .catch(console.error);
     });
   }
 
@@ -327,22 +327,29 @@ export class TabWebView {
     this.llmSession = new WebViewLlmSession(this);
   }
 
-  async setInputFile(inputSelector: string, filePaths: string[]): Promise<string|undefined> {
+  async setInputFile(
+    inputSelector: string,
+    filePaths: string[],
+  ): Promise<string | undefined> {
     const wc = this.webView.webContents;
-    const { root } = await wc.debugger.sendCommand("DOM.getDocument", { depth: -1 });
+    const { root } = await wc.debugger.sendCommand('DOM.getDocument', {
+      depth: -1,
+    });
 
     console.log('root:', root, inputSelector);
 
-    const input = await wc.debugger.sendCommand("DOM.querySelector", {
+    const input = await wc.debugger.sendCommand('DOM.querySelector', {
       nodeId: root.nodeId,
       selector: inputSelector,
     });
 
-    if(!input?.nodeId) return "input not found"
+    if (!input?.nodeId) return 'input not found';
 
-    const desc = await wc.debugger.sendCommand("DOM.describeNode", { nodeId: input.nodeId });
+    const desc = await wc.debugger.sendCommand('DOM.describeNode', {
+      nodeId: input.nodeId,
+    });
 
-    await wc.debugger.sendCommand("DOM.setFileInputFiles", {
+    await wc.debugger.sendCommand('DOM.setFileInputFiles', {
       backendNodeId: desc.node.backendNodeId,
       files: filePaths,
     });

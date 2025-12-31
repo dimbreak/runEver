@@ -160,7 +160,7 @@ export namespace ToMainIpc {
       },
     ],
     { error?: string }
-  >('run-prompt');
+  >('set-input-file');
   export const auditAction = new IpcMainContract<
     [
       {
