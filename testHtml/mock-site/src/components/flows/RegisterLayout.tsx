@@ -27,8 +27,8 @@ export default function RegisterLayout() {
             <input type="email" placeholder="you@company.com" />
           </label>
           <label className="field">
-            Avatar image
-            <input type="file" accept="image/*" />
+            CV upload
+            <input type="file" accept=".pdf,.doc,.docx,.txt" />
           </label>
           <div className="field">
             Gender
@@ -53,7 +53,7 @@ export default function RegisterLayout() {
           </div>
           <label className="field">
             Language
-            <select multiple>
+            <select>
               <option value="">Select a language</option>
               <option value="en">English</option>
               <option value="ja">Japanese</option>
@@ -129,7 +129,12 @@ export default function RegisterLayout() {
           </button>
         </div>
         <div className="register__panel register__panel--alt">
-          <iframe name="iframe" src="https://www.google.com/search?igu=1" style={{ border: 0, width: '100%', height: '100%' }} title="Google search" frameBorder="0" />
+          <h4>What you get</h4>
+          <ul>
+            <li>Custom automations and playbooks</li>
+            <li>Shared inbox with routing rules</li>
+            <li>Weekly performance summaries</li>
+          </ul>
         </div>
       </div>
     </FlowFrame>
