@@ -185,7 +185,7 @@ export namespace ToMainIpc {
       },
     ],
     { error?: string }
-  >('run-prompt');
+  >('set-input-file');
   export const stopPrompt = new IpcMainContract<
     [
       {
@@ -202,10 +202,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-        canGoBack: boolean;
-        canGoForward: boolean;
-        url: string;
-      }
+    canGoBack: boolean;
+    canGoForward: boolean;
+    url: string;
+  }
     | { error: string }
   >('get-tab-navigation-state');
   export const navigateTabHistory = new IpcMainContract<
@@ -216,10 +216,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-        canGoBack: boolean;
-        canGoForward: boolean;
-        url: string;
-      }
+    canGoBack: boolean;
+    canGoForward: boolean;
+    url: string;
+  }
     | { error: string }
   >('navigate-tab-history');
   export const auditAction = new IpcMainContract<
