@@ -237,7 +237,7 @@ type WireAction =
   | {
       k: 'key';
       key: string;
-      a: 'keyDown' | 'keyUp' | 'keyDownUp' | 'keyPress'; //always use press for typing, downUp for others, unless required/need delay
+      a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press for typing, unless required/need delay
       q?: Selector;
       c?: boolean; // ctrl
       al?: boolean; // alt
