@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@rc-component/select": "^1.0.0",
     "quill": "^2.0.3",
     "react": "^19.2.1",
     "react-autosuggest": "^10.1.0",

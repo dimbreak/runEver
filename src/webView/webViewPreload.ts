@@ -44,6 +44,7 @@ const webViewHandler = {
   htmlParser: undefined as MiniHtml.Parser | undefined,
   getHtmlParser() {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    console.log(this.htmlParser)
     return this.htmlParser;
   },
   getHtml(select: MiniHtml.Selector | null = null, outerLevel = 0) {
@@ -105,6 +106,29 @@ window.onload = async () => {
       console.log('Setting in preload:', event.data);
 
       window.removeEventListener('message', handleFrameId);
+
+      // const events = [];
+      // for (const property in window) {
+      //   if (property.startsWith('on')) {
+      //     events.push(property);
+      //     window[property] = (ev) => {
+      //       console.log(property, ev);
+      //     };
+      //   }
+      // }
+      // console.log(events.join(' '));
+      //
+      // await Util.sleep(500);
+      //
+      // BrowserActions.input(
+      //   {
+      //     k: 'input',
+      //     q: '__v',
+      //     v: `Japanese`,
+      //   },
+      //   'l',
+      //   {},
+      // );
     }
   };
   window.addEventListener('message', handleFrameId);

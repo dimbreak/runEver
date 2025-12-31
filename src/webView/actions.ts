@@ -302,13 +302,36 @@ export namespace BrowserActions {
     args: Record<string, string> = {},
   ) => {
     const el = getElementById(action.q, risk, args);
-    console.log('input', action, el);
+    console.log('input', action, el, document.activeElement);
     if (document.activeElement !== el && el !== document.body) {
+      console.log('focus', action, el);
       await dummyCursor.mouseEvent('click', el);
     }
     const value = replaceJsTpl(action.v, args);
-    if (value.length < 64 && SAFE_KEYPRESS_RE.test(value)) {
-      // todo need fix
+    if (el.tagName === 'SELECT') {
+      const select = el as HTMLSelectElement;
+      const pickedOption = Array.from(select.options).findIndex(
+        (opt) => opt.value === value || opt.textContent === value,
+      );
+      let key = 'ArrowDown';
+      let updownPress = pickedOption - select.selectedIndex;
+      if (updownPress < 0) {
+        updownPress = -updownPress;
+        key = 'ArrowUp';
+      }
+      console.log('select', select, pickedOption, updownPress, key);
+      if (pickedOption !== -1) {
+        const keyAndDelays: [ToMainIpc.NativeKeys, number][] = [];
+        for (let i = 0; i < updownPress; i++) {
+          keyAndDelays.push([key, Math.random() * 60 + 60]);
+        }
+        await ToMainIpc.dispatchNativeKeypress.invoke({
+          keyAndDelays: [...keyAndDelays, ['Enter', 0]],
+        });
+      } else {
+        throw new Error(`Option not found ${value}`);
+      }
+    } else if (value.length < 64 && SAFE_KEYPRESS_RE.test(value)) {
       await ToMainIpc.dispatchEvents.invoke({
         frameId: window.frameId!,
         events: value.split('').flatMap((keyCode) => [

@@ -10,7 +10,9 @@ export namespace Network {
   ): [Util.Lock, Util.Lock] => {
     const mainNetworkIdle0 = Util.newLock(); // for main tabWebview
     const mainNetworkIdle2 = Util.newLock(); // for main tabWebview
-    webContents.debugger.attach('1.3');
+    if (!webContents.debugger.isAttached()) {
+      webContents.debugger.attach('1.3');
+    }
 
     // setInterval(() => {
     //   console.log('network pending req', inflight);

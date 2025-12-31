@@ -1,3 +1,4 @@
+import { exec } from 'child_process';
 import { BrowserWindow, clipboard, ipcMain, MouseInputEvent } from 'electron';
 import settings from 'electron-settings';
 import { ToMainIpc } from '../contracts/toMain';
@@ -262,6 +263,51 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
     return false;
   });
 
+  ToMainIpc.dispatchNativeKeypress.handle(async (ev, arg) => {
+    const { keyAndDelays } = arg;
+    switch (process.platform) {
+      case 'darwin':
+        const keyToCode: Record<ToMainIpc.NativeKeys, number> = {
+          ArrowDown: 125,
+          ArrowUp: 126,
+          Enter: 36,
+          ArrowLeft: 123,
+          ArrowRight: 124,
+          Tab: 48,
+        };
+        let keyCode: number | undefined;
+        const osCodes: string[] = [];
+        for (const keyAndDelay of keyAndDelays) {
+          keyCode = keyToCode[keyAndDelay[0]];
+          if (keyCode) {
+            osCodes.push(`  key code ${keyCode}
+  delay ${keyAndDelay[1] / 1000}`);
+          }
+        }
+        await new Promise<void>((resolve) => {
+          exec(
+            `
+osascript <<'EOF'
+tell application "System Events"
+${osCodes.join('\n')}
+end tell
+EOF
+`,
+            (error, stdout, stderr) => {
+              if (error) console.error(error);
+              if (stderr) console.error(stderr);
+              resolve();
+            },
+          );
+        });
+
+        return true;
+      default:
+      // not supported
+    }
+    return false;
+  });
+
   ToMainIpc.pasteInput.handle(async (event, arg) => {
     console.log('Paste input:', arg);
     const { frameId, input } = arg;
@@ -271,6 +317,15 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
       return true;
     }
     return false;
+  });
+  ToMainIpc.setInputFile.handle(async (event, arg) => {
+    console.log('setInputFile:', arg);
+    const { frameId, selector, filePaths } = arg;
+    const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
+    if (wvTab) {
+      return { error: await wvTab.setInputFile(selector, filePaths) };
+    }
+    return { error: 'Tab not found' };
   });
   initPromptIpc(webViewTabsById);
 

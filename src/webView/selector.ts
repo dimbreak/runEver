@@ -225,6 +225,7 @@ export const replaceJsTpl = (
     // eslint-disable-next-line no-eval
     return eval(`((args)=>{
     const window = undefined, document = undefined;
+    const {${Object.keys(args).join(',')}} = args;
     return ${js};
     })(${JSON.stringify(args)})`) as string;
   }

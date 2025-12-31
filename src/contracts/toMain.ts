@@ -92,6 +92,22 @@ export namespace ToMainIpc {
     ],
     boolean
   >('dispatch-events');
+  export type NativeKeys =
+    | 'ArrowDown'
+    | 'ArrowUp'
+    | 'ArrowLeft'
+    | 'ArrowRight'
+    | 'Enter'
+    | 'Tab'
+    | string;
+  export const dispatchNativeKeypress = new IpcMainContract<
+    [
+      {
+        keyAndDelays: [NativeKeys, number][];
+      },
+    ],
+    boolean
+  >('dispatch-native-keypress');
   export const pasteInput = new IpcMainContract<
     [
       {
@@ -131,6 +147,16 @@ export namespace ToMainIpc {
         requestId: number;
         streamReturn?: boolean;
         args?: Record<string, string>;
+      },
+    ],
+    { error?: string }
+  >('run-prompt');
+  export const setInputFile = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        selector: string;
+        filePaths: string[];
       },
     ],
     { error?: string }

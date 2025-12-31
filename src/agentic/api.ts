@@ -12,11 +12,18 @@ export namespace LlmApi {
     api: envSchema.shape.provider,
     key: envSchema.shape.apiKey,
     error: z.string().optional(),
+    baseUrl: z.string().optional(),
   });
   export type LlmConfig = z.infer<typeof llmConfigSchema>;
   export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
   export type LlmModelType = 'hi' | 'mid' | 'low';
   export type Attachment = ImagePart | FilePart;
+  export type LlmApiModels = {
+    provider: LlmApiProvider;
+    hi: LanguageModelV2;
+    mid: LanguageModelV2;
+    low: LanguageModelV2;
+  };
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
@@ -35,16 +42,8 @@ export namespace LlmApi {
     }
   };
 
-  let llmApiPromise: Promise<{
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
-  } | null>;
-  const getLlmApi = async (): Promise<{
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
-  } | null> => {
+  let llmApiPromise: Promise<LlmApiModels | null>;
+  const getLlmApi = async (): Promise<LlmApiModels | null> => {
     if (!llmApiPromise) {
       llmApiPromise = new Promise(async (resolve) => {
         const apiConfig = await getLlmConfig();
@@ -57,8 +56,12 @@ export namespace LlmApi {
         switch (apiConfig.api) {
           case 'openai': {
             console.info('createOpenAI', apiConfig.key);
-            const openai = createOpenAI({ apiKey: apiConfig.key });
+            const openai = createOpenAI({
+              apiKey: apiConfig.key,
+              baseURL: apiConfig.baseUrl,
+            });
             resolve({
+              provider: 'openai',
               hi: openai('gpt-5.2'),
               mid: openai('gpt-5-mini'),
               low: openai('gpt-5-nano'),
@@ -114,38 +117,18 @@ export namespace LlmApi {
     const llmApi = await getLlmApi();
     console.info('llmApi:', llmApi);
     if (llmApi) {
-      const start = Date.now();
       // console.log('Query LLM', prompt);
       // throw new Error('Not implemented');
-      const { textStream } = streamQueryer({
-        model: llmApi[model],
-        providerOptions: {
-          openai: {
-            reasoningEffort: reasoning,
-            promptCacheKey: cacheKey ?? undefined,
-          },
-        },
-        prompt: systemPrompt
-          ? [
-              {
-                role: 'system',
-                content: systemPrompt,
-              },
-              {
-                role: 'user',
-                content: attachments
-                  ? [
-                      {
-                        type: 'text',
-                        text: prompt,
-                      },
-                      ...attachments,
-                    ]
-                  : prompt,
-              },
-            ]
-          : prompt,
-      });
+      const providerOptions: Record<string, any> = {};
+      if (llmApi.provider === 'openai') {
+        providerOptions.openai = {
+          reasoningEffort: reasoning,
+        };
+        if (cacheKey) {
+          providerOptions.openai.promptCacheKey = cacheKey;
+        }
+      }
+      const start = Date.now();
       let first = true;
       const interval = setInterval(() => {
         console.log(
@@ -155,6 +138,30 @@ export namespace LlmApi {
           first,
         );
       }, 3000);
+      const { textStream, request, response } = streamQueryer({
+        model: llmApi[model],
+        providerOptions,
+        prompt: systemPrompt
+          ? [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: attachments
+                ? [
+                  {
+                    type: 'text',
+                    text: prompt,
+                  },
+                  ...attachments,
+                ]
+                : prompt,
+            },
+          ]
+          : prompt,
+      });
       for await (const part of textStream) {
         console.info('textStream part:', part);
         if (first) {
@@ -164,6 +171,7 @@ export namespace LlmApi {
         }
         yield part;
       }
+      clearInterval(interval);
     } else {
       throw ErrNoConfig;
     }
@@ -195,8 +203,17 @@ export namespace LlmApi {
     stream: AsyncGenerator<string, any, void>,
   ) => {
     const result: string[] = [];
+    const start = Date.now();
+    let firstToken = -1;
     for await (const part of stream) {
+      if (firstToken === -1) {
+        firstToken = Date.now() - start;
+      }
       result.push(part);
+    }
+    const done = Date.now() - start;
+    if (result[0][0] === '{') {
+      result[0] = `{ "firstToken": ${firstToken}, "done": ${done}, ${result[0].slice(1)}`;
     }
     return result.join('');
   };

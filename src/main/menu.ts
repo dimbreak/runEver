@@ -92,7 +92,12 @@ export default class MenuBuilder {
         { type: 'separator' },
         { label: 'Cut', accelerator: 'Command+X', selector: 'cut:' },
         { label: 'Copy', accelerator: 'Command+C', selector: 'copy:' },
-        { label: 'Paste', accelerator: 'Command+V', selector: 'paste:' },
+        {
+          label: 'Paste',
+          accelerator: 'Command+V',
+          selector: 'paste:',
+          role: 'paste',
+        },
         {
           label: 'Select All',
           accelerator: 'Command+A',

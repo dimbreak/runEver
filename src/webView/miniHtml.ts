@@ -16,12 +16,12 @@ export namespace MiniHtml {
     id: string;
     nodes?: (string | MeaningfulElement)[];
     label: string;
-    visible: DomVisible;
+    visible: DomVisible | null; // null = need reload;
     parent?: MeaningfulElement;
     bodyDepth: number;
   };
   type DomVisible = DOMRect & {
-    visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0';
+    visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0' | '';
     style: CSSStyleDeclaration;
   };
   const spaceRx = /[\s\t\r\n\u200c\u0020\u034f]{2,}/g;
@@ -54,6 +54,11 @@ export namespace MiniHtml {
       return visible;
     }
     if (rect.width === 0 || rect.height === 0) {
+      const tagName = el.tagName.toLowerCase();
+      if (['option', 'optgroup'].includes(tagName)) {
+        visible.visible = '';
+        return visible;
+      }
       visible.visible = 'size0';
       return visible;
     }
@@ -82,12 +87,38 @@ export namespace MiniHtml {
 
     return visible;
   };
+  const interactiveTags = new Set<string>([
+    'button',
+    'a',
+    'input',
+    'textarea',
+    'select',
+  ]);
   const getReadableAttr = (element: HTMLElement): string => {
+    const tagName = element.tagName.toLowerCase();
+    if (tagName === 'div') {
+      if (element.classList.contains('rc-select')) {
+        const roles = ['rcSelect'];
+        if (element.classList.contains('rc-select-show-search')) {
+          roles.push('combobox');
+        }
+        if (element.classList.contains('rc-select-multiple')) {
+          roles.push('multi');
+        }
+        return `role:${roles.join('-')}`;
+      }
+      if (element.classList.contains('rc-virtual-list-holder-inner')) {
+        return 'role:rcSelect-listbox';
+      }
+    }
     return [
       element.getAttribute('alt') ?? '',
       element.getAttribute('title') ?? '',
       element.getAttribute('aria-label') ?? '',
       element.getAttribute('aria-labelledby') ?? '',
+      element.getAttribute('role') && !interactiveTags.has(tagName)
+        ? `role:${element.getAttribute('role')}`
+        : '',
     ]
       .filter((attr, i, arr) => arr.indexOf(attr) === i)
       .map((attr) => attr.trim())
@@ -164,18 +195,55 @@ export namespace MiniHtml {
       notShow = false,
       parentHighlightStyle: string = '',
       renderedHtml: null | Map<MeaningfulElement, string> = null,
+      rerendered = false,
     ): string {
       if (meaningfulEl.element.isConnected === false) return '';
+      let thisRendered = rerendered;
+      if(thisRendered || meaningfulEl.visible===null) {
+        meaningfulEl.visible = checkVisible(meaningfulEl.element);
+        thisRendered = true;
+      }
+      const { visible, element } = meaningfulEl;
+      const tagName = element.tagName.toLowerCase();
+      const { style } = visible;
+      let fontIndex = this.styles.font[style.fontFamily];
+      const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
+      let innerHtml = meaningfulEl.nodes
+        ?.map((node) => {
+          if (typeof node === 'string') return node.trim();
+          if (renderedHtml && renderedHtml.has(node)) {
+            const rendered = renderedHtml.get(node);
+            console.log('reusing rendered html', rendered);
+            renderedHtml.delete(node);
+            return rendered;
+          }
+          return this.genHtml(
+            node,
+            childLevel - 1,
+            visible?.visible !== true,
+            highlightStyle,
+            renderedHtml,
+            thisRendered,
+          );
+        })
+        .join('')
+        .replace(spaceRx, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&apos;/g, "'")
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"');
+      if (childLevel <= 0 && innerHtml) {
+        innerHtml = '...';
+      }
+      if(element.tagName==='BODY') {
+        return innerHtml ?? '';
+      }
       const attrs = PRINT_ATTRS.map((attr) => [
         attr,
         meaningfulEl.element.getAttribute(attr),
       ])
         .filter((attr) => !!attr[1])
         .map((attr) => `${attr[0]}=${quoteAttrVal(attr[1]!)}`);
-      const tagName = meaningfulEl.element.tagName.toLowerCase();
-      const { visible, element } = meaningfulEl;
-      const { style } = visible;
-      let fontIndex = this.styles.font[style.fontFamily];
 
       if (fontIndex === undefined) {
         fontIndex = Object.keys(this.styles.font).length;
@@ -194,7 +262,7 @@ export namespace MiniHtml {
           ? ''
           : visible.visible === true
             ? 'show'
-            : `${visible?.visible || 'F'}`,
+            : `${visible?.visible || 'hide'}`,
         visible.visible === true
           ? `xywh=${Math.round(visible.x)},${Math.round(visible.y)},${Math.round(visible.width)},${Math.round(visible.height)}`
           : '',
@@ -218,7 +286,6 @@ export namespace MiniHtml {
       ]
         .filter((str) => str.length)
         .join(' ');
-      const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
       if (visible.visible === true) {
         if (parentHighlightStyle && parentHighlightStyle !== highlightStyle) {
           let i = this.styles.highlight[highlightStyle];
@@ -228,32 +295,6 @@ export namespace MiniHtml {
           }
           tagHtmls += ` hls=${i}`;
         }
-      }
-      let innerHtml = meaningfulEl.nodes
-        ?.map((node) => {
-          if (typeof node === 'string') return node.trim();
-          if (renderedHtml && renderedHtml.has(node)) {
-            const rendered = renderedHtml.get(node);
-            console.log('reusing rendered html', rendered);
-            renderedHtml.delete(node);
-            return rendered;
-          }
-          return this.genHtml(
-            node,
-            childLevel - 1,
-            visible?.visible !== true,
-            highlightStyle,
-            renderedHtml,
-          );
-        })
-        .join('')
-        .replace(spaceRx, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"');
-      if (childLevel <= 0 && innerHtml) {
-        innerHtml = '...';
       }
       return innerHtml
         ? `<${tagHtmls}>${innerHtml}</${tagName}>`
@@ -309,6 +350,7 @@ export namespace MiniHtml {
                 meaningfulEl,
               );
               if (meaningfulEl) {
+                meaningfulEl.visible = null;
                 if (meaningfulEl.nodes === undefined) {
                   meaningfulEl.nodes = [record.target.textContent!];
                 } else {
@@ -331,9 +373,22 @@ export namespace MiniHtml {
             return;
           default:
             if (record.target instanceof Element) {
-              meaningfulEl =
-                this.findMeaningfulFromParent(record.target) ?? null;
-              if (record.type === 'childList') {
+              if (record.type === 'attributes') {
+                const elsToCheck: Element[] = [record.target as Element];
+                let childEl;
+                let foundMeaningful ;
+                while (elsToCheck.length) {
+                  childEl = elsToCheck.shift()!;
+                  foundMeaningful = this.meaningFulElementByEl.get(childEl);
+                  if(foundMeaningful) {
+                    foundMeaningful.visible = null;
+                    break;
+                  }
+                  elsToCheck.push(...Array.from(childEl.children));
+                }
+              }else if (record.type === 'childList') {
+                meaningfulEl =
+                  this.findMeaningfulFromParent(record.target) ?? null;
                 if (record.removedNodes.length) {
                   let toRemove: MeaningfulElement | string | undefined;
                   Array.from(record.removedNodes).forEach((node) => {
@@ -369,6 +424,7 @@ export namespace MiniHtml {
                     }
                     if (toRemove) {
                       if (meaningfulEl) {
+                        meaningfulEl.visible = null;
                         const pos = meaningfulEl.nodes?.indexOf(toRemove);
                         if (pos !== undefined && pos !== -1) {
                           meaningfulEl.nodes?.splice(pos, 1);
@@ -416,6 +472,7 @@ export namespace MiniHtml {
                       return;
                     }
                     if (toAdd && meaningfulEl) {
+                      meaningfulEl.visible = null;
                       if (meaningfulEl.nodes === undefined) {
                         meaningfulEl.nodes = toAdd;
                       } else {
@@ -453,12 +510,6 @@ export namespace MiniHtml {
             }
         }
       });
-
-      console.log(
-        'mutatedElements',
-        this.mutatedElements.size,
-        window.isPreloadContext,
-      );
     };
     initObserve() {
       if (this.observer) {
@@ -676,7 +727,7 @@ export namespace MiniHtml {
         }
       });
 
-      if (ifInteractive(tagName, element)) {
+      if (ifInteractive(tagName, element) || tagName === 'body') {
         meaningfulEl = this.addMeaningfulElement(placeholder);
         meaningFulElements.push(meaningfulEl);
       } else {
