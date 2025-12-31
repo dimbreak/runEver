@@ -2,6 +2,7 @@ import {
   app,
   BrowserWindow,
   clipboard,
+  Menu,
   Rectangle,
   WebContentsView,
 } from 'electron';
@@ -12,9 +13,14 @@ import { WireActionWithWaitAndRec } from '../../agentic/types';
 import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
 import { ToRendererIpc } from '../../contracts/toRenderer';
 import { Network } from '../../webView/network';
+import {
+  WebViewLlmSession,
+  WireActionWithWaitAndRec,
+} from '../../agentic/session';
+import { LlmApi } from '../../agentic/api';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
-import { LlmApi } from '../llm/api';
+import { ToRendererIpc } from '../../contracts/toRenderer';
 
 const testPrompt: { user: string; system: string } | null = null;
 
@@ -198,6 +204,7 @@ export class TabWebView {
         this.pageLoadedLock.tryLock();
       }
     });
+
     webContents.on(
       'did-frame-navigate',
       (ev, url, _code, _status, isMainFrame) => {
@@ -239,6 +246,28 @@ export class TabWebView {
       webContents,
       inflight,
     );
+
+    webContents.on('context-menu', (_, props) => {
+      const { x, y } = props;
+
+      Menu.buildFromTemplate([
+        {
+          label: 'Inspect element',
+          click: () => {
+            webContents.inspectElement(x, y);
+          },
+        },
+      ]).popup({ window: this.mainWindow });
+
+      if (!webContents.debugger.isAttached()) {
+        webContents.debugger.attach('1.3');
+      }
+
+      webContents.debugger.sendCommand("DOM.enable").then(() => webContents.debugger.sendCommand("Page.enable")).catch(console.error);
+
+
+
+    });
   }
 
   async runPrompt(
@@ -255,10 +284,16 @@ export class TabWebView {
     if (this.llmSession) {
       if (prompt === 'run test' && testPrompt) {
         const promises: Promise<string>[] = [];
-        const query = LlmApi.queryLLMSession(testPrompt.system, 'test');
         for (let i = 0; i < 3; i++) {
-          const stream = query(testPrompt.user, null, 'mid', 'low');
-          promises.push(LlmApi.wrapStream(stream));
+          const stream = LlmApi.queryLLMApi(
+            testPrompt.user,
+            testPrompt.system,
+            null,
+            `test_${Date.now()}_${i}`,
+            'mid',
+            'low',
+          );
+          promises.push(LlmApi.wrapStream(stream).catch((e) => e.message));
         }
         const result: string[] = await Promise.all(promises);
         console.info(
@@ -307,10 +342,10 @@ export class TabWebView {
       chunk,
     });
   }
-  clipboardLock: Promise<void> = Promise.resolve();
+  static clipboardLock: Promise<void> = Promise.resolve();
   async pasteText(input: string) {
-    await this.clipboardLock;
-    this.clipboardLock = new Promise(async (resolve) => {
+    await TabWebView.clipboardLock;
+    TabWebView.clipboardLock = new Promise(async (resolve) => {
       clipboard.writeText(input);
       const wc = this.webView.webContents;
       wc.focus();
@@ -318,6 +353,7 @@ export class TabWebView {
         wc.sendInputEvent({
           type: 'keyDown',
           keyCode: 'Meta',
+          modifiers: ['meta'],
         });
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
@@ -325,12 +361,7 @@ export class TabWebView {
           keyCode: 'v',
           modifiers: ['meta'],
         });
-        await Util.sleep(150 + Math.random() * 150);
-        wc.sendInputEvent({
-          type: 'keyUp',
-          keyCode: 'v',
-          modifiers: ['meta'],
-        });
+        wc.paste();
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
           type: 'keyUp',
@@ -340,6 +371,7 @@ export class TabWebView {
         wc.sendInputEvent({
           type: 'keyDown',
           keyCode: 'Control',
+          modifiers: ['control'],
         });
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
@@ -347,12 +379,7 @@ export class TabWebView {
           keyCode: 'v',
           modifiers: ['control'],
         });
-        await Util.sleep(150 + Math.random() * 150);
-        wc.sendInputEvent({
-          type: 'keyUp',
-          keyCode: 'v',
-          modifiers: ['control'],
-        });
+        wc.paste();
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
           type: 'keyUp',
@@ -377,5 +404,26 @@ export class TabWebView {
       // Keep the existing session so in-flight prompts don't lose their state.
       this.llmSession.resumeAll();
     }
+  }
+
+  async setInputFile(inputSelector: string, filePaths: string[]): Promise<string|undefined> {
+    const wc = this.webView.webContents;
+    const { root } = await wc.debugger.sendCommand("DOM.getDocument", { depth: -1 });
+
+    console.log('root:', root, inputSelector);
+
+    const input = await wc.debugger.sendCommand("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: inputSelector,
+    });
+
+    if(!input?.nodeId) return "input not found"
+
+    const desc = await wc.debugger.sendCommand("DOM.describeNode", { nodeId: input.nodeId });
+
+    await wc.debugger.sendCommand("DOM.setFileInputFiles", {
+      backendNodeId: desc.node.backendNodeId,
+      files: filePaths,
+    });
   }
 }

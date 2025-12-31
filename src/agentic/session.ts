@@ -8,83 +8,8 @@ import {
   WireSubTask,
 } from './execution.schema';
 import { PromptRun } from './promptRun';
-import { Prompt } from './types';
+import { Prompt, WireActionWithWaitAndRec } from './types';
 
-// LlmApi.addDummyReturn(
-//   `{
-//   "shouldSpiltTask": "yes: form has multiple fields and calendar interaction (likely >5 actions and uncertain UI)",
-//   "a": [
-//     {
-//       "subTaskPrompt": "Fill full name and work email with provided values",
-//       "addArgs": {
-//         "fullName": "Jamie Parker",
-//         "workEmail": "jamie.parker+742@example.com"
-//       },
-//       "complexity": "m"
-//     },
-//     {
-//       "subTaskPrompt": "Set birthday in the calendar to \${birthYear}-\${birthMonth}-\${birthDay}",
-//       "addArgs": {
-//         "birthYear": "2000",
-//         "birthMonth": "01",
-//         "birthDay": "15"
-//       },
-//       "complexity": "h"
-//     },
-//     {
-//       "subTaskPrompt": "Fill password and confirm password with the provided password",
-//       "addArgs": {
-//         "password": "S3cureP@ssw0rd!"
-//       },
-//       "complexity": "m"
-//     }
-//   ],
-//   "todo": {
-//     "sc": false,
-//     "rc": "Verify that inputs fullName, workEmail, birthYear/birthMonth/birthDay, and password were filled correctly; if correct, click the 'Create account' button to submit."
-//   },
-//   "clearQueue": false
-// }`,
-// );
-// LlmApi.addDummyReturn(`{
-//   "shouldSpiltTask": "no - only two obvious input fields to fill",
-//   "a": [
-//     {
-//       "intent": "fill Full name with \${args.fullName}",
-//       "risk": "m",
-//       "action": {
-//         "k": "input",
-//         "q": {
-//           "id": "__7",
-//           "argKeys": [
-//             "fullName"
-//           ]
-//         },
-//         "v": "\${args.fullName}"
-//       }
-//     },
-//     {
-//       "intent": "fill Work email with \${args.workEmail}",
-//       "risk": "m",
-//       "action": {
-//         "k": "input",
-//         "q": {
-//           "id": "__9",
-//           "argKeys": [
-//             "workEmail"
-//           ]
-//         },
-//         "v": "\${args.workEmail}"
-//       }
-//     }
-//   ],
-//   "clearQueue": false
-// }`);
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
@@ -115,6 +40,7 @@ import { Prompt } from './types';
 
 export class ExecutionSession {
   subSessionQueue: ExecutionSession[];
+  actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
   constructor(
     public id: number,
@@ -138,12 +64,12 @@ export class ExecutionSession {
       this.promptQueue[0]?.goalPrompt ?? 'no prompt',
     );
     let requireScreenshot = false;
-    const { run, promptQueue, id } = this;
-    const { tab, executionSession, args, actions, browserActionLock } = run;
+    const { run, promptQueue, id, actions, subSessionQueue } = this;
+    const { tab, executionSession, args, browserActionLock } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
-      ExecutorLlmResult,
+      ExecutorLlmResult | undefined,
       void
     >;
     const finish = run.setRunningStatus(this);
@@ -171,8 +97,8 @@ export class ExecutionSession {
                 `[performed actions]
 -`,
                 `[performed actions]
-- ${actions.map((s) => s.intent).join('\n- ')}`,
-              )
+- ${actions.map((s) => s.intent).join('\n- ')}${subSessionQueue.length ? `
+- ${subSessionQueue.map((s) => s.promptQueue[0].goalPrompt).join('\n- ')}`: ''}`)
             : runSubPrompt,
           requireScreenshot,
           complexity,
@@ -180,7 +106,7 @@ export class ExecutionSession {
 
         let res:
           | IteratorYieldResult<WireActionWithWait | WireSubTask>
-          | IteratorReturnResult<ExecutorLlmResult>;
+          | IteratorReturnResult<ExecutorLlmResult | undefined>;
         while ((res = await stepsStream.next())) {
           if (run.stopRequested) {
             finish();
@@ -206,7 +132,7 @@ export class ExecutionSession {
               return;
             }
 
-            if (res.value.todo) {
+            if (res.value?.todo) {
               console.log('Waiting for potential page load');
               await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
               if (run.stopRequested) {
@@ -275,7 +201,7 @@ ${res.value.todo.rc}
             }
             if ((res.value as WireActionWithWait).intent) {
               console.log(Date.now() - start, 'exec actions:', res.value);
-              run.addAction({
+              this.addAction({
                 ...(res.value as WireActionWithWait),
                 promptId,
                 id: run.allocActionId(),
@@ -313,5 +239,9 @@ ${res.value.todo.rc}
   }
   addNewSubSession(queue: Prompt[]) {
     this.subSessionQueue.push(this.run.createSession(queue, this));
+  }
+  addAction(action: WireActionWithWaitAndRec) {
+    this.actions.push(action);
+    this.run.addAction(action);
   }
 }

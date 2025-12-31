@@ -57,11 +57,7 @@ export class ExecutionPrompter {
     requireScreenshot = false,
     complexity: RiskOrComplexityLevel = 'l',
     retry = 0,
-  ): AsyncGenerator<
-    WireActionWithWait | WireSubTask,
-    ExecutorLlmResult | undefined,
-    void
-  > {
+  ): AsyncGenerator<WireActionWithWait | WireSubTask, ExecutorLlmResult|undefined, void> {
     const wv = this.tab.webView;
     const rect = wv.getBounds();
     console.log('Executor execPrompt', wv.webContents.id);
@@ -146,7 +142,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
                   console.warn('Exec step error:', step.error);
                 }
               } else if (event.key === null) {
-                console.log('Exec result end');
+                console.log('Exec result:', event.endValue);
                 parsedReturn = event.endValue;
               }
             }
@@ -162,13 +158,13 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
       console.error('Exec error', e);
     }
     const jsonRes = ExecutorLlmResultSchema.safeParse(parsedReturn ?? {});
-    console.log('Exec result:', jsonRes);
+    console.log('Exec end result:', jsonRes);
     if (jsonRes.success) {
       return jsonRes.data;
     }
     console.log('Retry execPrompt', retry);
     if (actionStage === 0 && retry < 3) {
-      return yield* this.execPrompt(
+      yield* this.execPrompt(
         goalPrompt,
         args,
         subPrompt,
@@ -176,18 +172,17 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
         complexity,
         retry + 1,
       );
+    }else {
+      throw new Error('Exec end error');
     }
-    throw new Error('Exec end error');
   }
 
   resetSystemPrompt() {
     this.requestInSession = 0;
-    // this.runner = undefined;
+    this.runner = undefined;
   }
 
   buildSystemPrompt() {
-    // | { t: 'navigation'; } // wait for load new page
-    // | { t: 'appear' | 'disappear'; q: Selector }
     const responseType = `
 
 type ID = string;
@@ -195,7 +190,9 @@ type Selector = ID | { id: ID, argKeys: (string|null)[] };
 
 type WireWait = { to?: number } & ( // wait timeout in ms
   | { t: 'network'; a: 'idle0' | 'idle2' }
-  | { t: 'time'; ms: number };
+  | { t: 'time'; ms: number }
+  | { t: 'navigation'; } // wait for load new page
+  | { t: 'appear' | 'disappear'; q: Selector };
 )
 
 type WireAction =
@@ -207,8 +204,9 @@ type WireAction =
     }
   | {
       k: 'scroll';
-      to: Selector | [number/*x*/, number/*y*/];
-      over?: Selector; // default to window
+      x?: number;
+      y?: number;
+      q: Selector;
     }
   | {
       k: 'focus';
@@ -216,25 +214,25 @@ type WireAction =
     }
   | {
       k: 'dragAndDrop';
-      sq: Selector; // src QuerySelector
-      dq?: Selector; // dst QuerySelector
+      sq: Selector;     // src QuerySelector
+      dq?: Selector;    // dst QuerySelector
       mv?: { x: number; y: number } | null;
     }
   | {
       k: 'key';
       key: string;
-      a: 'keyDown' | 'keyUp' | 'keyDownUp' | 'keyPress'; //always use press for typing, downUp for others, unless required/need delay
+      a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press, unless required/need delay
       q?: Selector;
-      c?: boolean; // ctrl
-      al?: boolean; // alt
-      s?: boolean; // shift
-      m?: boolean; // meta
+      c?: boolean;    // ctrl
+      al?: boolean;   // alt
+      s?: boolean;    // shift
+      m?: boolean;    // meta
       repeat?: number;
     }
   | {
-      k: 'input'; // for input, textarea, select, also upload file with path in v
+      k: 'input';     // for input, textarea, select
       q: Selector;
-      v: string|string[]; // input value, array for multiple select/files
+      v: string;      // input value
     }
   | {
       k: 'botherUser';
@@ -244,7 +242,6 @@ type WireAction =
     }
   | {
       k: 'setArg';
-      answer3Questions: string; // keep short
       // key value pair
       kv: Record<string, string | {q: Selector, attr?: string}>; //hard coded value or from element
     }
@@ -257,8 +254,8 @@ type WireStep = {
   intent: string;
   risk: 'h' | 'm' | 'l';
   action: WireAction;
-  pre?: WireWait; // wait BEFORE this action
-  post?: WireWait; // wait AFTER this action (rare)
+  pre?: WireWait;   // wait BEFORE this action
+  post?: WireWait;  // wait AFTER this action (rare)
 }
 
 type WireSubTask = {
@@ -269,13 +266,14 @@ type WireSubTask = {
 
 export type LlmWireResult = {
   shouldSplitTask: string;
-  a: WireSubTask[] | WireStep[]; // steps or sub tasks, no mix
-  e?: string; // error
+  a: WireSubTask[] | WireStep[];      // steps or sub tasks, no mix
+  e?: string;           // error
   todo?: {
     sc?: boolean; // require screenshot
     rc: string; // after all prompt
   }
-};`;
+  clearQueue: boolean; // for fixing error only
+};`
     return `[system]
 a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.
 
@@ -294,7 +292,7 @@ you are responsible for give actions, verify result inside the reasoning process
   - if the value will disapper from html after your actions and required by downstream(remember they have [html]) or
   - if the goal ask to return/send the value explicitly(not over interpret) or
   - if the value is required by the subtask you created
-- when asked to verify result, **ONLY USE [html]** to compare with expected value.
+- [html] & [performed actions] should be sufficient for giving context to down stream executors.
 
 [subtask guide]
 - **over splitting is welcome**, multi attentions task is the primary cause of errors. Just make sure the finest granularity is per widget.
@@ -326,7 +324,7 @@ you are responsible for give actions, verify result inside the reasoning process
 - For multiple fields form, submit action must appear as an isolated response with single action. put in todo and remind next executor to verify input and do submit if inputs are valid.
 
 - you should:
-- focus on the [mission] if exist while not conflict with the [goal], use [performed actions] to determine the current status in task.
+- focus on the [mission] if exist while not conflict with the [goal]
 - explain intention in WireStep.intent with very short natual language & argument before action, like "click the submit button", "fill in user name with $args.username" etc
 - always mention argument & key in intention if they involved in the element lookup or action.
 - read value and verify result by looking at [html], browser actions cannot help unless you need trigger some specific event to reveal values.
@@ -339,7 +337,6 @@ you are responsible for give actions, verify result inside the reasoning process
 - only apply LlmWireResult.clearQueue when fixing error.
 - focus on [mission] or [action error] if they appear in task prompt if they align with the [goa].
 - **only botherUser when the task is really uncertain or impossible** to be done, like missing info, large amount of transactions. Uncertainty alone is NOT a reason to bother user.
-- set pre/post hook ONLY IF it is required by the business logic, waiting or rerender/reload event will be handled by engine.
 
 - Irreversible or high-impact actions (e.g. submitting critical forms, confirming payments, deleting data):
    - Do NOT use trial and error.
@@ -374,9 +371,9 @@ you are responsible for give actions, verify result inside the reasoning process
 
 [dynamic action]
 when you use any key from arguments for element lookup, like html or label contains certain argument.key, which may appeared in WireStep.intent, you must **put the used argument keys in Selector.argKeys**. otherwise put empty array.
-argument can be use in all input, url or other string field with template string, use like \${args.linkTitle}, make sure args is use within string template.
+argument can be use in all input, url or other string field with template string, use like \${args.linkTitle}.
 javascript string methods may apply to args in string template, like args.linkTitle.toLowerCase().replace(/\\s+/g, '-')
-the only legal string format are plain text and args string template **start with '\${args.'** like \${args.linkTitle}, js code other than these will cause error.
+the only legal string format are plain text and args string template **start with 'args.'**, js code other than these will cause error.
 
 [customised html rule]
 the html contains all elements with content on the page include those out of current viewport. it skipped some of the non-significant elements like middle makeup tags.
@@ -384,7 +381,7 @@ each visible tag has xywh=x,y,width,height, some tag may has hls means highlight
 all visible tag comes with id, use it to query element in action. it is dynamical generated by engine, may change if element moved or removed in dynamic ui. avoid delegate id in todo.
 sw & sh will be provided if the element body is scrollable.
 val is the value of input, select, textarea.
-use only the elements provided in current [html], and work with their id in action. make sure the id you use appear in current [html], cached [html] in previous session may have expired.
+use only the elements provided, and work with them in action.
 
 [response in valid json format]
 ${responseType}

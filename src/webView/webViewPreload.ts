@@ -44,6 +44,7 @@ const webViewHandler = {
   htmlParser: undefined as MiniHtml.Parser | undefined,
   getHtmlParser() {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    console.log(this.htmlParser)
     return this.htmlParser;
   },
   getHtml(select: MiniHtml.Selector | null = null, outerLevel = 0) {
@@ -118,6 +119,29 @@ const handleFrameId = async (event: MessageEvent) => {
     scrollAdjustment,
   });
   console.log('Setting in preload:', event.data);
+  window.removeEventListener('message', handleFrameId);
+  // const events = [];
+  // for (const property in window) {
+  //   if (property.startsWith('on')) {
+  //     events.push(property);
+  //     window[property] = (ev) => {
+  //       console.log(property, ev);
+  //     };
+  //   }
+  // }
+  // console.log(events.join(' '));
+  //
+  // await Util.sleep(500);
+  //
+  // BrowserActions.input(
+  //   {
+  //     k: 'input',
+  //     q: '__v',
+  //     v: `Japanese`,
+  //   },
+  //   'l',
+  //   {},
+  // );
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

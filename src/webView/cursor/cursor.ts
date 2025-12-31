@@ -30,8 +30,8 @@ class DummyCursor {
     this.dom.id = 'runEver-dummy-cursor';
     this.dom.style.position = 'fixed';
     this.dom.style.zIndex = '9999999';
-    this.dom.style.top = `${this.y}px`;
-    this.dom.style.left = `${this.x}px`;
+    this.dom.style.top = `${this.y + 1}px`;
+    this.dom.style.left = `${this.x + 1}px`;
     this.dom.style.width = '20px';
     this.dom.style.height = '20px';
     // svg by puppylinux https://github.com/puppylinux-woof-CE/puppy_icon_theme
@@ -111,6 +111,7 @@ class DummyCursor {
     if (el) {
       let thisEl = el as HTMLElement;
       if (thisEl instanceof HTMLElement) {
+        // avoid miss click on inline irregular element rect el
         while (
           thisEl.children.length &&
           window.getComputedStyle(thisEl).display === 'inline'
@@ -126,6 +127,7 @@ class DummyCursor {
         clientY < y ||
         clientY > y + height
       ) {
+        console.log('mouseEvent el', action, thisEl, rect);
         await this.moveToEl(thisEl, rect);
       }
     }
@@ -200,6 +202,7 @@ class DummyCursor {
           },
         ];
     }
+    console.log('mouseEvent', action, events);
     if (repeat) {
       events[0].delayMs = Math.random() * 150 + 150;
       const toClone = events.slice();
