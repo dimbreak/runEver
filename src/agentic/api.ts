@@ -4,7 +4,7 @@ import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import settings from 'electron-settings';
 import z from 'zod';
-import { envSchema, envVars } from '../schema/env';
+import { envSchema, envVars, type Env } from '../schema/env';
 import { Util } from '../webView/util';
 
 export namespace LlmApi {
@@ -19,7 +19,7 @@ export namespace LlmApi {
   export type LlmModelType = 'hi' | 'mid' | 'low';
   export type Attachment = ImagePart | FilePart;
   export type LlmApiModels = {
-    provider: LlmApiProvider;
+    provider: Env['provider'];
     hi: LanguageModelV2;
     mid: LanguageModelV2;
     low: LanguageModelV2;
@@ -143,23 +143,23 @@ export namespace LlmApi {
         providerOptions,
         prompt: systemPrompt
           ? [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: attachments
-                ? [
-                  {
-                    type: 'text',
-                    text: prompt,
-                  },
-                  ...attachments,
-                ]
-                : prompt,
-            },
-          ]
+              {
+                role: 'system',
+                content: systemPrompt,
+              },
+              {
+                role: 'user',
+                content: attachments
+                  ? [
+                      {
+                        type: 'text',
+                        text: prompt,
+                      },
+                      ...attachments,
+                    ]
+                  : prompt,
+              },
+            ]
           : prompt,
       });
       for await (const part of textStream) {

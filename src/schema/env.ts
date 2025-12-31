@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const envSchema = z.object({
-  provider: z.enum(['openai']),
+  provider: z.enum(['openai', 'google']),
   apiKey: z.string(),
 });
 
