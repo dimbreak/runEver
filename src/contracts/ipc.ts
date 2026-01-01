@@ -14,6 +14,8 @@ export const isElectron =
 
 export const isMain = isElectron && (process as any).type === 'browser';
 
+const ipcWebViewHandlers: Record<string, (res: any) => void> = {};
+
 class IcpContract<REQ extends Array<any>, RES = any> {
   protected _types?: { req: REQ; res: RES };
 
@@ -29,13 +31,17 @@ export function initIpcMain(main: IpcMain, tabsById: Map<number, TabWebView>) {
   ipcMain = main;
   webViewTabsById = tabsById;
   onIpcMainInitialisedHandlers.forEach((handler) => handler());
-  ipcMain.on('ipcToWebViewResponse', (event, args) => {
-    const handler = ipcWebViewHandlers[args[0]];
+  ipcMain.on('ipcToWebViewResponse', (_, handlerId: number, res) => {
+    const handler = ipcWebViewHandlers[handlerId];
     if (handler) {
-      handler(args[1]);
-      delete ipcWebViewHandlers[args[0]];
+      handler(res);
+      delete ipcWebViewHandlers[handlerId];
     } else {
-      console.error('No handler found for ipcToWebViewResponse', args);
+      console.error(
+        'No handler found for ipcToWebViewResponse',
+        handlerId,
+        res,
+      );
     }
   });
 }
@@ -84,8 +90,6 @@ export class IcpRendererContract<
 }
 type Tail<T extends any[]> = T extends [any, ...infer R] ? R : never;
 
-const ipcWebViewHandlers: Record<string, (res: any) => void> = {};
-
 export class IpcWebViewContract<
   REQ extends [number, ...any],
   RES = any,
@@ -107,15 +111,17 @@ export class IpcWebViewContract<
         ? webViewTabsById.values().next().value
         : webViewTabsById.get(args[0]);
     if (wv) {
-      console.log(`ipcInvoke:${this.channel}`);
+      console.log(`ipcInvoke:${this.channel}`, args);
       const reqId = Date.now() * 100 + Math.floor(Math.random() * 100);
       const promise = new Promise<RES>((resolve) => {
         ipcWebViewHandlers[reqId] = resolve;
+        wv.webView.webContents.send(
+          `ipcInvoke:${this.channel}`,
+          reqId,
+          ...args.slice(1),
+        );
       });
-      wv.webView.webContents.send(`ipcInvoke:${this.channel}`, [
-        reqId,
-        ...args.slice(1),
-      ]);
+      console.log('ipcInvoke promise', reqId);
       return promise;
     }
     console.error('No tab found with id invokeFromMain', this.channel, args[0]);

@@ -1,7 +1,7 @@
 import { IcpRendererContract } from './ipc';
 
-export const ToRendererIpc = {
-  ToUser: new IcpRendererContract<
+export namespace ToRendererIpc {
+  export const toUser = new IcpRendererContract<
     [
       | {
           type: 'info' | 'warning' | 'error' | 'confirm';
@@ -23,5 +23,13 @@ export const ToRendererIpc = {
           >;
         },
     ]
-  >('to-user'),
-};
+  >('to-user');
+  export const promptResponse = new IcpRendererContract<
+    [
+      {
+        requestId: number;
+        chunk: string;
+      },
+    ]
+  >('prompt-response');
+}

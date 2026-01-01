@@ -1,8 +1,11 @@
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
+import { Buffer } from 'buffer';
+import { ToWebView } from '../../contracts/toWebView';
 import { webviewService } from '../services/webviewService';
 import { useLayoutStore } from './layoutStore';
 import { resolveInitialUrl } from '../utils/formatter';
+import { ToMainIpc } from '../../contracts/toMain';
 
 export class WebTab {
   id: string;
@@ -10,17 +13,70 @@ export class WebTab {
   url: string;
   type: 'webview' = 'webview';
   isRunning?: boolean;
+  frameId: number = -1;
 
   constructor(init: {
     id: string;
     title: string;
     url: string;
     isRunning?: boolean;
+    frameId?: number;
   }) {
     this.id = init.id;
     this.title = init.title;
     this.url = init.url;
     this.isRunning = init.isRunning;
+    this.frameId = init.frameId ?? -1;
+  }
+  async runPrompt(
+    prompt: string,
+    args: Record<string, string>,
+    handleResponse: (response: string) => void,
+  ) {
+    const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
+    const finish = webviewService.registerPromptResponseHandler(
+      requestId,
+      handleResponse,
+    );
+    const { error } = await ToMainIpc.runPrompt.invoke({
+      frameId: this.frameId,
+      prompt,
+      requestId,
+      args,
+    });
+    finish();
+    if (error) throw new Error(error);
+  }
+
+  async captureScreenshot(bounds: {
+    width: number;
+    height: number;
+  }): Promise<string | null> {
+    // Validate frameId is set
+    if (this.frameId === -1) {
+      throw new Error('No active tab to capture - frameId not set');
+    }
+
+    // Prepare screenshot payload
+    const payload = {
+      frameId: this.frameId,
+      ttlHeight: bounds.height,
+      ttlWidth: bounds.width,
+      vpHeight: bounds.height,
+      vpWidth: bounds.width,
+      slices: [{ x: 0, y: 0 }],
+    };
+
+    // Request screenshot from main process
+    const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
+
+    // Validate response and convert to base64
+    if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
+      const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
+      return `data:image/jpeg;base64,${base64Img}`;
+    }
+
+    return null;
   }
 }
 
@@ -51,14 +107,14 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Google',
-    url: 'https://www.google.com',
+    url: 'http://localhost:5175/?flow=register',
     isRunning: true,
   }),
-  new WebTab({
-    id: 'tab-2',
-    title: 'OpenAI',
-    url: 'https://www.openai.com',
-  }),
+  // new WebTab({
+  //   id: 'tab-2',
+  //   title: 'OpenAI',
+  //   url: 'https://www.openai.com',
+  // }),
 ];
 
 export const useTabStore = create<TabState>((set, get) => ({
@@ -84,6 +140,7 @@ export const useTabStore = create<TabState>((set, get) => ({
           url: resolveInitialUrl(tab.url),
         });
         if (frameId) {
+          tab.frameId = frameId;
           get().registerFrameId(tab.id, frameId);
           await webviewService.layoutTab({
             frameId,
@@ -92,6 +149,7 @@ export const useTabStore = create<TabState>((set, get) => ({
         }
       }
     }
+    set(() => ({ tabs: tabs.slice() }));
   },
   setActiveTab: (id) => {
     set(() => ({ activeTabId: id }));
@@ -105,6 +163,7 @@ export const useTabStore = create<TabState>((set, get) => ({
     });
     if (!frameId) return;
 
+    tab.frameId = frameId;
     get().registerFrameId(tab.id, frameId);
     set((state) => {
       const nextTabs = [...state.tabs, new WebTab(tab)];
@@ -165,11 +224,13 @@ export const useTabStore = create<TabState>((set, get) => ({
     set((state) => ({
       tabs: state.tabs.map((tab) =>
         tab.id === tabId
-          ? new WebTab({
+          ? // todo is this suggested practice? looks weird
+            new WebTab({
               id: tab.id,
               title: tab.title,
               url,
               isRunning: tab.isRunning,
+              frameId: tab.frameId,
             })
           : tab,
       ),
@@ -228,6 +289,7 @@ export const useTabStore = create<TabState>((set, get) => ({
               title,
               url: tab.url,
               isRunning: tab.isRunning,
+              frameId: tab.frameId,
             })
           : tab,
       ),

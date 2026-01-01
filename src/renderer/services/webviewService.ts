@@ -1,5 +1,6 @@
 import type { Rectangle } from 'electron';
-import { ToMianIpc } from '../../contracts/toMain';
+import { ToMainIpc } from '../../contracts/toMain';
+import { ToRendererIpc } from '../../contracts/toRenderer';
 
 type LayoutParams = {
   frameId?: number;
@@ -16,13 +17,34 @@ const hasIpc = () =>
   typeof window !== 'undefined' &&
   Boolean((window as any).electron?.ipcRenderer);
 
+let promptResponseHandlers: Record<number, (response: string) => void> | null =
+  null;
 export const webviewService = {
   hasBridge: hasIpc,
+
+  registerPromptResponseHandler(
+    thisRequestId: number,
+    handler: (response: string) => void,
+  ) {
+    if (promptResponseHandlers === null) {
+      promptResponseHandlers = {};
+      ToRendererIpc.promptResponse.on((_, response) => {
+        console.log('promptResponse', response);
+        const { requestId, chunk } = response;
+        const registeredHandler = promptResponseHandlers![requestId];
+        if (registeredHandler) registeredHandler(chunk);
+      });
+    }
+    promptResponseHandlers[thisRequestId] = handler;
+    return () => {
+      delete promptResponseHandlers![thisRequestId];
+    };
+  },
 
   async createTab(params: { url: string; bounds?: Rectangle }) {
     if (!hasIpc()) return undefined;
     console.info('createTab', params?.url, params?.bounds);
-    const res = await ToMianIpc.createTab.invoke({
+    const res = await ToMainIpc.createTab.invoke({
       url: params.url,
       bounds: params.bounds,
     });
@@ -34,8 +56,7 @@ export const webviewService = {
     if (!hasIpc()) return;
     const { frameId, tabId } = params;
     if (!frameId && !tabId) return;
-    console.info('layoutTab', frameId, tabId, params.bounds);
-    await ToMianIpc.operateTab.invoke({
+    await ToMainIpc.operateTab.invoke({
       id: frameId ?? -1,
       bounds: params.bounds,
       sidebarWidth: params.sidebarWidth,
@@ -51,7 +72,7 @@ export const webviewService = {
     const { frameId } = params;
     if (!frameId) return;
     console.info('closeTab', frameId);
-    await ToMianIpc.operateTab.invoke({
+    await ToMainIpc.operateTab.invoke({
       id: frameId ?? -1,
       close: true,
     });

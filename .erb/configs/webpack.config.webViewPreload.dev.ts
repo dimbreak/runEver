@@ -19,7 +19,7 @@ const configuration: webpack.Configuration = {
 
   target: 'electron-preload',
 
-  entry: path.join(webpackPaths.srcMainPath, 'webView', 'webViewPreload.ts'),
+  entry: path.join(webpackPaths.webViewPath, 'webViewPreload.ts'),
 
   output: {
     path: webpackPaths.dllPath,

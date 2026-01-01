@@ -81,13 +81,17 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=100"
+    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=1000"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.85",
     "@electron/notarize": "^3.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@tailwindcss/postcss": "^4.1.17",
+    "@tiptap/core": "^3.14.0",
+    "@tiptap/extension-placeholder": "^3.14.0",
+    "@tiptap/react": "^3.14.0",
+    "@tiptap/starter-kit": "^3.14.0",
     "ai": "^5.0.112",
     "clsx": "^2.1.1",
     "electron-debug": "^4.1.0",

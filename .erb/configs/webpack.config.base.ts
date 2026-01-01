@@ -1,9 +1,12 @@
 /**
  * Base webpack config used across other specific configs
  */
-import webpack from 'webpack';
+import dotenv from 'dotenv';
 import TsconfigPathsPlugins from 'tsconfig-paths-webpack-plugin';
+import webpack from 'webpack';
 import webpackPaths from './webpack.paths';
+
+dotenv.config();
 
 const configuration: webpack.Configuration = {
   stats: 'errors-only',
@@ -44,7 +47,13 @@ const configuration: webpack.Configuration = {
     plugins: [new TsconfigPathsPlugins()],
   },
 
-  plugins: [new webpack.EnvironmentPlugin({ NODE_ENV: 'production' })],
+  plugins: [
+    new webpack.EnvironmentPlugin({
+      NODE_ENV: 'production',
+      LLM_API_PROVIDER: process.env.LLM_API_PROVIDER,
+      LLM_API_KEY: process.env.LLM_API_KEY,
+    }),
+  ],
 };
 
 export default configuration;

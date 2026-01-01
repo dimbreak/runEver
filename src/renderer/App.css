@@ -1,5 +1,47 @@
 @import 'tailwindcss';
 
+@layer components {
+  .tiptap-content {
+    @apply break-words;
+  }
+
+  .tiptap-content p {
+    @apply whitespace-pre-wrap;
+  }
+
+  .tiptap-content ul {
+    @apply my-1 list-disc space-y-1 pl-5;
+  }
+
+  .tiptap-content ol {
+    @apply my-1 list-decimal space-y-1 pl-5;
+  }
+
+  .tiptap-content code {
+    @apply rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.85em] text-slate-800;
+  }
+
+  .tiptap-inverse {
+    @apply text-white;
+  }
+
+  .tiptap-inverse code {
+    @apply bg-white/15 text-white;
+  }
+
+  .ProseMirror:focus {
+    outline: none;
+  }
+
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: rgb(148 163 184);
+    pointer-events: none;
+    height: 0;
+  }
+}
+
 @layer utilities {
   .scroll-shadows {
     background:
