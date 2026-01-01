@@ -9,7 +9,7 @@ import { TabWebView } from './webView/tab';
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const webViewTabsById = new Map<number, TabWebView>();
 
-  const PADDING = 12;
+  const PADDING = 0;
   const DEFAULT_TABBAR_HEIGHT = 112;
   const DEFAULT_SIDEBAR_WIDTH = 430;
 
