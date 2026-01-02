@@ -5,6 +5,7 @@ import { streamText } from 'ai';
 import settings from 'electron-settings';
 import z from 'zod';
 import { envSchema, envVars } from '../schema/env';
+import { FirstTokenMonitor } from '../utils/llm';
 import { Util } from '../webView/util';
 
 export namespace LlmApi {
@@ -113,9 +114,9 @@ export namespace LlmApi {
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
     console.info('llmApi:', llmApi);
-    let interval: NodeJS.Timeout | undefined;
+    const monitor = new FirstTokenMonitor(cacheKey);
+
     if (llmApi) {
-      const start = Date.now();
       // console.log('Query LLM', prompt);
       // throw new Error('Not implemented');
       const { textStream } = streamQueryer({
@@ -147,38 +148,25 @@ export namespace LlmApi {
             ]
           : prompt,
       });
-      let first = true;
+
+      // Start monitoring for the first token
+      monitor.start();
+
       try {
-        interval = setInterval(() => {
-          console.log(
-            'Waiting for first token',
-            cacheKey,
-            Date.now() - start,
-            first,
-          );
-        }, 3000);
         for await (const part of textStream) {
-          if (first) {
-            clearInterval(interval);
-            interval = undefined;
-            console.log(
-              'Stream first token',
-              cacheKey,
-              Date.now() - start,
-              part,
-            );
-            first = false;
+          if (!monitor.hasReceived()) {
+            monitor.onFirstToken(part);
           }
           yield part;
         }
       } catch (err) {
-        clearInterval(interval);
-        interval = undefined;
+        monitor.stop();
         throw err;
+      } finally {
+        monitor.stop();
       }
     } else {
-      clearInterval(interval);
-      interval = undefined;
+      monitor.stop();
       throw ErrNoConfig;
     }
   }
