@@ -150,7 +150,7 @@ class ExecutionSession {
   constructor(
     public id: number,
     public promptQueue: Prompt[],
-    private wvSession: WebViewLlmSession,
+    private run: PromptRun,
     public parent?: ExecutionSession,
   ) {
     this.subSessionQueue = [];
@@ -162,22 +162,25 @@ class ExecutionSession {
   > {
     console.log('Prompt start:', this.promptQueue[0].goalPrompt);
     let requireScreenshot = false;
-    const { wvSession, promptQueue, id } = this;
-    const { tab, executionSession, args, actions, browserActionLock } =
-      wvSession;
+    const { run, promptQueue, id } = this;
+    const { tab, executionSession, args, actions, browserActionLock } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
       ExecutorLlmResult,
       void
     >;
-    const finish = wvSession.setRunningStatus(this);
+    const finish = run.setRunningStatus(this);
     if (promptQueue.length === 0) {
       yield* this.execSubSessionQueue();
       finish();
       return;
     }
     while (promptQueue.length) {
+      if (run.stopRequested) {
+        finish();
+        return;
+      }
       const promptItem = promptQueue.shift()!;
       const {
         subPrompt: runSubPrompt,
@@ -208,21 +211,37 @@ class ExecutionSession {
           | IteratorYieldResult<WireActionWithWait | WireSubTask>
           | IteratorReturnResult<ExecutorLlmResult>;
         while ((res = await stepsStream.next())) {
+          if (run.stopRequested) {
+            finish();
+            return;
+          }
           if (res.done) {
-            if (wvSession.fixingAction?.promptId === promptId) {
+            if (run.fixingAction?.promptId === promptId) {
               console.log('Fixing action done');
-              wvSession.fixingAction = null;
-              wvSession.execActions();
+              run.fixingAction = null;
+              run.execActions();
             }
             console.log(Date.now() - start, 'Waiting for complete prompt');
             // todo fix error sometimes block here
             await browserActionLock.wait;
+            if (run.stopRequested) {
+              finish();
+              return;
+            }
 
             yield* this.execSubSessionQueue();
+            if (run.stopRequested) {
+              finish();
+              return;
+            }
 
             if (res.value.todo) {
               console.log('Waiting for potential page load');
               await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+              if (run.stopRequested) {
+                finish();
+                return;
+              }
               if (tab.url === url) {
                 yield PlanAfterRerender;
                 console.log(Date.now() - start, 'Waiting for page re-render');
@@ -240,6 +259,10 @@ class ExecutionSession {
                 await tab.pageLoadedLock.wait;
                 executionSession.resetSystemPrompt();
               }
+              if (run.stopRequested) {
+                finish();
+                return;
+              }
               if (this.breakPromptForExeErr) {
                 console.log(
                   Date.now() - start,
@@ -256,7 +279,7 @@ ${res.value.todo.rc}
 [performed actions]
 -
 `;
-              const newPrompt = wvSession.createPrompt(
+              const newPrompt = run.createPrompt(
                 runGoalPrompt,
                 {},
                 id,
@@ -281,16 +304,16 @@ ${res.value.todo.rc}
             }
             if ((res.value as WireActionWithWait).intent) {
               console.log(Date.now() - start, 'exec actions:', res.value);
-              wvSession.addAction({
+              run.addAction({
                 ...(res.value as WireActionWithWait),
                 promptId,
-                id: wvSession.actionId++,
+                id: run.allocActionId(),
               });
-              wvSession.execActions();
+              run.execActions();
               yield res.value as WireActionWithWait;
             } else {
               console.log(Date.now() - start, 'exec add sub task:', res.value);
-              const newPrompt = wvSession.createPrompt(
+              const newPrompt = run.createPrompt(
                 `${(res.value as WireSubTask).subTaskPrompt}
 **do not add subtask**`,
                 (res.value as WireSubTask).addArgs ?? undefined,
@@ -321,23 +344,28 @@ ${res.value.todo.rc}
     subSessionQueue.push(...finished);
   }
   addNewSubSession(queue: Prompt[]) {
-    this.subSessionQueue.push(this.wvSession.createSession(queue, this));
+    this.subSessionQueue.push(this.run.createSession(queue, this));
   }
 }
 
-export class WebViewLlmSession {
+class PromptRun {
   executionSession: ExecutionPrompter;
   args: Record<string, any> = {};
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
-  actionId = 0;
   browserActionLock = Util.newLock('browserActionLock');
   browserActionLockOk = false;
   prompts: Prompt[] = [];
   rootSession: ExecutionSession;
   sessionQueue: ExecutionSession[] = [];
   runningSession: ExecutionSession[] = [];
-  constructor(public tab: TabWebView) {
+
+  stopRequested = false;
+  constructor(
+    private manager: WebViewLlmSession,
+    public tab: TabWebView,
+    public requestId: number,
+  ) {
     this.executionSession = new ExecutionPrompter(tab);
     this.rootSession = new ExecutionSession(0, [], this);
 
@@ -363,6 +391,8 @@ export class WebViewLlmSession {
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ): AsyncGenerator<string, void, void> {
+    this.stopRequested = false;
+
     // todo check stage prompt to correct session
     const { rootSession } = this;
     if (true) {
@@ -372,6 +402,7 @@ export class WebViewLlmSession {
       let streamChunk;
       let returnStr;
       while ((streamChunk = await stream.next())) {
+        if (this.stopRequested) break;
         if (!streamChunk.done) {
           switch (typeof streamChunk.value) {
             case 'object':
@@ -408,11 +439,25 @@ export class WebViewLlmSession {
 
   breakPromptForExeErr = false;
 
+  stop() {
+    this.stopRequested = true;
+    this.fixingAction = null;
+    this.browserActionLock.unlock();
+  }
+
+  allocActionId() {
+    return this.manager.allocActionId(this.requestId);
+  }
+
+  getNextAction(): WireActionWithWaitAndRec | undefined {
+    return this.actions[this.currentAction];
+  }
+
   async execActions() {
     if (!this.fixingAction) {
       this.browserActionLockOk = false;
-      this.browserActionLock.tryLock();
-      this.tab.pushActions();
+      this.manager.ensureRunLocked(this.requestId);
+      this.manager.enqueueRun(this.requestId);
     }
   }
 
@@ -460,7 +505,10 @@ export class WebViewLlmSession {
       currentAction.argsDelta = argsDelta;
     }
     console.log('Popped actions:', this.actions.length, completedId);
-    if (this.currentAction === this.actions.length) {
+    if (this.stopRequested) return;
+    if (this.currentAction < this.actions.length) {
+      this.execActions();
+    } else {
       this.browserActionLock.delayUnlock(500);
     }
   }
@@ -589,5 +637,157 @@ these actions are blocking by this error, if you found any of the above actions 
         this.runningSession.length,
       );
     };
+  }
+}
+
+export class WebViewLlmSession {
+  private runsByRequestId = new Map<number, PromptRun>();
+  private runQueue: number[] = [];
+  private activeRequestId: number | null = null;
+  private inFlightAction = false;
+  private actionIdToRequestId = new Map<number, number>();
+  private nextActionId = 0;
+  private lastStartedRequestId: number | null = null;
+
+  constructor(public tab: TabWebView) {}
+
+  startPrompt(
+    requestId: number,
+    promptTxt: string,
+    args?: Record<string, string>,
+    reasoningEffort?: LlmApi.ReasoningEffort,
+    modelType?: LlmApi.LlmModelType,
+  ) {
+    const existing = this.runsByRequestId.get(requestId);
+    if (existing) existing.stop();
+
+    const run = new PromptRun(this, this.tab, requestId);
+    this.runsByRequestId.set(requestId, run);
+    this.lastStartedRequestId = requestId;
+    return run.initPrompt(promptTxt, args, reasoningEffort, modelType);
+  }
+
+  stopPrompt(requestId?: number) {
+    const id = requestId ?? this.lastStartedRequestId;
+    if (id === null) return { stopped: false, error: 'No prompt to stop' };
+    const run = this.runsByRequestId.get(id);
+    if (!run) return { stopped: false, error: 'Prompt not found' };
+
+    run.stop();
+    this.runsByRequestId.delete(id);
+    this.runQueue = this.runQueue.filter((v) => v !== id);
+    if (this.activeRequestId === id) {
+      this.activeRequestId = null;
+      this.inFlightAction = false;
+    }
+    this.cleanupActionMapForRequest(id);
+    this.pump();
+    return { stopped: true };
+  }
+
+  resumeAll() {
+    for (const [requestId, run] of this.runsByRequestId.entries()) {
+      if (!run.stopRequested && run.getNextAction()) {
+        this.ensureRunLocked(requestId);
+        this.enqueueRun(requestId);
+      }
+    }
+  }
+
+  allocActionId(requestId: number) {
+    const actionId = this.nextActionId++;
+    this.actionIdToRequestId.set(actionId, requestId);
+    return actionId;
+  }
+
+  ensureRunLocked(requestId: number) {
+    const run = this.runsByRequestId.get(requestId);
+    if (!run || run.stopRequested) return;
+    if (run.browserActionLock.tryLock()) {
+      run.browserActionLock.wait
+        .then(() => {
+          if (this.activeRequestId === requestId) {
+            this.activeRequestId = null;
+            this.inFlightAction = false;
+          }
+          this.pump();
+        })
+        .catch((err) => {
+          console.error('Error waiting for browser action lock:', err);
+        });
+    }
+  }
+
+  enqueueRun(requestId: number) {
+    if (!this.runsByRequestId.has(requestId)) return;
+    if (this.activeRequestId === requestId) {
+      this.pump();
+      return;
+    }
+    if (!this.runQueue.includes(requestId)) {
+      this.runQueue.push(requestId);
+    }
+    this.pump();
+  }
+
+  actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
+    const requestId = this.actionIdToRequestId.get(actionId);
+    if (requestId === undefined) return;
+    const run = this.runsByRequestId.get(requestId);
+    if (!run) return;
+    run.actionDone(actionId, argsDelta);
+    if (this.activeRequestId === requestId) {
+      this.inFlightAction = false;
+      this.pump();
+    }
+  }
+
+  actionError(actionId: number, error: string) {
+    const requestId = this.actionIdToRequestId.get(actionId);
+    if (requestId === undefined) return;
+    const run = this.runsByRequestId.get(requestId);
+    if (!run) return;
+    run.actionError(actionId, error);
+    if (this.activeRequestId === requestId) {
+      this.inFlightAction = false;
+      this.pump();
+    }
+  }
+
+  private pump() {
+    if (this.activeRequestId !== null) {
+      if (this.inFlightAction) return;
+      const run = this.runsByRequestId.get(this.activeRequestId);
+      if (!run || run.stopRequested) {
+        this.activeRequestId = null;
+        this.inFlightAction = false;
+        this.pump();
+        return;
+      }
+      const nextAction = run.getNextAction();
+      if (!nextAction) return;
+      this.inFlightAction = true;
+      this.tab.pushActions([nextAction], run.args);
+      return;
+    }
+
+    while (this.runQueue.length) {
+      const requestId = this.runQueue.shift()!;
+      const run = this.runsByRequestId.get(requestId);
+      if (!run || run.stopRequested) continue;
+      const nextAction = run.getNextAction();
+      if (!nextAction) continue;
+
+      this.activeRequestId = requestId;
+      this.inFlightAction = true;
+      this.tab.pushActions([nextAction], run.args);
+      return;
+    }
+  }
+
+  private cleanupActionMapForRequest(requestId: number) {
+    for (const [actionId, owner] of this.actionIdToRequestId.entries()) {
+      if (owner === requestId) this.actionIdToRequestId.delete(actionId);
+    }
   }
 }

@@ -59,14 +59,20 @@ export class TabWebView {
     this.initView();
   }
 
-  async pushActions(actions?: WireActionWithWaitAndRec[]) {
-    if (this.llmSession) {
-      const pushActions = actions ?? this.llmSession.getRemainActions();
-      console.log('pushActions:', pushActions);
-      return this.webView.webContents.executeJavaScript(
-        `(async ()=>await window.webView.execActions(${JSON.stringify(pushActions)}, ${JSON.stringify(this.llmSession.args)}))()`,
-      );
-    }
+  stopPrompt(requestId?: number) {
+    this.llmSession?.stopPrompt(requestId);
+    this.pageLoadedLock.unlock();
+    this.pageStartLoadingLock.unlock();
+  }
+
+  async pushActions(
+    actions: WireActionWithWaitAndRec[],
+    args: Record<string, any>,
+  ) {
+    console.log('pushActions:', actions);
+    return this.webView.webContents.executeJavaScript(
+      `(async ()=>await window.webView.execActions(${JSON.stringify(actions)}, ${JSON.stringify(args)}))()`,
+    );
   }
 
   actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
@@ -139,10 +145,7 @@ export class TabWebView {
             `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
           if (this.llmSession) {
-            const actions = this.llmSession.getRemainActions();
-            if (actions.length) {
-              this.pushActions(actions);
-            }
+            this.llmSession.resumeAll();
           }
         }
       },
@@ -207,7 +210,8 @@ export class TabWebView {
         );
       } else {
         try {
-          const stream = this.llmSession.initPrompt(
+          const stream = this.llmSession.startPrompt(
+            requestId,
             prompt,
             args,
             reasoningEffort,

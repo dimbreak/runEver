@@ -135,6 +135,15 @@ export namespace ToMainIpc {
     ],
     { error?: string }
   >('run-prompt');
+  export const stopPrompt = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        requestId?: number;
+      },
+    ],
+    { stopped: boolean; error?: string }
+  >('stop-prompt');
   export const auditAction = new IpcMainContract<
     [
       {

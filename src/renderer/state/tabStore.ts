@@ -14,6 +14,7 @@ export class WebTab {
   type: 'webview' = 'webview';
   isRunning?: boolean;
   frameId: number = -1;
+  lastPromptRequestId?: number;
 
   constructor(init: {
     id: string;
@@ -21,12 +22,14 @@ export class WebTab {
     url: string;
     isRunning?: boolean;
     frameId?: number;
+    lastPromptRequestId?: number;
   }) {
     this.id = init.id;
     this.title = init.title;
     this.url = init.url;
     this.isRunning = init.isRunning;
     this.frameId = init.frameId ?? -1;
+    this.lastPromptRequestId = init.lastPromptRequestId;
   }
   async runPrompt(
     prompt: string,
@@ -34,18 +37,33 @@ export class WebTab {
     handleResponse: (response: string) => void,
   ) {
     const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
+    this.lastPromptRequestId = requestId;
     const finish = webviewService.registerPromptResponseHandler(
       requestId,
       handleResponse,
     );
-    const { error } = await ToMainIpc.runPrompt.invoke({
+    try {
+      const { error } = await ToMainIpc.runPrompt.invoke({
+        frameId: this.frameId,
+        prompt,
+        requestId,
+        args,
+      });
+      if (error) throw new Error(error);
+    } finally {
+      finish();
+    }
+  }
+
+  async stopPrompt(requestId?: number) {
+    if (this.frameId === -1) return;
+    const id = requestId ?? this.lastPromptRequestId;
+    const { stopped, error } = await ToMainIpc.stopPrompt.invoke({
       frameId: this.frameId,
-      prompt,
-      requestId,
-      args,
+      requestId: id,
     });
-    finish();
     if (error) throw new Error(error);
+    return stopped;
   }
 
   async captureScreenshot(bounds: {
@@ -89,6 +107,7 @@ type TabState = {
   addTab: (tab: WebTab, bounds: Rectangle) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
   closeAllTabs: () => Promise<void>;
+  stopPrompt: (tabId?: string, requestId?: number) => Promise<void>;
   registerFrameId: (tabId: string, frameId: number) => void;
   removeFrameId: (tabId: string) => void;
   updateTabUrl: (tabId: string, url: string) => void;
@@ -212,6 +231,27 @@ export const useTabStore = create<TabState>((set, get) => ({
 
     set(() => ({ activeTabId: null, frameMap: new Map() }));
   },
+  stopPrompt: async (tabId, requestId) => {
+    const id = tabId ?? get().activeTabId;
+    if (!id) return;
+    const tab = get().tabs.find((t) => t.id === id);
+    if (!tab) return;
+    await tab.stopPrompt(requestId);
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === id
+          ? new WebTab({
+              id: t.id,
+              title: t.title,
+              url: t.url,
+              isRunning: false,
+              frameId: t.frameId,
+              lastPromptRequestId: t.lastPromptRequestId,
+            })
+          : t,
+      ),
+    }));
+  },
   registerFrameId: (tabId, frameId) =>
     set((state) => ({ frameMap: new Map(state.frameMap).set(tabId, frameId) })),
   removeFrameId: (tabId) =>
@@ -231,6 +271,7 @@ export const useTabStore = create<TabState>((set, get) => ({
               url,
               isRunning: tab.isRunning,
               frameId: tab.frameId,
+              lastPromptRequestId: tab.lastPromptRequestId,
             })
           : tab,
       ),
@@ -290,6 +331,7 @@ export const useTabStore = create<TabState>((set, get) => ({
               url: tab.url,
               isRunning: tab.isRunning,
               frameId: tab.frameId,
+              lastPromptRequestId: tab.lastPromptRequestId,
             })
           : tab,
       ),

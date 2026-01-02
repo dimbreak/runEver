@@ -156,7 +156,6 @@ export namespace LlmApi {
         );
       }, 3000);
       for await (const part of textStream) {
-        console.info('textStream part:', part);
         if (first) {
           clearInterval(interval);
           console.log('Stream first token', cacheKey, Date.now() - start, part);

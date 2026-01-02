@@ -36,8 +36,13 @@ export const AgentPanel: React.FC = () => {
     tabbarHeight,
     bounds,
   } = useLayoutStore();
-  const { tabs, activeTabId } = useTabStore();
+  const { tabs, activeTabId, stopPrompt } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+  const [isPromptRunning, setIsPromptRunning] = React.useState(false);
+  const [runningRequestId, setRunningRequestId] = React.useState<number | null>(
+    null,
+  );
+  const runningAssistantMessageIdRef = React.useRef<number | null>(null);
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
@@ -75,39 +80,59 @@ export const AgentPanel: React.FC = () => {
           .join('\n\n') ?? '';
       console.info('send prompt:', userText, tabs);
       const id = Date.now();
+      const assistantId = id + 1;
       const respondiongMessage: Message = {
-        id: id + 1,
+        id: assistantId,
         role: 'assistant',
         content: textToDoc(''),
         text: '',
         llmResponding: true,
       };
-      let idx = -1;
+      runningAssistantMessageIdRef.current = assistantId;
+      setIsPromptRunning(true);
       setMessages((prev) => {
-        idx =
-          prev.push(
-            {
-              id,
-              role: 'user',
-              content,
-            },
-            respondiongMessage,
-          ) - 1;
+        prev.push(
+          {
+            id,
+            role: 'user',
+            content,
+          },
+          respondiongMessage,
+        );
         return prev.slice();
       });
       const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (!currentTab) {
+        setIsPromptRunning(false);
+        return;
+      }
       try {
-        await currentTab?.runPrompt(userText, {}, (chunk) => {
+        const runPromise = currentTab.runPrompt(userText, {}, (chunk) => {
           console.info('prompt chunk:', chunk);
           setMessages((prev) => {
+            const idx = prev.findIndex((m) => m.id === assistantId);
+            if (idx === -1) return prev;
             prev[idx].text = (prev[idx].text ?? '') + chunk;
             prev[idx].content = textToDoc(prev[idx].text ?? '');
             return prev.slice();
           });
         });
+        setRunningRequestId(currentTab.lastPromptRequestId ?? null);
+        await runPromise;
       } catch (err) {
         console.error('prompt error:', err);
         setMessages((prev) => {
+          const idx = prev.findIndex((m) => m.id === assistantId);
+          if (idx === -1) return prev;
+          prev[idx].llmResponding = false;
+          return prev.slice();
+        });
+      } finally {
+        setIsPromptRunning(false);
+        setRunningRequestId(null);
+        setMessages((prev) => {
+          const idx = prev.findIndex((m) => m.id === assistantId);
+          if (idx === -1) return prev;
           prev[idx].llmResponding = false;
           return prev.slice();
         });
@@ -115,6 +140,21 @@ export const AgentPanel: React.FC = () => {
     },
     [activeTabId, tabs],
   );
+
+  const handleStop = React.useCallback(async () => {
+    if (!activeTabId) return;
+    await stopPrompt(activeTabId, runningRequestId ?? undefined);
+    setIsPromptRunning(false);
+    setRunningRequestId(null);
+    const assistantId = runningAssistantMessageIdRef.current;
+    if (assistantId === null) return;
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === assistantId);
+      if (idx === -1) return prev;
+      prev[idx].llmResponding = false;
+      return prev.slice();
+    });
+  }, [activeTabId, runningRequestId, stopPrompt]);
 
   const handleCapture = async () => {
     try {
@@ -285,6 +325,8 @@ export const AgentPanel: React.FC = () => {
 
         <TiptapComposer
           onSubmit={handleSubmit}
+          onStop={handleStop}
+          isRunning={isPromptRunning}
           placeholder="Describe what you want to automate..."
         />
       </div>

@@ -48,6 +48,14 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     }
     return { error: 'Tab not found' };
   });
+
+  ToMainIpc.stopPrompt.handle(async (_event, arg) => {
+    const { frameId, requestId } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (!wvTab) return { stopped: false, error: 'Tab not found' };
+    wvTab.stopPrompt(requestId);
+    return { stopped: true };
+  });
 }
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
