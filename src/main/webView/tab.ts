@@ -121,6 +121,13 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
+    const unlockLoaded = () => {
+      // Fallback: do not rely solely on bindFrameId to unblock navigation waits.
+      // Some navigations (or cross-origin pages) may not re-run our bridge init.
+      this.pageLoadedLock.delayUnlock(500);
+    };
+    webContents.on('did-finish-load', unlockLoaded);
+    webContents.on('did-stop-loading', unlockLoaded);
     webContents.on('did-start-navigation', (details) => {
       if (
         details.isMainFrame &&
@@ -304,6 +311,11 @@ export class TabWebView {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
-    this.llmSession = new WebViewLlmSession(this);
+    if (!this.llmSession) {
+      this.llmSession = new WebViewLlmSession(this);
+    } else {
+      // Keep the existing session so in-flight prompts don't lose their state.
+      this.llmSession.resumeAll();
+    }
   }
 }

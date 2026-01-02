@@ -113,6 +113,7 @@ export namespace LlmApi {
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
     console.info('llmApi:', llmApi);
+    let interval: NodeJS.Timeout | undefined;
     if (llmApi) {
       const start = Date.now();
       // console.log('Query LLM', prompt);
@@ -147,23 +148,37 @@ export namespace LlmApi {
           : prompt,
       });
       let first = true;
-      const interval = setInterval(() => {
-        console.log(
-          'Waiting for first token',
-          cacheKey,
-          Date.now() - start,
-          first,
-        );
-      }, 3000);
-      for await (const part of textStream) {
-        if (first) {
-          clearInterval(interval);
-          console.log('Stream first token', cacheKey, Date.now() - start, part);
-          first = false;
+      try {
+        interval = setInterval(() => {
+          console.log(
+            'Waiting for first token',
+            cacheKey,
+            Date.now() - start,
+            first,
+          );
+        }, 3000);
+        for await (const part of textStream) {
+          if (first) {
+            clearInterval(interval);
+            interval = undefined;
+            console.log(
+              'Stream first token',
+              cacheKey,
+              Date.now() - start,
+              part,
+            );
+            first = false;
+          }
+          yield part;
         }
-        yield part;
+      } catch (err) {
+        clearInterval(interval);
+        interval = undefined;
+        throw err;
       }
     } else {
+      clearInterval(interval);
+      interval = undefined;
       throw ErrNoConfig;
     }
   }

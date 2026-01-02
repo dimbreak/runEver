@@ -165,16 +165,13 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   });
 
   ToMainIpc.operateTab.handle(async (event, detail) => {
-    console.log(
-      'Operate tab request received in main process:',
-      detail,
-      event.frameId,
-    );
     const frameId = detail.id;
     const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
     if (wvTab) {
       let response;
       if (detail.close) {
+        // Ensure any in-flight prompt/task is stopped before destroying webContents.
+        wvTab.stopPrompt();
         wvTab.webView.setVisible(false);
         mainWindow?.contentView.removeChildView(wvTab.webView);
         webViewTabsById.delete(frameId!);
