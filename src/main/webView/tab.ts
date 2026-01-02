@@ -5,17 +5,18 @@ import {
   Rectangle,
   WebContentsView,
 } from 'electron';
-import path from 'path';
 import settings from 'electron-settings';
 import fs from 'fs';
-import { Network } from '../../webView/network';
+import path from 'path';
 import {
   WebViewLlmSession,
   WireActionWithWaitAndRec,
 } from '../../agentic/session';
-import { LlmApi } from '../llm/api';
-import { Util } from '../../webView/util';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+import { Network } from '../../webView/network';
+import { Util } from '../../webView/util';
+import { showSystemMessageBox } from '../dialogs';
+import { LlmApi } from '../llm/api';
 
 const testPrompt: { user: string; system: string } | null = null;
 
@@ -65,6 +66,26 @@ export class TabWebView {
     this.pageStartLoadingLock.unlock();
   }
 
+  async confirmHighRiskAction(actionIntent: string) {
+    try {
+      if (!this.mainWindow.isDestroyed()) {
+        if (this.mainWindow.isMinimized()) this.mainWindow.restore();
+        this.mainWindow.show();
+        this.mainWindow.focus();
+      }
+    } catch {
+      // ignore focus errors
+    }
+    const res = await showSystemMessageBox(this.mainWindow, {
+      type: 'warning',
+      title: 'High risk action',
+      message: actionIntent,
+      detail: 'Approve to continue running this task, or Cancel to stop it.',
+      buttons: ['Approve', 'Cancel'],
+    });
+    return !('error' in res) && res.response === 0;
+  }
+
   async pushActions(
     actions: WireActionWithWaitAndRec[],
     args: Record<string, any>,
@@ -99,7 +120,7 @@ export class TabWebView {
     });
   }
 
-  screenshotRect(screenshotRect: Electron.Rectangle) {
+  screenshotRect(screenshotRect: Rectangle) {
     const { width, height } = this.webView.getBounds();
     if (width > 1920 && height > 1080) {
       const x = Math.min(screenshotRect.x - 200, 0);
@@ -210,7 +231,9 @@ export class TabWebView {
         );
         try {
           fs.mkdirSync(`${app.getPath('userData')}/prompt-lab`);
-        } catch (e) {}
+        } catch (e) {
+          console.error('mkdirSync error:', e);
+        }
         fs.writeFileSync(
           `${app.getPath('userData')}/prompt-lab/test${new Date().toISOString()}.json`,
           JSON.stringify(result, null, 2),
