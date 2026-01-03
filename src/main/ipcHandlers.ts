@@ -56,6 +56,36 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     wvTab.stopPrompt(requestId);
     return { stopped: true };
   });
+
+  ToMainIpc.getTabNavigationState.handle(async (_event, arg) => {
+    const wvTab = webViewTabsById.get(arg.frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    const wc = wvTab.webView.webContents;
+    // Use navigationHistory API to check navigation state
+    const navHistory = wc.navigationHistory;
+    return {
+      canGoBack: navHistory.canGoBack(),
+      canGoForward: navHistory.canGoForward(),
+      url: wc.getURL(),
+    };
+  });
+
+  ToMainIpc.navigateTabHistory.handle(async (_event, arg) => {
+    const wvTab = webViewTabsById.get(arg.frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    const wc = wvTab.webView.webContents;
+    const navHistory = wc.navigationHistory;
+    if (arg.direction === 'back') {
+      if (navHistory.canGoBack()) navHistory.goBack();
+    } else if (navHistory.canGoForward()) {
+      navHistory.goForward();
+    }
+    return {
+      canGoBack: navHistory.canGoBack(),
+      canGoForward: navHistory.canGoForward(),
+      url: wc.getURL(),
+    };
+  });
 }
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {

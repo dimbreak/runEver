@@ -144,6 +144,33 @@ export namespace ToMainIpc {
     ],
     { stopped: boolean; error?: string }
   >('stop-prompt');
+  export const getTabNavigationState = new IpcMainContract<
+    [
+      {
+        frameId: number;
+      },
+    ],
+    | {
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
+    | { error: string }
+  >('get-tab-navigation-state');
+  export const navigateTabHistory = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        direction: 'back' | 'forward';
+      },
+    ],
+    | {
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
+    | { error: string }
+  >('navigate-tab-history');
   export const auditAction = new IpcMainContract<
     [
       {

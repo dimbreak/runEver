@@ -1,11 +1,9 @@
+import { Buffer } from 'buffer';
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
-import { Buffer } from 'buffer';
-import { ToWebView } from '../../contracts/toWebView';
-import { webviewService } from '../services/webviewService';
-import { useLayoutStore } from './layoutStore';
-import { resolveInitialUrl } from '../utils/formatter';
 import { ToMainIpc } from '../../contracts/toMain';
+import { webviewService } from '../services/webviewService';
+import { resolveInitialUrl } from '../utils/formatter';
 
 export class WebTab {
   id: string;
@@ -75,7 +73,6 @@ export class WebTab {
       throw new Error('No active tab to capture - frameId not set');
     }
 
-    // Prepare screenshot payload
     const payload = {
       frameId: this.frameId,
       ttlHeight: bounds.height,
@@ -85,16 +82,47 @@ export class WebTab {
       slices: [{ x: 0, y: 0 }],
     };
 
-    // Request screenshot from main process
     const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
 
-    // Validate response and convert to base64
     if (Array.isArray(imgJpgs) && imgJpgs.length > 0) {
       const base64Img = Buffer.from(imgJpgs[0] as any).toString('base64');
       return `data:image/jpeg;base64,${base64Img}`;
     }
 
     return null;
+  }
+
+  async getNavigationState(): Promise<{
+    canGoBack: boolean;
+    canGoForward: boolean;
+    url: string;
+  } | null> {
+    if (this.frameId === -1) return null;
+    const res = await ToMainIpc.getTabNavigationState.invoke({
+      frameId: this.frameId,
+    });
+    if ('error' in res) return null;
+    return res;
+  }
+
+  async goBack() {
+    if (this.frameId === -1) return null;
+    const res = await ToMainIpc.navigateTabHistory.invoke({
+      frameId: this.frameId,
+      direction: 'back',
+    });
+    if ('error' in res) return null;
+    return res;
+  }
+
+  async goForward() {
+    if (this.frameId === -1) return null;
+    const res = await ToMainIpc.navigateTabHistory.invoke({
+      frameId: this.frameId,
+      direction: 'forward',
+    });
+    if ('error' in res) return null;
+    return res;
   }
 }
 
