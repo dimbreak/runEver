@@ -86,29 +86,48 @@ window.isPreloadContext = true;
 
 export type WebViewHandler = typeof webViewHandler;
 
-window.onload = async () => {
-  const handleFrameId = async (event: MessageEvent) => {
-    if (event.data.frameId) {
-      window.frameId = event.data.frameId;
-      dummyCursor.init(event.data.mouseX, event.data.mouseY);
-      let scrollAdjustment: number | undefined;
-      if (event.data.scrollAdjustment === 0) {
-        scrollAdjustment = await Util.testScrollAdjustment(event.data.frameId);
-      }
-      Util.scrollAdjustmentLock.unlock(
-        scrollAdjustment ?? event.data.scrollAdjustment,
-      );
-      ToMainIpc.bindFrameId.invoke({
-        id: event.data.frameId,
-        scrollAdjustment,
-      });
-      console.log('Setting in preload:', event.data);
+let pendingCursorInit: { x: number; y: number } | null = null;
 
-      window.removeEventListener('message', handleFrameId);
-    }
-  };
-  window.addEventListener('message', handleFrameId);
-  const plannerCache: Record<string, string> = JSON.parse(
-    localStorage.getItem('runEver_planner_prompt_cache') ?? '{}',
-  );
+const tryInitCursor = () => {
+  if (!pendingCursorInit) return;
+  if (!document.body) return;
+  dummyCursor.init(pendingCursorInit.x, pendingCursorInit.y);
+  pendingCursorInit = null;
 };
+
+const handleFrameId = async (event: MessageEvent) => {
+  if (!event?.data?.frameId) return;
+  window.frameId = event.data.frameId;
+
+  // Cursor needs <body>; if message arrives early, defer.
+  pendingCursorInit = {
+    x: event.data.mouseX ?? -1,
+    y: event.data.mouseY ?? -1,
+  };
+  tryInitCursor();
+
+  let scrollAdjustment: number | undefined;
+  if (event.data.scrollAdjustment === 0) {
+    scrollAdjustment = await Util.testScrollAdjustment(event.data.frameId);
+  }
+  Util.scrollAdjustmentLock.unlock(
+    scrollAdjustment ?? event.data.scrollAdjustment,
+  );
+  ToMainIpc.bindFrameId.invoke({
+    id: event.data.frameId,
+    scrollAdjustment,
+  });
+  console.log('Setting in preload:', event.data);
+};
+
+// Register immediately to avoid missing early postMessage during navigation.
+window.addEventListener('message', handleFrameId);
+window.addEventListener('DOMContentLoaded', () => tryInitCursor());
+window.addEventListener('load', () => tryInitCursor());
+
+// Warm up cache (kept for compatibility with existing behavior).
+try {
+  JSON.parse(localStorage.getItem('runEver_planner_prompt_cache') ?? '{}');
+} catch {
+  // ignore invalid cache
+}

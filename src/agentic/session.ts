@@ -129,7 +129,14 @@ export class ExecutionSession {
     void,
     void
   > {
-    console.log('Prompt start:', this.promptQueue[0].goalPrompt);
+    if (this.promptQueue.length === 0) {
+      yield* this.execSubSessionQueue();
+      return;
+    }
+    console.log(
+      'Prompt start:',
+      this.promptQueue[0]?.goalPrompt ?? 'no prompt',
+    );
     let requireScreenshot = false;
     const { run, promptQueue, id } = this;
     const { tab, executionSession, args, actions, browserActionLock } = run;
@@ -140,11 +147,6 @@ export class ExecutionSession {
       void
     >;
     const finish = run.setRunningStatus(this);
-    if (promptQueue.length === 0) {
-      yield* this.execSubSessionQueue();
-      finish();
-      return;
-    }
     while (promptQueue.length) {
       if (run.stopRequested) {
         finish();
@@ -304,13 +306,10 @@ ${res.value.todo.rc}
   }
   async *execSubSessionQueue() {
     const { subSessionQueue } = this;
-    const finished = [];
     while (subSessionQueue.length) {
       const subSession = subSessionQueue.shift()!;
       yield* subSession.exec();
-      finished.push(subSession);
     }
-    subSessionQueue.push(...finished);
   }
   addNewSubSession(queue: Prompt[]) {
     this.subSessionQueue.push(this.run.createSession(queue, this));

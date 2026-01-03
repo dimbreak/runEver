@@ -79,6 +79,31 @@ export namespace ToMainIpc {
     ],
     { result: 'ok' | 'cancel' | 'closed' } | { error: string }
   >('open-browserwindow-dialog');
+  export const openPromptInputDialog = new IpcMainContract<
+    [
+      {
+        title?: string;
+        message: string;
+        questions: Record<
+          string,
+          | {
+              type: 'string';
+            }
+          | {
+              type: 'select';
+              options: string[];
+            }
+        >;
+        okText?: string;
+        cancelText?: string;
+      },
+    ],
+    | {
+        result: 'ok' | 'cancel' | 'closed';
+        answer?: Record<string, string>;
+      }
+    | { error: string }
+  >('open-prompt-input-dialog');
   export const responsePromptInput = new IpcMainContract<
     [{ answer: Record<string, string>; id: number }],
     undefined

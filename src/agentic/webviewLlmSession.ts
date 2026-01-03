@@ -3,6 +3,8 @@ import { LlmApi } from './api';
 import { PromptRun } from './promptRun';
 import { WireActionWithWaitAndRec } from './types';
 
+const DEBUG_CONFIRM_ALL_ACTIONS = false;
+
 export class WebViewLlmSession {
   private runsByRequestId = new Map<number, PromptRun>();
   private runQueue: number[] = [];
@@ -138,6 +140,116 @@ export class WebViewLlmSession {
     }
   }
 
+  private collectArgKeysFromValue(value: unknown, keys: Set<string>) {
+    if (typeof value === 'string') {
+      const rx = /\$\{args\.([a-zA-Z0-9_]+)\}/g;
+      let match: RegExpExecArray | null;
+      while ((match = rx.exec(value))) {
+        if (match[1]) keys.add(match[1]);
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((v) => this.collectArgKeysFromValue(v, keys));
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+
+    const anyValue = value as any;
+    if (Array.isArray(anyValue.argKeys)) {
+      anyValue.argKeys.forEach((k: unknown) => {
+        if (typeof k === 'string' && k.trim()) keys.add(k);
+      });
+    }
+
+    Object.values(anyValue).forEach((v) =>
+      this.collectArgKeysFromValue(v, keys),
+    );
+  }
+
+  private getMissingArgKeys(
+    run: PromptRun,
+    nextAction: WireActionWithWaitAndRec,
+  ) {
+    const keys = new Set<string>();
+    this.collectArgKeysFromValue(nextAction.action, keys);
+    this.collectArgKeysFromValue(nextAction.pre, keys);
+    this.collectArgKeysFromValue(nextAction.post, keys);
+    return Array.from(keys).filter((k) => {
+      const v = (run.args as any)?.[k];
+      if (v === undefined || v === null) return true;
+      return String(v).trim().length === 0;
+    });
+  }
+
+  private async ensureArgsForAction(
+    requestId: number,
+    run: PromptRun,
+    nextAction: WireActionWithWaitAndRec,
+  ) {
+    const missing = this.getMissingArgKeys(run, nextAction);
+    if (missing.length === 0) return true;
+    const questions = missing.reduce(
+      (acc, key) => ({ ...acc, [key]: { type: 'string' as const } }),
+      {} as Record<string, { type: 'string' }>,
+    );
+    const answer = await this.tab.askUserInput(
+      `Need input to continue:\n${missing.join('\n')}`,
+      questions,
+    );
+    const values = answer ?? {};
+    const allEmpty = Object.values(values).every(
+      (v) => !String(v ?? '').trim(),
+    );
+    if (allEmpty) {
+      this.stopPrompt(requestId);
+      return false;
+    }
+    run.args = { ...run.args, ...values };
+    return true;
+  }
+
+  private async handleBotherUserAction(
+    requestId: number,
+    run: PromptRun,
+    nextAction: WireActionWithWaitAndRec,
+  ) {
+    try {
+      const action: any = nextAction.action as any;
+      const missingInfos: string[] = Array.isArray(action.missingInfos)
+        ? action.missingInfos
+        : [];
+
+      const questions =
+        missingInfos.length > 0
+          ? missingInfos.reduce(
+              (acc, key) => ({ ...acc, [key]: { type: 'string' as const } }),
+              {} as Record<string, { type: 'string' }>,
+            )
+          : { input: { type: 'string' as const } };
+
+      const message =
+        typeof action.warn === 'string' && action.warn.trim().length
+          ? action.warn
+          : 'Input required to continue';
+
+      const answer = await this.tab.askUserInput(message, questions as any);
+      const values = answer ?? {};
+      const allEmpty = Object.values(values).every(
+        (v) => !String(v ?? '').trim(),
+      );
+      if (allEmpty) {
+        this.stopPrompt(requestId);
+        return;
+      }
+      run.args = { ...run.args, ...values };
+      this.actionDone(nextAction.id, values);
+    } catch (err) {
+      console.error('User input failed:', err);
+      this.stopPrompt(requestId);
+    }
+  }
+
   private pump() {
     if (this.activeRequestId !== null) {
       if (this.inFlightAction) return;
@@ -151,15 +263,27 @@ export class WebViewLlmSession {
       const nextAction = run.getNextAction();
       if (!nextAction) return;
       this.inFlightAction = true;
-      if (nextAction.risk === 'h') {
-        this.confirmAndDispatchHighRiskAction(
-          this.activeRequestId,
+      if ((nextAction.action as any)?.k === 'botherUser') {
+        this.handleBotherUserAction(this.activeRequestId, run, nextAction);
+        return;
+      }
+      (async () => {
+        const ok = await this.ensureArgsForAction(
+          this.activeRequestId!,
           run,
           nextAction,
         );
-        return;
-      }
-      this.tab.pushActions([nextAction], run.args);
+        if (!ok) return;
+        if (DEBUG_CONFIRM_ALL_ACTIONS || nextAction.risk === 'h') {
+          await this.confirmAndDispatchHighRiskAction(
+            this.activeRequestId!,
+            run,
+            nextAction,
+          );
+          return;
+        }
+        this.tab.pushActions([nextAction], run.args);
+      })();
       return;
     }
 
@@ -172,11 +296,23 @@ export class WebViewLlmSession {
 
       this.activeRequestId = requestId;
       this.inFlightAction = true;
-      if (nextAction.risk === 'h') {
-        this.confirmAndDispatchHighRiskAction(requestId, run, nextAction);
+      if ((nextAction.action as any)?.k === 'botherUser') {
+        this.handleBotherUserAction(requestId, run, nextAction);
         return;
       }
-      this.tab.pushActions([nextAction], run.args);
+      (async () => {
+        const ok = await this.ensureArgsForAction(requestId, run, nextAction);
+        if (!ok) return;
+        if (DEBUG_CONFIRM_ALL_ACTIONS || nextAction.risk === 'h') {
+          await this.confirmAndDispatchHighRiskAction(
+            requestId,
+            run,
+            nextAction,
+          );
+          return;
+        }
+        this.tab.pushActions([nextAction], run.args);
+      })();
       return;
     }
   }

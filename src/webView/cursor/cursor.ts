@@ -257,9 +257,12 @@ class DummyCursor {
     this.dom!.style.left = `${x + 1}px`;
   }
   hide<A extends any[], T>(fn: () => T): T {
-    this.dom!.style.display = 'none';
+    // During early navigation or fast execPrompt, the preload may not have
+    // initialized the dummy cursor DOM yet. In that case, just run without hiding.
+    if (!this.dom) return fn();
+    this.dom.style.display = 'none';
     const ret = fn();
-    this.dom!.style.display = '';
+    this.dom.style.display = '';
     return ret;
   }
 }

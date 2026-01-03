@@ -8,10 +8,8 @@ import {
 import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
-import {
-  WebViewLlmSession,
-  WireActionWithWaitAndRec,
-} from '../../agentic/session';
+import { WireActionWithWaitAndRec } from '../../agentic/types';
+import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
 import { ToRendererIpc } from '../../contracts/toRenderer';
 import { Network } from '../../webView/network';
 import { Util } from '../../webView/util';
@@ -21,6 +19,18 @@ import { LlmApi } from '../llm/api';
 const testPrompt: { user: string; system: string } | null = null;
 
 export class TabWebView {
+  private static userInputResolvers = new Map<
+    number,
+    (answer: Record<string, string>) => void
+  >();
+
+  static resolveUserInput(responseId: number, answer: Record<string, string>) {
+    const resolver = TabWebView.userInputResolvers.get(responseId);
+    if (!resolver) return;
+    TabWebView.userInputResolvers.delete(responseId);
+    resolver(answer);
+  }
+
   url: string;
 
   webView: WebContentsView;
@@ -84,6 +94,33 @@ export class TabWebView {
       buttons: ['Approve', 'Cancel'],
     });
     return !('error' in res) && res.response === 0;
+  }
+
+  async askUserInput<
+    Q extends Record<
+      string,
+      | {
+          type: 'string';
+        }
+      | {
+          type: 'select';
+          options: string[];
+        }
+    >,
+  >(message: string, questions: Q): Promise<Record<Extract<keyof Q, string>, string>> {
+    const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
+    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
+      (resolve) => {
+        TabWebView.userInputResolvers.set(responseId, resolve as any);
+      },
+    );
+    ToRendererIpc.toUser.send(this.mainWindow.webContents, {
+      type: 'prompt',
+      message,
+      questions,
+      responseId,
+    });
+    return promise;
   }
 
   async pushActions(

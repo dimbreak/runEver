@@ -2,9 +2,12 @@ import { BrowserWindow, clipboard, ipcMain, MouseInputEvent } from 'electron';
 import settings from 'electron-settings';
 import { ToMainIpc } from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
-import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
-import { openBrowserWindowDialog, showSystemMessageBox } from './dialogs';
+import {
+  openBrowserWindowDialog,
+  openPromptInputDialog,
+  showSystemMessageBox,
+} from './dialogs';
 import { TabWebView } from './webView/tab';
 import { Util } from '../webView/util';
 import { LlmApi } from './llm/api';
@@ -180,6 +183,10 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return openBrowserWindowDialog(mainWindow, opts);
   });
 
+  ToMainIpc.openPromptInputDialog.handle(async (_event, opts) => {
+    return openPromptInputDialog(mainWindow, opts);
+  });
+
   ToMainIpc.createTab.handle(async (event, detail) => {
     console.log(
       'Create tab request received in main process:',
@@ -253,17 +260,8 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     }
   });
 
-  const userInputHandlers: Record<
-    number,
-    (v: Record<string, string> | PromiseLike<Record<string, string>>) => void
-  > = {};
-
-  ToMainIpc.responsePromptInput.handle(async (event, arg) => {
-    const handler = userInputHandlers[arg.id];
-    if (handler) {
-      handler(arg.answer);
-      delete userInputHandlers[arg.id];
-    }
+  ToMainIpc.responsePromptInput.handle(async (_event, arg) => {
+    TabWebView.resolveUserInput(arg.id, arg.answer);
   });
 
   ToMainIpc.dispatchEvents.handle(async (event, arg) => {
@@ -309,36 +307,5 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
   });
   initPromptIpc(webViewTabsById);
 
-  async function askUserInput<
-    Q extends Record<
-      string,
-      | {
-          type: 'string';
-        }
-      | {
-          type: 'select';
-          options: string[];
-        }
-    >,
-  >(
-    message: string,
-    questions: Q,
-  ): Promise<Record<Extract<keyof Q, string>, string>> {
-    const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
-
-    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
-      (resolve) => {
-        userInputHandlers[responseId] = resolve;
-      },
-    );
-
-    ToRendererIpc.toUser.send(mainWindow.webContents, {
-      type: 'prompt',
-      message,
-      questions,
-      responseId,
-    });
-
-    return promise;
-  }
+  // User input requests are dispatched by TabWebView.askUserInput().
 };

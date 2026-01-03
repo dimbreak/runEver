@@ -99,6 +99,12 @@ export class PromptRun {
           break;
         }
       }
+      if (!this.stopRequested) {
+        const keys = Object.keys(this.args ?? {});
+        if (keys.length) {
+          yield `\n\n[args]\n${JSON.stringify(this.args, null, 2)}`;
+        }
+      }
     }
   }
 
