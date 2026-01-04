@@ -6,7 +6,8 @@ import { z } from 'zod';
 import { normalizeUrlValue } from '../utils/formatter';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { useTabStore } from '../state/tabStore';
+import { useTabStore, WebTab } from '../state/tabStore';
+import { UrlBarNavButtons } from './UrlBarNavButtons';
 
 const urlSchema = z.object({
   url: z
@@ -20,9 +21,10 @@ type UrlFormValues = z.infer<typeof urlSchema>;
 
 type UrlBarProps = {
   url?: string | null;
+  tab?: WebTab | null;
 };
 
-export const UrlBar: React.FC<UrlBarProps> = ({ url = '' }) => {
+export const UrlBar: React.FC<UrlBarProps> = ({ url = '', tab = null }) => {
   const { activeTabId, navigateTab } = useTabStore();
   const { register, handleSubmit, formState, reset } = useForm<UrlFormValues>({
     resolver: zodResolver(urlSchema),
@@ -45,6 +47,7 @@ export const UrlBar: React.FC<UrlBarProps> = ({ url = '' }) => {
       className="flex w-full items-center gap-2 rounded-lg border-slate-200 bg-white"
       onSubmit={handleSubmit(onFormSubmit)}
     >
+      <UrlBarNavButtons tab={tab} url={url} />
       <Input
         type="text"
         placeholder="Enter a URL or search term"

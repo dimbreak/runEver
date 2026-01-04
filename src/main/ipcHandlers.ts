@@ -3,9 +3,12 @@ import { BrowserWindow, clipboard, ipcMain, MouseInputEvent } from 'electron';
 import settings from 'electron-settings';
 import { ToMainIpc } from '../contracts/toMain';
 import { initIpcMain } from '../contracts/ipc';
-import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
-import { openBrowserWindowDialog, showSystemMessageBox } from './dialogs';
+import {
+  openBrowserWindowDialog,
+  openPromptInputDialog,
+  showSystemMessageBox,
+} from './dialogs';
 import { TabWebView } from './webView/tab';
 import { Util } from '../webView/util';
 import { LlmApi } from './llm/api';
@@ -49,12 +52,50 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     }
     return { error: 'Tab not found' };
   });
+
+  ToMainIpc.stopPrompt.handle(async (_event, arg) => {
+    const { frameId, requestId } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (!wvTab) return { stopped: false, error: 'Tab not found' };
+    wvTab.stopPrompt(requestId);
+    return { stopped: true };
+  });
+
+  ToMainIpc.getTabNavigationState.handle(async (_event, arg) => {
+    const wvTab = webViewTabsById.get(arg.frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    const wc = wvTab.webView.webContents;
+    // Use navigationHistory API to check navigation state
+    const navHistory = wc.navigationHistory;
+    return {
+      canGoBack: navHistory.canGoBack(),
+      canGoForward: navHistory.canGoForward(),
+      url: wc.getURL(),
+    };
+  });
+
+  ToMainIpc.navigateTabHistory.handle(async (_event, arg) => {
+    const wvTab = webViewTabsById.get(arg.frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    const wc = wvTab.webView.webContents;
+    const navHistory = wc.navigationHistory;
+    if (arg.direction === 'back') {
+      if (navHistory.canGoBack()) navHistory.goBack();
+    } else if (navHistory.canGoForward()) {
+      navHistory.goForward();
+    }
+    return {
+      canGoBack: navHistory.canGoBack(),
+      canGoForward: navHistory.canGoForward(),
+      url: wc.getURL(),
+    };
+  });
 }
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const webViewTabsById = new Map<number, TabWebView>();
 
-  const PADDING = 12;
+  const PADDING = 0;
   const DEFAULT_TABBAR_HEIGHT = 112;
   const DEFAULT_SIDEBAR_WIDTH = 430;
 
@@ -143,6 +184,10 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     return openBrowserWindowDialog(mainWindow, opts);
   });
 
+  ToMainIpc.openPromptInputDialog.handle(async (_event, opts) => {
+    return openPromptInputDialog(mainWindow, opts);
+  });
+
   ToMainIpc.createTab.handle(async (event, detail) => {
     console.log(
       'Create tab request received in main process:',
@@ -158,16 +203,13 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   });
 
   ToMainIpc.operateTab.handle(async (event, detail) => {
-    console.log(
-      'Operate tab request received in main process:',
-      detail,
-      event.frameId,
-    );
     const frameId = detail.id;
     const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
     if (wvTab) {
       let response;
       if (detail.close) {
+        // Ensure any in-flight prompt/task is stopped before destroying webContents.
+        wvTab.stopPrompt();
         wvTab.webView.setVisible(false);
         mainWindow?.contentView.removeChildView(wvTab.webView);
         webViewTabsById.delete(frameId!);
@@ -219,17 +261,8 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     }
   });
 
-  const userInputHandlers: Record<
-    number,
-    (v: Record<string, string> | PromiseLike<Record<string, string>>) => void
-  > = {};
-
-  ToMainIpc.responsePromptInput.handle(async (event, arg) => {
-    const handler = userInputHandlers[arg.id];
-    if (handler) {
-      handler(arg.answer);
-      delete userInputHandlers[arg.id];
-    }
+  ToMainIpc.responsePromptInput.handle(async (_event, arg) => {
+    TabWebView.resolveUserInput(arg.id, arg.answer);
   });
 
   ToMainIpc.dispatchEvents.handle(async (event, arg) => {
@@ -331,36 +364,5 @@ EOF
   });
   initPromptIpc(webViewTabsById);
 
-  async function askUserInput<
-    Q extends Record<
-      string,
-      | {
-          type: 'string';
-        }
-      | {
-          type: 'select';
-          options: string[];
-        }
-    >,
-  >(
-    message: string,
-    questions: Q,
-  ): Promise<Record<Extract<keyof Q, string>, string>> {
-    const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
-
-    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
-      (resolve) => {
-        userInputHandlers[responseId] = resolve;
-      },
-    );
-
-    ToRendererIpc.toUser.send(mainWindow.webContents, {
-      type: 'prompt',
-      message,
-      questions,
-      responseId,
-    });
-
-    return promise;
-  }
+  // User input requests are dispatched by TabWebView.askUserInput().
 };

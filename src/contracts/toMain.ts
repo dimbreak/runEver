@@ -7,9 +7,12 @@ import type {
 import { IpcMainContract } from './ipc';
 import { LlmApi } from '../main/llm/api';
 
+export type MouseWheelScrollInputEvent = MouseWheelInputEvent & {
+  scrollEl: string;
+};
 export type EventWithDelay = (
   | MouseInputEvent
-  | MouseWheelInputEvent
+  | MouseWheelScrollInputEvent
   | KeyboardInputEvent
 ) & { delayMs?: number };
 
@@ -76,6 +79,31 @@ export namespace ToMainIpc {
     ],
     { result: 'ok' | 'cancel' | 'closed' } | { error: string }
   >('open-browserwindow-dialog');
+  export const openPromptInputDialog = new IpcMainContract<
+    [
+      {
+        title?: string;
+        message: string;
+        questions: Record<
+          string,
+          | {
+              type: 'string';
+            }
+          | {
+              type: 'select';
+              options: string[];
+            }
+        >;
+        okText?: string;
+        cancelText?: string;
+      },
+    ],
+    | {
+        result: 'ok' | 'cancel' | 'closed';
+        answer?: Record<string, string>;
+      }
+    | { error: string }
+  >('open-prompt-input-dialog');
   export const responsePromptInput = new IpcMainContract<
     [{ answer: Record<string, string>; id: number }],
     undefined
@@ -89,24 +117,6 @@ export namespace ToMainIpc {
     ],
     boolean
   >('dispatch-events');
-  export type NativeKeys =
-    | 'ArrowDown'
-    | 'ArrowUp'
-    | 'ArrowLeft'
-    | 'ArrowRight'
-    | 'Enter'
-    | 'Tab'
-    | 'Space'
-    | 'Escape'
-    | string;
-  export const dispatchNativeKeypress = new IpcMainContract<
-    [
-      {
-        keyAndDelays: [NativeKeys, number][];
-      },
-    ],
-    boolean
-  >('dispatch-native-keypress');
   export const pasteInput = new IpcMainContract<
     [
       {
@@ -150,16 +160,42 @@ export namespace ToMainIpc {
     ],
     { error?: string }
   >('run-prompt');
-  export const setInputFile = new IpcMainContract<
+  export const stopPrompt = new IpcMainContract<
     [
       {
         frameId: number;
-        selector: string;
-        filePaths: string[];
+        requestId?: number;
       },
     ],
-    { error?: string }
-  >('set-input-file');
+    { stopped: boolean; error?: string }
+  >('stop-prompt');
+  export const getTabNavigationState = new IpcMainContract<
+    [
+      {
+        frameId: number;
+      },
+    ],
+    | {
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
+    | { error: string }
+  >('get-tab-navigation-state');
+  export const navigateTabHistory = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        direction: 'back' | 'forward';
+      },
+    ],
+    | {
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
+    | { error: string }
+  >('navigate-tab-history');
   export const auditAction = new IpcMainContract<
     [
       {

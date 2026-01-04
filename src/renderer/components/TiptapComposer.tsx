@@ -8,6 +8,8 @@ import { SubmitButton } from './SubmitButton';
 
 export type TiptapComposerProps = {
   onSubmit: (content: JSONContent) => void;
+  onStop?: () => void;
+  isRunning?: boolean;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -56,20 +58,25 @@ const EnterSubmitBehavior = Extension.create({
 
 export function TiptapComposer({
   onSubmit,
+  onStop,
+  isRunning = false,
   placeholder = 'Write something...',
   disabled,
   className,
 }: TiptapComposerProps) {
   const editorRef = React.useRef<any>(null);
+  const [isEmpty, setIsEmpty] = React.useState(true);
 
   const submit = React.useCallback(() => {
+    if (isRunning) return;
     const editor = editorRef.current;
     if (!editor) return;
     const json = editor.getJSON();
     if (getIsEmpty(json)) return;
     onSubmit(json);
     editor.commands.clearContent(true);
-  }, [onSubmit]);
+    setIsEmpty(true);
+  }, [isRunning, onSubmit]);
 
   const editor = useEditor({
     editable: !disabled,
@@ -84,6 +91,9 @@ export function TiptapComposer({
       Placeholder.configure({ placeholder }),
     ],
     content: { type: 'doc', content: [{ type: 'paragraph' }] },
+    onUpdate: (props) => {
+      setIsEmpty(getIsEmpty(props.editor.getJSON()));
+    },
     editorProps: {
       attributes: {
         class:
@@ -92,6 +102,7 @@ export function TiptapComposer({
       // Handle Enter key press to submit
       handleKeyDown: (view, event) => {
         if (event.key === 'Enter' && !event.shiftKey) {
+          if (isRunning) return true;
           const isList =
             view.state.doc.resolve(view.state.selection.$from.pos).parent.type
               .name === 'listItem';
@@ -124,7 +135,14 @@ export function TiptapComposer({
         )}
       >
         <EditorContent className="flex-1" editor={editor} />
-        <SubmitButton onClick={submit} disabled={disabled} />
+        <SubmitButton
+          mode={isRunning ? 'stop' : 'go'}
+          onClick={isRunning ? (onStop ?? (() => {})) : submit}
+          disabled={
+            disabled || (!isRunning && isEmpty) || (isRunning && !onStop)
+          }
+          hidden={!isRunning && isEmpty}
+        />
       </div>
     </div>
   );
