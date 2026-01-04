@@ -1,4 +1,4 @@
-import { ToMianIpc } from '../../contracts/toMain';
+import { ToMainIpc } from '../../contracts/toMain';
 
 type SystemMessageBoxOptions = {
   title?: string;
@@ -13,6 +13,17 @@ type BrowserWindowDialogOptions = {
   message?: string;
 };
 
+type PromptQuestions = Record<
+  string,
+  | {
+      type: 'string';
+    }
+  | {
+      type: 'select';
+      options: string[];
+    }
+>;
+
 const hasIpc = () =>
   typeof window !== 'undefined' &&
   Boolean((window as any).electron?.ipcRenderer);
@@ -22,16 +33,36 @@ export const dialogService = {
 
   async showSystemMessageBox(opts: SystemMessageBoxOptions) {
     if (!hasIpc()) throw new Error('IPC bridge not available');
-    const res = await ToMianIpc.showSystemMessageBox.invoke(opts);
+    const res = await ToMainIpc.showSystemMessageBox.invoke(opts);
     if ('response' in res) return res.response;
     throw new Error(res.error ?? 'Failed to open system dialog');
   },
 
   async openBrowserWindowDialog(opts: BrowserWindowDialogOptions) {
     if (!hasIpc()) throw new Error('IPC bridge not available');
-    const res = await ToMianIpc.openBrowserWindowDialog.invoke(opts);
+    const res = await ToMainIpc.openBrowserWindowDialog.invoke(opts);
     if ('result' in res) return res.result;
     throw new Error(res.error ?? 'Failed to open BrowserWindow dialog');
+  },
+
+  async promptInput(opts: {
+    title?: string;
+    message: string;
+    questions: PromptQuestions;
+    okText?: string;
+    cancelText?: string;
+  }) {
+    if (!hasIpc()) throw new Error('IPC bridge not available');
+    const res = await ToMainIpc.openPromptInputDialog.invoke({
+      title: opts.title,
+      message: opts.message,
+      questions: opts.questions,
+      okText: opts.okText,
+      cancelText: opts.cancelText,
+    });
+    if ('error' in res) throw new Error(res.error ?? 'Failed to open dialog');
+    if (res.result !== 'ok') return null;
+    return res.answer ?? {};
   },
 
   async confirm(opts: {
@@ -52,4 +83,3 @@ export const dialogService = {
     return response === 0;
   },
 };
-

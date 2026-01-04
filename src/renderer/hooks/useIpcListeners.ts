@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useTabStore, WebTab } from '../state/tabStore';
 import { useLayoutStore } from '../state/layoutStore';
+import { dialogService } from '../services/dialogService';
+import { ToMainIpc } from '../../contracts/toMain';
 
 export const useIpcListeners = () => {
   const { addTab, frameMap, updateTabTitle, updateTabUrl } = useTabStore();
@@ -43,10 +45,39 @@ export const useIpcListeners = () => {
       'tab-title-updated',
       handleTitleUpdate,
     );
+    const unsubscribeToUser = ipc.on(
+      'to-user',
+      async (_event: any, payload: any) => {
+        if (!payload) return;
+        if (payload.type !== 'prompt') return;
+        const questions = payload.questions ?? {};
+        let answer: Record<string, string> | null = null;
+        try {
+          answer = await dialogService.promptInput({
+            title: payload.title,
+            message: payload.message ?? 'Input required',
+            questions,
+            okText: 'OK',
+            cancelText: 'Cancel',
+          });
+        } catch {
+          answer = null;
+        }
+        const fallbackAnswer = Object.keys(questions).reduce(
+          (acc, key) => ({ ...acc, [key]: '' }),
+          {} as Record<string, string>,
+        );
+        await ToMainIpc.responsePromptInput.invoke({
+          id: payload.responseId,
+          answer: answer ?? fallbackAnswer,
+        });
+      },
+    );
 
     return () => {
       unsubscribeNewTab?.();
       unsubscribeTitleUpdate?.();
+      unsubscribeToUser?.();
     };
   }, [addTab, frameMap, updateTabTitle, updateTabUrl, bounds]);
 };

@@ -5,21 +5,32 @@ import {
   Rectangle,
   WebContentsView,
 } from 'electron';
-import path from 'path';
 import settings from 'electron-settings';
 import fs from 'fs';
-import { Network } from '../../webView/network';
-import {
-  WebViewLlmSession,
-  WireActionWithWaitAndRec,
-} from '../../agentic/session';
-import { LlmApi } from '../llm/api';
-import { Util } from '../../webView/util';
+import path from 'path';
+import { WireActionWithWaitAndRec } from '../../agentic/types';
+import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+import { Network } from '../../webView/network';
+import { Util } from '../../webView/util';
+import { showSystemMessageBox } from '../dialogs';
+import { LlmApi } from '../llm/api';
 
 const testPrompt: { user: string; system: string } | null = null;
 
 export class TabWebView {
+  private static userInputResolvers = new Map<
+    number,
+    (answer: Record<string, string>) => void
+  >();
+
+  static resolveUserInput(responseId: number, answer: Record<string, string>) {
+    const resolver = TabWebView.userInputResolvers.get(responseId);
+    if (!resolver) return;
+    TabWebView.userInputResolvers.delete(responseId);
+    resolver(answer);
+  }
+
   url: string;
 
   webView: WebContentsView;
@@ -59,14 +70,67 @@ export class TabWebView {
     this.initView();
   }
 
-  async pushActions(actions?: WireActionWithWaitAndRec[]) {
-    if (this.llmSession) {
-      const pushActions = actions ?? this.llmSession.getRemainActions();
-      console.log('pushActions:', pushActions);
-      return this.webView.webContents.executeJavaScript(
-        `(async ()=>await window.webView.execActions(${JSON.stringify(pushActions)}, ${JSON.stringify(this.llmSession.args)}))()`,
-      );
+  stopPrompt(requestId?: number) {
+    this.llmSession?.stopPrompt(requestId);
+    this.pageLoadedLock.unlock();
+    this.pageStartLoadingLock.unlock();
+  }
+
+  async confirmHighRiskAction(actionIntent: string) {
+    try {
+      if (!this.mainWindow.isDestroyed()) {
+        if (this.mainWindow.isMinimized()) this.mainWindow.restore();
+        this.mainWindow.show();
+        this.mainWindow.focus();
+      }
+    } catch {
+      // ignore focus errors
     }
+    const res = await showSystemMessageBox(this.mainWindow, {
+      type: 'warning',
+      title: 'High risk action',
+      message: actionIntent,
+      detail: 'Approve to continue running this task, or Cancel to stop it.',
+      buttons: ['Approve', 'Cancel'],
+    });
+    return !('error' in res) && res.response === 0;
+  }
+
+  async askUserInput<
+    Q extends Record<
+      string,
+      | {
+          type: 'string';
+        }
+      | {
+          type: 'select';
+          options: string[];
+        }
+    >,
+  >(message: string, questions: Q): Promise<Record<Extract<keyof Q, string>, string>> {
+    const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
+    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
+      (resolve) => {
+        TabWebView.userInputResolvers.set(responseId, resolve as any);
+      },
+    );
+    ToRendererIpc.toUser.send(this.mainWindow.webContents, {
+      type: 'prompt',
+      message,
+      questions,
+      responseId,
+    });
+    return promise;
+  }
+
+  async pushActions(
+    actions: WireActionWithWaitAndRec[],
+    args: Record<string, any>,
+  ) {
+    console.log('pushActions:', actions);
+    return this.webView.webContents.executeJavaScript(
+      `(async ()=>await window.webView.execActions(${JSON.stringify(actions)}, ${JSON.stringify(args)}))()`,
+    );
   }
 
   actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
@@ -93,7 +157,7 @@ export class TabWebView {
     });
   }
 
-  screenshotRect(screenshotRect: Electron.Rectangle) {
+  screenshotRect(screenshotRect: Rectangle) {
     const { width, height } = this.webView.getBounds();
     if (width > 1920 && height > 1080) {
       const x = Math.min(screenshotRect.x - 200, 0);
@@ -115,6 +179,13 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
+    const unlockLoaded = () => {
+      // Fallback: do not rely solely on bindFrameId to unblock navigation waits.
+      // Some navigations (or cross-origin pages) may not re-run our bridge init.
+      this.pageLoadedLock.delayUnlock(500);
+    };
+    webContents.on('did-finish-load', unlockLoaded);
+    webContents.on('did-stop-loading', unlockLoaded);
     webContents.on('did-start-navigation', (details) => {
       if (
         details.isMainFrame &&
@@ -139,10 +210,7 @@ export class TabWebView {
             `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
           if (this.llmSession) {
-            const actions = this.llmSession.getRemainActions();
-            if (actions.length) {
-              this.pushActions(actions);
-            }
+            this.llmSession.resumeAll();
           }
         }
       },
@@ -200,14 +268,17 @@ export class TabWebView {
         );
         try {
           fs.mkdirSync(`${app.getPath('userData')}/prompt-lab`);
-        } catch (e) {}
+        } catch (e) {
+          console.error('mkdirSync error:', e);
+        }
         fs.writeFileSync(
           `${app.getPath('userData')}/prompt-lab/test${new Date().toISOString()}.json`,
           JSON.stringify(result, null, 2),
         );
       } else {
         try {
-          const stream = this.llmSession.initPrompt(
+          const stream = this.llmSession.startPrompt(
+            requestId,
             prompt,
             args,
             reasoningEffort,
@@ -300,6 +371,11 @@ export class TabWebView {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
-    this.llmSession = new WebViewLlmSession(this);
+    if (!this.llmSession) {
+      this.llmSession = new WebViewLlmSession(this);
+    } else {
+      // Keep the existing session so in-flight prompts don't lose their state.
+      this.llmSession.resumeAll();
+    }
   }
 }

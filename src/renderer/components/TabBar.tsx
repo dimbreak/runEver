@@ -46,7 +46,7 @@ export const TabBar: React.FC = () => {
           </Button>
         </div>
       </div>
-      {activeTab && <UrlBar url={activeTab.url} />}
+      {activeTab && <UrlBar url={activeTab.url} tab={activeTab} />}
     </div>
   );
 };

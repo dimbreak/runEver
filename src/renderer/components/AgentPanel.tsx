@@ -1,5 +1,5 @@
-import * as React from 'react';
 import type { JSONContent } from '@tiptap/core';
+import * as React from 'react';
 import { ToMainIpc } from '../../contracts/toMain';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore } from '../state/tabStore';
@@ -22,7 +22,14 @@ const textToDoc = (text: string): JSONContent => {
     type: 'doc',
     content: paragraphs.map((paragraph) => ({
       type: 'paragraph',
-      content: paragraph.length ? [{ type: 'text', text: paragraph }] : [],
+      content: paragraph.length
+        ? paragraph.split('\n').flatMap((line, idx, arr) => {
+            const nodes: any[] = [];
+            if (line.length) nodes.push({ type: 'text', text: line });
+            if (idx !== arr.length - 1) nodes.push({ type: 'hardBreak' });
+            return nodes;
+          })
+        : [],
     })),
   };
 };
@@ -36,8 +43,14 @@ export const AgentPanel: React.FC = () => {
     tabbarHeight,
     bounds,
   } = useLayoutStore();
-  const { tabs, activeTabId } = useTabStore();
+  const { tabs, activeTabId, stopPrompt } = useTabStore();
   const panelWidth = sidebarOpen ? sidebarWidth : collapsedWidth;
+  const [isPromptRunning, setIsPromptRunning] = React.useState(false);
+  const [runningRequestId, setRunningRequestId] = React.useState<number | null>(
+    null,
+  );
+  const runningAssistantMessageIdRef = React.useRef<number | null>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: 1,
@@ -75,46 +88,78 @@ export const AgentPanel: React.FC = () => {
           .join('\n\n') ?? '';
       console.info('send prompt:', userText, tabs);
       const id = Date.now();
+      const assistantId = id + 1;
       const respondiongMessage: Message = {
-        id: id + 1,
+        id: assistantId,
         role: 'assistant',
         content: textToDoc(''),
         text: '',
         llmResponding: true,
       };
-      let idx = -1;
-      setMessages((prev) => {
-        idx =
-          prev.push(
-            {
-              id,
-              role: 'user',
-              content,
-            },
-            respondiongMessage,
-          ) - 1;
-        return prev.slice();
-      });
+      runningAssistantMessageIdRef.current = assistantId;
+      setIsPromptRunning(true);
+      setMessages((prev) => [
+        ...prev,
+        { id, role: 'user', content },
+        respondiongMessage,
+      ]);
       const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (!currentTab) {
+        setIsPromptRunning(false);
+        return;
+      }
       try {
-        await currentTab?.runPrompt(userText, {}, (chunk) => {
+        const runPromise = currentTab.runPrompt(userText, {}, (chunk) => {
           console.info('prompt chunk:', chunk);
           setMessages((prev) => {
-            prev[idx].text = (prev[idx].text ?? '') + chunk;
-            prev[idx].content = textToDoc(prev[idx].text ?? '');
-            return prev.slice();
+            const nextText =
+              (prev.find((m) => m.id === assistantId)?.text ?? '') + chunk;
+            return prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    text: nextText,
+                    content: textToDoc(nextText),
+                  }
+                : m,
+            );
           });
         });
+        setRunningRequestId(currentTab.lastPromptRequestId ?? null);
+        await runPromise;
       } catch (err) {
         console.error('prompt error:', err);
         setMessages((prev) => {
-          prev[idx].llmResponding = false;
-          return prev.slice();
+          return prev.map((m) =>
+            m.id === assistantId ? { ...m, llmResponding: false } : m,
+          );
+        });
+      } finally {
+        setIsPromptRunning(false);
+        setRunningRequestId(null);
+        setMessages((prev) => {
+          return prev.map((m) =>
+            m.id === assistantId ? { ...m, llmResponding: false } : m,
+          );
         });
       }
     },
     [activeTabId, tabs],
   );
+
+  const handleStop = React.useCallback(async () => {
+    if (!activeTabId) return;
+    await stopPrompt(activeTabId, runningRequestId ?? undefined);
+    setIsPromptRunning(false);
+    setRunningRequestId(null);
+    const assistantId = runningAssistantMessageIdRef.current;
+    if (assistantId === null) return;
+    setMessages((prev) => {
+      return prev.map((m) =>
+        m.id === assistantId ? { ...m, llmResponding: false } : m,
+      );
+    });
+  }, [activeTabId, runningRequestId, stopPrompt]);
 
   const handleCapture = async () => {
     try {
@@ -200,6 +245,14 @@ export const AgentPanel: React.FC = () => {
     updateWebViewLayout(sidebarOpen);
   }, [sidebarOpen, updateWebViewLayout]);
 
+  React.useEffect(() => {
+    const behavior = isPromptRunning ? 'auto' : 'smooth';
+    const node = messagesEndRef.current as any;
+    if (node && typeof node.scrollIntoView === 'function') {
+      node.scrollIntoView({ behavior, block: 'end' });
+    }
+  }, [isPromptRunning, messages]);
+
   return (
     <div
       className="flex h-full flex-col overflow-hidden transition-[width] duration-200"
@@ -262,10 +315,16 @@ export const AgentPanel: React.FC = () => {
                     {msg.tag}
                   </span>
                 )}
-                <TiptapContent
-                  content={msg.content}
-                  variant={msg.role === 'user' ? 'inverse' : 'default'}
-                />
+                {msg.role === 'assistant' && msg.text !== undefined ? (
+                  <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-relaxed text-slate-800">
+                    {msg.text}
+                  </pre>
+                ) : (
+                  <TiptapContent
+                    content={msg.content}
+                    variant={msg.role === 'user' ? 'inverse' : 'default'}
+                  />
+                )}
                 {msg.llmResponding && (
                   <div className="mt-1 text-xs opacity-60">...</div>
                 )}
@@ -281,10 +340,13 @@ export const AgentPanel: React.FC = () => {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
         <TiptapComposer
           onSubmit={handleSubmit}
+          onStop={handleStop}
+          isRunning={isPromptRunning}
           placeholder="Describe what you want to automate..."
         />
       </div>
