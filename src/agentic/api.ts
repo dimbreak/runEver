@@ -1,9 +1,11 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { LanguageModelV2 } from '@ai-sdk/provider';
-import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
+import type { FilePart, ImagePart, ModelMessage } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import settings from 'electron-settings';
 import z from 'zod';
+import fs from 'fs';
+import { app } from 'electron';
 import { envSchema, envVars, type Env } from '../schema/env';
 import { Util } from '../webView/util';
 
@@ -27,19 +29,26 @@ export namespace LlmApi {
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
+  const recordPath = `${app.getPath('userData')}/prompt-record`;
+
+  try {
+    fs.mkdirSync(recordPath);
+  } catch (e) {}
+
   const getLlmConfig = async () => {
     const loadedConfig = settings.getSync('llmConfig');
-    try {
-      return llmConfigSchema.parse(loadedConfig) as LlmConfig;
-    } catch (error) {
-      const llmConfig: LlmConfig = {
-        api: envVars.provider,
-        key: envVars.apiKey,
-        error: error instanceof Error ? error.message : undefined,
-      };
-      settings.setSync('llmConfig', llmConfig);
-      return llmConfig;
-    }
+    // try {
+    //   return llmConfigSchema.parse(loadedConfig) as LlmConfig;
+    // } catch (error) {
+    const llmConfig: LlmConfig = {
+      api: envVars.provider,
+      key: envVars.apiKey,
+      baseUrl: envVars.baseUrl,
+      // error: error instanceof Error ? error.message : undefined,
+    };
+    settings.setSync('llmConfig', llmConfig);
+    return llmConfig;
+    // }
   };
 
   let llmApiPromise: Promise<LlmApiModels | null>;
@@ -115,7 +124,6 @@ export namespace LlmApi {
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
-    console.info('llmApi:', llmApi);
     if (llmApi) {
       // console.log('Query LLM', prompt);
       // throw new Error('Not implemented');
@@ -138,32 +146,33 @@ export namespace LlmApi {
           first,
         );
       }, 3000);
-      const { textStream, request, response } = streamQueryer({
+      const promptObj: string | Array<ModelMessage> = systemPrompt
+        ? [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: attachments
+                ? [
+                    {
+                      type: 'text',
+                      text: prompt,
+                    },
+                    ...attachments,
+                  ]
+                : prompt,
+            },
+          ]
+        : prompt;
+      const { textStream, response } = streamQueryer({
         model: llmApi[model],
         providerOptions,
-        prompt: systemPrompt
-          ? [
-              {
-                role: 'system',
-                content: systemPrompt,
-              },
-              {
-                role: 'user',
-                content: attachments
-                  ? [
-                      {
-                        type: 'text',
-                        text: prompt,
-                      },
-                      ...attachments,
-                    ]
-                  : prompt,
-              },
-            ]
-          : prompt,
+        prompt: promptObj,
       });
       for await (const part of textStream) {
-        console.info('textStream part:', part);
+        // console.info('textStream part:', part);
         if (first) {
           clearInterval(interval);
           console.log('Stream first token', cacheKey, Date.now() - start, part);
@@ -172,6 +181,15 @@ export namespace LlmApi {
         yield part;
       }
       clearInterval(interval);
+      const res = await response;
+      if (res) {
+        const messages = res.messages?.map((m) => m?.content);
+        fs.writeFile(
+          `${recordPath}/log-${new Date().toISOString()}.json`,
+          JSON.stringify({ ...res, prompt: promptObj, messages }),
+          () => {},
+        );
+      }
     } else {
       throw ErrNoConfig;
     }

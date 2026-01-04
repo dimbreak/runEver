@@ -8,6 +8,7 @@ export namespace Network {
     webContents: WebContents,
     inflight: Set<string>,
   ): [Util.Lock, Util.Lock] => {
+    // todo refactor using session.webRequest
     const mainNetworkIdle0 = Util.newLock(); // for main tabWebview
     const mainNetworkIdle2 = Util.newLock(); // for main tabWebview
     if (!webContents.debugger.isAttached()) {

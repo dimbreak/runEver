@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import { ToMainIpc } from '../contracts/toMain';
+import { type EventWithDelay, ToMainIpc } from '../contracts/toMain';
 import { OCRModel } from './ocr';
 import { dummyCursor } from './cursor/cursor';
 import { BrowserActions } from './actions';
@@ -44,10 +44,14 @@ const webViewHandler = {
   htmlParser: undefined as MiniHtml.Parser | undefined,
   getHtmlParser() {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
-    console.log(this.htmlParser)
+    console.log(this.htmlParser);
     return this.htmlParser;
   },
-  getHtml(select: MiniHtml.Selector | null = null, outerLevel = 0) {
+  getHtml(
+    select: MiniHtml.Selector | null = null,
+    outerLevel = 0,
+    placeholdDummy = '__',
+  ) {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     if (select) {
       return dummyCursor.hide(() =>
@@ -56,7 +60,7 @@ const webViewHandler = {
     }
     return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
   },
-  getDeltaHtml() {
+  getDeltaHtml(placeholdDummy = '__') {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return dummyCursor.hide(() => this.htmlParser!.genDeltaHtml());
   },
@@ -106,12 +110,12 @@ window.onload = async () => {
       console.log('Setting in preload:', event.data);
 
       window.removeEventListener('message', handleFrameId);
-
+      //
       // const events = [];
       // for (const property in window) {
       //   if (property.startsWith('on')) {
       //     events.push(property);
-      //     window[property] = (ev) => {
+      //     (window as any)[property] = (ev: any) => {
       //       console.log(property, ev);
       //     };
       //   }
@@ -119,12 +123,12 @@ window.onload = async () => {
       // console.log(events.join(' '));
       //
       // await Util.sleep(500);
-      //
+      // //
       // BrowserActions.input(
       //   {
       //     k: 'input',
-      //     q: '__v',
-      //     v: `Japanese`,
+      //     q: '__x',
+      //     v: [`Japanese`, 'English'],
       //   },
       //   'l',
       //   {},
@@ -132,7 +136,45 @@ window.onload = async () => {
     }
   };
   window.addEventListener('message', handleFrameId);
-  const plannerCache: Record<string, string> = JSON.parse(
-    localStorage.getItem('runEver_planner_prompt_cache') ?? '{}',
-  );
 };
+
+BrowserActions.setActionApi({
+  actionDone: (args: {
+    actionId: number;
+    argsDelta?: Record<string, string> | undefined;
+  }) => {
+    return ToMainIpc.actionDone.invoke({
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+  actionError: (args: { actionId: number; error: string }) => {
+    return ToMainIpc.actionError.invoke({
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+  dispatchNativeKeypress: (args: {
+    keyAndDelays: [ToMainIpc.NativeKeys, number][];
+  }) => {
+    return ToMainIpc.dispatchNativeKeypress.invoke(args);
+  },
+  dispatchEvents: (args: { events: EventWithDelay[] }) => {
+    return ToMainIpc.dispatchEvents.invoke({
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+  pasteInput: (args: { input: string }) => {
+    return ToMainIpc.pasteInput.invoke({
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+  setInputFile: (args: { selector: string; filePaths: string[] }) => {
+    return ToMainIpc.setInputFile.invoke({
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+});

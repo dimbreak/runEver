@@ -1,3 +1,6 @@
+import fs from 'fs';
+import { app } from 'electron';
+import { type } from 'node:os';
 import { ExecutionPrompter } from './execution';
 import { TabWebView } from '../main/webView/tab';
 import {
@@ -25,6 +28,45 @@ const PlanAfterRerender: symbol = Symbol('PlanAfterRerender');
 
 const ExecutionMaxRetry = 3;
 
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
@@ -90,8 +132,7 @@ class ExecutionSession {
     console.log('Prompt start:', this.promptQueue[0].goalPrompt);
     let requireScreenshot = false;
     const { wvSession, promptQueue, id, actions, subSessionQueue } = this;
-    const { tab, executionSession, args, browserActionLock } =
-      wvSession;
+    const { tab, executionPrompter, args, browserActionLock } = wvSession;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
@@ -100,9 +141,9 @@ class ExecutionSession {
     >;
     const finish = wvSession.setRunningStatus(this);
     if (promptQueue.length === 0) {
-      yield* this.execSubSessionQueue();
+      const res = yield* this.execSubSessionQueue();
       finish();
-      return;
+      return res;
     }
     while (promptQueue.length) {
       const promptItem = promptQueue.shift()!;
@@ -114,7 +155,7 @@ class ExecutionSession {
       } = promptItem;
       const start = Date.now();
       try {
-        stepsStream = executionSession.execPrompt(
+        stepsStream = executionPrompter.execPrompt(
           runGoalPrompt,
           args,
           runSubPrompt &&
@@ -124,8 +165,16 @@ class ExecutionSession {
                 `[performed actions]
 -`,
                 `[performed actions]
-- ${actions.map((s) => s.intent).join('\n- ')}${subSessionQueue.length ? `
-- ${subSessionQueue.map((s) => s.promptQueue[0].goalPrompt).join('\n- ')}`: ''}`)
+- ${actions.map((s) => s.intent).join('\n- ')}${
+                  subSessionQueue.length
+                    ? `
+- ${subSessionQueue
+                        .filter((s) => !!s.promptQueue[0])
+                        .map((s) => s.promptQueue[0]?.goalPrompt)
+                        .join('\n- ')}`
+                    : ''
+                }`,
+              )
             : runSubPrompt,
           requireScreenshot,
           complexity,
@@ -136,8 +185,22 @@ class ExecutionSession {
           | IteratorReturnResult<ExecutorLlmResult | undefined>;
         while ((res = await stepsStream.next())) {
           if (res.done) {
-            if (wvSession.fixingAction?.promptId === promptId) {
+            if (res.value && wvSession.fixingAction?.promptId === promptId) {
               console.log('Fixing action done');
+              if (res.value.todo) {
+                // remove pending if todo exist
+                this.removePendingActions();
+                this.promptQueue = [];
+              }
+              res.value.a.forEach((a) => {
+                if ((a as WireActionWithWait).intent) {
+                  this.addAction({
+                    ...(a as WireActionWithWait),
+                    promptId,
+                    id: wvSession.actionId++,
+                  });
+                }
+              });
               wvSession.fixingAction = null;
               wvSession.execActions();
             }
@@ -145,28 +208,14 @@ class ExecutionSession {
             // todo fix error sometimes block here
             await browserActionLock.wait;
 
-            yield* this.execSubSessionQueue();
-
+            if (this.subSessionQueue.length) {
+              console.log('Run sub session queue');
+              yield* this.waitPageReady(url, start);
+              await this.execSubSessionQueue();
+            }
             if (res.value?.todo) {
-              console.log('Waiting for potential page load');
-              await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
-              if (tab.url === url) {
-                yield PlanAfterRerender;
-                console.log(Date.now() - start, 'Waiting for page re-render');
-                await Network.waitForNetworkIdle0(
-                  tab.networkIdle0,
-                  tab.networkIdle2,
-                ).then(() => Util.sleep(1000));
-              } else {
-                yield PlanAfterNavigation;
-                console.log(
-                  Date.now() - start,
-                  'Waiting for page to load:',
-                  url,
-                );
-                await tab.pageLoadedLock.wait;
-                executionSession.resetSystemPrompt();
-              }
+              yield* this.waitPageReady(url, start);
+              executionPrompter.resetSystemPrompt();
               if (this.breakPromptForExeErr) {
                 console.log(
                   Date.now() - start,
@@ -207,14 +256,19 @@ ${res.value.todo.rc}
               break;
             }
             if ((res.value as WireActionWithWait).intent) {
-              console.log(Date.now() - start, 'exec actions:', res.value);
-              this.addAction({
-                ...(res.value as WireActionWithWait),
-                promptId,
-                id: wvSession.actionId++,
-              });
-              wvSession.execActions();
-              yield res.value as WireActionWithWait;
+              if (
+                wvSession.fixingAction === null ||
+                wvSession.fixingAction?.promptId !== promptId
+              ) {
+                console.log(Date.now() - start, 'exec actions:', res.value);
+                this.addAction({
+                  ...(res.value as WireActionWithWait),
+                  promptId,
+                  id: wvSession.actionId++,
+                });
+                wvSession.execActions();
+                yield res.value as WireActionWithWait;
+              }
             } else {
               console.log(Date.now() - start, 'exec add sub task:', res.value);
               const newPrompt = wvSession.createPrompt(
@@ -237,6 +291,23 @@ ${res.value.todo.rc}
     }
     finish();
   }
+  async *waitPageReady(url: string, start = Date.now()) {
+    const { tab } = this.wvSession;
+    console.log('Waiting for potential page load');
+    await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+    if (tab.url === url) {
+      yield PlanAfterRerender;
+      console.log(Date.now() - start, 'Waiting for page re-render');
+      await Network.waitForNetworkIdle0(
+        tab.networkIdle0,
+        tab.networkIdle2,
+      ).then(() => Util.sleep(1000));
+    } else {
+      yield PlanAfterNavigation;
+      console.log(Date.now() - start, 'Waiting for page to load:', url);
+      await tab.pageLoadedLock.wait;
+    }
+  }
   async *execSubSessionQueue() {
     const { subSessionQueue } = this;
     const finished = [];
@@ -251,13 +322,47 @@ ${res.value.todo.rc}
     this.subSessionQueue.push(this.wvSession.createSession(queue, this));
   }
   addAction(action: WireActionWithWaitAndRec) {
+    if (action.action.k === 'setArg') {
+      const kvs = Object.entries(action.action.kv);
+      if (kvs.length > 1) {
+        // split setArg from selector to different actions make webview easier
+        action.action.kv = {};
+        const actions = [];
+        let action0HasId = false;
+        for (const [k, v] of kvs) {
+          if (typeof v === 'string') {
+            action.action.kv[k] = v;
+          } else if (!action0HasId) {
+            action0HasId = true;
+            action.action.kv[k] = v;
+          } else {
+            actions.push({
+              ...action,
+              id: this.wvSession.actionId++,
+              action: { ...action.action, kv: { [k]: v } },
+            });
+          }
+        }
+        this.actions.push(action);
+        this.wvSession.addAction(action);
+        if (actions.length) {
+          this.actions.push(...actions);
+          actions.forEach((a) => this.wvSession.addAction(a));
+        }
+        return;
+      }
+    }
     this.actions.push(action);
     this.wvSession.addAction(action);
+  }
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
+    this.wvSession.removePendingActions();
   }
 }
 
 export class WebViewLlmSession {
-  executionSession: ExecutionPrompter;
+  executionPrompter: ExecutionPrompter;
   args: Record<string, any> = {};
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
@@ -269,7 +374,7 @@ export class WebViewLlmSession {
   sessionQueue: ExecutionSession[] = [];
   runningSession: ExecutionSession[] = [];
   constructor(public tab: TabWebView) {
-    this.executionSession = new ExecutionPrompter(tab);
+    this.executionPrompter = new ExecutionPrompter(tab);
     this.rootSession = new ExecutionSession(0, [], this);
     this.sessionQueue.push(this.rootSession);
 
@@ -430,24 +535,27 @@ export class WebViewLlmSession {
       this.breakPromptForExeErr = true;
       return;
     }
-    console.log('Try fix error:', actionToFix);
 
     const { sessionId } = this.prompts[actionToFix.promptId!];
+    console.log('Try fix error:', actionToFix, sessionId);
 
-    if (sessionId) {
+    if (sessionId !== undefined) {
       const session = this.sessionQueue[sessionId];
       const selectedPrompt = this.prompts[actionToFix.promptId!];
       if (!selectedPrompt) {
         console.error('Selected prompt not found:', actionToFix.promptId);
         return;
       }
-      const goalPrompt = selectedPrompt.goalPrompt;
+      const { goalPrompt } = selectedPrompt;
       const prompt = this.createPrompt(
         goalPrompt,
         undefined,
         sessionId,
         'h',
         `**fix the execution error in [action error]**
+if the error is fixable itself, DO NOT SEND TODO or ACTIONS other then the error one.
+sending todo while fixing prompt will clear the existing action & todo queue.
+do not add subTask
 
 [action error]
 ${JSON.stringify(actionToFix)}${
@@ -460,7 +568,7 @@ ${JSON.stringify(actionToFix)}${
                 .map((a) => a.intent)
                 .join('\n- ')}
 
-these actions are blocking by this error, if you found any of the above actions will affected by the fix, press LlmWireResult.clearQueue: true in result and send the new actions.`
+these actions are blocking by this error, if you found any of the above actions will affected by the fix, send todo to skip theses actions.`
             : ''
         }`,
       );
@@ -474,6 +582,10 @@ these actions are blocking by this error, if you found any of the above actions 
 
       this.browserActionLock.unlock();
     }
+  }
+
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
   }
 
   createSession(

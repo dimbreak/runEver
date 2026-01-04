@@ -14,7 +14,8 @@
     "react": "^19.2.1",
     "react-autosuggest": "^10.1.0",
     "react-calendar": "^5.1.0",
-    "react-dom": "^19.2.1"
+    "react-dom": "^19.2.1",
+    "react-slider": "^2.0.6"
   },
   "devDependencies": {
     "@types/react": "^19.2.1",

@@ -7,12 +7,9 @@ import type {
 import { IpcMainContract } from './ipc';
 import { LlmApi } from '../main/llm/api';
 
-export type MouseWheelScrollInputEvent = MouseWheelInputEvent & {
-  scrollEl: string;
-};
 export type EventWithDelay = (
   | MouseInputEvent
-  | MouseWheelScrollInputEvent
+  | MouseWheelInputEvent
   | KeyboardInputEvent
 ) & { delayMs?: number };
 
@@ -99,6 +96,8 @@ export namespace ToMainIpc {
     | 'ArrowRight'
     | 'Enter'
     | 'Tab'
+    | 'Space'
+    | 'Escape'
     | string;
   export const dispatchNativeKeypress = new IpcMainContract<
     [
