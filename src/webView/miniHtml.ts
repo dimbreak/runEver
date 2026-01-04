@@ -1,7 +1,11 @@
 import { replaceJsTpl } from './selector';
+import { SliderProfile } from '../agentic/profile/widget/slider.html';
 import { dummyCursor } from './cursor/cursor';
+import { IFrameHelper } from './iframe';
 
 export namespace MiniHtml {
+  export const EL_IN_IFRAME = Symbol('EL_IN_IFRAME');
+  export const iframeById: Record<string, IFrameHelper> = {};
   const PRINT_ATTRS = ['disabled', 'type', 'name', 'method'];
   export type Selector =
     | string
@@ -11,7 +15,7 @@ export namespace MiniHtml {
         filterWith?: 'html' | 'label';
         args?: Record<string, string>;
       };
-  type MeaningfulElement = {
+  export type MeaningfulElement = {
     element: HTMLElement;
     id: string;
     nodes?: (string | MeaningfulElement)[];
@@ -20,7 +24,7 @@ export namespace MiniHtml {
     parent?: MeaningfulElement;
     bodyDepth: number;
   };
-  type DomVisible = DOMRect & {
+  export type DomVisible = DOMRect & {
     visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0' | '';
     style: CSSStyleDeclaration;
   };
@@ -37,7 +41,7 @@ export namespace MiniHtml {
     }
     return false;
   };
-  const checkVisible = (el: HTMLElement): DomVisible => {
+  export const checkVisible = (el: HTMLElement): DomVisible => {
     const rect = el.getBoundingClientRect();
     const style = window.getComputedStyle(el);
     const visible: DomVisible = {
@@ -96,6 +100,7 @@ export namespace MiniHtml {
   ]);
   const getReadableAttr = (element: HTMLElement): string => {
     const tagName = element.tagName.toLowerCase();
+    const role = (element.getAttribute('role') || '').toLowerCase();
     if (tagName === 'div') {
       if (element.classList.contains('rc-select')) {
         const roles = ['rcSelect'];
@@ -111,12 +116,21 @@ export namespace MiniHtml {
         return 'role:rcSelect-listbox';
       }
     }
+    const res = SliderProfile.checkSlider(tagName, element);
+    if (res) {
+      return res;
+    }
+    if (tagName === 'iframe') {
+      return (
+        element.getAttribute('title') || element.getAttribute('name') || ''
+      );
+    }
     return [
       element.getAttribute('alt') ?? '',
       element.getAttribute('title') ?? '',
       element.getAttribute('aria-label') ?? '',
       element.getAttribute('aria-labelledby') ?? '',
-      element.getAttribute('role') && !interactiveTags.has(tagName)
+      role && !interactiveTags.has(tagName)
         ? `role:${element.getAttribute('role')}`
         : '',
     ]
@@ -152,7 +166,7 @@ export namespace MiniHtml {
 
     return element.getAttribute('contenteditable') === 'true';
   };
-  const quoteAttrVal = (v: string) => (v.includes(' ') ? `"${v}"` : v);
+  export const quoteAttrVal = (v: string) => (v.includes(' ') ? `"${v}"` : v);
   const rgbToHex = (input: string): string => {
     if (!input) return input;
     const s = input;
@@ -186,56 +200,68 @@ export namespace MiniHtml {
     observer: MutationObserver | undefined;
     mutatedElements = new Map<Element, MeaningfulElement | null>();
     lastFullHtml: string | undefined;
-    constructor() {
+    constructor(public idPrefix = '__') {
       this.reset();
     }
-    genHtml(
+    async genHtml(
       meaningfulEl: MeaningfulElement,
       childLevel: number,
       notShow = false,
       parentHighlightStyle: string = '',
       renderedHtml: null | Map<MeaningfulElement, string> = null,
       rerendered = false,
-    ): string {
+    ): Promise<string> {
       if (meaningfulEl.element.isConnected === false) return '';
       let thisRendered = rerendered;
-      if(thisRendered || meaningfulEl.visible===null) {
+      if (thisRendered || meaningfulEl.visible === null) {
         meaningfulEl.visible = checkVisible(meaningfulEl.element);
         thisRendered = true;
+      }
+      if (meaningfulEl instanceof IFrameHelper) {
+        const html = await meaningfulEl.getHtml();
+        if (renderedHtml) {
+          renderedHtml.set(meaningfulEl, html);
+        }
+        return html;
       }
       const { visible, element } = meaningfulEl;
       const tagName = element.tagName.toLowerCase();
       const { style } = visible;
       let fontIndex = this.styles.font[style.fontFamily];
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
-      let innerHtml = meaningfulEl.nodes
-        ?.map((node) => {
-          if (typeof node === 'string') return node.trim();
-          if (renderedHtml && renderedHtml.has(node)) {
-            const rendered = renderedHtml.get(node);
-            console.log('reusing rendered html', rendered);
-            renderedHtml.delete(node);
-            return rendered;
-          }
-          return this.genHtml(
-            node,
-            childLevel - 1,
-            visible?.visible !== true,
-            highlightStyle,
-            renderedHtml,
-            thisRendered,
-          );
-        })
-        .join('')
-        .replace(spaceRx, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"');
+      let innerHtml =
+        meaningfulEl.nodes &&
+        (
+          await Promise.all(
+            meaningfulEl.nodes.map(async (node) => {
+              if (typeof node === 'string') return node.trim();
+              if (renderedHtml && renderedHtml.has(node)) {
+                const rendered = renderedHtml.get(node)!;
+                console.log('reusing rendered html', rendered);
+                renderedHtml.delete(node);
+                return rendered;
+              }
+              return this.genHtml(
+                node,
+                childLevel - 1,
+                visible?.visible !== true,
+                highlightStyle,
+                renderedHtml,
+                thisRendered,
+              );
+            }),
+          )
+        )
+          .join('')
+          .replace(spaceRx, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&apos;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"');
       if (childLevel <= 0 && innerHtml) {
         innerHtml = '...';
       }
-      if(element.tagName==='BODY') {
+      if (element.tagName === 'BODY') {
         return innerHtml ?? '';
       }
       const attrs = PRINT_ATTRS.map((attr) => [
@@ -262,7 +288,7 @@ export namespace MiniHtml {
           ? ''
           : visible.visible === true
             ? 'show'
-            : `${visible?.visible || 'hide'}`,
+            : `${visible.visible === false ? 'hide' : visible.visible}`,
         visible.visible === true
           ? `xywh=${Math.round(visible.x)},${Math.round(visible.y)},${Math.round(visible.width)},${Math.round(visible.height)}`
           : '',
@@ -297,7 +323,7 @@ export namespace MiniHtml {
         }
       }
       return innerHtml
-        ? `<${tagHtmls}>${innerHtml}</${tagName}>`
+        ? `<${tagHtmls}>${innerHtml ?? ''}</${tagName}>`
         : `<${tagHtmls} />`;
     }
     findMeaningfulFromParent(el: Element): MeaningfulElement | null {
@@ -334,7 +360,7 @@ export namespace MiniHtml {
     }
     handleMutations = (mutations: MutationRecord[]) => {
       let meaningfulEl: MeaningfulElement | null = null;
-      console.log('mutations', mutations, window.isPreloadContext);
+      console.log('mutations', mutations);
       mutations.forEach((record) => {
         if (record.target === dummyCursor.dom) {
           return;
@@ -376,17 +402,17 @@ export namespace MiniHtml {
               if (record.type === 'attributes') {
                 const elsToCheck: Element[] = [record.target as Element];
                 let childEl;
-                let foundMeaningful ;
+                let foundMeaningful;
                 while (elsToCheck.length) {
                   childEl = elsToCheck.shift()!;
                   foundMeaningful = this.meaningFulElementByEl.get(childEl);
-                  if(foundMeaningful) {
+                  if (foundMeaningful) {
                     foundMeaningful.visible = null;
                     break;
                   }
                   elsToCheck.push(...Array.from(childEl.children));
                 }
-              }else if (record.type === 'childList') {
+              } else if (record.type === 'childList') {
                 meaningfulEl =
                   this.findMeaningfulFromParent(record.target) ?? null;
                 if (record.removedNodes.length) {
@@ -496,6 +522,8 @@ export namespace MiniHtml {
                             );
                             if (pos !== undefined && pos !== -1) {
                               meaningfulEl?.nodes?.splice(pos, 0, ...toAdd);
+                            } else {
+                              meaningfulEl?.nodes?.push(...toAdd);
                             }
                             break;
                           }
@@ -532,7 +560,7 @@ export namespace MiniHtml {
         }
       });
     }
-    genDeltaHtml = (clearMutated = false) => {
+    genDeltaHtml = async (clearMutated = false) => {
       const renderedHtml = new Map<MeaningfulElement, string>();
       console.log(
         this.mutatedElements,
@@ -540,28 +568,32 @@ export namespace MiniHtml {
           (a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)),
         ),
       );
-      Array.from(this.mutatedElements.entries())
-        .sort((a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)))
-        .forEach(([el, meaningfulEl]) => {
-          if (el.isConnected === false) return '';
-          if (meaningfulEl) {
-            this.updateElement(meaningfulEl);
-            renderedHtml.set(
-              meaningfulEl!,
-              this.genHtml(meaningfulEl!, 1, false, '', renderedHtml),
-            );
-          }
-          const toAdd: (MeaningfulElement | string)[] = [];
-          this.parseElement(el as HTMLElement, toAdd);
-          toAdd.forEach((addedEl) => {
-            if (typeof addedEl === 'object') {
+      await Promise.all(
+        Array.from(this.mutatedElements.entries())
+          .sort((a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)))
+          .map(async ([el, meaningfulEl]) => {
+            if (el.isConnected === false) return '';
+            if (meaningfulEl) {
+              this.updateElement(meaningfulEl);
               renderedHtml.set(
-                addedEl!,
-                this.genHtml(addedEl, 9999, false, '', renderedHtml),
+                meaningfulEl!,
+                await this.genHtml(meaningfulEl!, 1, false, '', renderedHtml),
               );
             }
-          });
-        });
+            const toAdd: (MeaningfulElement | string)[] = [];
+            this.parseElement(el as HTMLElement, toAdd);
+            await Promise.all(
+              toAdd.map(async (addedEl) => {
+                if (typeof addedEl === 'object') {
+                  renderedHtml.set(
+                    addedEl!,
+                    await this.genHtml(addedEl, 9999, false, '', renderedHtml),
+                  );
+                }
+              }),
+            );
+          }),
+      );
       const html = Array.from(renderedHtml.values()).join('');
       const { styles, initStyles } = this;
       const newHighlight = Object.entries(styles.highlight).filter(
@@ -609,23 +641,21 @@ export namespace MiniHtml {
       };
       this.initObserve();
     }
-    genFullHtml = () => {
+    genFullHtml = async () => {
       const style = window.getComputedStyle(document.body);
       const { styles } = this;
       this.styles.font[style.fontFamily] = 0;
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff0`)} ${rgbToHex(style.color)}`;
-      console.log(
-        'this.meaningFulElements',
-        this.meaningFulElements,
-        window.isPreloadContext,
-      );
-      const html = this.meaningFulElements
-        .map((el) =>
-          typeof el === 'string'
-            ? el
-            : this.genHtml(el, 9999, false, highlightStyle),
+      console.log('this.meaningFulElements', this.meaningFulElements);
+      const html = (
+        await Promise.all(
+          this.meaningFulElements.map((el) =>
+            typeof el === 'string'
+              ? Promise.resolve(el)
+              : this.genHtml(el, 9999, false, highlightStyle),
+          ),
         )
-        .join('');
+      ).join('');
       this.lastFullHtml = html;
       return `<script>const font = ${JSON.stringify(
         Object.entries(styles.font).reduce(
@@ -644,23 +674,31 @@ export namespace MiniHtml {
       },
       {} as Record<string, string>,
     ),
-  )};</script>${html} //${window.isPreloadContext} ${this.mutatedElements.size}`;
+  )};</script>${html} //${this.mutatedElements.size}`;
     };
     genId(id: string | undefined) {
-      let thisId = id || `__${(this.added++).toString(36)}`;
+      // eslint-disable-next-line no-nested-ternary
+      let thisId = id
+        ? this.idPrefix === '__'
+          ? id
+          : `${this.idPrefix}${id}`
+        : `${this.idPrefix}${(this.added++).toString(36)}`;
       let i = 0;
       while (this.idToEl.has(thisId)) {
-        thisId = `__${(this.added++).toString(36)}-${i++}`;
+        thisId = `${this.idPrefix}${(this.added++).toString(36)}-${i++}`;
       }
       return thisId;
     }
     parseElement(
       element: HTMLElement,
-      meaningFulElements: (MeaningfulElement | string)[] = this
-        .meaningFulElements,
+      meaningFulElements:
+        | (MeaningfulElement | string)[]
+        | undefined = undefined,
       parentMeaningfulElement: MeaningfulElement | undefined = undefined,
       bodyDep = 0,
     ) {
+      // eslint-disable-next-line no-param-reassign
+      meaningFulElements = meaningFulElements ?? this.meaningFulElements;
       let bodyDepth = bodyDep;
       let parentMeaningfulEl = parentMeaningfulElement;
       if (bodyDepth === 0 && element !== document.body) {
@@ -694,6 +732,21 @@ export namespace MiniHtml {
         return;
       }
 
+      if (tagName === 'iframe') {
+        meaningFulElements.push(
+          this.addMeaningfulElement(
+            new IFrameHelper(
+              element as HTMLIFrameElement,
+              element.id,
+              element.getAttribute('name') ?? '',
+              checkVisible(element),
+              bodyDepth,
+              parentMeaningfulEl,
+            ),
+          ),
+        );
+        return;
+      }
       let meaningfulEl: MeaningfulElement | undefined = parentMeaningfulEl;
       const label = getReadableAttr(element);
       const placeholder: MeaningfulElement = {
@@ -704,7 +757,6 @@ export namespace MiniHtml {
         parent: parentMeaningfulEl,
         bodyDepth,
       };
-
       Array.from(element.childNodes).forEach((child) => {
         if (
           child.nodeType === Node.TEXT_NODE &&
@@ -767,8 +819,20 @@ export namespace MiniHtml {
     };
     static ErrIdNotFound = new Error('ERR_ID_NOT_FOUND');
 
-    getElementFormId(select: Selector) {
+    getElementFormId(select: Selector): MeaningfulElement | IFrameHelper {
       const selector = typeof select === 'object' ? select : { id: select };
+      if (selector.id.includes(':')) {
+        const parts = selector.id.split(':');
+        if (parts.slice(0, -1).join(':') !== this.idPrefix) {
+          let iframe: IFrameHelper | undefined;
+          for (let i = 0, c = parts.length; i < c; i++) {
+            iframe = iframeById[parts.slice(0, i + 1).join(':')];
+            if (iframe) {
+              return iframe;
+            }
+          }
+        }
+      }
       let meaningfulEl = this.idToEl.get(selector.id);
       if (selector.filterInChild) {
         const filter = replaceJsTpl(
@@ -801,6 +865,9 @@ export namespace MiniHtml {
     }
     genHtmlFormId(select: Selector, parentLevel: number = 0) {
       let el = this.getElementFormId(select);
+      if (el instanceof IFrameHelper) {
+        return el.getHtml(select, parentLevel);
+      }
       for (let lv = parentLevel; lv > 0; lv--) {
         if (el.parent) {
           el = el.parent;

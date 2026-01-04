@@ -21,6 +21,7 @@ import { LlmApi } from '../../agentic/api';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+import { isMac } from '../util';
 
 const testPrompt: { user: string; system: string } | null = null;
 
@@ -185,8 +186,7 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
-    webContents.userAgent =
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36';
+    webContents.userAgent = `Mozilla/5.0 (${isMac ? 'Macintosh; Intel Mac OS X 10.15; rv:147.0' : 'Windows NT 10.0; Win64; x64'}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36`;
     const unlockLoaded = () => {
       // Fallback: do not rely solely on bindFrameId to unblock navigation waits.
       // Some navigations (or cross-origin pages) may not re-run our bridge init.
@@ -239,10 +239,6 @@ export class TabWebView {
       return { action: 'deny' };
     });
     this.webView.setBounds(this.bounds);
-    webContents.loadURL(
-      this.initUrl,
-      // `file://${path.resolve(__dirname, '../../testHtml/moveDom.html')}`,
-    );
     webContents.openDevTools();
     [this.networkIdle0, this.networkIdle2] = Network.initMonitor(
       webContents,
@@ -264,12 +260,19 @@ export class TabWebView {
       if (!webContents.debugger.isAttached()) {
         webContents.debugger.attach('1.3');
       }
-
-      webContents.debugger
-        .sendCommand('DOM.enable')
-        .then(() => webContents.debugger.sendCommand('Page.enable'))
-        .catch(console.error);
     });
+
+    webContents.loadURL(
+      this.initUrl,
+      // `file://${path.resolve(__dirname, '../../testHtml/moveDom.html')}`,
+    );
+
+    webContents.debugger
+      .sendCommand('DOM.enable')
+      .then(() => webContents.debugger.sendCommand('Page.enable'))
+      .catch((e) => {
+        console.error('debugger error:', e);
+      });
   }
 
   async runPrompt(
@@ -351,7 +354,7 @@ export class TabWebView {
       clipboard.writeText(input);
       const wc = this.webView.webContents;
       wc.focus();
-      if (Util.isMac) {
+      if (isMac) {
         wc.sendInputEvent({
           type: 'keyDown',
           keyCode: 'Meta',

@@ -73,6 +73,11 @@ export class ExecutionSession {
       void
     >;
     const finish = run.setRunningStatus(this);
+    if (promptQueue.length === 0) {
+      const res = yield* this.execSubSessionQueue();
+      finish();
+      return res;
+    }
     while (promptQueue.length) {
       if (run.stopRequested) {
         finish();
@@ -97,8 +102,16 @@ export class ExecutionSession {
                 `[performed actions]
 -`,
                 `[performed actions]
-- ${actions.map((s) => s.intent).join('\n- ')}${subSessionQueue.length ? `
-- ${subSessionQueue.map((s) => s.promptQueue[0].goalPrompt).join('\n- ')}`: ''}`)
+- ${actions.map((s) => s.intent).join('\n- ')}${
+                  subSessionQueue.length
+                    ? `
+- ${subSessionQueue
+                        .filter((s) => !!s.promptQueue[0])
+                        .map((s) => s.promptQueue[0]?.goalPrompt)
+                        .join('\n- ')}`
+                    : ''
+                }`,
+              )
             : runSubPrompt,
           requireScreenshot,
           complexity,
@@ -113,8 +126,22 @@ export class ExecutionSession {
             return;
           }
           if (res.done) {
-            if (run.fixingAction?.promptId === promptId) {
+            if (res.value && run.fixingAction?.promptId === promptId) {
               console.log('Fixing action done');
+              if (res.value.todo) {
+                // remove pending if todo exist
+                this.removePendingActions();
+                this.promptQueue = [];
+              }
+              res.value.a.forEach((a) => {
+                if ((a as WireActionWithWait).intent) {
+                  this.addAction({
+                    ...(a as WireActionWithWait),
+                    promptId,
+                    id: run.actionId++,
+                  });
+                }
+              });
               run.fixingAction = null;
               run.execActions();
             }
@@ -126,36 +153,19 @@ export class ExecutionSession {
               return;
             }
 
-            yield* this.execSubSessionQueue();
+            if (this.subSessionQueue.length) {
+              console.log('Run sub session queue');
+              yield* this.waitPageReady(url, start);
+              await this.execSubSessionQueue();
+            }
             if (run.stopRequested) {
               finish();
               return;
             }
 
             if (res.value?.todo) {
-              console.log('Waiting for potential page load');
-              await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
-              if (run.stopRequested) {
-                finish();
-                return;
-              }
-              if (tab.url === url) {
-                yield PlanAfterRerender;
-                console.log(Date.now() - start, 'Waiting for page re-render');
-                await Network.waitForNetworkIdle0(
-                  tab.networkIdle0,
-                  tab.networkIdle2,
-                ).then(() => Util.sleep(1000));
-              } else {
-                yield PlanAfterNavigation;
-                console.log(
-                  Date.now() - start,
-                  'Waiting for page to load:',
-                  url,
-                );
-                await tab.pageLoadedLock.wait;
-                executionSession.resetSystemPrompt();
-              }
+              yield* this.waitPageReady(url, start);
+              executionSession.resetSystemPrompt();
               if (run.stopRequested) {
                 finish();
                 return;
@@ -200,14 +210,19 @@ ${res.value.todo.rc}
               break;
             }
             if ((res.value as WireActionWithWait).intent) {
-              console.log(Date.now() - start, 'exec actions:', res.value);
-              this.addAction({
-                ...(res.value as WireActionWithWait),
-                promptId,
-                id: run.allocActionId(),
-              });
-              run.execActions();
-              yield res.value as WireActionWithWait;
+              if (
+                run.fixingAction === null ||
+                run.fixingAction?.promptId !== promptId
+              ) {
+                console.log(Date.now() - start, 'exec actions:', res.value);
+                this.addAction({
+                  ...(res.value as WireActionWithWait),
+                  promptId,
+                  id: run.allocActionId(),
+                });
+                run.execActions();
+                yield res.value as WireActionWithWait;
+              }
             } else {
               console.log(Date.now() - start, 'exec add sub task:', res.value);
               const newPrompt = run.createPrompt(
@@ -230,6 +245,23 @@ ${res.value.todo.rc}
     }
     finish();
   }
+  async *waitPageReady(url: string, start = Date.now()) {
+    const { tab } = this.run;
+    console.log('Waiting for potential page load');
+    await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+    if (tab.url === url) {
+      yield PlanAfterRerender;
+      console.log(Date.now() - start, 'Waiting for page re-render');
+      await Network.waitForNetworkIdle0(
+        tab.networkIdle0,
+        tab.networkIdle2,
+      ).then(() => Util.sleep(1000));
+    } else {
+      yield PlanAfterNavigation;
+      console.log(Date.now() - start, 'Waiting for page to load:', url);
+      await tab.pageLoadedLock.wait;
+    }
+  }
   async *execSubSessionQueue() {
     const { subSessionQueue } = this;
     while (subSessionQueue.length) {
@@ -241,7 +273,41 @@ ${res.value.todo.rc}
     this.subSessionQueue.push(this.run.createSession(queue, this));
   }
   addAction(action: WireActionWithWaitAndRec) {
+    if (action.action.k === 'setArg') {
+      const kvs = Object.entries(action.action.kv);
+      if (kvs.length > 1) {
+        // split setArg from selector to different actions make webview easier
+        action.action.kv = {};
+        const actions = [];
+        let action0HasId = false;
+        for (const [k, v] of kvs) {
+          if (typeof v === 'string') {
+            action.action.kv[k] = v;
+          } else if (!action0HasId) {
+            action0HasId = true;
+            action.action.kv[k] = v;
+          } else {
+            actions.push({
+              ...action,
+              id: this.run.actionId++,
+              action: { ...action.action, kv: { [k]: v } },
+            });
+          }
+        }
+        this.actions.push(action);
+        this.run.addAction(action);
+        if (actions.length) {
+          this.actions.push(...actions);
+          actions.forEach((a) => this.run.addAction(a));
+        }
+        return;
+      }
+    }
     this.actions.push(action);
     this.run.addAction(action);
+  }
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
+    this.run.removePendingActions();
   }
 }
