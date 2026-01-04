@@ -26,7 +26,7 @@ function initPromptIpc(session: WebViewLlmSession) {
     return false;
   });
   ToMainIpc.actionError.handle(async (event, arg) => {
-    console.log('Pop actions:', arg);
+    console.log('Err actions:', arg);
     const { frameId, actionId, error } = arg;
     const wvTab = getTab(frameId);
     if (wvTab) {
@@ -261,6 +261,8 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
           ArrowLeft: 123,
           ArrowRight: 124,
           Tab: 48,
+          Space: 49,
+          Escape: 53,
         };
         let keyCode: number | undefined;
         const osCodes: string[] = [];
