@@ -2,6 +2,8 @@ import { Buffer } from 'buffer';
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
 import { ToMainIpc } from '../../contracts/toMain';
+import type { UploadedAttachment } from '../services/uploadService';
+import type { PromptAttachment } from '../../schema/attachments';
 import { webviewService } from '../services/webviewService';
 import { resolveInitialUrl } from '../utils/formatter';
 
@@ -33,6 +35,7 @@ export class WebTab {
     prompt: string,
     args: Record<string, string>,
     handleResponse: (response: string) => void,
+    attachments?: UploadedAttachment[],
   ) {
     const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
     this.lastPromptRequestId = requestId;
@@ -46,6 +49,13 @@ export class WebTab {
         prompt,
         requestId,
         args,
+        attachments: attachments?.map(
+          (f): PromptAttachment => ({
+          name: f.name,
+          mimeType: f.mimeType,
+          data: f.data,
+        }),
+        ),
       });
       if (error) throw new Error(error);
     } finally {

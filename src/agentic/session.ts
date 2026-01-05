@@ -176,6 +176,7 @@ export class ExecutionSession {
             : runSubPrompt,
           requireScreenshot,
           complexity,
+          run.llmAttachments,
         );
 
         let res:

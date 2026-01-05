@@ -11,6 +11,7 @@ import {
 import { TabWebView } from './webView/tab';
 import { Util } from '../webView/util';
 import { LlmApi } from './llm/api';
+import { promptAttachmentsSchema } from '../schema/attachments';
 
 function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
   ToMainIpc.actionDone.handle(async (event, arg) => {
@@ -35,15 +36,31 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
   });
   ToMainIpc.runPrompt.handle(async (event, arg) => {
     console.info('Run prompt:', arg);
-    const { frameId, prompt, modelType, reasoningEffort, args, requestId } =
-      arg;
+    const {
+      frameId,
+      prompt,
+      modelType,
+      reasoningEffort,
+      args,
+      requestId,
+      attachments,
+    } = arg;
+    const parsedAttachments = attachments
+      ? (() => {
+          const parsed = promptAttachmentsSchema.safeParse(attachments);
+          if (!parsed.success) return { error: 'Invalid attachments payload' };
+          return { value: parsed.data };
+        })()
+      : { value: undefined };
     const wvTab = webViewTabsById.get(frameId);
     console.info('runPrompt in main process:', arg);
+    if ('error' in parsedAttachments) return { error: parsedAttachments.error };
     if (wvTab) {
       const error = await wvTab.runPrompt(
         requestId,
         prompt,
         args,
+        parsedAttachments.value,
         reasoningEffort,
         modelType,
       );

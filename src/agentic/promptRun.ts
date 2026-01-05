@@ -16,6 +16,7 @@ import { ExecutionSession } from './session';
 export class PromptRun {
   executionSession: ExecutionPrompter;
   args: Record<string, any> = {};
+  llmAttachments: LlmApi.Attachment[] = [];
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
   browserActionLock = Util.newLock('browserActionLock');

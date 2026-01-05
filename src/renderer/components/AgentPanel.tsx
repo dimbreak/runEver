@@ -1,6 +1,8 @@
 import type { JSONContent } from '@tiptap/core';
 import * as React from 'react';
+import { Paperclip } from 'lucide-react';
 import { ToMainIpc } from '../../contracts/toMain';
+import { useFileDropUpload } from '../hooks/useFileDropUpload';
 import { dialogService } from '../services/dialogService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore } from '../state/tabStore';
@@ -34,6 +36,20 @@ const textToDoc = (text: string): JSONContent => {
         : [],
     })),
   };
+};
+
+const formatBytes = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const idx = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+  );
+  const value = bytes / 1024 ** idx;
+  let precision = 2;
+  if (idx === 0) precision = 0;
+  else if (value >= 10) precision = 1;
+  return `${value.toFixed(precision)} ${units[idx]}`;
 };
 
 export const AgentPanel: React.FC = () => {
@@ -82,6 +98,39 @@ export const AgentPanel: React.FC = () => {
     },
   ]);
 
+  const {
+    attachments,
+    isUploading,
+    isDragActive,
+    pendingFiles,
+    removeAttachment,
+    dropzoneProps,
+  } = useFileDropUpload({
+    onError: (err) => {
+      console.error('upload failed:', err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          content: textToDoc(`Upload error: ${err.message}`),
+          tag: 'Error',
+        },
+      ]);
+    },
+  });
+
+  const pendingUploadLabel = React.useMemo(() => {
+    if (!isDragActive) return '';
+    if (pendingFiles.length === 1) {
+      return `Release to add ${pendingFiles[0]!.name}`;
+    }
+    if (pendingFiles.length > 1) {
+      return `Release to add ${pendingFiles[0]!.name} +${pendingFiles.length - 1} more`;
+    }
+    return 'Release to add files';
+  }, [isDragActive, pendingFiles]);
+
   const handlePrompt = React.useCallback(
     async (content: JSONContent) => {
       const userText =
@@ -128,7 +177,22 @@ export const AgentPanel: React.FC = () => {
         respondiongMessage,
       ]);
       try {
-        const runPromise = currentTab.runPrompt(userText, args, (chunk) => {
+        const promptAttachments = attachments.slice();
+        const attachedImages = promptAttachments.filter((a) =>
+          a.mimeType.startsWith('image/'),
+        );
+        const attachmentNote = attachedImages.length
+          ? `\n\n[attachments]\n${attachedImages
+              .map(
+                (f) => `- ${f.name} (${f.mimeType}, ${formatBytes(f.size)})`,
+              )
+              .join('\n')}\n\nUse the attached images for this prompt; do not ask the user to upload images unless absolutely required.`
+          : '';
+
+        const runPromise = currentTab.runPrompt(
+          `${userText}${attachmentNote}`,
+          args,
+          (chunk) => {
           console.info('prompt chunk:', chunk);
           setMessages((prev) => {
             const nextText =
@@ -143,7 +207,9 @@ export const AgentPanel: React.FC = () => {
                 : m,
             );
           });
-        });
+          },
+          promptAttachments,
+        );
         setRunningRequestId(currentTab.lastPromptRequestId ?? null);
         await runPromise;
       } catch (err) {
@@ -164,7 +230,7 @@ export const AgentPanel: React.FC = () => {
       }
       return true;
     },
-    [activeTabId, tabs],
+    [activeTabId, attachments, tabs],
   );
 
   const handleStop = React.useCallback(async () => {
@@ -363,12 +429,67 @@ export const AgentPanel: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        <TiptapComposer
-          onSubmit={handleSubmit}
-          onStop={handleStop}
-          isRunning={isPromptRunning}
-          placeholder="Describe what you want to automate..."
-        />
+        <div className="relative" {...dropzoneProps}>
+          {(attachments.length > 0 || isUploading || isDragActive) && (
+            <div className="border-t border-slate-100 bg-white px-4 pt-3">
+              <div className="flex items-center gap-3">
+                <div className="text-[12px] font-semibold text-slate-600">
+                  Attachments
+                </div>
+                {isDragActive && (
+                  <div className="flex items-center gap-2 rounded-xl bg-blue-50 px-2.5 py-1.5 text-[12px] font-semibold text-blue-700">
+                    <Paperclip className="h-4 w-4" />
+                    {pendingUploadLabel}
+                  </div>
+                )}
+                {isUploading && (
+                  <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-transparent" />
+                    Uploading...
+                  </div>
+                )}
+              </div>
+              {attachments.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2 pb-2">
+                  {attachments.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                      title={`${file.name} (${formatBytes(file.size)})`}
+                    >
+                      <div className="max-w-[240px] truncate text-[12px] font-semibold text-slate-700">
+                        {file.name}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {formatBytes(file.size)}
+                      </div>
+                      <button
+                        type="button"
+                        className="ml-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-slate-500 hover:bg-slate-200"
+                        onClick={() => removeAttachment(file.id)}
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <TiptapComposer
+            onSubmit={handleSubmit}
+            onStop={handleStop}
+            isRunning={isPromptRunning}
+            placeholder="Describe what you want to automate..."
+            className={
+              attachments.length > 0 || isUploading || isDragActive
+                ? 'pt-2'
+                : undefined
+            }
+          />
+        </div>
       </div>
     </div>
   );

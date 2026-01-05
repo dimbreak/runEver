@@ -6,6 +6,7 @@ import type {
 } from 'electron';
 import { IpcMainContract } from './ipc';
 import { LlmApi } from '../main/llm/api';
+import type { PromptAttachment } from '../schema/attachments';
 
 export type MouseWheelScrollInputEvent = MouseWheelInputEvent & {
   scrollEl: string;
@@ -156,6 +157,7 @@ export namespace ToMainIpc {
         requestId: number;
         streamReturn?: boolean;
         args?: Record<string, string>;
+        attachments?: PromptAttachment[];
       },
     ],
     { error?: string }

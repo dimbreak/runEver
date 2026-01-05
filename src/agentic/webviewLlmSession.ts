@@ -1,7 +1,9 @@
+import { Buffer } from 'buffer';
 import { TabWebView } from '../main/webView/tab';
 import { LlmApi } from './api';
 import { PromptRun } from './promptRun';
 import { WireActionWithWaitAndRec } from './types';
+import type { PromptAttachment } from '../schema/attachments';
 
 const DEBUG_CONFIRM_ALL_ACTIONS = false;
 
@@ -20,6 +22,7 @@ export class WebViewLlmSession {
     requestId: number,
     promptTxt: string,
     args?: Record<string, string>,
+    attachments?: PromptAttachment[],
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ) {
@@ -27,6 +30,14 @@ export class WebViewLlmSession {
     if (existing) existing.stop();
 
     const run = new PromptRun(this, this.tab, requestId);
+    run.llmAttachments =
+      attachments
+        ?.filter((a) => a?.mimeType?.startsWith('image/') && a.data)
+        .map((a) => ({
+          type: 'image' as const,
+          image: Buffer.from(new Uint8Array(a.data)),
+          mediaType: a.mimeType,
+        })) ?? [];
     this.runsByRequestId.set(requestId, run);
     this.lastStartedRequestId = requestId;
     return run.initPrompt(promptTxt, args, reasoningEffort, modelType);

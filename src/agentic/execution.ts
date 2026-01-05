@@ -56,6 +56,7 @@ export class ExecutionPrompter {
     subPrompt: string | undefined = undefined,
     requireScreenshot = false,
     complexity: RiskOrComplexityLevel = 'l',
+    extraAttachments: LlmApi.Attachment[] = [],
   ): AsyncGenerator<WireActionWithWait | WireSubTask, ExecutorLlmResult, void> {
     const wv = this.tab.webView;
     const rect = wv.getBounds();
@@ -91,21 +92,24 @@ ${
 
 [goal]
 ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
-    let attachments: LlmApi.Attachment[] | null = null;
+    const attachments: LlmApi.Attachment[] = extraAttachments.slice();
     if (requireScreenshot) {
-      attachments = [
-        {
-          type: 'image',
-          image: (await this.tab.screenshot()).toJPEG(80),
-          mediaType: 'image/jpeg',
-        },
-      ];
+      attachments.push({
+        type: 'image',
+        image: (await this.tab.screenshot()).toJPEG(80),
+        mediaType: 'image/jpeg',
+      });
     }
     console.log(
       '------------------------------------------\nExecutor runner prompt:',
       runPrompt,
     );
-    const stream = runner(runPrompt, attachments, modelCfg[0], modelCfg[1]);
+    const stream = runner(
+      runPrompt,
+      attachments.length ? attachments : null,
+      modelCfg[0],
+      modelCfg[1],
+    );
     this.requestInSession++;
     const jsonParser = new JsonStreamingParser(true);
 

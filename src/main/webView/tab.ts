@@ -15,6 +15,7 @@ import { Network } from '../../webView/network';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
 import { LlmApi } from '../llm/api';
+import type { PromptAttachment } from '../../schema/attachments';
 
 const testPrompt: { user: string; system: string } | null = null;
 
@@ -245,6 +246,7 @@ export class TabWebView {
     requestId: number,
     prompt: string,
     args?: Record<string, string>,
+    attachments?: PromptAttachment[],
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ): Promise<string | undefined> {
@@ -281,6 +283,7 @@ export class TabWebView {
             requestId,
             prompt,
             args,
+            attachments,
             reasoningEffort,
             modelType,
           );
