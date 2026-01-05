@@ -5,7 +5,8 @@ import { dialogService } from '../services/dialogService';
 import { ToMainIpc } from '../../contracts/toMain';
 
 export const useIpcListeners = () => {
-  const { addTab, frameMap, updateTabTitle, updateTabUrl } = useTabStore();
+  const { addTab, frameMap, updateTabTitle, updateTabUrl, removeTabByFrameId } =
+    useTabStore();
   const { bounds } = useLayoutStore();
   useEffect(() => {
     const ipc = window.electron?.ipcRenderer;
@@ -45,6 +46,12 @@ export const useIpcListeners = () => {
       'tab-title-updated',
       handleTitleUpdate,
     );
+    const unsubscribeTabClosed = ipc.on(
+      'tab-closed',
+      (_event: any, payload: { frameId: number }) => {
+        removeTabByFrameId(payload.frameId);
+      },
+    );
     const unsubscribeToUser = ipc.on(
       'to-user',
       async (_event: any, payload: any) => {
@@ -77,7 +84,8 @@ export const useIpcListeners = () => {
     return () => {
       unsubscribeNewTab?.();
       unsubscribeTitleUpdate?.();
+      unsubscribeTabClosed?.();
       unsubscribeToUser?.();
     };
-  }, [addTab, frameMap, updateTabTitle, updateTabUrl, bounds]);
+  }, [addTab, frameMap, updateTabTitle, updateTabUrl, removeTabByFrameId, bounds]);
 };

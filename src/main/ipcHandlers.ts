@@ -110,6 +110,7 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
 
 export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
   const webViewTabsById = new Map<number, TabWebView>();
+  const closedFrameIds = new Set<number>();
 
   const PADDING = 0;
   const DEFAULT_TABBAR_HEIGHT = 112;
@@ -136,6 +137,37 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
       (win?.height ?? 728) - tabbarHeight - PADDING * 2,
     );
     return { x: PADDING, y: tabbarHeight + PADDING, width, height };
+  };
+
+  const cleanupTab = (frameId: number) => {
+    if (closedFrameIds.has(frameId)) return;
+    closedFrameIds.add(frameId);
+
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      try {
+        wvTab.stopPrompt();
+      } catch {
+        // ignore cleanup errors
+      }
+      try {
+        wvTab.webView.setVisible(false);
+      } catch {
+        // ignore cleanup errors
+      }
+      try {
+        mainWindow?.contentView.removeChildView(wvTab.webView);
+      } catch {
+        // ignore cleanup errors
+      }
+      webViewTabsById.delete(frameId);
+    }
+
+    try {
+      mainWindow?.webContents.send('tab-closed', { frameId });
+    } catch {
+      // ignore teardown errors
+    }
   };
 
   // const removeAllWebViews = () => {
@@ -213,6 +245,10 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     const bounds = detail.bounds ?? getSafeBounds();
     const wvTab = new TabWebView(detail.url, bounds, mainWindow);
     const frameId = wvTab.webView.webContents.id;
+    wvTab.webView.webContents.once('destroyed', () => cleanupTab(frameId));
+    wvTab.webView.webContents.on('render-process-gone', () =>
+      cleanupTab(frameId),
+    );
     webViewTabsById.set(frameId, wvTab);
     mainWindow?.contentView.addChildView(wvTab.webView);
     return { id: frameId };
@@ -225,13 +261,9 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
       let response;
       if (detail.close) {
         // Ensure any in-flight prompt/task is stopped before destroying webContents.
-        wvTab.stopPrompt();
-        wvTab.webView.setVisible(false);
-        mainWindow?.contentView.removeChildView(wvTab.webView);
-        webViewTabsById.delete(frameId!);
-        if (!wvTab.webView.webContents.isDestroyed()) {
-          wvTab.webView.webContents.close();
-        }
+        const wc = wvTab.webView.webContents;
+        cleanupTab(frameId);
+        if (!wc.isDestroyed()) wc.close();
         response = 'closed';
       } else {
         if (detail.visible !== undefined) {

@@ -144,6 +144,7 @@ type TabState = {
   setActiveTab: (id: string | null) => void;
   addTab: (tab: WebTab, bounds: Rectangle) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
+  removeTabByFrameId: (frameId: number) => void;
   closeAllTabs: () => Promise<void>;
   stopPrompt: (tabId?: string, requestId?: number) => Promise<void>;
   registerFrameId: (tabId: string, frameId: number) => void;
@@ -173,6 +174,24 @@ const initialTabs = [
   //   url: 'https://www.openai.com',
   // }),
 ];
+
+const removeTabFromState = (state: Pick<TabState, 'tabs' | 'activeTabId' | 'frameMap'>, id: string) => {
+  const nextTabs = state.tabs.filter((t) => t.id !== id);
+  const wasActive = state.activeTabId === id;
+  let nextActive = state.activeTabId;
+  if (wasActive && nextTabs.length > 0) {
+    nextActive = nextTabs[nextTabs.length - 1].id;
+  } else if (state.activeTabId === id) {
+    nextActive = null;
+  }
+  const nextFrameMap = new Map(state.frameMap);
+  nextFrameMap.delete(id);
+  return {
+    tabs: nextTabs,
+    activeTabId: nextActive,
+    frameMap: nextFrameMap,
+  };
+};
 
 export const useTabStore = create<TabState>((set, get) => ({
   tabs: initialTabs.map((tab) => new WebTab(tab)),
@@ -232,23 +251,15 @@ export const useTabStore = create<TabState>((set, get) => ({
     const { frameMap } = get();
     const frameId = frameMap.get(id);
     await webviewService.closeTab({ frameId: frameId ?? undefined });
-    set((state) => {
-      const nextTabs = state.tabs.filter((t) => t.id !== id);
-      const wasActive = state.activeTabId === id;
-      let nextActive = state.activeTabId;
-      if (wasActive && nextTabs.length > 0) {
-        nextActive = nextTabs[nextTabs.length - 1].id;
-      } else if (state.activeTabId === id) {
-        nextActive = null;
-      }
-      const nextFrameMap = new Map(state.frameMap);
-      nextFrameMap.delete(id);
-      return {
-        tabs: nextTabs,
-        activeTabId: nextActive,
-        frameMap: nextFrameMap,
-      };
-    });
+    set((state) => removeTabFromState(state, id));
+  },
+  removeTabByFrameId: (frameId) => {
+    const entry = Array.from(get().frameMap.entries()).find(
+      ([, id]) => id === frameId,
+    );
+    if (!entry) return;
+    const [tabId] = entry;
+    set((state) => removeTabFromState(state, tabId));
   },
 
   closeAllTabs: async () => {
