@@ -2,7 +2,7 @@ import type { FromIframeMessages, ToIframeMessages } from './types.d.ts';
 import { MiniHtml } from '../../webView/miniHtml';
 import { dummyCursor } from '../../webView/cursor/cursor';
 import { OCRModel } from '../../webView/ocr';
-import { WireActionWithWaitAndRec } from '../../agentic/session';
+import { WireActionWithWaitAndRec } from '../../agentic/types';
 import {
   ActionApi,
   BrowserActions,
