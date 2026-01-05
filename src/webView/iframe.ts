@@ -9,7 +9,7 @@ import { ActionApi, BrowserActions, ErrElementNotSelected } from './actions';
 import { EventWithDelay } from '../contracts/toMain';
 import { Util } from './util';
 import { dummyCursor } from './cursor/cursor';
-import { WireActionWithWaitAndRec } from '../agentic/session';
+import { WireActionWithWaitAndRec } from '../agentic/types';
 
 if (window.top === window) {
   window.addEventListener('message', (e) => {

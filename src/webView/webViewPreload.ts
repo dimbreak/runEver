@@ -6,7 +6,7 @@ import { BrowserActions } from './actions';
 import { Util } from './util';
 import { Network } from './network';
 import { MiniHtml } from './miniHtml';
-import { WireActionWithWaitAndRec } from '../agentic/session';
+import { type WireActionWithWaitAndRec } from '../agentic/types';
 
 Network.initListener();
 

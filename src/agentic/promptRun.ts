@@ -312,6 +312,10 @@ these actions are blocking by this error, if you found any of the above actions 
     return prompt;
   }
 
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
+  }
+
   setRunningStatus(session: ExecutionSession) {
     this.runningSession.unshift(session);
     return () => {

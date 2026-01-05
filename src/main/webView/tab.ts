@@ -11,12 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
-import { ToRendererIpc } from '../../contracts/toRenderer';
 import { Network } from '../../webView/network';
-import {
-  WebViewLlmSession,
-  WireActionWithWaitAndRec,
-} from '../../agentic/session';
 import { LlmApi } from '../../agentic/api';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
@@ -114,7 +109,10 @@ export class TabWebView {
           options: string[];
         }
     >,
-  >(message: string, questions: Q): Promise<Record<Extract<keyof Q, string>, string>> {
+  >(
+    message: string,
+    questions: Q,
+  ): Promise<Record<Extract<keyof Q, string>, string>> {
     const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
     const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
       (resolve) => {

@@ -5,7 +5,7 @@ import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
 import { Util } from './util';
 import { Network } from './network';
 import { WireAction, WireWait } from '../agentic/execution.schema';
-import { WireActionWithWaitAndRec } from '../agentic/session';
+import { WireActionWithWaitAndRec } from '../agentic/types';
 import { MiniHtml } from './miniHtml';
 import { SliderProfile } from '../agentic/profile/widget/slider.webView';
 import { IFrameHelper } from './iframe';

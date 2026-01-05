@@ -1,5 +1,5 @@
 import type { MiniHtml } from '../../webView/miniHtml';
-import type { WireActionWithWaitAndRec } from '../../agentic/session';
+import type { WireActionWithWaitAndRec } from '../../agentic/types';
 import { ActionApi, ActionApiCallingReq } from '../../webView/actions';
 
 export type ActionReq<K extends keyof ActionApi> = {
