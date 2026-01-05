@@ -185,16 +185,21 @@ export class WebViewLlmSession {
   private async ensureArgsForAction(
     requestId: number,
     run: PromptRun,
-    nextAction: WireActionWithWaitAndRec,
+    _nextAction: WireActionWithWaitAndRec,
   ) {
-    const missing = this.getMissingArgKeys(run, nextAction);
+    const missingKeys = new Set<string>();
+    const lookAhead = run.getRemainActions().slice(0, 8);
+    for (const action of lookAhead) {
+      this.getMissingArgKeys(run, action).forEach((k) => missingKeys.add(k));
+    }
+    const missing = Array.from(missingKeys);
     if (missing.length === 0) return true;
     const questions = missing.reduce(
       (acc, key) => ({ ...acc, [key]: { type: 'string' as const } }),
       {} as Record<string, { type: 'string' }>,
     );
     const answer = await this.tab.askUserInput(
-      `Need input to continue:\n${missing.join('\n')}`,
+      `Need input to continue`,
       questions,
     );
     const values = answer ?? {};

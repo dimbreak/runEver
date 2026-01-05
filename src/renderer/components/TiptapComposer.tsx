@@ -7,7 +7,7 @@ import { cn } from '../utils/cn';
 import { SubmitButton } from './SubmitButton';
 
 export type TiptapComposerProps = {
-  onSubmit: (content: JSONContent) => void;
+  onSubmit: (content: JSONContent) => void | boolean | Promise<void | boolean>;
   onStop?: () => void;
   isRunning?: boolean;
   placeholder?: string;
@@ -73,9 +73,16 @@ export function TiptapComposer({
     if (!editor) return;
     const json = editor.getJSON();
     if (getIsEmpty(json)) return;
-    onSubmit(json);
-    editor.commands.clearContent(true);
-    setIsEmpty(true);
+    Promise.resolve()
+      .then(() => onSubmit(json))
+      .then((result) => {
+        if (result === false) return;
+        editor.commands.clearContent(true);
+        setIsEmpty(true);
+      })
+      .catch(() => {
+        // keep editor content on submit failure/cancel
+      });
   }, [isRunning, onSubmit]);
 
   const editor = useEditor({

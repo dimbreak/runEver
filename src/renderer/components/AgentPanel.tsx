@@ -1,8 +1,10 @@
 import type { JSONContent } from '@tiptap/core';
 import * as React from 'react';
 import { ToMainIpc } from '../../contracts/toMain';
+import { dialogService } from '../services/dialogService';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore } from '../state/tabStore';
+import { extractPromptArgKeys } from '../utils/promptArgs';
 import { TiptapComposer } from './TiptapComposer';
 import { TiptapContent } from './TiptapContent';
 
@@ -87,6 +89,28 @@ export const AgentPanel: React.FC = () => {
           ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
           .join('\n\n') ?? '';
       console.info('send prompt:', userText, tabs);
+
+      const currentTab = tabs.find((t) => t.id === activeTabId);
+      if (!currentTab) return false;
+
+      let args: Record<string, string> = {};
+      const argKeys = extractPromptArgKeys(userText);
+      if (argKeys.length && dialogService.hasBridge()) {
+        const questions = argKeys.reduce(
+          (acc, key) => ({ ...acc, [key]: { type: 'string' as const } }),
+          {} as Record<string, { type: 'string' }>,
+        );
+        const answer = await dialogService.promptInput({
+          title: 'Prompt arguments',
+          message: 'Fill values to run this prompt.',
+          questions,
+          okText: 'Run',
+          cancelText: 'Cancel',
+        });
+        if (answer === null) return false;
+        args = answer;
+      }
+
       const id = Date.now();
       const assistantId = id + 1;
       const respondiongMessage: Message = {
@@ -103,13 +127,8 @@ export const AgentPanel: React.FC = () => {
         { id, role: 'user', content },
         respondiongMessage,
       ]);
-      const currentTab = tabs.find((t) => t.id === activeTabId);
-      if (!currentTab) {
-        setIsPromptRunning(false);
-        return;
-      }
       try {
-        const runPromise = currentTab.runPrompt(userText, {}, (chunk) => {
+        const runPromise = currentTab.runPrompt(userText, args, (chunk) => {
           console.info('prompt chunk:', chunk);
           setMessages((prev) => {
             const nextText =
@@ -143,6 +162,7 @@ export const AgentPanel: React.FC = () => {
           );
         });
       }
+      return true;
     },
     [activeTabId, tabs],
   );
@@ -236,7 +256,7 @@ export const AgentPanel: React.FC = () => {
 
   const handleSubmit = React.useCallback(
     (content: JSONContent) => {
-      handlePrompt(content);
+      return handlePrompt(content);
     },
     [handlePrompt],
   );
