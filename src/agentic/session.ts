@@ -11,6 +11,42 @@ import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
 import { LlmApi } from './api';
 
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
