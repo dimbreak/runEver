@@ -315,4 +315,14 @@ ${res.value.todo.rc}
   addNewSubSession(queue: Prompt[]) {
     this.subSessionQueue.push(this.run.createSession(queue, this));
   }
+
+  getSnapshot() {
+    return {
+      id: this.id,
+      parentId: this.parent?.id ?? null,
+      promptQueue: this.promptQueue.map((prompt) => ({ ...prompt })),
+      subSessionQueueIds: this.subSessionQueue.map((session) => session.id),
+      breakPromptForExeErr: this.breakPromptForExeErr,
+    };
+  }
 }

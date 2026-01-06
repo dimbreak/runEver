@@ -184,6 +184,14 @@ export namespace ToMainIpc {
       }
     | { error: string }
   >('get-tab-navigation-state');
+  export const getLlmSessionSnapshot = new IpcMainContract<
+    [
+      {
+        frameId: number;
+      },
+    ],
+    { snapshot: unknown } | { error: string }
+  >('get-llm-session-snapshot');
   export const navigateTabHistory = new IpcMainContract<
     [
       {

@@ -90,6 +90,13 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     };
   });
 
+  ToMainIpc.getLlmSessionSnapshot.handle(async (_event, arg) => {
+    const wvTab = webViewTabsById.get(arg.frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    if (!wvTab.llmSession) return { error: 'Session not available' };
+    return { snapshot: wvTab.llmSession.getSnapshot() };
+  });
+
   ToMainIpc.navigateTabHistory.handle(async (_event, arg) => {
     const wvTab = webViewTabsById.get(arg.frameId);
     if (!wvTab) return { error: 'Tab not found' };
@@ -300,6 +307,7 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
     try {
       return LlmApi.llmConfigSchema.parse(loadedConfig) as LlmApi.LlmConfig;
     } catch (error) {
+      console.error('Llm config error:', error);
       const llmConfig: LlmApi.LlmConfig = {
         api: process.env.LLM_API_PROVIDER as 'openai',
         key: process.env.LLM_API_KEY as string,

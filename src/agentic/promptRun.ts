@@ -109,6 +109,37 @@ export class PromptRun {
     }
   }
 
+  getSnapshot() {
+    return {
+      requestId: this.requestId,
+      stopRequested: this.stopRequested,
+      args: { ...this.args },
+      actions: this.actions.map((action) => ({
+        id: action.id,
+        intent: action.intent,
+        risk: action.risk,
+        done: action.done,
+        error: action.error,
+        stepPrompt: action.stepPrompt,
+        promptId: action.promptId,
+        argsDelta: action.argsDelta,
+        action: action.action,
+      })),
+      currentAction: this.currentAction,
+      prompts: this.prompts.map((prompt) => ({ ...prompt })),
+      breakPromptForExeErr: this.breakPromptForExeErr,
+      fixingAction: this.fixingAction
+        ? {
+            actionId: this.fixingAction.action.id,
+            offset: this.fixingAction.offset,
+            promptId: this.fixingAction.promptId,
+          }
+        : null,
+      sessionQueue: this.sessionQueue.map((session) => session.getSnapshot()),
+      runningSessionIds: this.runningSession.map((session) => session.id),
+    };
+  }
+
   breakPromptForExeErr = false;
 
   stop() {

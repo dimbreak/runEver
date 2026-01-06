@@ -1,24 +1,17 @@
 import type { JSONContent } from '@tiptap/core';
-import * as React from 'react';
 import { Paperclip } from 'lucide-react';
+import * as React from 'react';
 import { ToMainIpc } from '../../contracts/toMain';
 import { useFileDropUpload } from '../hooks/useFileDropUpload';
 import { dialogService } from '../services/dialogService';
+import { useAgentStore, type Message } from '../state/agentStore';
 import { useLayoutStore } from '../state/layoutStore';
 import { useTabStore } from '../state/tabStore';
 import { extractPromptArgKeys } from '../utils/promptArgs';
 import { TiptapComposer } from './TiptapComposer';
 import { TiptapContent } from './TiptapContent';
 
-type Message = {
-  id: number;
-  role: 'user' | 'assistant';
-  content: JSONContent;
-  text?: string;
-  llmResponding?: boolean;
-  tag?: string;
-  image?: string; // todo multiple images? other types of files?
-};
+type Attachment = NonNullable<Message['attachments']>[number];
 
 const textToDoc = (text: string): JSONContent => {
   const paragraphs = text.split(/\n{2,}/);
@@ -52,6 +45,125 @@ const formatBytes = (bytes: number) => {
   return `${value.toFixed(precision)} ${units[idx]}`;
 };
 
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary);
+};
+
+const buildDataUrl = (file: Attachment) => {
+  const base64 = arrayBufferToBase64(file.data);
+  return `data:${file.mimeType};base64,${base64}`;
+};
+
+const copyText = async (text: string) => {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.setAttribute('readonly', 'true');
+  el.style.position = 'absolute';
+  el.style.left = '-9999px';
+  document.body.appendChild(el);
+  el.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(el);
+  return ok;
+};
+
+const AttachmentPreview: React.FC<{
+  file: Attachment;
+  variant: 'user' | 'assistant';
+}> = ({ file, variant }) => {
+  const isImage = file.mimeType.startsWith('image/');
+  const previewUrl = React.useMemo(() => {
+    if (!isImage) return null;
+    return URL.createObjectURL(new Blob([file.data], { type: file.mimeType }));
+  }, [file.data, file.mimeType, isImage]);
+
+  React.useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const handleDownload = React.useCallback(() => {
+    const blob = new Blob([file.data], { type: file.mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [file.data, file.mimeType, file.name]);
+
+  const handleCopyLink = React.useCallback(async () => {
+    const dataUrl = buildDataUrl(file);
+    await copyText(dataUrl);
+  }, [file]);
+
+  return (
+    <div className="mt-2 space-y-2">
+      {previewUrl && (
+        <div
+          className={`overflow-hidden rounded-xl border ${
+            variant === 'user'
+              ? 'border-white/40 bg-white/10'
+              : 'border-slate-200 bg-slate-50'
+          }`}
+        >
+          <img
+            src={previewUrl}
+            alt={file.name}
+            className="max-w-full h-auto block"
+          />
+        </div>
+      )}
+      <div
+        className={`flex flex-wrap items-center gap-2 rounded-lg px-2 py-1 text-[11px] ${
+          variant === 'user'
+            ? 'bg-white/20 text-white'
+            : 'bg-slate-100 text-slate-600'
+        }`}
+      >
+        <div className="max-w-[200px] truncate font-semibold">{file.name}</div>
+        <div className="opacity-70">
+          {file.mimeType} · {formatBytes(file.size)}
+        </div>
+        <button
+          type="button"
+          onClick={handleDownload}
+          className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+            variant === 'user'
+              ? 'bg-white/20 text-white'
+              : 'bg-white text-slate-700'
+          }`}
+        >
+          Download
+        </button>
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+            variant === 'user'
+              ? 'bg-white/20 text-white'
+              : 'bg-white text-slate-700'
+          }`}
+        >
+          Copy Link
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const AgentPanel: React.FC = () => {
   const {
     isSidebarOpen: sidebarOpen,
@@ -67,36 +179,64 @@ export const AgentPanel: React.FC = () => {
   const [runningRequestId, setRunningRequestId] = React.useState<number | null>(
     null,
   );
+  const { addMessage, updateMessage, ensureTab, setSessionSnapshot } =
+    useAgentStore((state) => ({
+      addMessage: state.addMessage,
+      updateMessage: state.updateMessage,
+      ensureTab: state.ensureTab,
+      setSessionSnapshot: state.setSessionSnapshot,
+    }));
+  const messages = useAgentStore((state) =>
+    activeTabId ? (state.messagesByTabId[activeTabId] ?? []) : [],
+  );
+  const sessionSnapshot = useAgentStore((state) =>
+    activeTabId ? (state.sessionByTabId[activeTabId] ?? null) : null,
+  );
   const runningAssistantMessageIdRef = React.useRef<number | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement | null>(null);
-  const [messages, setMessages] = React.useState<Message[]>([
-    {
-      id: 1,
-      role: 'user',
-      content: textToDoc(
-        'I want to generate a list of automated tasks to run daily sales summary.',
-      ),
+  const sessionRefreshTimerRef = React.useRef<number | null>(null);
+
+  const refreshSessionSnapshot = React.useCallback(
+    async (tabId: string) => {
+      const tab = tabs.find((t) => t.id === tabId);
+      if (!tab || tab.frameId === -1) {
+        setSessionSnapshot(tabId, null);
+        return;
+      }
+      try {
+        const res = await ToMainIpc.getLlmSessionSnapshot.invoke({
+          frameId: tab.frameId,
+        });
+        if (
+          'snapshot' in res &&
+          res.snapshot &&
+          typeof res.snapshot === 'object'
+        ) {
+          setSessionSnapshot(tabId, {
+            frameId: tab.frameId,
+            updatedAt: Date.now(),
+            ...(res.snapshot as any),
+          });
+          return;
+        }
+        setSessionSnapshot(tabId, null);
+      } catch (err) {
+        console.error('session snapshot error:', err);
+      }
     },
-    {
-      id: 2,
-      role: 'assistant',
-      content: textToDoc(
-        'I will connect to the API, provide daily revenue, order count, and KPI detection.',
-      ),
-      tag: 'Plan',
+    [setSessionSnapshot, tabs],
+  );
+
+  const scheduleSessionRefresh = React.useCallback(
+    (tabId: string) => {
+      if (sessionRefreshTimerRef.current !== null) return;
+      sessionRefreshTimerRef.current = window.setTimeout(() => {
+        sessionRefreshTimerRef.current = null;
+        refreshSessionSnapshot(tabId);
+      }, 400);
     },
-    {
-      id: 3,
-      role: 'user',
-      content: textToDoc('Add "low-margin product" warning, and output CSV.'),
-    },
-    {
-      id: 4,
-      role: 'assistant',
-      content: textToDoc('Added warning, and pushed CSV to your cloud at 7am.'),
-      tag: 'Ready',
-    },
-  ]);
+    [refreshSessionSnapshot],
+  );
 
   const {
     attachments,
@@ -104,19 +244,18 @@ export const AgentPanel: React.FC = () => {
     isDragActive,
     pendingFiles,
     removeAttachment,
+    clearAttachments,
     dropzoneProps,
   } = useFileDropUpload({
     onError: (err) => {
       console.error('upload failed:', err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          role: 'assistant',
-          content: textToDoc(`Upload error: ${err.message}`),
-          tag: 'Error',
-        },
-      ]);
+      if (!activeTabId) return;
+      addMessage(activeTabId, {
+        id: Date.now(),
+        role: 'assistant',
+        content: textToDoc(`Upload error: ${err.message}`),
+        tag: 'Error',
+      });
     },
   });
 
@@ -141,6 +280,7 @@ export const AgentPanel: React.FC = () => {
 
       const currentTab = tabs.find((t) => t.id === activeTabId);
       if (!currentTab) return false;
+      const tabId = currentTab.id;
 
       let args: Record<string, string> = {};
       const argKeys = extractPromptArgKeys(userText);
@@ -162,6 +302,13 @@ export const AgentPanel: React.FC = () => {
 
       const id = Date.now();
       const assistantId = id + 1;
+      const promptAttachments = attachments.slice();
+      const attachmentInfos = promptAttachments.map((file) => ({
+        name: file.name,
+        mimeType: file.mimeType,
+        size: file.size,
+        data: file.data,
+      }));
       const respondiongMessage: Message = {
         id: assistantId,
         role: 'assistant',
@@ -171,66 +318,77 @@ export const AgentPanel: React.FC = () => {
       };
       runningAssistantMessageIdRef.current = assistantId;
       setIsPromptRunning(true);
-      setMessages((prev) => [
-        ...prev,
-        { id, role: 'user', content },
-        respondiongMessage,
-      ]);
-      try {
-        const promptAttachments = attachments.slice();
-        const attachedImages = promptAttachments.filter((a) =>
-          a.mimeType.startsWith('image/'),
-        );
-        const attachmentNote = attachedImages.length
-          ? `\n\n[attachments]\n${attachedImages
-              .map(
-                (f) => `- ${f.name} (${f.mimeType}, ${formatBytes(f.size)})`,
-              )
-              .join('\n')}\n\nUse the attached images for this prompt; do not ask the user to upload images unless absolutely required.`
-          : '';
+      addMessage(tabId, {
+        id,
+        role: 'user',
+        content,
+        attachments: attachmentInfos.length ? attachmentInfos : undefined,
+      });
+      addMessage(tabId, respondiongMessage);
+      clearAttachments();
+      const runPromptFlow = async () => {
+        try {
+          const attachedImages = promptAttachments.filter((a) =>
+            a.mimeType.startsWith('image/'),
+          );
+          const attachmentNote = attachedImages.length
+            ? `\n\n[attachments]\n${attachedImages
+                .map(
+                  (f) => `- ${f.name} (${f.mimeType}, ${formatBytes(f.size)})`,
+                )
+                .join(
+                  '\n',
+                )}\n\nUse the attached images for this prompt; do not ask the user to upload images unless absolutely required.`
+            : '';
 
-        const runPromise = currentTab.runPrompt(
-          `${userText}${attachmentNote}`,
-          args,
-          (chunk) => {
-          console.info('prompt chunk:', chunk);
-          setMessages((prev) => {
-            const nextText =
-              (prev.find((m) => m.id === assistantId)?.text ?? '') + chunk;
-            return prev.map((m) =>
-              m.id === assistantId
-                ? {
-                    ...m,
-                    text: nextText,
-                    content: textToDoc(nextText),
-                  }
-                : m,
-            );
-          });
-          },
-          promptAttachments,
-        );
-        setRunningRequestId(currentTab.lastPromptRequestId ?? null);
-        await runPromise;
-      } catch (err) {
-        console.error('prompt error:', err);
-        setMessages((prev) => {
-          return prev.map((m) =>
-            m.id === assistantId ? { ...m, llmResponding: false } : m,
+          const runPromise = currentTab.runPrompt(
+            `${userText}${attachmentNote}`,
+            args,
+            (chunk) => {
+              console.info('prompt chunk:', chunk);
+              updateMessage(tabId, assistantId, (message) => {
+                const nextText = (message.text ?? '') + chunk;
+                return {
+                  ...message,
+                  text: nextText,
+                  content: textToDoc(nextText),
+                };
+              });
+              scheduleSessionRefresh(tabId);
+            },
+            promptAttachments,
           );
-        });
-      } finally {
-        setIsPromptRunning(false);
-        setRunningRequestId(null);
-        setMessages((prev) => {
-          return prev.map((m) =>
-            m.id === assistantId ? { ...m, llmResponding: false } : m,
-          );
-        });
-      }
+          setRunningRequestId(currentTab.lastPromptRequestId ?? null);
+          await runPromise;
+        } catch (err) {
+          console.error('prompt error:', err);
+          updateMessage(tabId, assistantId, (message) => ({
+            ...message,
+            llmResponding: false,
+          }));
+        } finally {
+          setIsPromptRunning(false);
+          setRunningRequestId(null);
+          updateMessage(tabId, assistantId, (message) => ({
+            ...message,
+            llmResponding: false,
+          }));
+          refreshSessionSnapshot(tabId);
+        }
+      };
+      runPromptFlow();
       return true;
     },
-    [activeTabId, attachments, tabs],
+    [
+      activeTabId,
+      addMessage,
+      attachments,
+      clearAttachments,
+      refreshSessionSnapshot,
+      scheduleSessionRefresh,
+      tabs,
+      updateMessage,
+    ],
   );
 
   const handleStop = React.useCallback(async () => {
@@ -240,27 +398,34 @@ export const AgentPanel: React.FC = () => {
     setRunningRequestId(null);
     const assistantId = runningAssistantMessageIdRef.current;
     if (assistantId === null) return;
-    setMessages((prev) => {
-      return prev.map((m) =>
-        m.id === assistantId ? { ...m, llmResponding: false } : m,
-      );
-    });
-  }, [activeTabId, runningRequestId, stopPrompt]);
+    if (activeTabId) {
+      updateMessage(activeTabId, assistantId, (message) => ({
+        ...message,
+        llmResponding: false,
+      }));
+      refreshSessionSnapshot(activeTabId);
+    }
+  }, [
+    activeTabId,
+    refreshSessionSnapshot,
+    runningRequestId,
+    stopPrompt,
+    updateMessage,
+  ]);
 
   const handleCapture = async () => {
     try {
       // Get the active tab
       const currentTab = tabs.find((t) => t.id === activeTabId);
       if (!currentTab) {
-        setMessages((prev) => [
-          ...prev,
-          {
+        if (activeTabId) {
+          addMessage(activeTabId, {
             id: Date.now(),
             role: 'assistant',
             content: textToDoc('No active tab to capture.'),
             tag: 'Error',
-          },
-        ]);
+          });
+        }
         return;
       }
 
@@ -268,37 +433,30 @@ export const AgentPanel: React.FC = () => {
       const imageDataUri = await currentTab.captureScreenshot(bounds);
 
       if (imageDataUri) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            role: 'assistant',
-            content: textToDoc('Captured current view.'),
-            image: imageDataUri,
-            tag: 'Screenshot',
-          },
-        ]);
+        addMessage(currentTab.id, {
+          id: Date.now(),
+          role: 'assistant',
+          content: textToDoc('Captured current view.'),
+          image: imageDataUri,
+          tag: 'Screenshot',
+        });
       } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now(),
-            role: 'assistant',
-            content: textToDoc('Failed to capture screenshot.'),
-            tag: 'Error',
-          },
-        ]);
+        addMessage(currentTab.id, {
+          id: Date.now(),
+          role: 'assistant',
+          content: textToDoc('Failed to capture screenshot.'),
+          tag: 'Error',
+        });
       }
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        {
+      if (activeTabId) {
+        addMessage(activeTabId, {
           id: Date.now(),
           role: 'assistant',
           content: textToDoc(`Capture error: ${(err as Error).message}`),
           tag: 'Error',
-        },
-      ]);
+        });
+      }
     }
   };
 
@@ -330,6 +488,20 @@ export const AgentPanel: React.FC = () => {
   React.useEffect(() => {
     updateWebViewLayout(sidebarOpen);
   }, [sidebarOpen, updateWebViewLayout]);
+
+  React.useEffect(() => {
+    return () => {
+      if (sessionRefreshTimerRef.current !== null) {
+        window.clearTimeout(sessionRefreshTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!activeTabId) return;
+    ensureTab(activeTabId);
+    refreshSessionSnapshot(activeTabId);
+  }, [activeTabId, ensureTab, refreshSessionSnapshot]);
 
   React.useEffect(() => {
     const behavior = isPromptRunning ? 'auto' : 'smooth';
@@ -378,6 +550,16 @@ export const AgentPanel: React.FC = () => {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto bg-slate-50/70 px-4 py-3 space-y-3">
+          {sessionSnapshot && (
+            <div className="rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-xs text-slate-700 shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)]">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                LLM Session Snapshot
+              </div>
+              <pre className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-slate-700">
+                {JSON.stringify(sessionSnapshot, null, 2)}
+              </pre>
+            </div>
+          )}
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -411,6 +593,14 @@ export const AgentPanel: React.FC = () => {
                     variant={msg.role === 'user' ? 'inverse' : 'default'}
                   />
                 )}
+                {msg.attachments &&
+                  msg.attachments.map((file) => (
+                    <AttachmentPreview
+                      key={`${msg.id}-${file.name}-${file.size}`}
+                      file={file}
+                      variant={msg.role}
+                    />
+                  ))}
                 {msg.llmResponding && (
                   <div className="mt-1 text-xs opacity-60">...</div>
                 )}
