@@ -134,18 +134,14 @@ const handleFrameId = async (event: MessageEvent) => {
   //   }
   // }
   // console.log(events.join(' '));
-  //
-  // await Util.sleep(500);
-  //
-  // BrowserActions.input(
-  //   {
-  //     k: 'input',
-  //     q: '__v',
-  //     v: `Japanese`,
-  //   },
-  //   'l',
-  //   {},
-  // );
+
+  await Util.sleep(500);
+
+  Array.from(document.body.querySelectorAll('div')).forEach((div) => {
+    div.scrollTo({ top: 0, left: 0 });
+  });
+
+  dummyCursor.scrollToEl(document.querySelector('button')!);
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

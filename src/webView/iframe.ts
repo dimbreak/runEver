@@ -88,8 +88,8 @@ export class IFrameHelper {
           `<iframe src=${this.element.src} id=${this.idVal} label=${MiniHtml.quoteAttrVal(this.label)} ${visible.visible === false ? 'hide' : visible.visible} />`,
         );
       }
+      console.log('getHtml', this.idVal);
     }
-    console.log('getHtml', this.idVal);
     return this.htmlPromise;
   }
 

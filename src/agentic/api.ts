@@ -8,6 +8,7 @@ import fs from 'fs';
 import { app } from 'electron';
 import { envSchema, envVars, type Env } from '../schema/env';
 import { Util } from '../webView/util';
+import { FirstTokenMonitor } from '../utils/llm';
 
 export namespace LlmApi {
   export const llmConfigSchema = z.object({
@@ -124,6 +125,9 @@ export namespace LlmApi {
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
+    console.info('llmApi:', llmApi);
+    const monitor = new FirstTokenMonitor(cacheKey);
+
     if (llmApi) {
       // console.log('Query LLM', prompt);
       // throw new Error('Not implemented');
@@ -137,7 +141,7 @@ export namespace LlmApi {
         }
       }
       const start = Date.now();
-      let first = true;
+      const first = true;
       const interval = setInterval(() => {
         console.log(
           'Waiting for first token',
@@ -171,19 +175,27 @@ export namespace LlmApi {
         providerOptions,
         prompt: promptObj,
       });
-      for await (const part of textStream) {
-        // console.info('textStream part:', part);
-        if (first) {
-          clearInterval(interval);
-          console.log('Stream first token', cacheKey, Date.now() - start, part);
-          first = false;
+
+      // Start monitoring for the first token
+      monitor.start();
+
+      try {
+        for await (const part of textStream) {
+          if (!monitor.hasReceived()) {
+            monitor.onFirstToken(part);
+          }
+          yield part;
         }
-        yield part;
-      }
-      clearInterval(interval);
-      const res = await response;
-      if (res) {
-        const messages = res.messages?.map((m) => m?.content);
+      } catch (err) {
+        monitor.stop();
+        throw err;
+      } finally {
+        monitor.stop();
+        const res = await response;
+        let messages: any[] = [];
+        if (res) {
+          messages = res.messages?.map((m) => m?.content);
+        }
         fs.writeFile(
           `${recordPath}/log-${new Date().toISOString()}.json`,
           JSON.stringify({ ...res, prompt: promptObj, messages }),

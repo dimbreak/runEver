@@ -73,23 +73,32 @@ class DummyCursor {
     } else {
       let elToCheck = el.parentElement;
       while (elToCheck) {
-        if (ifScrollable(elToCheck)) {
-          toScrollEls.unshift(elToCheck);
-        }
         if (elToCheck === body) {
+          if (
+            window.innerWidth < document.body.scrollWidth ||
+            window.innerHeight < document.body.scrollHeight
+          ) {
+            toScrollEls.push(body);
+          }
           break;
+        }
+        if (ifScrollable(elToCheck)) {
+          toScrollEls.push(elToCheck);
         }
         elToCheck = elToCheck.parentElement;
       }
     }
     if (toScrollEls.length) {
-      toScrollEls.push(el);
+      const toScrollXy = calculateScrollAdjustments(el, toScrollEls);
+      console.log('toScrollXy', toScrollXy);
       let scrolledX = 0;
       let scrolledY = 0;
-      for (let i = 0, c = toScrollEls.length - 1; i < c; i++) {
+      for (let i = toScrollXy.length - 1; i > -1; i--) {
+        const [containerEl, xToContainer, yToContainer] = toScrollXy[i];
         const { x, y } = await this.scrollTo(
-          toScrollEls[i],
-          toScrollEls[i + 1],
+          new DOMRect(xToContainer, yToContainer, 0, 0),
+          containerEl,
+          true,
         );
         scrolledX += x;
         scrolledY += y;
@@ -98,9 +107,15 @@ class DummyCursor {
     }
     return { x: 0, y: 0 };
   }
-  async scrollTo(rectOrEl: DOMRect | Element, scrollOver: Element) {
-    let { x: scrollToX, y: scrollToY } =
-      rectOrEl instanceof Element ? rectOrEl.getBoundingClientRect() : rectOrEl;
+  async scrollTo(
+    rectOrEl: DOMRect | Element,
+    scrollOver: Element,
+    exact = false,
+  ) {
+    const scrollToEl = rectOrEl instanceof Element;
+    let { x: scrollToX, y: scrollToY } = scrollToEl
+      ? rectOrEl.getBoundingClientRect()
+      : rectOrEl;
     const scrollAdjust = await Util.scrollAdjustmentLock.wait; // mac maybe reverse
     let clientHeight: number;
     let clientWidth: number;
@@ -114,11 +129,29 @@ class DummyCursor {
       clientWidth = scrollOver.clientWidth;
       // eslint-disable-next-line @typescript-eslint/no-shadow
       const { x, y } = scrollOver.getBoundingClientRect();
+      console.log('overlay rect', x, y, scrollOver);
       overX = x;
       overY = y;
     }
-    scrollToX -= overX;
-    scrollToY -= overY;
+    let offsetX =
+      exact || scrollToX < 0 || scrollToX > clientWidth ? scrollToX : 0;
+    let offsetY =
+      exact || scrollToY < 0 || scrollToY > clientHeight ? scrollToY : 0;
+    if (scrollToEl) {
+      scrollToX -= overX;
+      scrollToY -= overY;
+      offsetX =
+        exact || scrollToX < 0 || scrollToX > clientWidth
+          ? scrollToX - clientWidth * randomPos()
+          : 0;
+      offsetY =
+        exact || scrollToY < 0 || scrollToY > clientHeight
+          ? scrollToY - clientHeight * randomPos()
+          : 0;
+    }
+    if (offsetX === 0 && offsetY === 0) {
+      return { x: 0, y: 0 };
+    }
     if (
       this.x > overX + clientWidth ||
       this.x < overX ||
@@ -130,26 +163,27 @@ class DummyCursor {
         true,
       );
     }
-    const avoidEl = this.findScrollableElToAvoid(scrollOver);
-    if (avoidEl) {
+    let avoidEl: Element | null = this.findScrollableElToAvoid(scrollOver);
+    let retryCount = 0;
+    while (avoidEl) {
       // eslint-disable-next-line @typescript-eslint/no-shadow
       const { x, y, width, height } = avoidEl.getBoundingClientRect();
       let rectToMove: DOMRect;
-      if (x > overX) {
-        rectToMove = new DOMRect((x - overX) / 2, this.y, 0, 0);
-      } else if (y > overY) {
-        rectToMove = new DOMRect(this.x, (y - overY) / 2, 0, 0);
-      } else if (x + width < overX + clientWidth) {
+      if (retryCount < 2 && x > overX) {
+        rectToMove = new DOMRect((x - overX) / 2 + overX, this.y, 0, 0);
+      } else if (retryCount < 2 && y > overY) {
+        rectToMove = new DOMRect(this.x, (y - overY) / 2 + overY, 0, 0);
+      } else if (retryCount < 2 && x + width < overX + clientWidth) {
         rectToMove = new DOMRect(
-          (overX + clientWidth - x - width) / 2,
+          (overX + clientWidth - x - width) / 2 + x + width,
           this.y,
           0,
           0,
         );
-      } else if (y + height < overY + clientHeight) {
+      } else if (retryCount < 2 && y + height < overY + clientHeight) {
         rectToMove = new DOMRect(
           this.x,
-          (overY + clientHeight - y - height) / 2,
+          (overY + clientHeight - y - height) / 2 + y + height,
           0,
           0,
         );
@@ -163,16 +197,10 @@ class DummyCursor {
         });
         return { x: scrollX - scrollToX, y: scrollY - scrollToY };
       }
+      retryCount++;
       await this.moveToRect(rectToMove);
+      avoidEl = this.findScrollableElToAvoid(scrollOver);
     }
-    let offsetY =
-      scrollToY < 0 || scrollToY > clientHeight
-        ? scrollToY - clientHeight * randomPos()
-        : 0;
-    let offsetX =
-      scrollToX < 0 || scrollToX > clientWidth
-        ? scrollToX - clientWidth * randomPos()
-        : 0;
     const scrolledX = offsetX;
     const scrolledY = offsetY;
     // eslint-disable-next-line no-nested-ternary
@@ -210,6 +238,7 @@ class DummyCursor {
         break;
       }
     }
+    console.log('scrollTo events', events);
     await BrowserActions.callActionApi({
       action: 'dispatchEvents',
       args: {
@@ -217,6 +246,14 @@ class DummyCursor {
       },
     });
     await Util.sleep(100);
+    if (exact) {
+      scrollOver.scrollTo({
+        left: scrollToX,
+        top: scrollToY,
+        behavior: 'smooth',
+      });
+      return { x: scrolledX, y: scrolledY };
+    }
     return { x: scrolledX - offsetX, y: scrolledY - offsetY };
   }
   async mouseEvent(
@@ -422,3 +459,114 @@ class DummyCursor {
 }
 
 export const dummyCursor = new DummyCursor();
+
+function calculateScrollAdjustments(
+  target: Element,
+  containers: Element[],
+): [Element, number, number][] {
+  // 1. Sort containers by depth (DOM structure) to ensure we process
+  //    Innermost (closest to target) -> Outermost (body/main).
+  //    This ensures specific inner alignments happen before outer clipping handling.
+  const sortedContainers = [...containers].sort((a, b) => {
+    return a.contains(b) ? 1 : -1; // If A contains B, A is outer, so A goes last (descending order of depth implies reverse here)
+  });
+
+  // We actually want to process INNERMOST first (closest to target).
+  // If A contains B, A is 'higher' up. We want B then A.
+  // The sort above puts Outer (A) after Inner (B)?
+  // a.contains(b) == true -> A is parent -> return 1 -> B comes first. Correct.
+
+  // 2. Get the initial bounding rectangle of the target relative to the viewport.
+  //    We will "virtually" move this rect as we calculate scrolls.
+  const currentTargetRect = target.getBoundingClientRect();
+
+  // We'll treat the rect as a mutable object for our calculations
+  const virtualTarget = {
+    left: currentTargetRect.left,
+    right: currentTargetRect.right,
+    top: currentTargetRect.top,
+    bottom: currentTargetRect.bottom,
+    width: currentTargetRect.width,
+    height: currentTargetRect.height,
+  };
+
+  const results: [Element, number, number][] = [];
+
+  for (const container of sortedContainers) {
+    const containerRect = container.getBoundingClientRect();
+    const computedStyle = getComputedStyle(container);
+
+    // Adjust for borders to get the "Client Area" (viewport of the container)
+    // The clickable area is inside the borders.
+    const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+    const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+
+    // Container's visible window (viewport) coordinates
+    const containerView = {
+      left: containerRect.left + borderLeft,
+      top: containerRect.top + borderTop,
+      right: containerRect.left + borderLeft + container.clientWidth,
+      bottom: containerRect.top + borderTop + container.clientHeight,
+      width: container.clientWidth,
+      height: container.clientHeight,
+    };
+
+    // --- CALCULATE SCROLL DELTAS ---
+
+    // 1. Horizontal Scroll
+    let deltaX = 0;
+
+    // Is target to the left of the view?
+    if (virtualTarget.left < containerView.left) {
+      // Scroll backward to bring left edge into view
+      deltaX = virtualTarget.left - containerView.left;
+    }
+    // Is target to the right of the view?
+    else if (virtualTarget.right > containerView.right) {
+      // Scroll forward.
+      // If target fits, align right edge. If target is wider than view, align left edge.
+      if (virtualTarget.width > containerView.width) {
+        deltaX = virtualTarget.left - containerView.left; // Align left (start)
+      } else {
+        deltaX = virtualTarget.right - containerView.right; // Align right (end)
+      }
+    }
+
+    // 2. Vertical Scroll
+    let deltaY = 0;
+
+    if (virtualTarget.top < containerView.top) {
+      deltaY = virtualTarget.top - containerView.top;
+    } else if (virtualTarget.bottom > containerView.bottom) {
+      if (virtualTarget.height > containerView.height) {
+        deltaY = virtualTarget.top - containerView.top;
+      } else {
+        deltaY = virtualTarget.bottom - containerView.bottom;
+      }
+    }
+
+    // --- SAVE AND UPDATE ---
+
+    // The container needs to move its scroll position by deltaX/deltaY.
+    // Note: deltaX is the *visual* distance.
+    // If deltaX is positive (target is to the right), we INCREASE scrollLeft.
+    // If deltaX is negative (target is to the left), we DECREASE scrollLeft.
+
+    const newScrollLeft = container.scrollLeft + deltaX;
+    const newScrollTop = container.scrollTop + deltaY;
+
+    results.push([container, newScrollLeft, newScrollTop]);
+
+    // --- CRITICAL STEP: VIRTUAL UPDATE ---
+    // Since we are "scrolling" this container to fix the view, the target
+    // will visually move in the opposite direction for the NEXT container.
+    // e.g. If we scroll the container RIGHT (+deltaX), the content shifts LEFT (-deltaX).
+
+    virtualTarget.left -= deltaX;
+    virtualTarget.right -= deltaX;
+    virtualTarget.top -= deltaY;
+    virtualTarget.bottom -= deltaY;
+  }
+
+  return results;
+}

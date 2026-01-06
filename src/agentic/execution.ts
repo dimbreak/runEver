@@ -68,6 +68,7 @@ export class ExecutionPrompter {
     const fullHtml = (await wv.webContents.executeJavaScript(
       'window.webView.getHtml()',
     )) as string;
+    console.info('fullHtml length:', fullHtml.length);
     const runner = await this.getRunner();
     console.info('runner:', runner);
     const modelCfg = ComplexityToModelConfig[complexity];
@@ -239,7 +240,7 @@ type WireAction =
   | {
       k: 'botherUser';
       warn: string;
-      missingInfos?: string[]; 
+      missingInfos?: string[];
       rc?: string | null; // followup prompt
     }
   | {
@@ -252,7 +253,7 @@ type WireAction =
       k: 'url';
       u: 'next' | 'forward' | 'reload' | string; // string is go to specific url
     };
-    
+
 type WireStep = {
   intent: string;
   risk: 'h' | 'm' | 'l';
