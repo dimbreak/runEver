@@ -135,13 +135,13 @@ const handleFrameId = async (event: MessageEvent) => {
   // }
   // console.log(events.join(' '));
 
-  await Util.sleep(500);
+  await Util.sleep(2000);
 
-  Array.from(document.body.querySelectorAll('div')).forEach((div) => {
-    div.scrollTo({ top: 0, left: 0 });
+  document.body.querySelector('input')?.focus();
+  BrowserActions.callActionApi({
+    action: 'pasteInput',
+    args: { input: '你好，世界' },
   });
-
-  dummyCursor.scrollToEl(document.querySelector('button')!);
 };
 
 // Register immediately to avoid missing early postMessage during navigation.
@@ -160,13 +160,18 @@ BrowserActions.setActionApi({
   actionDone: (args: {
     actionId: number;
     argsDelta?: Record<string, string> | undefined;
+    iframeId?: string;
   }) => {
     return ToMainIpc.actionDone.invoke({
       frameId: window.frameId!,
       ...args,
     });
   },
-  actionError: (args: { actionId: number; error: string }) => {
+  actionError: (args: {
+    actionId: number;
+    error: string;
+    iframeId?: string;
+  }) => {
     return ToMainIpc.actionError.invoke({
       frameId: window.frameId!,
       ...args,

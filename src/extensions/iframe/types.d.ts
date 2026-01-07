@@ -7,6 +7,8 @@ export type ActionReq<K extends keyof ActionApi> = {
   id: number;
 } & ActionApiCallingReq<K>;
 
+export type IframeProgressType = 'action' | 'loaded' | 'unload';
+
 export type FromIframeMessages = (
   | {
       type: 'IFRAME_WAIT_DOM_DONE';
@@ -15,6 +17,18 @@ export type FromIframeMessages = (
   | {
       type: 'IFRAME_HTML';
       html: string;
+    }
+  | {
+      type: 'IFRAME_PONG';
+      url: string;
+    }
+  | {
+      type: 'IFRAME_PROGRESS';
+      progressType: IframeProgressType;
+      iframeId: string;
+    }
+  | {
+      type: 'IFRAME_UNLOAD';
     }
   | { type: 'IFRAME_DELTA_HTML'; html: string }
   | ActionReq<keyof ActionApi>
@@ -41,6 +55,7 @@ export type ToIframeMessagesTypes =
   | {
       type: 'ACTION_RESULT';
       id: number;
+      actionIframeId: string;
       result: any;
     }
   | {

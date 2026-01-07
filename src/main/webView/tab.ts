@@ -17,6 +17,7 @@ import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
 import { ToRendererIpc } from '../../contracts/toRenderer';
 import { isMac } from '../util';
+import { IframeProgressType } from '../../extensions/iframe/types';
 
 const testPrompt: { user: string; system: string } | null = null;
 
@@ -47,17 +48,17 @@ export class TabWebView {
   llmSession: WebViewLlmSession | undefined;
 
   pageLoadedLock = Util.newLock();
-  pageStartLoadingLock = Util.newLock();
 
   networkIdle0: Util.Lock | undefined;
   networkIdle2: Util.Lock | undefined;
+
+  loadingFrames = new Set<string>();
 
   constructor(
     public initUrl: string,
     public bounds: Rectangle,
     private mainWindow: BrowserWindow,
   ) {
-    this.pageStartLoadingLock.tryLock();
     this.url = initUrl;
     this.webView = new WebContentsView({
       webPreferences: {
@@ -75,7 +76,6 @@ export class TabWebView {
   stopPrompt(requestId?: number) {
     this.llmSession?.stopPrompt(requestId);
     this.pageLoadedLock.unlock();
-    this.pageStartLoadingLock.unlock();
   }
 
   async confirmHighRiskAction(actionIntent: string) {
@@ -132,17 +132,22 @@ export class TabWebView {
     actions: WireActionWithWaitAndRec[],
     args: Record<string, any>,
   ) {
-    console.log('pushActions:', actions);
+    const actionStr = JSON.stringify(actions);
+    console.log('pushActions:', actionStr);
     return this.webView.webContents.executeJavaScript(
-      `(async ()=>await window.webView.execActions(${JSON.stringify(actions)}, ${JSON.stringify(args)}))()`,
+      `(async ()=>await window.webView.execActions(${actionStr}, ${JSON.stringify(args)}))()`,
     );
   }
 
-  actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
+  actionDone(
+    actionId: number,
+    argsDelta: Record<string, string> | undefined,
+    iframeId?: string,
+  ) {
     this.llmSession?.actionDone(actionId, argsDelta);
   }
 
-  actionError(error: string, actionId: number) {
+  actionError(error: string, actionId: number, iframeId?: string) {
     this.llmSession?.actionError(actionId, error);
   }
 
@@ -186,6 +191,7 @@ export class TabWebView {
     const inflight = new Set<string>();
     webContents.userAgent = `Mozilla/5.0 (${isMac ? 'Macintosh; Intel Mac OS X 10.15; rv:147.0' : 'Windows NT 10.0; Win64; x64'}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36`;
     const unlockLoaded = () => {
+      console.log('Page loaded unlockLoaded');
       // Fallback: do not rely solely on bindFrameId to unblock navigation waits.
       // Some navigations (or cross-origin pages) may not re-run our bridge init.
       this.pageLoadedLock.delayUnlock(500);
@@ -200,8 +206,7 @@ export class TabWebView {
       ) {
         console.log('did-start-navigation:', details.url);
         this.url = details.url;
-        this.pageStartLoadingLock.unlock();
-        this.pageLoadedLock.tryLock();
+        this.loadFrameStart('MAIN');
       }
     });
 
@@ -211,7 +216,6 @@ export class TabWebView {
         if (isMainFrame) {
           console.log('did-frame-navigate:', url);
           this.url = url;
-          this.pageStartLoadingLock.tryLock();
           inflight.clear();
           webContents.executeJavaScript(
             `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
@@ -219,6 +223,7 @@ export class TabWebView {
           if (this.llmSession) {
             this.llmSession.resumeAll();
           }
+          this.loadedFrame('MAIN');
         }
       },
     );
@@ -382,7 +387,6 @@ export class TabWebView {
           keyCode: 'v',
           modifiers: ['control'],
         });
-        wc.paste();
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
           type: 'keyUp',
@@ -395,7 +399,7 @@ export class TabWebView {
 
   pageLoaded(frameId: number, scrollAdjustment: number | undefined) {
     console.log('pageLoaded:', this.url);
-    this.pageLoadedLock.delayUnlock(500);
+    this.loadedFrame('MAIN');
     this.frameIds.add(frameId);
     if (scrollAdjustment) {
       settings.setSync('scrollAdjustment', scrollAdjustment);
@@ -435,5 +439,31 @@ export class TabWebView {
       backendNodeId: desc.node.backendNodeId,
       files: filePaths,
     });
+  }
+
+  iframeProgress(iframeId: string, type: IframeProgressType) {
+    if (type === 'unload') {
+      this.loadFrameStart(iframeId);
+    } else if (type === 'loaded') {
+      this.loadedFrame(iframeId);
+    } else if (type === 'action') {
+      // no-op for action progress
+    }
+  }
+
+  loadFrameStart(iframeId: string) {
+    this.loadingFrames.add(iframeId);
+    this.pageLoadedLock.tryLock();
+  }
+
+  loadedFrame(iframeId: string) {
+    if (iframeId === 'MAIN') {
+      this.loadingFrames.clear();
+    } else {
+      this.loadingFrames.delete(iframeId);
+    }
+    if (this.loadingFrames.size === 0) {
+      this.pageLoadedLock.delayUnlock(500);
+    }
   }
 }

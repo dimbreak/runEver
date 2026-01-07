@@ -237,7 +237,7 @@ export namespace MiniHtml {
               if (typeof node === 'string') return node.trim();
               if (renderedHtml && renderedHtml.has(node)) {
                 const rendered = renderedHtml.get(node)!;
-                console.log('reusing rendered html', rendered);
+                // console.log('reusing rendered html', rendered);
                 renderedHtml.delete(node);
                 return rendered;
               }
@@ -360,7 +360,7 @@ export namespace MiniHtml {
     }
     handleMutations = (mutations: MutationRecord[]) => {
       let meaningfulEl: MeaningfulElement | null = null;
-      console.log('mutations', mutations);
+      // console.info('mutations', mutations);
       mutations.forEach((record) => {
         if (record.target === dummyCursor.dom) {
           return;
@@ -390,12 +390,12 @@ export namespace MiniHtml {
                 }
               }
             }
-            console.log(
-              'txt update',
-              record.target,
-              record.target.parentElement,
-              meaningfulEl,
-            );
+            // console.log(
+            //   'txt update',
+            //   record.target,
+            //   record.target.parentElement,
+            //   meaningfulEl,
+            // );
             return;
           default:
             if (record.target instanceof Element) {
@@ -408,6 +408,7 @@ export namespace MiniHtml {
                   foundMeaningful = this.meaningFulElementByEl.get(childEl);
                   if (foundMeaningful) {
                     foundMeaningful.visible = null;
+                    meaningfulEl = foundMeaningful;
                     break;
                   }
                   elsToCheck.push(...Array.from(childEl.children));
@@ -479,7 +480,7 @@ export namespace MiniHtml {
                         toAdd = [];
                         this.parseElement(node as HTMLElement, toAdd);
                       }
-                      console.log('adding', toAdd, meaningfulEl);
+                      // console.log('adding', toAdd, meaningfulEl);
                       toAdd.forEach((addedEl) => {
                         this.mutatedElements.set(
                           (addedEl as MeaningfulElement).element,
@@ -512,14 +513,14 @@ export namespace MiniHtml {
                               el,
                               meaningfulEl.nodes,
                             );
-                            console.log(
-                              'pos',
-                              pos,
-                              node.previousSibling,
-                              node.nextSibling,
-                              toAdd,
-                              meaningfulEl.nodes,
-                            );
+                            // console.log(
+                            //   'pos',
+                            //   pos,
+                            //   node.previousSibling,
+                            //   node.nextSibling,
+                            //   toAdd,
+                            //   meaningfulEl.nodes,
+                            // );
                             if (pos !== undefined && pos !== -1) {
                               meaningfulEl?.nodes?.splice(pos, 0, ...toAdd);
                             } else {
@@ -534,6 +535,7 @@ export namespace MiniHtml {
                   });
                 }
               }
+              // console.log('mutation', meaningfulEl);
               this.mutatedElements.set(record.target, meaningfulEl);
             }
         }
@@ -799,7 +801,6 @@ export namespace MiniHtml {
           meaningfulEl = this.addMeaningfulElement(placeholder);
           meaningFulElements.push(meaningfulEl);
         } else if (placeholder.nodes) {
-          console.log('skipped placeholder', placeholder);
           meaningFulElements.push(...placeholder.nodes);
           placeholder.nodes.forEach((node) => {
             if (typeof node === 'object') {
@@ -899,7 +900,6 @@ export namespace MiniHtml {
   let htmlParser: Parser | undefined;
   export const getHtmlParser = () => {
     if (!htmlParser) {
-      console.log('creating html parser');
       htmlParser = new Parser();
     }
     return htmlParser;

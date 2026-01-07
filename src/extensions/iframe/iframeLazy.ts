@@ -16,7 +16,8 @@ const webViewHandler = {
   frameId: '',
   htmlParser: undefined as MiniHtml.Parser | undefined,
   getHtmlParser() {
-    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    if (!this.htmlParser || this.htmlParser.idPrefix !== `${this.frameId}:`)
+      this.htmlParser = new MiniHtml.Parser(`${this.frameId}:`);
     console.log(this.htmlParser);
     return this.htmlParser;
   },
@@ -151,7 +152,13 @@ window.addEventListener(
         break;
       }
       case 'ACTION_RESULT':
-        actionResolvers[event.data.id]?.(event.data.result);
+        if (event.data.actionIframeId === webViewHandler.frameId) {
+          actionResolvers[event.data.id]?.(event.data.result);
+        } else {
+          MiniHtml.iframeById[event.data.actionIframeId]?.sendMessage(
+            event.data,
+          );
+        }
         break;
       case 'WAIT_DOM': {
         const { frameId, selector, appear } = event.data;
@@ -182,13 +189,34 @@ window.addEventListener(
         );
       }
       case 'PING':
+        // const events = [];
+        // for (const property in window) {
+        //   if (property.startsWith('on')) {
+        //     events.push(property);
+        //     (window as any)[property] = (ev: any) => {
+        //       console.log('iframe', property, ev);
+        //     };
+        //   }
+        // }
+        const { frameId } = event.data;
+        webViewHandler.frameId = frameId;
         window.parent.postMessage(
           {
             type: 'IFRAME_PONG',
-            frameId: event.data.frameId,
+            frameId,
+            url: window.location.href,
           },
           '*',
         );
+        window.addEventListener('popstate', () => {
+          window.parent.postMessage(
+            {
+              type: 'IFRAME_UNLOAD',
+              frameId,
+            },
+            '*',
+          );
+        });
         break;
       default:
         console.warn('unknow to iframe message', event.data);
@@ -196,5 +224,3 @@ window.addEventListener(
     }
   },
 );
-
-console.log('iframe miniHtml loaded');

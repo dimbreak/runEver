@@ -34,8 +34,13 @@ export type ActionApi = {
   actionDone: (args: {
     actionId: number;
     argsDelta?: Record<string, string>;
+    iframeId?: string;
   }) => Promise<boolean>;
-  actionError: (args: { actionId: number; error: string }) => Promise<boolean>;
+  actionError: (args: {
+    actionId: number;
+    error: string;
+    iframeId?: string;
+  }) => Promise<boolean>;
   dispatchNativeKeypress: (args: {
     keyAndDelays: [ToMainIpc.NativeKeys, number][];
   }) => Promise<boolean>;

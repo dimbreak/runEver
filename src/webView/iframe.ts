@@ -3,18 +3,19 @@ import { MiniHtml } from './miniHtml';
 import {
   ActionReq,
   FromIframeMessages,
+  IframeProgressType,
   ToIframeMessagesTypes,
 } from '../extensions/iframe/types';
 import { ActionApi, BrowserActions, ErrElementNotSelected } from './actions';
-import { EventWithDelay } from '../contracts/toMain';
+import { EventWithDelay, ToMainIpc } from '../contracts/toMain';
 import { Util } from './util';
 import { dummyCursor } from './cursor/cursor';
 import { WireActionWithWaitAndRec } from '../agentic/types';
 
 if (window.top === window) {
   window.addEventListener('message', (e) => {
-    console.log('iframe message', e.data, MiniHtml.iframeById);
     if ((e.data?.type as string | undefined)?.startsWith('IFRAME_')) {
+      console.log('iframe message', e.data, MiniHtml.iframeById);
       const msg = e.data as FromIframeMessages;
       const iframe = MiniHtml.iframeById[msg.frameId];
       if (iframe) {
@@ -25,11 +26,14 @@ if (window.top === window) {
 }
 
 export class IFrameHelper {
+  url: string;
+  active = false;
+  static isMainFrame = false;
   constructor(
     public element: HTMLIFrameElement,
     private idVal: string = '',
     public label: string,
-    public visible: MiniHtml.DomVisible | null,
+    public visibleVal: MiniHtml.DomVisible | null,
     public bodyDepth: number,
     public parent?: MiniHtml.MeaningfulElement,
     public nodes?: (string | MiniHtml.MeaningfulElement)[],
@@ -37,12 +41,22 @@ export class IFrameHelper {
     if (idVal) {
       MiniHtml.iframeById[idVal] = this;
     }
+    IFrameHelper.isMainFrame = typeof window.frameId === 'undefined';
+    this.active = visibleVal?.visible === true;
+    this.url = element.src;
   }
   sendMessage(message: ToIframeMessagesTypes) {
     this.element.contentWindow?.postMessage(
       { ...message, frameId: this.idVal },
       '*',
     );
+  }
+  get visible() {
+    return this.visibleVal;
+  }
+  set visible(visible: MiniHtml.DomVisible | null) {
+    this.visibleVal = visible;
+    this.active = visible?.visible === true;
   }
   set id(id: string) {
     if (this.idVal && id !== this.idVal && MiniHtml.iframeById[this.idVal]) {
@@ -51,15 +65,22 @@ export class IFrameHelper {
     this.idVal = id;
     MiniHtml.iframeById[id] = this;
     this.sendMessage({ type: 'PING' });
+    this.element.onload = () => {
+      this.sendMessage({ type: 'PING' });
+      console.log('iframe loaded', id);
+      if (this.active) {
+        this.pushProgress(id, 'loaded');
+      }
+    };
   }
   get id() {
     return this.idVal;
   }
   getVisible(): MiniHtml.DomVisible {
-    if (!this.visible) {
-      this.visible = MiniHtml.checkVisible(this.element);
+    if (!this.visibleVal) {
+      this.visibleVal = MiniHtml.checkVisible(this.element);
     }
-    return this.visible;
+    return this.visibleVal;
   }
 
   htmlPromise: Promise<string> | undefined;
@@ -123,11 +144,39 @@ export class IFrameHelper {
       case 'IFRAME_ACTION':
         this.handleActionEvents(msg);
         break;
+      case 'IFRAME_PROGRESS':
+        this.pushProgress(msg.iframeId, msg.progressType);
+        break;
+      case 'IFRAME_UNLOAD':
+        this.pushProgress(msg.frameId, 'unload');
+        break;
+      case 'IFRAME_PONG':
+        this.url = msg.url;
+        break;
       case 'IFRAME_WAIT_DOM_DONE':
         this.checkDomPromiseResolve?.(msg.error);
         break;
       default:
         console.warn('Unknown iframe message type:', msg);
+    }
+  }
+
+  pushProgress(iframeId: string, type: IframeProgressType) {
+    if (IFrameHelper.isMainFrame) {
+      ToMainIpc.iframeProgress.invoke({
+        frameId: window.frameId!,
+        type,
+        iframeId,
+      });
+    } else {
+      window.parent.postMessage(
+        {
+          type: 'IFRAME_PROGRESS',
+          iframeId,
+          progressType: type,
+        },
+        '*',
+      );
     }
   }
 
@@ -149,6 +198,7 @@ export class IFrameHelper {
         this.sendMessage({
           type: 'ACTION_RESULT',
           id: msg.id,
+          actionIframeId: msg.frameId,
           result: true,
         });
         return;
@@ -157,6 +207,12 @@ export class IFrameHelper {
       this.execActionPromiseResolve?.(
         (msg as ActionReq<'actionDone'>).args.argsDelta ?? {},
       );
+      (msg as ActionReq<'actionDone'>).args.iframeId = this.idVal;
+    } else if (msg.action === 'actionError') {
+      this.execActionPromiseResolve?.(
+        (msg as ActionReq<'actionError'>).args.error,
+      );
+      (msg as ActionReq<'actionDone'>).args.iframeId = this.idVal;
     }
     this.actionLock.lock();
     BrowserActions.callActionApi(msg)
@@ -164,6 +220,7 @@ export class IFrameHelper {
         this.actionLock.unlock();
         this.sendMessage({
           type: 'ACTION_RESULT',
+          actionIframeId: msg.frameId,
           id: msg.id,
           result,
         });
@@ -180,12 +237,20 @@ export class IFrameHelper {
       const { x, y, width, height } = this.element.getBoundingClientRect();
       const ratioX = this.element.offsetWidth / width;
       const ratioY = this.element.offsetHeight / height;
+      console.log('adjust mouse raw', mouseEv.x, mouseEv.y, ratioX, ratioY);
       mouseEv.x = mouseEv.x * ratioX + x;
       mouseEv.y = mouseEv.y * ratioY + y;
-      await dummyCursor.moveToRect(
-        new DOMRect(mouseEv.x, mouseEv.y, 0, 0),
-        true,
-      );
+      if (
+        IFrameHelper.isMainFrame &&
+        (Math.abs(dummyCursor.x - mouseEv.x) > 1 ||
+          Math.abs(dummyCursor.y - mouseEv.y) > 1)
+      ) {
+        await dummyCursor.moveToRect(
+          new DOMRect(mouseEv.x, mouseEv.y, 0, 0),
+          true,
+        );
+      }
+      console.log('adjust mouse', mouseEv, x, y, ratioX, ratioY);
       if (mouseEv.type === 'mouseMove') {
         return false;
       }
@@ -203,7 +268,7 @@ export class IFrameHelper {
 
   execActionPromise: Promise<void> | undefined;
   execActionPromiseResolve:
-    | ((result: Record<string, string>) => void)
+    | ((result: string | Record<string, string>) => void)
     | undefined;
   async exeAction(
     action: WireActionWithWaitAndRec,
@@ -212,10 +277,20 @@ export class IFrameHelper {
     if (this.execActionPromise) {
       await this.execActionPromise;
     }
-    this.execActionPromise = new Promise<void>((resolve) => {
-      this.execActionPromiseResolve = (val: Record<string, string>) => {
+    if (!this.active) {
+      this.active = true;
+    }
+    this.pushProgress(this.idVal, 'action');
+    this.execActionPromise = new Promise<void>((resolve, reject) => {
+      this.execActionPromiseResolve = (
+        val: string | Record<string, string>,
+      ) => {
         this.execActionPromiseResolve = undefined;
         this.execActionPromise = undefined;
+        if (typeof val === 'string') {
+          reject(new Error(val));
+          return;
+        }
         Object.assign(args, val);
         resolve();
       };

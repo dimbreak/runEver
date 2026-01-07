@@ -34,6 +34,15 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     }
     return false;
   });
+  ToMainIpc.iframeProgress.handle(async (event, arg) => {
+    const { frameId, type, iframeId } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.iframeProgress(iframeId, type);
+      return {};
+    }
+    return { error: 'Tab not found' };
+  });
   ToMainIpc.runPrompt.handle(async (event, arg) => {
     console.info('Run prompt:', arg);
     const { frameId, prompt, modelType, reasoningEffort, args, requestId } =

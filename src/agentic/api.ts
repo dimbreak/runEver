@@ -57,7 +57,6 @@ export namespace LlmApi {
     if (!llmApiPromise) {
       llmApiPromise = new Promise(async (resolve) => {
         const apiConfig = await getLlmConfig();
-        console.info('apiConfig:', apiConfig);
         console.log('apiConfig', apiConfig);
         if (apiConfig.error) {
           console.error('Failed to get LLM config', apiConfig.error);
@@ -65,7 +64,7 @@ export namespace LlmApi {
         }
         switch (apiConfig.api) {
           case 'openai': {
-            console.info('createOpenAI', apiConfig.key);
+            console.info('createOpenAI', apiConfig);
             const openai = createOpenAI({
               apiKey: apiConfig.key,
               baseURL: apiConfig.baseUrl,
@@ -125,12 +124,9 @@ export namespace LlmApi {
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
-    console.info('llmApi:', llmApi);
-    const monitor = new FirstTokenMonitor(cacheKey);
 
     if (llmApi) {
-      // console.log('Query LLM', prompt);
-      // throw new Error('Not implemented');
+      const monitor = new FirstTokenMonitor(cacheKey);
       const providerOptions: Record<string, any> = {};
       if (llmApi.provider === 'openai') {
         providerOptions.openai = {
@@ -140,16 +136,6 @@ export namespace LlmApi {
           providerOptions.openai.promptCacheKey = cacheKey;
         }
       }
-      const start = Date.now();
-      const first = true;
-      const interval = setInterval(() => {
-        console.log(
-          'Waiting for first token',
-          cacheKey,
-          Date.now() - start,
-          first,
-        );
-      }, 3000);
       const promptObj: string | Array<ModelMessage> = systemPrompt
         ? [
             {
@@ -188,9 +174,11 @@ export namespace LlmApi {
         }
       } catch (err) {
         monitor.stop();
+        console.error('Error during LLM streaming:', err);
         throw err;
       } finally {
         monitor.stop();
+        console.log(`api call ok ${cacheKey}`);
         const res = await response;
         let messages: any[] = [];
         if (res) {

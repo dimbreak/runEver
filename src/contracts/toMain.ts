@@ -6,6 +6,7 @@ import type {
 } from 'electron';
 import { IpcMainContract } from './ipc';
 import { LlmApi } from '../main/llm/api';
+import { IframeProgressType } from '../extensions/iframe/types';
 
 export type EventWithDelay = (
   | MouseInputEvent
@@ -147,6 +148,7 @@ export namespace ToMainIpc {
         frameId: number;
         actionId: number;
         argsDelta?: Record<string, string>;
+        iframeId?: string;
       },
     ],
     boolean
@@ -157,6 +159,7 @@ export namespace ToMainIpc {
         frameId: number;
         actionId: number;
         error: string;
+        iframeId?: string;
       },
     ],
     boolean
@@ -201,10 +204,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('get-tab-navigation-state');
   export const navigateTabHistory = new IpcMainContract<
@@ -215,12 +218,22 @@ export namespace ToMainIpc {
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('navigate-tab-history');
+  export const iframeProgress = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        iframeId: string;
+        type: IframeProgressType;
+      },
+    ],
+    { error?: string }
+  >('iframe-progress');
   export const auditAction = new IpcMainContract<
     [
       {

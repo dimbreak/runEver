@@ -48,7 +48,7 @@ class DummyCursor {
     document.body.appendChild(this.dom);
     window.electronDummyCursor = this.dom;
   }
-  findScrollableElToAvoid(target: Element) {
+  findScrollableElToAvoid(target: Element | Window) {
     const { body } = document;
     let el: Element | null = document.elementFromPoint(this.x, this.y);
     let lastScrollableEl: Element | null = null;
@@ -66,10 +66,10 @@ class DummyCursor {
     return lastScrollableEl;
   }
   async scrollToEl(el: Element, scrollOver?: Element) {
-    const toScrollEls: Element[] = [];
+    const toScrollEls: (Element | Window)[] = [];
     const { body } = document;
     if (scrollOver && ifScrollable(scrollOver)) {
-      toScrollEls.unshift(scrollOver);
+      toScrollEls.push(scrollOver);
     } else {
       let elToCheck = el.parentElement;
       while (elToCheck) {
@@ -78,7 +78,7 @@ class DummyCursor {
             window.innerWidth < document.body.scrollWidth ||
             window.innerHeight < document.body.scrollHeight
           ) {
-            toScrollEls.push(body);
+            toScrollEls.push(window);
           }
           break;
         }
@@ -109,7 +109,7 @@ class DummyCursor {
   }
   async scrollTo(
     rectOrEl: DOMRect | Element,
-    scrollOver: Element,
+    scrollOver: Element | Window,
     exact = false,
   ) {
     const scrollToEl = rectOrEl instanceof Element;
@@ -121,9 +121,13 @@ class DummyCursor {
     let clientWidth: number;
     let overX = 0;
     let overY = 0;
-    if (scrollOver === document.body) {
+    let currentScrollLeft = 0;
+    let currentScrollTop = 0;
+    if (scrollOver instanceof Window) {
       clientHeight = window.innerHeight;
       clientWidth = window.innerWidth;
+      currentScrollLeft = window.scrollX;
+      currentScrollTop = window.scrollY;
     } else {
       clientHeight = scrollOver.clientHeight;
       clientWidth = scrollOver.clientWidth;
@@ -132,6 +136,8 @@ class DummyCursor {
       console.log('overlay rect', x, y, scrollOver);
       overX = x;
       overY = y;
+      currentScrollLeft = scrollOver.scrollLeft;
+      currentScrollTop = scrollOver.scrollTop;
     }
     let offsetX =
       exact || scrollToX < 0 || scrollToX > clientWidth ? scrollToX : 0;
@@ -188,14 +194,17 @@ class DummyCursor {
           0,
         );
       } else {
-        const { scrollX, scrollY } = window;
         // impossible to scroll by mousewheel
         scrollOver.scrollTo({
-          left: scrollToX,
-          top: scrollToY,
+          left: currentScrollLeft + scrollToX,
+          top: currentScrollTop + scrollToY,
           behavior: 'smooth',
         });
-        return { x: scrollX - scrollToX, y: scrollY - scrollToY };
+        await Util.sleep(200);
+        return {
+          x: scrollToX,
+          y: scrollToY,
+        };
       }
       retryCount++;
       await this.moveToRect(rectToMove);
@@ -238,7 +247,15 @@ class DummyCursor {
         break;
       }
     }
-    console.log('scrollTo events', events);
+    console.log(
+      'scrollTo events',
+      events,
+      exact,
+      currentScrollLeft + scrollToX,
+      currentScrollTop + scrollToY,
+      currentScrollLeft,
+      currentScrollTop,
+    );
     await BrowserActions.callActionApi({
       action: 'dispatchEvents',
       args: {
@@ -247,11 +264,19 @@ class DummyCursor {
     });
     await Util.sleep(100);
     if (exact) {
+      console.log(
+        'exact',
+        scrollOver,
+        exact,
+        currentScrollLeft + scrollToX,
+        currentScrollTop + scrollToY,
+      );
       scrollOver.scrollTo({
-        left: scrollToX,
-        top: scrollToY,
+        left: currentScrollLeft + scrollToX,
+        top: currentScrollTop + scrollToY,
         behavior: 'smooth',
       });
+      await Util.sleep(200);
       return { x: scrolledX, y: scrolledY };
     }
     return { x: scrolledX - offsetX, y: scrolledY - offsetY };
@@ -262,7 +287,7 @@ class DummyCursor {
     repeat: number = 0,
     modifiers: MouseInputEvent['modifiers'] = undefined,
   ) {
-    const { x: clientX, y: clientY } = this;
+    let { x: clientX, y: clientY } = this;
     if (el) {
       let thisEl = el as HTMLElement;
       if (thisEl instanceof HTMLElement) {
@@ -284,6 +309,8 @@ class DummyCursor {
       ) {
         console.log('mouseEvent el', action, thisEl, rect);
         await this.moveToRect(el);
+        clientX = this.x;
+        clientY = this.y;
       }
     }
     let events: MouseInputEventWithDelay[] = [];
@@ -293,8 +320,8 @@ class DummyCursor {
           {
             type: 'mouseDown',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: 0,
             clickCount: 1,
             modifiers,
@@ -302,8 +329,8 @@ class DummyCursor {
           {
             type: 'mouseUp',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
             modifiers,
@@ -315,8 +342,8 @@ class DummyCursor {
           {
             type: 'mouseDown',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: 0,
             clickCount: 1,
             modifiers,
@@ -324,8 +351,8 @@ class DummyCursor {
           {
             type: 'mouseUp',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
             modifiers,
@@ -333,8 +360,8 @@ class DummyCursor {
           {
             type: 'mouseDown',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
             modifiers,
@@ -342,8 +369,8 @@ class DummyCursor {
           {
             type: 'mouseUp',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
             modifiers,
@@ -357,8 +384,8 @@ class DummyCursor {
         events = [
           {
             type: action,
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: 0,
             modifiers,
           },
@@ -387,9 +414,16 @@ class DummyCursor {
     let { x, y } = thisRect;
     const { width, height } = thisRect;
     if (x > window.innerWidth || y > window.innerHeight || x < 0 || y < 0) {
-      const scrolled = await (rectOrEl === thisRect
-        ? this.scrollTo(thisRect, document.body)
-        : this.scrollToEl(rectOrEl as Element));
+      let scrolled: { x: number; y: number };
+      if (rectOrEl === thisRect) {
+        thisRect.x =
+          x < 0 ? Math.max(-window.scrollX, x - 20) : Math.min(0, x - 20);
+        thisRect.y =
+          y < 0 ? Math.max(-window.scrollY, y - 20) : Math.min(0, y - 20);
+        scrolled = await this.scrollTo(thisRect, window, exact);
+      } else {
+        scrolled = await this.scrollToEl(rectOrEl as Element);
+      }
       x -= scrolled.x;
       y -= scrolled.y;
     }
@@ -406,6 +440,7 @@ class DummyCursor {
           events: [event],
         },
       });
+      this.moveToXY(event.x, event.y);
       return;
     }
     const { timesMs, points } = buildHumanCursorPath(
@@ -437,6 +472,7 @@ class DummyCursor {
     });
     const lastPoint = points[points.length - 1];
     this.moveToXY(lastPoint.x, lastPoint.y);
+    await Util.sleep(100);
   }
   moveToXY(x: number, y: number) {
     console.log('moveToXY', x, y, this.x, this.y);
@@ -462,25 +498,10 @@ export const dummyCursor = new DummyCursor();
 
 function calculateScrollAdjustments(
   target: Element,
-  containers: Element[],
-): [Element, number, number][] {
-  // 1. Sort containers by depth (DOM structure) to ensure we process
-  //    Innermost (closest to target) -> Outermost (body/main).
-  //    This ensures specific inner alignments happen before outer clipping handling.
-  const sortedContainers = [...containers].sort((a, b) => {
-    return a.contains(b) ? 1 : -1; // If A contains B, A is outer, so A goes last (descending order of depth implies reverse here)
-  });
-
-  // We actually want to process INNERMOST first (closest to target).
-  // If A contains B, A is 'higher' up. We want B then A.
-  // The sort above puts Outer (A) after Inner (B)?
-  // a.contains(b) == true -> A is parent -> return 1 -> B comes first. Correct.
-
-  // 2. Get the initial bounding rectangle of the target relative to the viewport.
-  //    We will "virtually" move this rect as we calculate scrolls.
+  containers: (Element | Window)[],
+): [Element | Window, number, number][] {
   const currentTargetRect = target.getBoundingClientRect();
 
-  // We'll treat the rect as a mutable object for our calculations
   const virtualTarget = {
     left: currentTargetRect.left,
     right: currentTargetRect.right,
@@ -490,78 +511,79 @@ function calculateScrollAdjustments(
     height: currentTargetRect.height,
   };
 
-  const results: [Element, number, number][] = [];
+  // 2. 統一容器處理邏輯 (將 window 抽象化)
+  const getGeometry = (container: Element | Window) => {
+    if (container instanceof Window) {
+      return {
+        clientWidth: window.innerWidth,
+        clientHeight: window.innerHeight,
+        scrollWidth: document.documentElement.scrollWidth,
+        scrollHeight: document.documentElement.scrollHeight,
+        rect: {
+          left: 0,
+          top: 0,
+          right: window.innerWidth,
+          bottom: window.innerHeight,
+        },
+        border: { left: 0, top: 0 },
+      };
+    }
+    const rect = container.getBoundingClientRect();
+    const style = getComputedStyle(container);
+    return {
+      clientWidth: container.clientWidth,
+      clientHeight: container.clientHeight,
+      scrollWidth: container.scrollWidth,
+      scrollHeight: container.scrollHeight,
+      rect,
+      border: {
+        left: parseFloat(style.borderLeftWidth) || 0,
+        top: parseFloat(style.borderTopWidth) || 0,
+      },
+    };
+  };
 
-  for (const container of sortedContainers) {
-    const containerRect = container.getBoundingClientRect();
-    const computedStyle = getComputedStyle(container);
+  const results: [Element | Window, number, number][] = [];
 
-    // Adjust for borders to get the "Client Area" (viewport of the container)
-    // The clickable area is inside the borders.
-    const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
-    const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
+  // 3. 由內向外遍歷 (假設輸入 array 已經按 DOM 深度排序，由內到外)
+  for (const container of containers) {
+    const geo = getGeometry(container);
 
-    // Container's visible window (viewport) coordinates
-    const containerView = {
-      left: containerRect.left + borderLeft,
-      top: containerRect.top + borderTop,
-      right: containerRect.left + borderLeft + container.clientWidth,
-      bottom: containerRect.top + borderTop + container.clientHeight,
-      width: container.clientWidth,
-      height: container.clientHeight,
+    // 容器的可視區域 (Viewport of the container)
+    const view = {
+      left: geo.rect.left + geo.border.left,
+      top: geo.rect.top + geo.border.top,
+      right: geo.rect.left + geo.border.left + geo.clientWidth,
+      bottom: geo.rect.top + geo.border.top + geo.clientHeight,
     };
 
-    // --- CALCULATE SCROLL DELTAS ---
-
-    // 1. Horizontal Scroll
     let deltaX = 0;
-
-    // Is target to the left of the view?
-    if (virtualTarget.left < containerView.left) {
-      // Scroll backward to bring left edge into view
-      deltaX = virtualTarget.left - containerView.left;
-    }
-    // Is target to the right of the view?
-    else if (virtualTarget.right > containerView.right) {
-      // Scroll forward.
-      // If target fits, align right edge. If target is wider than view, align left edge.
-      if (virtualTarget.width > containerView.width) {
-        deltaX = virtualTarget.left - containerView.left; // Align left (start)
-      } else {
-        deltaX = virtualTarget.right - containerView.right; // Align right (end)
-      }
-    }
-
-    // 2. Vertical Scroll
     let deltaY = 0;
 
-    if (virtualTarget.top < containerView.top) {
-      deltaY = virtualTarget.top - containerView.top;
-    } else if (virtualTarget.bottom > containerView.bottom) {
-      if (virtualTarget.height > containerView.height) {
-        deltaY = virtualTarget.top - containerView.top;
-      } else {
-        deltaY = virtualTarget.bottom - containerView.bottom;
-      }
+    // --- 水平計算 ---
+    if (virtualTarget.left < view.left) {
+      deltaX = virtualTarget.left - view.left;
+    } else if (virtualTarget.right > view.right) {
+      deltaX =
+        virtualTarget.width > geo.clientWidth
+          ? virtualTarget.left - view.left
+          : virtualTarget.right - view.right;
     }
 
-    // --- SAVE AND UPDATE ---
+    // --- 垂直計算 ---
+    if (virtualTarget.top < view.top) {
+      deltaY = virtualTarget.top - view.top;
+    } else if (virtualTarget.bottom > view.bottom) {
+      deltaY =
+        virtualTarget.height > geo.clientHeight
+          ? virtualTarget.top - view.top
+          : virtualTarget.bottom - view.bottom;
+    }
 
-    // The container needs to move its scroll position by deltaX/deltaY.
-    // Note: deltaX is the *visual* distance.
-    // If deltaX is positive (target is to the right), we INCREASE scrollLeft.
-    // If deltaX is negative (target is to the left), we DECREASE scrollLeft.
+    // 保存結果
+    results.push([container, deltaX, deltaY]);
 
-    const newScrollLeft = container.scrollLeft + deltaX;
-    const newScrollTop = container.scrollTop + deltaY;
-
-    results.push([container, newScrollLeft, newScrollTop]);
-
-    // --- CRITICAL STEP: VIRTUAL UPDATE ---
-    // Since we are "scrolling" this container to fix the view, the target
-    // will visually move in the opposite direction for the NEXT container.
-    // e.g. If we scroll the container RIGHT (+deltaX), the content shifts LEFT (-deltaX).
-
+    // 更新虛擬座標 (供下一層父容器使用)
     virtualTarget.left -= deltaX;
     virtualTarget.right -= deltaX;
     virtualTarget.top -= deltaY;
