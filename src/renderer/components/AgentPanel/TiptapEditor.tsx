@@ -3,10 +3,10 @@ import { Extension, type JSONContent } from '@tiptap/core';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { cn } from '../utils/cn';
+import { cn } from '../../utils/cn';
 import { SubmitButton } from './SubmitButton';
 
-export type TiptapComposerProps = {
+export type TiptapEditorProps = {
   onSubmit: (content: JSONContent) => void | boolean | Promise<void | boolean>;
   onStop?: () => void;
   isRunning?: boolean;
@@ -56,14 +56,14 @@ const EnterSubmitBehavior = Extension.create({
   },
 });
 
-export function TiptapComposer({
+export function TiptapEditor({
   onSubmit,
   onStop,
   isRunning = false,
   placeholder = 'Write something...',
   disabled,
   className,
-}: TiptapComposerProps) {
+}: TiptapEditorProps) {
   const editorRef = React.useRef<any>(null);
   const [isEmpty, setIsEmpty] = React.useState(true);
 

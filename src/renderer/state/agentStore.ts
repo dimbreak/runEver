@@ -71,6 +71,8 @@ export type LlmSessionSnapshot = {
 type AgentState = {
   messagesByTabId: Record<string, Message[]>;
   sessionByTabId: Record<string, LlmSessionSnapshot | null>;
+  isPromptRunning: boolean;
+  runningRequestId: number | null;
   ensureTab: (tabId: string) => void;
   addMessage: (tabId: string, message: Message) => void;
   updateMessage: (
@@ -80,12 +82,16 @@ type AgentState = {
   ) => void;
   setMessages: (tabId: string, messages: Message[]) => void;
   setSessionSnapshot: (tabId: string, snapshot: LlmSessionSnapshot | null) => void;
+  setIsPromptRunning: (running: boolean) => void;
+  setRunningRequestId: (id: number | null) => void;
   clearTab: (tabId: string) => void;
 };
 
 export const useAgentStore = create<AgentState>((set) => ({
   messagesByTabId: {},
   sessionByTabId: {},
+  isPromptRunning: false,
+  runningRequestId: null,
   ensureTab: (tabId) =>
     set((state) => {
       if (state.messagesByTabId[tabId]) return state;
@@ -121,6 +127,8 @@ export const useAgentStore = create<AgentState>((set) => ({
     set((state) => ({
       sessionByTabId: { ...state.sessionByTabId, [tabId]: snapshot },
     })),
+  setIsPromptRunning: (running) => set(() => ({ isPromptRunning: running })),
+  setRunningRequestId: (id) => set(() => ({ runningRequestId: id })),
   clearTab: (tabId) =>
     set((state) => {
       const nextMessages = { ...state.messagesByTabId };
