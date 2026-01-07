@@ -5,7 +5,6 @@ import { useAgentStore } from '../state/agentStore';
 import { useTabStore } from '../state/tabStore';
 import { extractPromptArgKeys } from '../utils/promptArgs';
 import { formatBytes } from '../utils/formatter';
-import { textToDoc } from '../utils/contentUtils';
 import type { UploadedAttachment } from '../services/uploadService';
 
 type UseAgentPromptParams = {
@@ -24,13 +23,27 @@ export const useAgentPrompt = ({
   refreshSessionSnapshot,
 }: UseAgentPromptParams) => {
   const { tabs, activeTabId, stopPrompt } = useTabStore();
-  const { addMessage, updateMessage, setIsPromptRunning, setRunningRequestId } =
-    useAgentStore((state) => ({
-      addMessage: state.addMessage,
-      updateMessage: state.updateMessage,
-      setIsPromptRunning: state.setIsPromptRunning,
-      setRunningRequestId: state.setRunningRequestId,
-    }));
+  const {
+    addMessage,
+    setIsPromptRunning,
+    setRunningRequestId,
+    startThinking,
+    appendPlanningOutput,
+    finishPlanning,
+    startActionThinking,
+    addPromptRun,
+    setPromptRunStatus,
+  } = useAgentStore((state) => ({
+    addMessage: state.addMessage,
+    setIsPromptRunning: state.setIsPromptRunning,
+    setRunningRequestId: state.setRunningRequestId,
+    startThinking: state.startThinking,
+    appendPlanningOutput: state.appendPlanningOutput,
+    finishPlanning: state.finishPlanning,
+    startActionThinking: state.startActionThinking,
+    addPromptRun: state.addPromptRun,
+    setPromptRunStatus: state.setPromptRunStatus,
+  }));
 
   const handlePrompt = React.useCallback(
     async (content: JSONContent) => {
@@ -63,7 +76,7 @@ export const useAgentPrompt = ({
       }
 
       const id = Date.now();
-      const assistantId = id + 1;
+      const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
       const promptAttachments = attachments.slice();
       const attachmentInfos = promptAttachments.map((file) => ({
         name: file.name,
@@ -71,24 +84,19 @@ export const useAgentPrompt = ({
         size: file.size,
         data: file.data,
       }));
-      const respondingMessage = {
-        id: assistantId,
-        role: 'assistant' as const,
-        content: textToDoc(''),
-        text: '',
-        llmResponding: true,
-      };
-      runningAssistantMessageIdRef.current = assistantId;
+      runningAssistantMessageIdRef.current = null;
       setIsPromptRunning(true);
+      addPromptRun(tabId, requestId, id);
+      startThinking(tabId, requestId);
       addMessage(tabId, {
         id,
         role: 'user',
         content,
         attachments: attachmentInfos.length ? attachmentInfos : undefined,
       });
-      addMessage(tabId, respondingMessage);
       clearAttachments();
       const runPromptFlow = async () => {
+        let promptFailed = false;
         try {
           const attachedImages = promptAttachments.filter((a) =>
             a.mimeType.startsWith('image/'),
@@ -108,33 +116,27 @@ export const useAgentPrompt = ({
             args,
             (chunk) => {
               console.info('prompt chunk:', chunk);
-              updateMessage(tabId, assistantId, (message) => {
-                const nextText = (message.text ?? '') + chunk;
-                return {
-                  ...message,
-                  text: nextText,
-                  content: textToDoc(nextText),
-                };
-              });
+              appendPlanningOutput(tabId, requestId, chunk);
               scheduleSessionRefresh(tabId);
             },
             promptAttachments,
+            requestId,
           );
-          setRunningRequestId(currentTab.lastPromptRequestId ?? null);
+          setRunningRequestId(requestId);
           await runPromise;
+          finishPlanning(tabId, requestId);
+          startActionThinking(tabId, requestId);
         } catch (err) {
           console.error('prompt error:', err);
-          updateMessage(tabId, assistantId, (message) => ({
-            ...message,
-            llmResponding: false,
-          }));
+          promptFailed = true;
+          finishPlanning(tabId, requestId);
+          setPromptRunStatus(tabId, requestId, 'error');
         } finally {
           setIsPromptRunning(false);
           setRunningRequestId(null);
-          updateMessage(tabId, assistantId, (message) => ({
-            ...message,
-            llmResponding: false,
-          }));
+          if (promptFailed) {
+            setPromptRunStatus(tabId, requestId, 'error');
+          }
           refreshSessionSnapshot(tabId);
         }
       };
@@ -145,14 +147,19 @@ export const useAgentPrompt = ({
       activeTabId,
       addMessage,
       attachments,
+      appendPlanningOutput,
       clearAttachments,
+      finishPlanning,
       refreshSessionSnapshot,
       runningAssistantMessageIdRef,
       scheduleSessionRefresh,
       setIsPromptRunning,
       setRunningRequestId,
+      addPromptRun,
+      setPromptRunStatus,
+      startActionThinking,
+      startThinking,
       tabs,
-      updateMessage,
     ],
   );
 
@@ -162,22 +169,18 @@ export const useAgentPrompt = ({
       await stopPrompt(activeTabId, runningRequestId ?? undefined);
       setIsPromptRunning(false);
       setRunningRequestId(null);
-      const assistantId = runningAssistantMessageIdRef.current;
-      if (assistantId === null) return;
-      updateMessage(activeTabId, assistantId, (message) => ({
-        ...message,
-        llmResponding: false,
-      }));
+      if (runningRequestId !== null) {
+        setPromptRunStatus(activeTabId, runningRequestId, 'error');
+      }
       refreshSessionSnapshot(activeTabId);
     },
     [
       activeTabId,
       refreshSessionSnapshot,
-      runningAssistantMessageIdRef,
       setIsPromptRunning,
       setRunningRequestId,
+      setPromptRunStatus,
       stopPrompt,
-      updateMessage,
     ],
   );
 

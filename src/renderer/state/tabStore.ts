@@ -36,18 +36,20 @@ export class WebTab {
     args: Record<string, string>,
     handleResponse: (response: string) => void,
     attachments?: UploadedAttachment[],
+    requestId?: number,
   ) {
-    const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
-    this.lastPromptRequestId = requestId;
+    const actualRequestId =
+      requestId ?? Date.now() * 100 + Math.floor(Math.random() * 100);
+    this.lastPromptRequestId = actualRequestId;
     const finish = webviewService.registerPromptResponseHandler(
-      requestId,
+      actualRequestId,
       handleResponse,
     );
     try {
       const { error } = await ToMainIpc.runPrompt.invoke({
         frameId: this.frameId,
         prompt,
-        requestId,
+        requestId: actualRequestId,
         args,
         attachments: attachments?.map(
           (f): PromptAttachment => ({
@@ -58,6 +60,7 @@ export class WebTab {
         ),
       });
       if (error) throw new Error(error);
+      return actualRequestId;
     } finally {
       finish();
     }
