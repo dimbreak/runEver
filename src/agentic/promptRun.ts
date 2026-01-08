@@ -10,8 +10,9 @@ import {
 import { ExecutionPrompter } from './execution';
 import { RiskOrComplexityLevel } from './execution.schema';
 import { Prompt, WireActionWithWaitAndRec } from './types';
-import { WebViewLlmSession } from './webViewLlmSession';
+import { type WebViewLlmSession } from './webviewLlmSession';
 import { ExecutionSession } from './session';
+import { replaceJsTpl } from '../webView/selector';
 
 export class PromptRun {
   executionSession: ExecutionPrompter;
@@ -19,6 +20,7 @@ export class PromptRun {
   llmAttachments: LlmApi.Attachment[] = [];
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
+  actionId = 0;
   browserActionLock = Util.newLock('browserActionLock');
   browserActionLockOk = false;
   prompts: Prompt[] = [];
@@ -34,6 +36,7 @@ export class PromptRun {
   ) {
     this.executionSession = new ExecutionPrompter(tab);
     this.rootSession = new ExecutionSession(0, [], this);
+    this.sessionQueue.push(this.rootSession);
 
     // LlmApi.addDummyReturn(
     //   JSON.stringify({
@@ -107,37 +110,6 @@ export class PromptRun {
         }
       }
     }
-  }
-
-  getSnapshot() {
-    return {
-      requestId: this.requestId,
-      stopRequested: this.stopRequested,
-      args: { ...this.args },
-      actions: this.actions.map((action) => ({
-        id: action.id,
-        intent: action.intent,
-        risk: action.risk,
-        done: action.done,
-        error: action.error,
-        stepPrompt: action.stepPrompt,
-        promptId: action.promptId,
-        argsDelta: action.argsDelta,
-        action: action.action,
-      })),
-      currentAction: this.currentAction,
-      prompts: this.prompts.map((prompt) => ({ ...prompt })),
-      breakPromptForExeErr: this.breakPromptForExeErr,
-      fixingAction: this.fixingAction
-        ? {
-            actionId: this.fixingAction.action.id,
-            offset: this.fixingAction.offset,
-            promptId: this.fixingAction.promptId,
-          }
-        : null,
-      sessionQueue: this.sessionQueue.map((session) => session.getSnapshot()),
-      runningSessionIds: this.runningSession.map((session) => session.id),
-    };
   }
 
   breakPromptForExeErr = false;
@@ -326,10 +298,23 @@ these actions are blocking by this error, if you found any of the above actions 
     };
     prompt.id = this.prompts.push(prompt) - 1;
     if (argsAdded) {
-      this.args = { ...this.args, ...argsAdded };
+      this.args = {
+        ...this.args,
+        ...Object.entries(argsAdded).reduce(
+          (acc, [k, v]) => {
+            acc[k] = replaceJsTpl(v, this.args);
+            return acc;
+          },
+          {} as Record<string, string>,
+        ),
+      };
     }
 
     return prompt;
+  }
+
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
   }
 
   setRunningStatus(session: ExecutionSession) {

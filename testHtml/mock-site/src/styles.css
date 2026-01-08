@@ -241,11 +241,113 @@ body {
   font-size: 0.9rem;
 }
 
+.field--checkbox {
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.field--checkbox input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
 .field input {
   padding: 12px;
   border-radius: 12px;
   border: 1px solid #d9d2c7;
   font-family: inherit;
+}
+
+.field input[type='file'] {
+  padding: 10px;
+  background: #fff;
+}
+
+.field select {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #d9d2c7;
+  font-family: inherit;
+  background: #fff;
+}
+
+.rc-select {
+  font-family: inherit;
+}
+
+.rc-select .rc-select-selector {
+  min-height: 44px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  border: 1px solid #d9d2c7;
+  padding: 6px 10px;
+  background: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.rc-select .rc-select-selection-placeholder {
+  color: var(--muted);
+}
+
+.rc-select .rc-select-selection-item {
+  background: #f3efe7 !important;
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-size: 0.85rem !important;
+}
+
+.rc-select-content {
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+  border: 1px solid #d9d2c7 !important;
+  background: #fff !important;
+  input {
+    min-width: 24px;
+  }
+  .rc-select-placeholder {
+    left: 12px !important;
+  }
+}
+
+.rc-select {
+  background: transparent !important;
+  border: none !important;
+  width: 100% !important;
+}
+
+.rc-select .rc-select-selection-search-input {
+  border: none;
+  outline: none;
+  font-family: inherit;
+  padding: 4px 0;
+}
+
+.rc-select .rc-select-selection-item,
+.rc-select .rc-select-selection-placeholder,
+.rc-select .rc-select-selection-search-input {
+  line-height: 1.2;
+}
+
+.field__options {
+  display: grid;
+  gap: 8px;
+}
+
+.field__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field__option input[type='radio'] {
+  margin: 0;
 }
 
 .calendar {

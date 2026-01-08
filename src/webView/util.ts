@@ -110,7 +110,6 @@ export namespace Util {
             deltaY: 1,
             x: 0,
             y: 0,
-            scrollEl: '',
           },
         ],
       });
@@ -121,5 +120,5 @@ export namespace Util {
       ? `${error.message}: ${JSON.stringify(error)}`
       : JSON.stringify(error);
   };
-  export const isMac = process.platform === 'darwin';
+  export const isMac = navigator.userAgent.includes('Macintosh');
 }

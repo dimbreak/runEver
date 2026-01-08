@@ -1,3 +1,4 @@
+import { exec } from 'child_process';
 import { BrowserWindow, clipboard, ipcMain, MouseInputEvent } from 'electron';
 import settings from 'electron-settings';
 import { ToMainIpc } from '../contracts/toMain';
@@ -25,7 +26,7 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     return false;
   });
   ToMainIpc.actionError.handle(async (event, arg) => {
-    console.log('Pop actions:', arg);
+    console.log('Err actions:', arg);
     const { frameId, actionId, error } = arg;
     const wvTab = webViewTabsById.get(frameId);
     if (wvTab) {
@@ -33,6 +34,15 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
       return true;
     }
     return false;
+  });
+  ToMainIpc.iframeProgress.handle(async (event, arg) => {
+    const { frameId, type, iframeId } = arg;
+    const wvTab = webViewTabsById.get(frameId);
+    if (wvTab) {
+      wvTab.iframeProgress(iframeId, type);
+      return {};
+    }
+    return { error: 'Tab not found' };
   });
   ToMainIpc.runPrompt.handle(async (event, arg) => {
     console.info('Run prompt:', arg);
@@ -88,13 +98,6 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
       canGoForward: navHistory.canGoForward(),
       url: wc.getURL(),
     };
-  });
-
-  ToMainIpc.getLlmSessionSnapshot.handle(async (_event, arg) => {
-    const wvTab = webViewTabsById.get(arg.frameId);
-    if (!wvTab) return { error: 'Tab not found' };
-    if (!wvTab.llmSession) return { error: 'Session not available' };
-    return { snapshot: wvTab.llmSession.getSnapshot() };
   });
 
   ToMainIpc.navigateTabHistory.handle(async (_event, arg) => {
@@ -268,9 +271,13 @@ export const setupIpcHandlers = (mainWindow: BrowserWindow) => {
       let response;
       if (detail.close) {
         // Ensure any in-flight prompt/task is stopped before destroying webContents.
-        const wc = wvTab.webView.webContents;
-        cleanupTab(frameId);
-        if (!wc.isDestroyed()) wc.close();
+        wvTab.stopPrompt();
+        wvTab.webView.setVisible(false);
+        mainWindow?.contentView.removeChildView(wvTab.webView);
+        webViewTabsById.delete(frameId!);
+        if (!wvTab.webView.webContents.isDestroyed()) {
+          wvTab.webView.webContents.close();
+        }
         response = 'closed';
       } else {
         if (detail.visible !== undefined) {
@@ -352,6 +359,53 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
     return false;
   });
 
+  ToMainIpc.dispatchNativeKeypress.handle(async (ev, arg) => {
+    const { keyAndDelays } = arg;
+    switch (process.platform) {
+      case 'darwin':
+        const keyToCode: Record<ToMainIpc.NativeKeys, number> = {
+          ArrowDown: 125,
+          ArrowUp: 126,
+          Enter: 36,
+          ArrowLeft: 123,
+          ArrowRight: 124,
+          Tab: 48,
+          Space: 49,
+          Escape: 53,
+        };
+        let keyCode: number | undefined;
+        const osCodes: string[] = [];
+        for (const keyAndDelay of keyAndDelays) {
+          keyCode = keyToCode[keyAndDelay[0]];
+          if (keyCode) {
+            osCodes.push(`  key code ${keyCode}
+  delay ${keyAndDelay[1] / 1000}`);
+          }
+        }
+        await new Promise<void>((resolve) => {
+          exec(
+            `
+osascript <<'EOF'
+tell application "System Events"
+${osCodes.join('\n')}
+end tell
+EOF
+`,
+            (error, stdout, stderr) => {
+              if (error) console.error(error);
+              if (stderr) console.error(stderr);
+              resolve();
+            },
+          );
+        });
+
+        return true;
+      default:
+      // not supported
+    }
+    return false;
+  });
+
   ToMainIpc.pasteInput.handle(async (event, arg) => {
     console.log('Paste input:', arg);
     const { frameId, input } = arg;
@@ -361,6 +415,15 @@ window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
       return true;
     }
     return false;
+  });
+  ToMainIpc.setInputFile.handle(async (event, arg) => {
+    console.log('setInputFile:', arg);
+    const { frameId, selector, filePaths } = arg;
+    const wvTab = frameId ? webViewTabsById.get(frameId) : undefined;
+    if (wvTab) {
+      return { error: await wvTab.setInputFile(selector, filePaths) };
+    }
+    return { error: 'Tab not found' };
   });
   initPromptIpc(webViewTabsById);
 

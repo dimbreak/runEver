@@ -130,7 +130,7 @@ export class IpcWebViewContract<
   webviewHandle(handler: (...args: Tail<REQ>) => Promise<RES>) {
     window.electron.ipcRenderer.on(
       `ipcInvoke:${this.channel}`,
-      async (_event, ...args: REQ) => {
+      async (_event: any, ...args: REQ) => {
         const res = await handler(...(args.slice(1) as Tail<REQ>));
         window.electron.ipcRenderer.send(`ipcToWebViewResponse`, args[0], res);
       },

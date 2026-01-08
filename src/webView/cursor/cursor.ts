@@ -1,15 +1,23 @@
 import { type MouseInputEvent, type MouseWheelInputEvent } from 'electron';
 import { buildHumanCursorPath } from './path';
-import { ToMainIpc } from '../../contracts/toMain';
 import { Util } from '../util';
+import { BrowserActions } from '../actions';
 
 type MouseInputEventWithDelay = MouseInputEvent & { delayMs: number };
 type MouseWheelInputEventWithDelay = MouseWheelInputEvent & {
-  scrollEl: string;
   delayMs: number;
 };
 
 const randomPos = () => Math.random() * 0.5 + 0.25;
+
+const overflowRx = /(auto|scroll)/;
+const ifScrollable = (el: Element) => {
+  if (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) {
+    const style = getComputedStyle(el);
+    return overflowRx.test(`${style.overflowX} ${style.overflowY}`);
+  }
+  return false;
+};
 
 class DummyCursor {
   x: number;
@@ -19,19 +27,20 @@ class DummyCursor {
     this.x = randomPos() * window.innerWidth;
     this.y = randomPos() * window.innerHeight;
   }
-  init(x: number, y: number) {
+  init(x: number, y: number, noDom = false) {
     if (x !== -1) {
       this.x = x;
     }
     if (y !== -1) {
       this.y = y;
     }
+    if (noDom) return;
     this.dom = document.createElement('div');
     this.dom.id = 'runEver-dummy-cursor';
     this.dom.style.position = 'fixed';
     this.dom.style.zIndex = '9999999';
-    this.dom.style.top = `${this.y}px`;
-    this.dom.style.left = `${this.x}px`;
+    this.dom.style.top = `${this.y + 1}px`;
+    this.dom.style.left = `${this.x + 1}px`;
     this.dom.style.width = '20px';
     this.dom.style.height = '20px';
     // svg by puppylinux https://github.com/puppylinux-woof-CE/puppy_icon_theme
@@ -39,23 +48,168 @@ class DummyCursor {
     document.body.appendChild(this.dom);
     window.electronDummyCursor = this.dom;
   }
-  async scrollTo(el: Element, rect?: DOMRect) {
-    const { x, y } = rect ?? el.getBoundingClientRect();
-    const scrollAdjust = await Util.scrollAdjustmentLock.wait;
+  findScrollableElToAvoid(target: Element | Window) {
+    const { body } = document;
+    let el: Element | null = document.elementFromPoint(this.x, this.y);
+    let lastScrollableEl: Element | null = null;
+    while (el && el !== target && el !== body) {
+      const style = getComputedStyle(el);
+      if (
+        (el.scrollHeight > el.clientHeight ||
+          el.scrollWidth > el.clientWidth) &&
+        overflowRx.test(`${style.overflowX} ${style.overflowY}`)
+      ) {
+        lastScrollableEl = el;
+      }
+      el = el.parentElement;
+    }
+    return lastScrollableEl;
+  }
+  async scrollToEl(el: Element, scrollOver?: Element) {
+    const toScrollEls: (Element | Window)[] = [];
+    const { body } = document;
+    if (scrollOver && ifScrollable(scrollOver)) {
+      toScrollEls.push(scrollOver);
+    } else {
+      let elToCheck = el.parentElement;
+      while (elToCheck) {
+        if (elToCheck === body) {
+          if (
+            window.innerWidth < document.body.scrollWidth ||
+            window.innerHeight < document.body.scrollHeight
+          ) {
+            toScrollEls.push(window);
+          }
+          break;
+        }
+        if (ifScrollable(elToCheck)) {
+          toScrollEls.push(elToCheck);
+        }
+        elToCheck = elToCheck.parentElement;
+      }
+    }
+    if (toScrollEls.length) {
+      const toScrollXy = calculateScrollAdjustments(el, toScrollEls);
+      console.log('toScrollXy', toScrollXy);
+      let scrolledX = 0;
+      let scrolledY = 0;
+      for (let i = toScrollXy.length - 1; i > -1; i--) {
+        const [containerEl, xToContainer, yToContainer] = toScrollXy[i];
+        const { x, y } = await this.scrollTo(
+          new DOMRect(xToContainer, yToContainer, 0, 0),
+          containerEl,
+          true,
+        );
+        scrolledX += x;
+        scrolledY += y;
+      }
+      return { x: scrolledX, y: scrolledY };
+    }
+    return { x: 0, y: 0 };
+  }
+  async scrollTo(
+    rectOrEl: DOMRect | Element,
+    scrollOver: Element | Window,
+    exact = false,
+  ) {
+    const scrollToEl = rectOrEl instanceof Element;
+    let { x: scrollToX, y: scrollToY } = scrollToEl
+      ? rectOrEl.getBoundingClientRect()
+      : rectOrEl;
+    const scrollAdjust = await Util.scrollAdjustmentLock.wait; // mac maybe reverse
     let clientHeight: number;
     let clientWidth: number;
-    let scrollEl = '';
-    if (el === document.body) {
+    let overX = 0;
+    let overY = 0;
+    let currentScrollLeft = 0;
+    let currentScrollTop = 0;
+    if (scrollOver instanceof Window) {
       clientHeight = window.innerHeight;
       clientWidth = window.innerWidth;
+      currentScrollLeft = window.scrollX;
+      currentScrollTop = window.scrollY;
     } else {
-      clientHeight = el.clientHeight;
-      clientWidth = el.clientWidth;
-      scrollEl = '';
+      clientHeight = scrollOver.clientHeight;
+      clientWidth = scrollOver.clientWidth;
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+      const { x, y } = scrollOver.getBoundingClientRect();
+      console.log('overlay rect', x, y, scrollOver);
+      overX = x;
+      overY = y;
+      currentScrollLeft = scrollOver.scrollLeft;
+      currentScrollTop = scrollOver.scrollTop;
     }
+    let offsetX =
+      exact || scrollToX < 0 || scrollToX > clientWidth ? scrollToX : 0;
     let offsetY =
-      y < 0 || y > clientHeight ? y - clientHeight * randomPos() : 0;
-    let offsetX = x < 0 || x > clientWidth ? x - clientWidth * randomPos() : 0;
+      exact || scrollToY < 0 || scrollToY > clientHeight ? scrollToY : 0;
+    if (scrollToEl) {
+      scrollToX -= overX;
+      scrollToY -= overY;
+      offsetX =
+        exact || scrollToX < 0 || scrollToX > clientWidth
+          ? scrollToX - clientWidth * randomPos()
+          : 0;
+      offsetY =
+        exact || scrollToY < 0 || scrollToY > clientHeight
+          ? scrollToY - clientHeight * randomPos()
+          : 0;
+    }
+    if (offsetX === 0 && offsetY === 0) {
+      return { x: 0, y: 0 };
+    }
+    if (
+      this.x > overX + clientWidth ||
+      this.x < overX ||
+      this.y > overY + clientHeight ||
+      this.y < overY
+    ) {
+      await this.moveToRect(
+        new DOMRect(overX + clientWidth / 2, overY + clientHeight / 2, 0, 0),
+        true,
+      );
+    }
+    let avoidEl: Element | null = this.findScrollableElToAvoid(scrollOver);
+    let retryCount = 0;
+    while (avoidEl) {
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+      const { x, y, width, height } = avoidEl.getBoundingClientRect();
+      let rectToMove: DOMRect;
+      if (retryCount < 2 && x > overX) {
+        rectToMove = new DOMRect((x - overX) / 2 + overX, this.y, 0, 0);
+      } else if (retryCount < 2 && y > overY) {
+        rectToMove = new DOMRect(this.x, (y - overY) / 2 + overY, 0, 0);
+      } else if (retryCount < 2 && x + width < overX + clientWidth) {
+        rectToMove = new DOMRect(
+          (overX + clientWidth - x - width) / 2 + x + width,
+          this.y,
+          0,
+          0,
+        );
+      } else if (retryCount < 2 && y + height < overY + clientHeight) {
+        rectToMove = new DOMRect(
+          this.x,
+          (overY + clientHeight - y - height) / 2 + y + height,
+          0,
+          0,
+        );
+      } else {
+        // impossible to scroll by mousewheel
+        scrollOver.scrollTo({
+          left: currentScrollLeft + scrollToX,
+          top: currentScrollTop + scrollToY,
+          behavior: 'smooth',
+        });
+        await Util.sleep(200);
+        return {
+          x: scrollToX,
+          y: scrollToY,
+        };
+      }
+      retryCount++;
+      await this.moveToRect(rectToMove);
+      avoidEl = this.findScrollableElToAvoid(scrollOver);
+    }
     const scrolledX = offsetX;
     const scrolledY = offsetY;
     // eslint-disable-next-line no-nested-ternary
@@ -73,7 +227,6 @@ class DummyCursor {
         x: this.x,
         y: this.y,
         delayMs: 60 + Math.random() * 60,
-        scrollEl,
       });
       offsetX -= deltaX;
       if (offsetX === 0 || Math.abs(offsetX) < deltaXAbs) {
@@ -88,29 +241,57 @@ class DummyCursor {
         x: this.x,
         y: this.y,
         delayMs: 1 + Math.random() * 50,
-        scrollEl,
       });
       offsetY -= deltaY;
       if (offsetY === 0 || Math.abs(offsetY) < deltaYAbs) {
         break;
       }
     }
-    await ToMainIpc.dispatchEvents.invoke({
-      frameId: window.frameId!,
+    console.log(
+      'scrollTo events',
       events,
+      exact,
+      currentScrollLeft + scrollToX,
+      currentScrollTop + scrollToY,
+      currentScrollLeft,
+      currentScrollTop,
+    );
+    await BrowserActions.callActionApi({
+      action: 'dispatchEvents',
+      args: {
+        events,
+      },
     });
     await Util.sleep(100);
+    if (exact) {
+      console.log(
+        'exact',
+        scrollOver,
+        exact,
+        currentScrollLeft + scrollToX,
+        currentScrollTop + scrollToY,
+      );
+      scrollOver.scrollTo({
+        left: currentScrollLeft + scrollToX,
+        top: currentScrollTop + scrollToY,
+        behavior: 'smooth',
+      });
+      await Util.sleep(200);
+      return { x: scrolledX, y: scrolledY };
+    }
     return { x: scrolledX - offsetX, y: scrolledY - offsetY };
   }
   async mouseEvent(
     action: MouseInputEvent['type'] | 'click' | 'dblclick',
     el?: Element,
     repeat: number = 0,
+    modifiers: MouseInputEvent['modifiers'] = undefined,
   ) {
-    const { x: clientX, y: clientY } = this;
+    let { x: clientX, y: clientY } = this;
     if (el) {
       let thisEl = el as HTMLElement;
       if (thisEl instanceof HTMLElement) {
+        // avoid miss click on inline irregular element rect el
         while (
           thisEl.children.length &&
           window.getComputedStyle(thisEl).display === 'inline'
@@ -126,7 +307,10 @@ class DummyCursor {
         clientY < y ||
         clientY > y + height
       ) {
-        await this.moveToEl(thisEl, rect);
+        console.log('mouseEvent el', action, thisEl, rect);
+        await this.moveToRect(el);
+        clientX = this.x;
+        clientY = this.y;
       }
     }
     let events: MouseInputEventWithDelay[] = [];
@@ -136,18 +320,20 @@ class DummyCursor {
           {
             type: 'mouseDown',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: 0,
             clickCount: 1,
+            modifiers,
           },
           {
             type: 'mouseUp',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
+            modifiers,
           },
         ];
         break;
@@ -156,34 +342,38 @@ class DummyCursor {
           {
             type: 'mouseDown',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: 0,
             clickCount: 1,
+            modifiers,
           },
           {
             type: 'mouseUp',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
+            modifiers,
           },
           {
             type: 'mouseDown',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
+            modifiers,
           },
           {
             type: 'mouseUp',
             button: 'left',
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: Math.random() * 50 + 50,
             clickCount: 1,
+            modifiers,
           },
         ];
         break;
@@ -194,13 +384,15 @@ class DummyCursor {
         events = [
           {
             type: action,
-            x: this.x,
-            y: this.y,
+            x: clientX,
+            y: clientY,
             delayMs: 0,
+            modifiers,
           },
         ];
     }
-    if (repeat) {
+    console.log('mouseEvent', action, events);
+    if (repeat > 1) {
       events[0].delayMs = Math.random() * 150 + 150;
       const toClone = events.slice();
       for (let i = 1; i < repeat; i++) {
@@ -208,19 +400,48 @@ class DummyCursor {
       }
       events[0] = { ...events[0], delayMs: 0 };
     }
-    await ToMainIpc.dispatchEvents.invoke({
-      frameId: window.frameId!,
-      events,
+    await BrowserActions.callActionApi({
+      action: 'dispatchEvents',
+      args: {
+        events,
+      },
     });
   }
-  async moveToEl(el: Element, rect?: DOMRect) {
-    const thisRect = rect ?? el.getBoundingClientRect();
+  async moveToRect(rectOrEl: DOMRect | Element, exact = false) {
+    const thisRect =
+      rectOrEl instanceof Element ? rectOrEl.getBoundingClientRect() : rectOrEl;
+    console.log('moveToRect', this.x, this.y, thisRect);
     let { x, y } = thisRect;
     const { width, height } = thisRect;
     if (x > window.innerWidth || y > window.innerHeight || x < 0 || y < 0) {
-      const scrolled = await this.scrollTo(document.body, thisRect);
+      let scrolled: { x: number; y: number };
+      if (rectOrEl === thisRect) {
+        thisRect.x =
+          x < 0 ? Math.max(-window.scrollX, x - 20) : Math.min(0, x - 20);
+        thisRect.y =
+          y < 0 ? Math.max(-window.scrollY, y - 20) : Math.min(0, y - 20);
+        scrolled = await this.scrollTo(thisRect, window, exact);
+      } else {
+        scrolled = await this.scrollToEl(rectOrEl as Element);
+      }
       x -= scrolled.x;
       y -= scrolled.y;
+    }
+    if (!this.dom) {
+      const event: MouseInputEventWithDelay = {
+        type: 'mouseMove',
+        x: x + width * randomPos(),
+        y: y + height * randomPos(),
+        delayMs: 0,
+      };
+      await BrowserActions.callActionApi({
+        action: 'dispatchEvents',
+        args: {
+          events: [event],
+        },
+      });
+      this.moveToXY(event.x, event.y);
+      return;
     }
     const { timesMs, points } = buildHumanCursorPath(
       { x: this.x, y: this.y },
@@ -229,7 +450,7 @@ class DummyCursor {
         durationMs: 300 + Math.random() * 200,
         hz: 30,
         jitterPx: 1.2,
-        overshootChance: 0.45,
+        overshootChance: exact ? 0 : 0.45,
       },
     );
     let offsetMs = 0;
@@ -243,20 +464,26 @@ class DummyCursor {
         delayMs,
       } as MouseInputEventWithDelay;
     });
-    await ToMainIpc.dispatchEvents.invoke({
-      frameId: window.frameId!,
-      events,
+    await BrowserActions.callActionApi({
+      action: 'dispatchEvents',
+      args: {
+        events,
+      },
     });
     const lastPoint = points[points.length - 1];
     this.moveToXY(lastPoint.x, lastPoint.y);
+    await Util.sleep(100);
   }
   moveToXY(x: number, y: number) {
+    console.log('moveToXY', x, y, this.x, this.y);
     this.x = x;
     this.y = y;
-    this.dom!.style.top = `${y + 1}px`;
-    this.dom!.style.left = `${x + 1}px`;
+    if (this.dom) {
+      this.dom.style.top = `${y + 1}px`;
+      this.dom.style.left = `${x + 1}px`;
+    }
   }
-  hide<A extends any[], T>(fn: () => T): T {
+  hide<T>(fn: () => T): T {
     // During early navigation or fast execPrompt, the preload may not have
     // initialized the dummy cursor DOM yet. In that case, just run without hiding.
     if (!this.dom) return fn();
@@ -268,3 +495,100 @@ class DummyCursor {
 }
 
 export const dummyCursor = new DummyCursor();
+
+function calculateScrollAdjustments(
+  target: Element,
+  containers: (Element | Window)[],
+): [Element | Window, number, number][] {
+  const currentTargetRect = target.getBoundingClientRect();
+
+  const virtualTarget = {
+    left: currentTargetRect.left,
+    right: currentTargetRect.right,
+    top: currentTargetRect.top,
+    bottom: currentTargetRect.bottom,
+    width: currentTargetRect.width,
+    height: currentTargetRect.height,
+  };
+
+  // 2. 統一容器處理邏輯 (將 window 抽象化)
+  const getGeometry = (container: Element | Window) => {
+    if (container instanceof Window) {
+      return {
+        clientWidth: window.innerWidth,
+        clientHeight: window.innerHeight,
+        scrollWidth: document.documentElement.scrollWidth,
+        scrollHeight: document.documentElement.scrollHeight,
+        rect: {
+          left: 0,
+          top: 0,
+          right: window.innerWidth,
+          bottom: window.innerHeight,
+        },
+        border: { left: 0, top: 0 },
+      };
+    }
+    const rect = container.getBoundingClientRect();
+    const style = getComputedStyle(container);
+    return {
+      clientWidth: container.clientWidth,
+      clientHeight: container.clientHeight,
+      scrollWidth: container.scrollWidth,
+      scrollHeight: container.scrollHeight,
+      rect,
+      border: {
+        left: parseFloat(style.borderLeftWidth) || 0,
+        top: parseFloat(style.borderTopWidth) || 0,
+      },
+    };
+  };
+
+  const results: [Element | Window, number, number][] = [];
+
+  // 3. 由內向外遍歷 (假設輸入 array 已經按 DOM 深度排序，由內到外)
+  for (const container of containers) {
+    const geo = getGeometry(container);
+
+    // 容器的可視區域 (Viewport of the container)
+    const view = {
+      left: geo.rect.left + geo.border.left,
+      top: geo.rect.top + geo.border.top,
+      right: geo.rect.left + geo.border.left + geo.clientWidth,
+      bottom: geo.rect.top + geo.border.top + geo.clientHeight,
+    };
+
+    let deltaX = 0;
+    let deltaY = 0;
+
+    // --- 水平計算 ---
+    if (virtualTarget.left < view.left) {
+      deltaX = virtualTarget.left - view.left;
+    } else if (virtualTarget.right > view.right) {
+      deltaX =
+        virtualTarget.width > geo.clientWidth
+          ? virtualTarget.left - view.left
+          : virtualTarget.right - view.right;
+    }
+
+    // --- 垂直計算 ---
+    if (virtualTarget.top < view.top) {
+      deltaY = virtualTarget.top - view.top;
+    } else if (virtualTarget.bottom > view.bottom) {
+      deltaY =
+        virtualTarget.height > geo.clientHeight
+          ? virtualTarget.top - view.top
+          : virtualTarget.bottom - view.bottom;
+    }
+
+    // 保存結果
+    results.push([container, deltaX, deltaY]);
+
+    // 更新虛擬座標 (供下一層父容器使用)
+    virtualTarget.left -= deltaX;
+    virtualTarget.right -= deltaX;
+    virtualTarget.top -= deltaY;
+    virtualTarget.bottom -= deltaY;
+  }
+
+  return results;
+}

@@ -168,7 +168,7 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Google',
-    url: 'http://localhost:5175/?flow=register',
+    url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
     isRunning: true,
   }),
   // new WebTab({

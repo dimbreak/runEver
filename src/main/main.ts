@@ -11,15 +11,18 @@
 import path from 'path';
 /* eslint-disable no-await-in-loop, no-restricted-syntax, no-promise-executor-return */
 import { config as configDotEnv } from 'dotenv';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { setupIpcHandlers } from './ipcHandlers';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import { LlmApi } from './llm/api';
 
-configDotEnv();
+const output = configDotEnv({
+  debug: true,
+});
+
+console.log('dotenv output', output);
 
 class AppUpdater {
   constructor() {
@@ -68,6 +71,15 @@ const createWindow = async () => {
   const getAssetPath = (...paths: string[]): string => {
     return path.join(RESOURCES_PATH, ...paths);
   };
+  const sess = session.defaultSession;
+  const extPath = path.join(__dirname, '../extensions/iframe');
+
+  try {
+    const ext = await sess.loadExtension(extPath, { allowFileAccess: true });
+    console.log('Extension loaded:', ext.name);
+  } catch (e) {
+    console.error('Failed to load extension:', e);
+  }
 
   mainWindow = new BrowserWindow({
     show: false,
@@ -134,6 +146,8 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+app.commandLine.appendSwitch('disable-site-isolation-trials');
 
 app
   .whenReady()

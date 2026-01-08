@@ -6,6 +6,8 @@ import path from 'path';
 import webpack from 'webpack';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 import { merge } from 'webpack-merge';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import { spawnSync } from 'child_process';
 import checkNodeEnv from '../scripts/check-node-env';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
@@ -14,6 +16,24 @@ import webpackPaths from './webpack.paths';
 // at the dev webpack config is not accidentally run in a production environment
 if (process.env.NODE_ENV === 'production') {
   checkNodeEnv('development');
+}
+
+const buildExtensions = (): void => {
+  const result = spawnSync('npm', ['run', 'build:extensions'], {
+    cwd: webpackPaths.rootPath,
+    stdio: 'inherit',
+    shell: true,
+  });
+
+  if (result.status !== 0) {
+    throw new Error('Failed to build extension bundle(s).');
+  }
+};
+
+class BuildExtensionsPlugin {
+  apply(compiler: webpack.Compiler): void {
+    compiler.hooks.beforeRun.tap('BuildExtensionsPlugin', buildExtensions);
+  }
 }
 
 const configuration: webpack.Configuration = {
@@ -47,6 +67,18 @@ const configuration: webpack.Configuration = {
 
     new webpack.DefinePlugin({
       'process.type': '"browser"',
+    }),
+
+    new BuildExtensionsPlugin(),
+
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: webpackPaths.srcExtensionsPath,
+          to: webpackPaths.erbExtensionsPath,
+          noErrorOnMissing: true,
+        },
+      ],
     }),
   ],
 

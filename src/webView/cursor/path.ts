@@ -74,7 +74,10 @@ export function buildHumanCursorPath(
   to: Pt,
   opts: HumanMoveOpts = {},
 ) {
-  const durationMs = opts.durationMs ?? 320;
+  const d = dist(from, to);
+  const durationMs =
+    opts.durationMs ??
+    clamp(Math.round(d / 2), 160, 1200) * (Math.random() * 0.2 + 0.8);
   const hz = opts.hz ?? 75;
   const jitterPx = opts.jitterPx ?? 0.9;
   const curvePx = opts.curvePx ?? 40;
@@ -83,7 +86,6 @@ export function buildHumanCursorPath(
 
   const r = opts.seed != null ? mulberry32(opts.seed) : Math.random;
 
-  const d = dist(from, to);
   // steps loosely tied to distance + hz
   const steps = Math.max(8, Math.round((durationMs / 1000) * hz + d / 60));
 

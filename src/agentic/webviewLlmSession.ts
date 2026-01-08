@@ -18,17 +18,6 @@ export class WebViewLlmSession {
 
   constructor(public tab: TabWebView) {}
 
-  getSnapshot() {
-    const runs = Array.from(this.runsByRequestId.values()).map((run) =>
-      run.getSnapshot(),
-    );
-    return {
-      activeRequestId: this.activeRequestId,
-      runQueue: this.runQueue.slice(),
-      runs,
-    };
-  }
-
   startPrompt(
     requestId: number,
     promptTxt: string,

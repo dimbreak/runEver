@@ -8,9 +8,12 @@ export namespace Network {
     webContents: WebContents,
     inflight: Set<string>,
   ): [Util.Lock, Util.Lock] => {
+    // todo refactor using session.webRequest
     const mainNetworkIdle0 = Util.newLock(); // for main tabWebview
     const mainNetworkIdle2 = Util.newLock(); // for main tabWebview
-    webContents.debugger.attach('1.3');
+    if (!webContents.debugger.isAttached()) {
+      webContents.debugger.attach('1.3');
+    }
 
     // setInterval(() => {
     //   console.log('network pending req', inflight);
