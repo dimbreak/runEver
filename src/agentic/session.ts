@@ -11,6 +11,9 @@ import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
 import { LlmApi } from './api';
 
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
@@ -43,6 +46,7 @@ export class ExecutionSession {
   subSessionQueue: ExecutionSession[];
   actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
+  eventsLogs: string[] = [];
   constructor(
     public id: number,
     public promptQueue: Prompt[],
@@ -65,7 +69,7 @@ export class ExecutionSession {
       this.promptQueue[0]?.goalPrompt ?? 'no prompt',
     );
     let requireScreenshot = false;
-    const { run, promptQueue, id, actions, subSessionQueue } = this;
+    const { run, promptQueue, id, actions, subSessionQueue, eventsLogs } = this;
     const { tab, executionSession, args, browserActionLock } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
@@ -103,15 +107,7 @@ export class ExecutionSession {
                 `[performed actions]
 -`,
                 `[performed actions]
-- ${actions.map((s) => s.intent).join('\n- ')}${
-                  subSessionQueue.length
-                    ? `
-- ${subSessionQueue
-                        .filter((s) => !!s.promptQueue[0])
-                        .map((s) => s.promptQueue[0]?.goalPrompt)
-                        .join('\n- ')}`
-                    : ''
-                }`,
+- ${eventsLogs.join('\n- ')}`,
               )
             : runSubPrompt,
           requireScreenshot,
@@ -268,6 +264,7 @@ ${res.value.todo.rc}
     while (subSessionQueue.length) {
       const subSession = subSessionQueue.shift()!;
       yield* subSession.exec();
+      this.addLog(subSession.promptQueue[0]?.goalPrompt ?? '');
     }
   }
   addNewSubSession(queue: Prompt[]) {
@@ -310,5 +307,8 @@ ${res.value.todo.rc}
   removePendingActions() {
     this.actions = this.actions.filter((a) => !!a.done);
     this.run.removePendingActions();
+  }
+  addLog(log: string) {
+    this.eventsLogs.push(log);
   }
 }

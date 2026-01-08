@@ -178,6 +178,9 @@ export class PromptRun {
       this.args = { ...this.args, ...argsDelta };
       currentAction.argsDelta = argsDelta;
     }
+    this.sessionQueue[
+      this.prompts[currentAction.promptId!].sessionId ?? -1
+    ]?.addLog(currentAction.intent);
     console.log('Popped actions:', this.actions.length, completedId);
     if (this.stopRequested) return;
     if (this.currentAction < this.actions.length) {

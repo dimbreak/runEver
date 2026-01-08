@@ -16,7 +16,7 @@ export type EventWithDelay = (
 
 export namespace ToMainIpc {
   export const createTab = new IpcMainContract<
-    [{ url: string; bounds?: Rectangle }],
+    [{ url: string; bounds?: Rectangle; parentFrameId?: number }],
     { id: number } | { error: string }
   >('create-tab');
   export const operateTab = new IpcMainContract<

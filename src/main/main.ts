@@ -15,6 +15,7 @@ import { app, BrowserWindow, session } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import { setupIpcHandlers } from './ipcHandlers';
+import { WebViewLlmSession } from '../agentic/webviewLlmSession';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
@@ -128,7 +129,8 @@ const createWindow = async () => {
     };
   });
 
-  setupIpcHandlers(mainWindow);
+  const llmSession = new WebViewLlmSession(mainWindow);
+  setupIpcHandlers(mainWindow, llmSession);
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

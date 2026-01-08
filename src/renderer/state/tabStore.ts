@@ -13,6 +13,7 @@ export class WebTab {
   isRunning?: boolean;
   frameId: number = -1;
   lastPromptRequestId?: number;
+  parentFrameId?: number;
 
   constructor(init: {
     id: string;
@@ -21,6 +22,7 @@ export class WebTab {
     isRunning?: boolean;
     frameId?: number;
     lastPromptRequestId?: number;
+    parentFrameId?: number;
   }) {
     this.id = init.id;
     this.title = init.title;
@@ -28,6 +30,7 @@ export class WebTab {
     this.isRunning = init.isRunning;
     this.frameId = init.frameId ?? -1;
     this.lastPromptRequestId = init.lastPromptRequestId;
+    this.parentFrameId = init.parentFrameId;
   }
   async runPrompt(
     prompt: string,
@@ -154,7 +157,7 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Google',
-    url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
+    url: 'http://localhost:5175/?flow=register',
     isRunning: true,
   }),
   // new WebTab({
@@ -207,6 +210,7 @@ export const useTabStore = create<TabState>((set, get) => ({
     const frameId = await webviewService.createTab({
       url: resolveInitialUrl(tab.url),
       bounds,
+      parentFrameId: tab.parentFrameId,
     });
     if (!frameId) return;
 
