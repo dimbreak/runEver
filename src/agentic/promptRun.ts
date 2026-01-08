@@ -154,9 +154,11 @@ export class PromptRun {
         );
       }
       fixingAction!.offset++;
+      this.manager.notifySnapshotChanged();
       return;
     }
     this.actions.push(action);
+    this.manager.notifySnapshotChanged();
   }
 
   actionDone(
@@ -205,7 +207,7 @@ export class PromptRun {
     } else {
       currentAction.error = [error];
     }
-
+    if (this.stopRequested) return;
     this.fixAction();
   }
 

@@ -116,7 +116,12 @@ export type ThinkingItem = {
   updatedAt: number;
 };
 
-export type PromptRunStatus = 'running' | 'done' | 'error';
+export type PromptRunStatus =
+  | 'planning'
+  | 'planned'
+  | 'running'
+  | 'completed'
+  | 'error';
 
 export type PromptRunItem = {
   requestId: number;
@@ -156,6 +161,7 @@ type AgentState = {
   ) => void;
   finishPlanning: (tabId: string, requestId: number) => void;
   startActionThinking: (tabId: string, requestId: number) => void;
+  markThinkingError: (tabId: string, requestId: number) => void;
   toggleActionExpanded: (tabId: string, actionId: number) => void;
   toggleThinkingExpanded: (tabId: string, thinkingId: string) => void;
   addPromptRun: (
@@ -229,6 +235,23 @@ const updateActionThinkingItems = (
 ) => {
   if (!items.length) return items;
   const actionRequestIds = new Set(actionItems.map((item) => item.requestId));
+  const responseByRequestId = new Map<number, string>();
+  actionRequestIds.forEach((requestId) => {
+    const summary = actionItems
+      .filter((item) => item.requestId === requestId)
+      .map((item) => ({
+        id: item.id,
+        status: item.status,
+        intent: item.intent,
+        error: item.error,
+        argsDelta: item.argsDelta,
+        action: item.action,
+      }));
+    responseByRequestId.set(
+      requestId,
+      JSON.stringify({ actions: summary }, null, 2),
+    );
+  });
   let changed = false;
   const next = items.map((item) => {
     if (
@@ -241,6 +264,7 @@ const updateActionThinkingItems = (
       return {
         ...item,
         status: 'done' as const,
+        content: responseByRequestId.get(item.requestId) ?? item.content,
         endedAt,
         durationMs: endedAt - item.startedAt,
         updatedAt: endedAt,
@@ -251,9 +275,98 @@ const updateActionThinkingItems = (
   return changed ? next : items;
 };
 
+const closePlanningItemsForActions = (
+  items: ThinkingItem[],
+  actionItems: ActionItem[],
+) => {
+  if (!items.length || !actionItems.length) return items;
+  const actionRequestIds = new Set(actionItems.map((item) => item.requestId));
+  let changed = false;
+  const now = Date.now();
+  const next = items.map((item) => {
+    if (
+      (item.kind === 'planning' || item.kind === 'planning_output') &&
+      item.status === 'running' &&
+      actionRequestIds.has(item.requestId)
+    ) {
+      changed = true;
+      if (item.kind === 'planning') {
+        return {
+          ...item,
+          status: 'done' as const,
+          endedAt: now,
+          durationMs: now - item.startedAt,
+          updatedAt: now,
+        };
+      }
+      return {
+        ...item,
+        status: 'done' as const,
+        updatedAt: now,
+      };
+    }
+    return item;
+  });
+  return changed ? next : items;
+};
+
+const markThinkingItemsError = (items: ThinkingItem[], requestId: number) => {
+  if (!items.length) return items;
+  const now = Date.now();
+  let changed = false;
+  const next = items.map((item) => {
+    if (item.requestId !== requestId || item.status !== 'running') return item;
+    changed = true;
+    return {
+      ...item,
+      status: 'error' as const,
+      endedAt: now,
+      durationMs: now - item.startedAt,
+      updatedAt: now,
+    };
+  });
+  return changed ? next : items;
+};
+
+const derivePromptRunStatus = (
+  item: PromptRunItem,
+  run: LlmSessionSnapshot['runs'][number],
+  snapshot: LlmSessionSnapshot,
+  thinkingItems: ThinkingItem[],
+) => {
+  if (run.stopRequested) return 'error' as const;
+  const thinkingForRun = thinkingItems.filter(
+    (thinking) => thinking.requestId === run.requestId,
+  );
+  const planningItem = thinkingForRun.find(
+    (thinking) => thinking.kind === 'planning',
+  );
+  const planningRunning = planningItem?.status === 'running';
+  const planningDone = planningItem?.status === 'done';
+  const hasActions = run.actions.length > 0;
+  const anyActionError = run.actions.some((action) => action.error?.length);
+  const allActionsFinished = hasActions
+    ? run.actions.every((action) => action.done || action.error?.length)
+    : false;
+  if (planningRunning) return 'planning' as const;
+  if (anyActionError) return 'error' as const;
+  if (hasActions) {
+    if (allActionsFinished) return 'completed' as const;
+    return 'running' as const;
+  }
+  if (planningDone) {
+    const isActiveOrQueued =
+      snapshot.activeRequestId === run.requestId ||
+      snapshot.runQueue.includes(run.requestId);
+    return isActiveOrQueued ? ('planned' as const) : ('completed' as const);
+  }
+  return item.status;
+};
+
 const updatePromptRunStatusFromSnapshot = (
   runs: PromptRunItem[],
   snapshot: LlmSessionSnapshot | null,
+  thinkingItems: ThinkingItem[],
 ) => {
   if (!snapshot) return runs;
   const runsById = new Map(snapshot.runs.map((run) => [run.requestId, run]));
@@ -262,27 +375,22 @@ const updatePromptRunStatusFromSnapshot = (
   const next = runs.map((item) => {
     const run = runsById.get(item.requestId);
     if (!run) return item;
-    if (item.status !== 'running') return item;
-    const hasActions = run.actions.length > 0;
-    const finishedActions =
-      hasActions && run.currentAction >= run.actions.length;
-    if (finishedActions) {
-      changed = true;
-      return {
-        ...item,
-        status: 'done' as const,
-        completedAt: now,
-      };
-    }
-    if (run.stopRequested) {
-      changed = true;
-      return {
-        ...item,
-        status: 'error' as const,
-        completedAt: now,
-      };
-    }
-    return item;
+    const nextStatus = derivePromptRunStatus(
+      item,
+      run,
+      snapshot,
+      thinkingItems,
+    );
+    if (nextStatus === item.status) return item;
+    changed = true;
+    return {
+      ...item,
+      status: nextStatus,
+      completedAt:
+        nextStatus === 'completed' || nextStatus === 'error'
+          ? now
+          : undefined,
+    };
   });
   return changed ? next : runs;
 };
@@ -348,13 +456,17 @@ export const useAgentStore = create<AgentState>((set) => ({
   setSessionSnapshot: (tabId, snapshot) =>
     set((state) => {
       const items = buildActionItems(snapshot);
-      const nextThinkingItems = updateActionThinkingItems(
-        state.thinkingItemsByTabId[tabId] ?? [],
+      const nextThinkingItems = closePlanningItemsForActions(
+        updateActionThinkingItems(
+          state.thinkingItemsByTabId[tabId] ?? [],
+          items,
+        ),
         items,
       );
       const nextPromptRuns = updatePromptRunStatusFromSnapshot(
         state.promptRunsByTabId[tabId] ?? [],
         snapshot,
+        nextThinkingItems,
       );
       return {
         sessionByTabId: { ...state.sessionByTabId, [tabId]: snapshot },
@@ -462,6 +574,7 @@ export const useAgentStore = create<AgentState>((set) => ({
       const prev = state.thinkingItemsByTabId[tabId] ?? [];
       const next = prev.map((item) => {
         if (item.id === planningId) {
+          if (item.status !== 'running') return item;
           return {
             ...item,
             status: 'done' as const,
@@ -471,6 +584,7 @@ export const useAgentStore = create<AgentState>((set) => ({
           };
         }
         if (item.id === outputId) {
+          if (item.status !== 'running') return item;
           return {
             ...item,
             status: 'done' as const,
@@ -496,6 +610,24 @@ export const useAgentStore = create<AgentState>((set) => ({
         (item) => item.requestId === requestId,
       );
       const endedAt = hasActions ? startedAt : undefined;
+      const responseContent = hasActions
+        ? JSON.stringify(
+            {
+              actions: (state.actionItemsByTabId[tabId] ?? [])
+                .filter((item) => item.requestId === requestId)
+                .map((item) => ({
+                  id: item.id,
+                  status: item.status,
+                  intent: item.intent,
+                  error: item.error,
+                  argsDelta: item.argsDelta,
+                  action: item.action,
+                })),
+            },
+            null,
+            2,
+          )
+        : undefined;
       return {
         thinkingItemsByTabId: {
           ...state.thinkingItemsByTabId,
@@ -509,12 +641,23 @@ export const useAgentStore = create<AgentState>((set) => ({
               startedAt,
               endedAt,
               durationMs: endedAt ? 0 : undefined,
+              content: responseContent,
               updatedAt: startedAt,
             },
           ],
         },
       };
     }),
+  markThinkingError: (tabId, requestId) =>
+    set((state) => ({
+      thinkingItemsByTabId: {
+        ...state.thinkingItemsByTabId,
+        [tabId]: markThinkingItemsError(
+          state.thinkingItemsByTabId[tabId] ?? [],
+          requestId,
+        ),
+      },
+    })),
   toggleActionExpanded: (tabId, actionId) =>
     set((state) => {
       const prev = state.expandedActionIdsByTabId[tabId] ?? {};
@@ -549,7 +692,7 @@ export const useAgentStore = create<AgentState>((set) => ({
             {
               requestId,
               userMessageId,
-              status: 'running',
+              status: 'planning',
               startedAt: Date.now(),
             },
           ],
@@ -566,7 +709,8 @@ export const useAgentStore = create<AgentState>((set) => ({
         return {
           ...item,
           status,
-          completedAt: status === 'running' ? undefined : now,
+          completedAt:
+            status === 'completed' || status === 'error' ? now : undefined,
         };
       });
       return {

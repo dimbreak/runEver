@@ -79,6 +79,18 @@ export class TabWebView {
     this.pageLoadedLock.unlock();
   }
 
+  emitLlmSessionSnapshot(snapshot: unknown | null) {
+    try {
+      if (this.mainWindow?.isDestroyed()) return;
+      ToRendererIpc.llmSessionSnapshot.send(this.mainWindow.webContents, {
+        frameId: this.webView.webContents.id,
+        snapshot,
+      });
+    } catch (err) {
+      console.error('emitLlmSessionSnapshot failed:', err);
+    }
+  }
+
   async confirmHighRiskAction(actionIntent: string) {
     try {
       if (!this.mainWindow.isDestroyed()) {
@@ -410,6 +422,7 @@ export class TabWebView {
     }
     if (!this.llmSession) {
       this.llmSession = new WebViewLlmSession(this);
+      this.emitLlmSessionSnapshot(this.llmSession.getSnapshot());
     } else {
       // Keep the existing session so in-flight prompts don't lose their state.
       this.llmSession.resumeAll();

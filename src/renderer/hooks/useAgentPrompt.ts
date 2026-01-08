@@ -31,6 +31,7 @@ export const useAgentPrompt = ({
     appendPlanningOutput,
     finishPlanning,
     startActionThinking,
+    markThinkingError,
     addPromptRun,
     setPromptRunStatus,
   } = useAgentStore((state) => ({
@@ -41,6 +42,7 @@ export const useAgentPrompt = ({
     appendPlanningOutput: state.appendPlanningOutput,
     finishPlanning: state.finishPlanning,
     startActionThinking: state.startActionThinking,
+    markThinkingError: state.markThinkingError,
     addPromptRun: state.addPromptRun,
     setPromptRunStatus: state.setPromptRunStatus,
   }));
@@ -125,10 +127,12 @@ export const useAgentPrompt = ({
           setRunningRequestId(requestId);
           await runPromise;
           finishPlanning(tabId, requestId);
+          setPromptRunStatus(tabId, requestId, 'planned');
           startActionThinking(tabId, requestId);
         } catch (err) {
           console.error('prompt error:', err);
           promptFailed = true;
+          markThinkingError(tabId, requestId);
           finishPlanning(tabId, requestId);
           setPromptRunStatus(tabId, requestId, 'error');
         } finally {
@@ -150,6 +154,7 @@ export const useAgentPrompt = ({
       appendPlanningOutput,
       clearAttachments,
       finishPlanning,
+      markThinkingError,
       refreshSessionSnapshot,
       runningAssistantMessageIdRef,
       scheduleSessionRefresh,
@@ -170,12 +175,14 @@ export const useAgentPrompt = ({
       setIsPromptRunning(false);
       setRunningRequestId(null);
       if (runningRequestId !== null) {
+        markThinkingError(activeTabId, runningRequestId);
         setPromptRunStatus(activeTabId, runningRequestId, 'error');
       }
       refreshSessionSnapshot(activeTabId);
     },
     [
       activeTabId,
+      markThinkingError,
       refreshSessionSnapshot,
       setIsPromptRunning,
       setRunningRequestId,

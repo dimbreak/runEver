@@ -53,10 +53,10 @@ export class WebTab {
         args,
         attachments: attachments?.map(
           (f): PromptAttachment => ({
-          name: f.name,
-          mimeType: f.mimeType,
-          data: f.data,
-        }),
+            name: f.name,
+            mimeType: f.mimeType,
+            data: f.data,
+          }),
         ),
       });
       if (error) throw new Error(error);
@@ -168,9 +168,15 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Google',
-    url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
+    url: 'https://www.google.com',
     isRunning: true,
   }),
+  // new WebTab({
+  //   id: 'tab-1',
+  //   title: 'Google',
+  //   url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
+  //   isRunning: true,
+  // }),
   // new WebTab({
   //   id: 'tab-2',
   //   title: 'OpenAI',
@@ -178,7 +184,10 @@ const initialTabs = [
   // }),
 ];
 
-const removeTabFromState = (state: Pick<TabState, 'tabs' | 'activeTabId' | 'frameMap'>, id: string) => {
+const removeTabFromState = (
+  state: Pick<TabState, 'tabs' | 'activeTabId' | 'frameMap'>,
+  id: string,
+) => {
   const nextTabs = state.tabs.filter((t) => t.id !== id);
   const wasActive = state.activeTabId === id;
   let nextActive = state.activeTabId;

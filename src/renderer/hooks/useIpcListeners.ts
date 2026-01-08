@@ -3,11 +3,15 @@ import { useTabStore, WebTab } from '../state/tabStore';
 import { useLayoutStore } from '../state/layoutStore';
 import { dialogService } from '../services/dialogService';
 import { ToMainIpc } from '../../contracts/toMain';
+import { useAgentStore } from '../state/agentStore';
 
 export const useIpcListeners = () => {
   const { addTab, frameMap, updateTabTitle, updateTabUrl, removeTabByFrameId } =
     useTabStore();
   const { bounds } = useLayoutStore();
+  const setSessionSnapshot = useAgentStore(
+    (state) => state.setSessionSnapshot,
+  );
   useEffect(() => {
     const ipc = window.electron?.ipcRenderer;
     if (!ipc) return;
@@ -80,12 +84,40 @@ export const useIpcListeners = () => {
         });
       },
     );
+    const unsubscribeSessionSnapshot = ipc.on(
+      'llm-session-snapshot',
+      (_event: any, payload: { frameId: number; snapshot: unknown | null }) => {
+        const entry = Array.from(frameMap.entries()).find(
+          ([, frameId]) => frameId === payload.frameId,
+        );
+        if (!entry) return;
+        const [tabId] = entry;
+        if (payload.snapshot && typeof payload.snapshot === 'object') {
+          setSessionSnapshot(tabId, {
+            frameId: payload.frameId,
+            updatedAt: Date.now(),
+            ...(payload.snapshot as any),
+          });
+        } else {
+          setSessionSnapshot(tabId, null);
+        }
+      },
+    );
 
     return () => {
       unsubscribeNewTab?.();
       unsubscribeTitleUpdate?.();
       unsubscribeTabClosed?.();
       unsubscribeToUser?.();
+      unsubscribeSessionSnapshot?.();
     };
-  }, [addTab, frameMap, updateTabTitle, updateTabUrl, removeTabByFrameId, bounds]);
+  }, [
+    addTab,
+    frameMap,
+    updateTabTitle,
+    updateTabUrl,
+    removeTabByFrameId,
+    bounds,
+    setSessionSnapshot,
+  ]);
 };

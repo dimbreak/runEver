@@ -87,6 +87,13 @@ function initPromptIpc(webViewTabsById: Map<number, TabWebView>) {
     return { stopped: true };
   });
 
+  ToMainIpc.getLlmSessionSnapshot.handle(async (_event, arg) => {
+    const wvTab = webViewTabsById.get(arg.frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    const snapshot = wvTab.llmSession?.getSnapshot() ?? null;
+    return { snapshot };
+  });
+
   ToMainIpc.getTabNavigationState.handle(async (_event, arg) => {
     const wvTab = webViewTabsById.get(arg.frameId);
     if (!wvTab) return { error: 'Tab not found' };

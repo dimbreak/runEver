@@ -15,6 +15,8 @@ export class WebViewLlmSession {
   private actionIdToRequestId = new Map<number, number>();
   private nextActionId = 0;
   private lastStartedRequestId: number | null = null;
+  private snapshotTimer: NodeJS.Timeout | null = null;
+  private snapshotPending = false;
 
   constructor(public tab: TabWebView) {}
 
@@ -40,6 +42,7 @@ export class WebViewLlmSession {
         })) ?? [];
     this.runsByRequestId.set(requestId, run);
     this.lastStartedRequestId = requestId;
+    this.scheduleSnapshotEmit();
     return run.initPrompt(promptTxt, args, reasoningEffort, modelType);
   }
 
@@ -57,6 +60,7 @@ export class WebViewLlmSession {
       this.inFlightAction = false;
     }
     this.cleanupActionMapForRequest(id);
+    this.scheduleSnapshotEmit();
     this.pump();
     return { stopped: true };
   }
@@ -85,6 +89,7 @@ export class WebViewLlmSession {
           if (this.activeRequestId === requestId) {
             this.activeRequestId = null;
             this.inFlightAction = false;
+            this.scheduleSnapshotEmit();
           }
           this.pump();
         })
@@ -102,6 +107,7 @@ export class WebViewLlmSession {
     }
     if (!this.runQueue.includes(requestId)) {
       this.runQueue.push(requestId);
+      this.scheduleSnapshotEmit();
     }
     this.pump();
   }
@@ -116,6 +122,7 @@ export class WebViewLlmSession {
       this.inFlightAction = false;
       this.pump();
     }
+    this.scheduleSnapshotEmit();
   }
 
   actionError(actionId: number, error: string) {
@@ -123,11 +130,20 @@ export class WebViewLlmSession {
     if (requestId === undefined) return;
     const run = this.runsByRequestId.get(requestId);
     if (!run) return;
+    run.stopRequested = true;
     run.actionError(actionId, error);
+    this.runQueue = this.runQueue.filter((v) => v !== requestId);
     if (this.activeRequestId === requestId) {
+      this.activeRequestId = null;
       this.inFlightAction = false;
-      this.pump();
     }
+    this.cleanupActionMapForRequest(requestId);
+    this.scheduleSnapshotEmit();
+    this.pump();
+  }
+
+  notifySnapshotChanged() {
+    this.scheduleSnapshotEmit();
   }
 
   private async confirmAndDispatchHighRiskAction(
@@ -273,6 +289,7 @@ export class WebViewLlmSession {
       if (!run || run.stopRequested) {
         this.activeRequestId = null;
         this.inFlightAction = false;
+        this.scheduleSnapshotEmit();
         this.pump();
         return;
       }
@@ -312,6 +329,7 @@ export class WebViewLlmSession {
 
       this.activeRequestId = requestId;
       this.inFlightAction = true;
+      this.scheduleSnapshotEmit();
       if ((nextAction.action as any)?.k === 'botherUser') {
         this.handleBotherUserAction(requestId, run, nextAction);
         return;
@@ -337,5 +355,81 @@ export class WebViewLlmSession {
     for (const [actionId, owner] of this.actionIdToRequestId.entries()) {
       if (owner === requestId) this.actionIdToRequestId.delete(actionId);
     }
+  }
+
+  private scheduleSnapshotEmit() {
+    if (this.snapshotTimer) {
+      this.snapshotPending = true;
+      return;
+    }
+    this.snapshotTimer = setTimeout(() => {
+      this.snapshotTimer = null;
+      this.snapshotPending = false;
+      this.tab.emitLlmSessionSnapshot(this.getSnapshot());
+      if (this.snapshotPending) {
+        this.scheduleSnapshotEmit();
+      }
+    }, 150);
+  }
+
+  getSnapshot() {
+    const runs = Array.from(this.runsByRequestId.values())
+      .slice()
+      .sort((a, b) => a.requestId - b.requestId)
+      .map((run) => ({
+        requestId: run.requestId,
+        stopRequested: run.stopRequested,
+        args: run.args,
+        actions: run.actions.map((action) => ({
+          id: action.id,
+          intent: action.intent,
+          risk: action.risk,
+          done: action.done,
+          error: action.error,
+          stepPrompt: action.stepPrompt,
+          promptId: action.promptId,
+          argsDelta: action.argsDelta,
+          action: action.action,
+        })),
+        currentAction: run.currentAction,
+        prompts: run.prompts.map((prompt) => ({
+          id: prompt.id,
+          parentId: prompt.parentId,
+          sessionId: prompt.sessionId,
+          goalPrompt: prompt.goalPrompt,
+          subPrompt: prompt.subPrompt,
+          argsAdded: prompt.argsAdded ?? null,
+          complexity: prompt.complexity,
+        })),
+        breakPromptForExeErr: run.breakPromptForExeErr,
+        fixingAction: run.fixingAction
+          ? {
+              actionId: run.fixingAction.action.id,
+              offset: run.fixingAction.offset,
+              promptId: run.fixingAction.promptId,
+            }
+          : null,
+        sessionQueue: run.sessionQueue.map((session) => ({
+          id: session.id,
+          parentId: session.parent?.id ?? null,
+          promptQueue: session.promptQueue.map((prompt) => ({
+            id: prompt.id,
+            parentId: prompt.parentId,
+            sessionId: prompt.sessionId,
+            goalPrompt: prompt.goalPrompt,
+            subPrompt: prompt.subPrompt,
+            argsAdded: prompt.argsAdded ?? null,
+            complexity: prompt.complexity,
+          })),
+          subSessionQueueIds: session.subSessionQueue.map((s) => s.id),
+          breakPromptForExeErr: session.breakPromptForExeErr,
+        })),
+        runningSessionIds: run.runningSession.map((session) => session.id),
+      }));
+    return {
+      activeRequestId: this.activeRequestId,
+      runQueue: [...this.runQueue],
+      runs,
+    };
   }
 }
