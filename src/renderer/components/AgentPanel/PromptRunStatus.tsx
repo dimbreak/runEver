@@ -8,7 +8,7 @@ export const statusStyleMap: Record<
   planning: {
     label: 'Planning',
     className: 'bg-blue-100 text-blue-700',
-    hint: 'Working on a plan...',
+    hint: 'Planning...',
   },
   thinking: {
     label: 'Thinking',

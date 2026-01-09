@@ -83,8 +83,10 @@ export class TabWebView {
   emitLlmSessionSnapshot(snapshot: unknown | null) {
     try {
       if (this.mainWindow?.isDestroyed()) return;
+      const webContents = this.webView?.webContents;
+      if (!webContents || webContents.isDestroyed()) return;
       ToRendererIpc.llmSessionSnapshot.send(this.mainWindow.webContents, {
-        frameId: this.webView.webContents.id,
+        frameId: webContents.id,
         snapshot,
       });
     } catch (err) {

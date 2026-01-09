@@ -34,6 +34,7 @@ export const useAgentPrompt = ({
     markThinkingError,
     addPromptRun,
     setPromptRunStatus,
+    markPromptFinished,
   } = useAgentStore((state) => ({
     addMessage: state.addMessage,
     setPromptRunningStatus: state.setPromptRunningStatus,
@@ -45,6 +46,7 @@ export const useAgentPrompt = ({
     markThinkingError: state.markThinkingError,
     addPromptRun: state.addPromptRun,
     setPromptRunStatus: state.setPromptRunStatus,
+    markPromptFinished: state.markPromptFinished,
   }));
 
   const handlePrompt = React.useCallback(
@@ -137,6 +139,7 @@ export const useAgentPrompt = ({
           setPromptRunningStatus('error');
         } finally {
           setRunningRequestId(null);
+          markPromptFinished(tabId, requestId);
           if (promptFailed) {
             setPromptRunStatus(tabId, requestId, 'error');
           }
@@ -163,6 +166,7 @@ export const useAgentPrompt = ({
       setPromptRunStatus,
       startActionThinking,
       startThinking,
+      markPromptFinished,
       tabs,
     ],
   );
@@ -176,6 +180,7 @@ export const useAgentPrompt = ({
       if (runningRequestId !== null) {
         markThinkingError(activeTabId, runningRequestId);
         setPromptRunStatus(activeTabId, runningRequestId, 'error');
+        markPromptFinished(activeTabId, runningRequestId);
       }
       refreshSessionSnapshot(activeTabId);
     },
@@ -187,6 +192,7 @@ export const useAgentPrompt = ({
       setRunningRequestId,
       setPromptRunStatus,
       stopPrompt,
+      markPromptFinished,
     ],
   );
 
