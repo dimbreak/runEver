@@ -204,6 +204,23 @@ export const ActionList: React.FC<ActionListProps> = ({
         )
       : [],
   );
+  const planningRunning = thinkingItems.some(
+    (item) => item.kind === 'planning' && item.status === 'running',
+  );
+  const hasPendingActions = items.some(
+    (item) => item.status === 'running' || item.status === 'queued',
+  );
+  const actionItemsForRender = React.useMemo(() => {
+    if (!planningRunning || hasPendingActions) return items;
+    const placeholder: ActionItem = {
+      id: -1 - requestId,
+      requestId,
+      intent: 'Thinking the next move',
+      status: 'running',
+      updatedAt: Date.now(),
+    };
+    return [placeholder, ...items];
+  }, [items, planningRunning, hasPendingActions, requestId]);
   const planningOutput = React.useMemo(
     () =>
       thinkingItems.find((item) => item.kind === 'planning_output')?.content ??
@@ -221,22 +238,12 @@ export const ActionList: React.FC<ActionListProps> = ({
     (state) => state.toggleThinkingExpanded,
   );
 
-  if (!items.length && !thinkingItems.length) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-xs text-slate-700 shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)]">
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-          Agent Steps
-        </div>
-        <div className="text-[12px] text-slate-500">Waiting for steps...</div>
-      </div>
-    );
+  if (!actionItemsForRender.length && !thinkingItems.length) {
+    return null;
   }
 
   return (
-    <div className="space-y-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-3 text-xs text-slate-700 shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)]">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        Agent Steps
-      </div>
+    <div className="space-y-2 text-xs text-slate-700">
       {thinkingItems.map((item) => {
         if (item.kind === 'planning_output') return null;
         const statusStyle = thinkingStatusStyleMap[item.status];
@@ -277,7 +284,7 @@ export const ActionList: React.FC<ActionListProps> = ({
           </div>
         );
       })}
-      {items.map((item) => {
+      {actionItemsForRender.map((item) => {
         const statusStyle = statusStyleMap[item.status];
         const expanded = Boolean(expandedMap?.[item.id]);
         return (

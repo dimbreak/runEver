@@ -53,7 +53,6 @@ export class WebViewLlmSession {
     if (!run) return { stopped: false, error: 'Prompt not found' };
 
     run.stop();
-    this.runsByRequestId.delete(id);
     this.runQueue = this.runQueue.filter((v) => v !== id);
     if (this.activeRequestId === id) {
       this.activeRequestId = null;

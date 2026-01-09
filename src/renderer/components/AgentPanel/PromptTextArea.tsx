@@ -23,10 +23,10 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
   placeholder = 'Describe what you want to automate...',
 }) => {
   const { activeTabId } = useTabStore();
-  const { addMessage, isPromptRunning, runningRequestId } = useAgentStore(
+  const { addMessage, promptRunningStatus, runningRequestId } = useAgentStore(
     (state) => ({
       addMessage: state.addMessage,
-      isPromptRunning: state.isPromptRunning,
+      promptRunningStatus: state.promptRunningStatus,
       runningRequestId: state.runningRequestId,
     }),
   );
@@ -140,7 +140,11 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
       <TiptapEditor
         onSubmit={handleSubmit}
         onStop={handleStopClick}
-        isRunning={isPromptRunning}
+        isRunning={
+          promptRunningStatus === 'planning' ||
+          promptRunningStatus === 'thinking' ||
+          promptRunningStatus === 'running'
+        }
         placeholder={placeholder}
         className={
           attachments.length > 0 || isUploading || isDragActive

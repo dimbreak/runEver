@@ -25,7 +25,7 @@ export const useAgentPrompt = ({
   const { tabs, activeTabId, stopPrompt } = useTabStore();
   const {
     addMessage,
-    setIsPromptRunning,
+    setPromptRunningStatus,
     setRunningRequestId,
     startThinking,
     appendPlanningOutput,
@@ -36,7 +36,7 @@ export const useAgentPrompt = ({
     setPromptRunStatus,
   } = useAgentStore((state) => ({
     addMessage: state.addMessage,
-    setIsPromptRunning: state.setIsPromptRunning,
+    setPromptRunningStatus: state.setPromptRunningStatus,
     setRunningRequestId: state.setRunningRequestId,
     startThinking: state.startThinking,
     appendPlanningOutput: state.appendPlanningOutput,
@@ -87,7 +87,7 @@ export const useAgentPrompt = ({
         data: file.data,
       }));
       runningAssistantMessageIdRef.current = null;
-      setIsPromptRunning(true);
+      setPromptRunningStatus('planning');
       addPromptRun(tabId, requestId, id);
       startThinking(tabId, requestId);
       addMessage(tabId, {
@@ -127,7 +127,6 @@ export const useAgentPrompt = ({
           setRunningRequestId(requestId);
           await runPromise;
           finishPlanning(tabId, requestId);
-          setPromptRunStatus(tabId, requestId, 'planned');
           startActionThinking(tabId, requestId);
         } catch (err) {
           console.error('prompt error:', err);
@@ -135,8 +134,8 @@ export const useAgentPrompt = ({
           markThinkingError(tabId, requestId);
           finishPlanning(tabId, requestId);
           setPromptRunStatus(tabId, requestId, 'error');
+          setPromptRunningStatus('error');
         } finally {
-          setIsPromptRunning(false);
           setRunningRequestId(null);
           if (promptFailed) {
             setPromptRunStatus(tabId, requestId, 'error');
@@ -158,7 +157,7 @@ export const useAgentPrompt = ({
       refreshSessionSnapshot,
       runningAssistantMessageIdRef,
       scheduleSessionRefresh,
-      setIsPromptRunning,
+      setPromptRunningStatus,
       setRunningRequestId,
       addPromptRun,
       setPromptRunStatus,
@@ -172,7 +171,7 @@ export const useAgentPrompt = ({
     async (runningRequestId: number | null) => {
       if (!activeTabId) return;
       await stopPrompt(activeTabId, runningRequestId ?? undefined);
-      setIsPromptRunning(false);
+      setPromptRunningStatus('error');
       setRunningRequestId(null);
       if (runningRequestId !== null) {
         markThinkingError(activeTabId, runningRequestId);
@@ -184,7 +183,7 @@ export const useAgentPrompt = ({
       activeTabId,
       markThinkingError,
       refreshSessionSnapshot,
-      setIsPromptRunning,
+      setPromptRunningStatus,
       setRunningRequestId,
       setPromptRunStatus,
       stopPrompt,

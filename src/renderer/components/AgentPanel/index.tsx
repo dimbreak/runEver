@@ -18,13 +18,13 @@ export const AgentPanel: React.FC = () => {
   } = useLayoutStore();
   const { tabs, activeTabId } = useTabStore();
   const panelWidth = isSidebarOpen ? sidebarWidth : collapsedWidth;
-  const { addMessage, ensureTab, setSessionSnapshot, isPromptRunning } =
-    useAgentStore((state) => ({
+  const { addMessage, ensureTab, setSessionSnapshot } = useAgentStore(
+    (state) => ({
       addMessage: state.addMessage,
       ensureTab: state.ensureTab,
       setSessionSnapshot: state.setSessionSnapshot,
-      isPromptRunning: state.isPromptRunning,
-    }));
+    }),
+  );
   const runningAssistantMessageIdRef = React.useRef<number | null>(null);
   const sessionRefreshTimerRef = React.useRef<number | null>(null);
 
@@ -188,10 +188,7 @@ export const AgentPanel: React.FC = () => {
           </button>
         </div>
 
-        <MessageList
-          activeTabId={activeTabId}
-          isPromptRunning={isPromptRunning}
-        />
+        <MessageList activeTabId={activeTabId} />
 
         <PromptTextArea
           scheduleSessionRefresh={scheduleSessionRefresh}

@@ -116,12 +116,20 @@ export type ThinkingItem = {
   updatedAt: number;
 };
 
-export type PromptRunStatus =
+export type PromptRunStatus = 'planning' | 'running' | 'completed' | 'error';
+
+export type PromptRunningStatus =
   | 'planning'
-  | 'planned'
+  | 'thinking'
   | 'running'
   | 'completed'
   | 'error';
+
+export type PromptRunPhase = {
+  status: 'planning' | 'running';
+  startedAt: number;
+  endedAt?: number;
+};
 
 export type PromptRunItem = {
   requestId: number;
@@ -129,6 +137,7 @@ export type PromptRunItem = {
   status: PromptRunStatus;
   startedAt: number;
   completedAt?: number;
+  phases: PromptRunPhase[];
 };
 
 type AgentState = {
@@ -139,7 +148,7 @@ type AgentState = {
   thinkingItemsByTabId: Record<string, ThinkingItem[]>;
   expandedThinkingIdsByTabId: Record<string, Record<string, boolean>>;
   promptRunsByTabId: Record<string, PromptRunItem[]>;
-  isPromptRunning: boolean;
+  promptRunningStatus: PromptRunningStatus;
   runningRequestId: number | null;
   ensureTab: (tabId: string) => void;
   addMessage: (tabId: string, message: Message) => void;
@@ -174,7 +183,7 @@ type AgentState = {
     requestId: number,
     status: PromptRunStatus,
   ) => void;
-  setIsPromptRunning: (running: boolean) => void;
+  setPromptRunningStatus: (status: PromptRunningStatus) => void;
   setRunningRequestId: (id: number | null) => void;
   clearTab: (tabId: string) => void;
 };
@@ -342,25 +351,60 @@ const derivePromptRunStatus = (
     (thinking) => thinking.kind === 'planning',
   );
   const planningRunning = planningItem?.status === 'running';
-  const planningDone = planningItem?.status === 'done';
   const hasActions = run.actions.length > 0;
   const anyActionError = run.actions.some((action) => action.error?.length);
   const allActionsFinished = hasActions
     ? run.actions.every((action) => action.done || action.error?.length)
     : false;
-  if (planningRunning) return 'planning' as const;
+  const isActiveOrQueued =
+    snapshot.activeRequestId === run.requestId ||
+    snapshot.runQueue.includes(run.requestId);
   if (anyActionError) return 'error' as const;
-  if (hasActions) {
-    if (allActionsFinished) return 'completed' as const;
-    return 'running' as const;
-  }
-  if (planningDone) {
-    const isActiveOrQueued =
-      snapshot.activeRequestId === run.requestId ||
-      snapshot.runQueue.includes(run.requestId);
-    return isActiveOrQueued ? ('planned' as const) : ('completed' as const);
-  }
+  if (planningRunning) return 'planning' as const;
+  if (hasActions && !allActionsFinished) return 'running' as const;
+  if (isActiveOrQueued) return 'planning' as const;
+  if (!hasActions || allActionsFinished) return 'completed' as const;
   return item.status;
+};
+
+const updatePhaseTimeline = (
+  phases: PromptRunPhase[],
+  nextStatus: PromptRunStatus,
+  now: number,
+) => {
+  const lastPhase = phases[phases.length - 1];
+  if (nextStatus === 'planning' || nextStatus === 'running') {
+    if (!lastPhase || lastPhase.status !== nextStatus) {
+      const updated = (() => {
+        if (lastPhase?.endedAt) {
+          return phases;
+        }
+        if (lastPhase) {
+          return [...phases.slice(0, -1), { ...lastPhase, endedAt: now }];
+        }
+        return phases;
+      })();
+      return [
+        ...updated,
+        {
+          status: nextStatus,
+          startedAt: now,
+        },
+      ];
+    }
+    return phases;
+  }
+  if ((nextStatus === 'completed' || nextStatus === 'error') && lastPhase) {
+    if (lastPhase.endedAt) return phases;
+    return [
+      ...phases.slice(0, -1),
+      {
+        ...lastPhase,
+        endedAt: now,
+      },
+    ];
+  }
+  return phases;
 };
 
 const updatePromptRunStatusFromSnapshot = (
@@ -381,18 +425,63 @@ const updatePromptRunStatusFromSnapshot = (
       snapshot,
       thinkingItems,
     );
+    const nextPhases = updatePhaseTimeline(item.phases, nextStatus, now);
     if (nextStatus === item.status) return item;
     changed = true;
     return {
       ...item,
       status: nextStatus,
+      phases: nextPhases,
       completedAt:
-        nextStatus === 'completed' || nextStatus === 'error'
-          ? now
-          : undefined,
+        nextStatus === 'completed' || nextStatus === 'error' ? now : undefined,
     };
   });
   return changed ? next : runs;
+};
+
+const derivePromptRunningStatus = (
+  snapshot: LlmSessionSnapshot | null,
+  thinkingItems: ThinkingItem[],
+  actionItems: ActionItem[],
+) => {
+  if (!snapshot) return 'completed' as const;
+  const runs = snapshot.runs;
+  const hasError =
+    runs.some((run) => run.stopRequested) ||
+    actionItems.some((item) => item.status === 'error') ||
+    thinkingItems.some((item) => item.status === 'error');
+  if (hasError) return 'error' as const;
+  const planningActive = thinkingItems.some(
+    (item) => item.kind === 'planning' && item.status === 'running',
+  );
+  if (planningActive) return 'planning' as const;
+  const hasPendingActions = actionItems.some(
+    (item) => item.status === 'running' || item.status === 'queued',
+  );
+  if (hasPendingActions) return 'running' as const;
+  const thinkingActive = thinkingItems.some(
+    (item) => item.kind === 'action_thinking' && item.status === 'running',
+  );
+  if (thinkingActive) return 'thinking' as const;
+  const hasActiveRun =
+    snapshot.activeRequestId !== null || snapshot.runQueue.length > 0;
+  if (hasActiveRun) return 'planning' as const;
+  const hasPendingPrompts = runs.some((run) => {
+    if (run.stopRequested) return false;
+    if (run.runningSessionIds.length > 0) return true;
+    return run.sessionQueue.some((session) => session.promptQueue.length > 0);
+  });
+  if (hasPendingPrompts) return 'planning' as const;
+  const allRunsCompleted =
+    runs.length > 0 &&
+    runs.every((run) => {
+      if (run.stopRequested) return true;
+      if (run.actions.length === 0) return false;
+      return run.actions.every((action) => action.done || action.error?.length);
+    });
+  if (allRunsCompleted) return 'completed' as const;
+  if (runs.length > 0) return 'planning' as const;
+  return 'completed' as const;
 };
 
 export const useAgentStore = create<AgentState>((set) => ({
@@ -403,7 +492,7 @@ export const useAgentStore = create<AgentState>((set) => ({
   thinkingItemsByTabId: {},
   expandedThinkingIdsByTabId: {},
   promptRunsByTabId: {},
-  isPromptRunning: false,
+  promptRunningStatus: 'completed',
   runningRequestId: null,
   ensureTab: (tabId) =>
     set((state) => {
@@ -468,6 +557,11 @@ export const useAgentStore = create<AgentState>((set) => ({
         snapshot,
         nextThinkingItems,
       );
+      const nextRunningStatus = derivePromptRunningStatus(
+        snapshot,
+        nextThinkingItems,
+        items,
+      );
       return {
         sessionByTabId: { ...state.sessionByTabId, [tabId]: snapshot },
         actionItemsByTabId: {
@@ -482,6 +576,7 @@ export const useAgentStore = create<AgentState>((set) => ({
           ...state.promptRunsByTabId,
           [tabId]: nextPromptRuns,
         },
+        promptRunningStatus: nextRunningStatus,
         expandedActionIdsByTabId: {
           ...state.expandedActionIdsByTabId,
           [tabId]:
@@ -684,6 +779,8 @@ export const useAgentStore = create<AgentState>((set) => ({
     set((state) => {
       const prev = state.promptRunsByTabId[tabId] ?? [];
       if (prev.some((item) => item.requestId === requestId)) return state;
+      const now = Date.now();
+      const nextStatus = 'planning' as const;
       return {
         promptRunsByTabId: {
           ...state.promptRunsByTabId,
@@ -692,11 +789,18 @@ export const useAgentStore = create<AgentState>((set) => ({
             {
               requestId,
               userMessageId,
-              status: 'planning',
-              startedAt: Date.now(),
+              status: nextStatus,
+              startedAt: now,
+              phases: [
+                {
+                  status: 'planning',
+                  startedAt: now,
+                },
+              ],
             },
           ],
         },
+        promptRunningStatus: 'planning',
       };
     }),
   setPromptRunStatus: (tabId, requestId, status) =>
@@ -711,6 +815,7 @@ export const useAgentStore = create<AgentState>((set) => ({
           status,
           completedAt:
             status === 'completed' || status === 'error' ? now : undefined,
+          phases: updatePhaseTimeline(item.phases, status, now),
         };
       });
       return {
@@ -718,9 +823,12 @@ export const useAgentStore = create<AgentState>((set) => ({
           ...state.promptRunsByTabId,
           [tabId]: next,
         },
+        promptRunningStatus:
+          status === 'error' ? 'error' : state.promptRunningStatus,
       };
     }),
-  setIsPromptRunning: (running) => set(() => ({ isPromptRunning: running })),
+  setPromptRunningStatus: (status) =>
+    set(() => ({ promptRunningStatus: status })),
   setRunningRequestId: (id) => set(() => ({ runningRequestId: id })),
   clearTab: (tabId) =>
     set((state) => {
