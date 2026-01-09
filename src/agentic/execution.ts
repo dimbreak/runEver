@@ -63,7 +63,7 @@ export class ExecutionPrompter {
     ExecutorLlmResult | undefined,
     void
   > {
-    const wv = this.tab.webView;
+    const { webView: wv, llmSession } = this.tab;
     const rect = wv.getBounds();
     console.log('Executor execPrompt', wv.webContents.id);
     const fullHtml = (await wv.webContents.executeJavaScript(
@@ -77,7 +77,20 @@ export class ExecutionPrompter {
       goal: goalPrompt,
       sub: subPrompt,
       userHeader: `[url]
-${this.tab.webView.webContents.getURL()}
+${wv.webContents.getURL()}${
+        llmSession.tabsCount() > 1
+          ? `
+
+[opened tabs]
+${llmSession
+  .listTabs()
+  .map(
+    (tab) =>
+      `${tab.focused ? 'focus ' : ''}${tab.title ? `[${tab.title}] ${tab.url}` : tab.url}`,
+  )
+  .join('\n')}`
+          : ''
+      }
 
 [viewport]
 w=${rect.width} h=${rect.height}

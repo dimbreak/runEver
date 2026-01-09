@@ -9,32 +9,18 @@ import {
 import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
+import { LlmApi } from '../../agentic/api';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
-import { Network } from '../../webView/network';
-import { LlmApi } from '../../agentic/api';
-import { Util } from '../../webView/util';
-import { showSystemMessageBox } from '../dialogs';
 import { ToRendererIpc } from '../../contracts/toRenderer';
-import { isMac } from '../util';
 import { IframeProgressType } from '../../extensions/iframe/types';
 import type { PromptAttachment } from '../../schema/attachments';
-
-const testPrompt: { user: string; system: string } | null = null;
+import { Network } from '../../webView/network';
+import { Util } from '../../webView/util';
+import { showSystemMessageBox } from '../dialogs';
+import { isMac } from '../util';
 
 export class TabWebView {
-  private static userInputResolvers = new Map<
-    number,
-    (answer: Record<string, string>) => void
-  >();
-
-  static resolveUserInput(responseId: number, answer: Record<string, string>) {
-    const resolver = TabWebView.userInputResolvers.get(responseId);
-    if (!resolver) return;
-    TabWebView.userInputResolvers.delete(responseId);
-    resolver(answer);
-  }
-
   url: string;
 
   webView: WebContentsView;
@@ -46,7 +32,7 @@ export class TabWebView {
 
   scrollAdjustment: number;
 
-  llmSession: WebViewLlmSession | undefined;
+  llmSession: WebViewLlmSession;
 
   pageLoadedLock = Util.newLock();
 
@@ -59,8 +45,10 @@ export class TabWebView {
     public initUrl: string,
     public bounds: Rectangle,
     private mainWindow: BrowserWindow,
+    llmSession: WebViewLlmSession,
   ) {
     this.url = initUrl;
+    this.llmSession = llmSession;
     this.webView = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -74,8 +62,21 @@ export class TabWebView {
     this.initView();
   }
 
+  get isFocused() {
+    return this.llmSession.isFocused(this);
+  }
+
+  focus() {
+    this.webView.webContents.focus();
+    this.llmSession.focusTab(this);
+  }
+
+  blur() {
+    // no-op
+  }
+
   stopPrompt(requestId?: number) {
-    this.llmSession?.stopPrompt(requestId);
+    this.llmSession.stopPrompt(requestId);
     this.pageLoadedLock.unlock();
   }
 
@@ -111,36 +112,6 @@ export class TabWebView {
     return !('error' in res) && res.response === 0;
   }
 
-  async askUserInput<
-    Q extends Record<
-      string,
-      | {
-          type: 'string';
-        }
-      | {
-          type: 'select';
-          options: string[];
-        }
-    >,
-  >(
-    message: string,
-    questions: Q,
-  ): Promise<Record<Extract<keyof Q, string>, string>> {
-    const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
-    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
-      (resolve) => {
-        TabWebView.userInputResolvers.set(responseId, resolve as any);
-      },
-    );
-    ToRendererIpc.toUser.send(this.mainWindow.webContents, {
-      type: 'prompt',
-      message,
-      questions,
-      responseId,
-    });
-    return promise;
-  }
-
   async pushActions(
     actions: WireActionWithWaitAndRec[],
     args: Record<string, any>,
@@ -157,11 +128,11 @@ export class TabWebView {
     argsDelta: Record<string, string> | undefined,
     iframeId?: string,
   ) {
-    this.llmSession?.actionDone(actionId, argsDelta);
+    this.llmSession.actionDone(actionId, argsDelta);
   }
 
   actionError(error: string, actionId: number, iframeId?: string) {
-    this.llmSession?.actionError(actionId, error);
+    this.llmSession.actionError(actionId, error);
   }
 
   async screenshot(x = 0, y = 0, capWidth = 0, capHeight = 0) {
@@ -178,21 +149,6 @@ export class TabWebView {
       width,
       height,
     });
-  }
-
-  screenshotRect(screenshotRect: Rectangle) {
-    const { width, height } = this.webView.getBounds();
-    if (width > 1920 && height > 1080) {
-      const x = Math.min(screenshotRect.x - 200, 0);
-      const y = Math.min(screenshotRect.y - 200, 0);
-      return this.screenshot(
-        x,
-        y,
-        Math.max(screenshotRect.width + 400, width - x),
-        Math.max(screenshotRect.height + 400, height - y),
-      );
-    }
-    return this.screenshot(screenshotRect.x, screenshotRect.y);
   }
 
   initView() {
@@ -233,9 +189,7 @@ export class TabWebView {
           webContents.executeJavaScript(
             `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
-          if (this.llmSession) {
-            this.llmSession.resumeAll();
-          }
+          this.llmSession.resumeAll();
           this.loadedFrame('MAIN');
         }
       },
@@ -250,7 +204,10 @@ export class TabWebView {
     });
     webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {
-        this.mainWindow.webContents.send('open-new-tab', { url });
+        this.mainWindow.webContents.send('open-new-tab', {
+          url,
+          parentFrameId: frameId,
+        });
       }
       return { action: 'deny' };
     });
@@ -302,14 +259,13 @@ export class TabWebView {
     console.info('====>');
     console.info(this.llmSession);
     console.info('prompt:', prompt);
-    console.info('testPrompt:', testPrompt);
     if (this.llmSession) {
-      if (prompt === 'run test' && testPrompt) {
+      if (prompt === 'run test') {
         const promises: Promise<string>[] = [];
         for (let i = 0; i < 3; i++) {
           const stream = LlmApi.queryLLMApi(
-            testPrompt.user,
-            testPrompt.system,
+            'user',
+            'system',
             null,
             `test_${Date.now()}_${i}`,
             'mid',
@@ -336,6 +292,7 @@ export class TabWebView {
         try {
           const stream = this.llmSession.startPrompt(
             requestId,
+            this,
             prompt,
             args,
             attachments,
@@ -421,7 +378,7 @@ export class TabWebView {
       this.scrollAdjustment = scrollAdjustment;
     }
     if (!this.llmSession) {
-      this.llmSession = new WebViewLlmSession(this);
+      this.llmSession = new WebViewLlmSession(this.mainWindow);
       this.emitLlmSessionSnapshot(this.llmSession.getSnapshot());
     } else {
       // Keep the existing session so in-flight prompts don't lose their state.

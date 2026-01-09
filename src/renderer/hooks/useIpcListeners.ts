@@ -17,11 +17,15 @@ export const useIpcListeners = () => {
     if (!ipc) return;
 
     // Handler for opening new tabs from main process
-    const handleOpenNewTab = (_: any, payload: { url: string }) => {
+    const handleOpenNewTab = (
+      _: any,
+      payload: { url: string; parentFrameId?: number },
+    ) => {
       const newTab = new WebTab({
         id: `tab-${Date.now()}`,
         title: payload.url,
         url: payload.url,
+        parentFrameId: payload.parentFrameId,
       });
       addTab(newTab, bounds);
     };
