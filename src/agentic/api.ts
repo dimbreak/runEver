@@ -1,55 +1,62 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { LanguageModelV2 } from '@ai-sdk/provider';
-import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
+import type { FilePart, ImagePart, ModelMessage } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import settings from 'electron-settings';
 import z from 'zod';
-import { envSchema, envVars } from '../schema/env';
-import { FirstTokenMonitor } from '../utils/llm';
+import fs from 'fs';
+import { app } from 'electron';
+import { envSchema, envVars, type Env } from '../schema/env';
 import { Util } from '../webView/util';
+import { FirstTokenMonitor } from '../utils/llm';
 
 export namespace LlmApi {
   export const llmConfigSchema = z.object({
     api: envSchema.shape.provider,
     key: envSchema.shape.apiKey,
     error: z.string().optional(),
+    baseUrl: z.string().optional(),
   });
   export type LlmConfig = z.infer<typeof llmConfigSchema>;
   export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
   export type LlmModelType = 'hi' | 'mid' | 'low';
   export type Attachment = ImagePart | FilePart;
+  export type LlmApiModels = {
+    provider: Env['provider'];
+    hi: LanguageModelV2;
+    mid: LanguageModelV2;
+    low: LanguageModelV2;
+  };
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
+  const recordPath = `${app.getPath('userData')}/prompt-record`;
+
+  try {
+    fs.mkdirSync(recordPath);
+  } catch (e) {}
+
   const getLlmConfig = async () => {
     const loadedConfig = settings.getSync('llmConfig');
-    try {
-      return llmConfigSchema.parse(loadedConfig) as LlmConfig;
-    } catch (error) {
-      const llmConfig: LlmConfig = {
-        api: envVars.provider,
-        key: envVars.apiKey,
-        error: error instanceof Error ? error.message : undefined,
-      };
-      settings.setSync('llmConfig', llmConfig);
-      return llmConfig;
-    }
+    // try {
+    //   return llmConfigSchema.parse(loadedConfig) as LlmConfig;
+    // } catch (error) {
+    const llmConfig: LlmConfig = {
+      api: envVars.provider,
+      key: envVars.apiKey,
+      baseUrl: envVars.baseUrl,
+      // error: error instanceof Error ? error.message : undefined,
+    };
+    settings.setSync('llmConfig', llmConfig);
+    return llmConfig;
+    // }
   };
 
-  let llmApiPromise: Promise<{
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
-  } | null>;
-  const getLlmApi = async (): Promise<{
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
-  } | null> => {
+  let llmApiPromise: Promise<LlmApiModels | null>;
+  const getLlmApi = async (): Promise<LlmApiModels | null> => {
     if (!llmApiPromise) {
       llmApiPromise = new Promise(async (resolve) => {
         const apiConfig = await getLlmConfig();
-        console.info('apiConfig:', apiConfig);
         console.log('apiConfig', apiConfig);
         if (apiConfig.error) {
           console.error('Failed to get LLM config', apiConfig.error);
@@ -57,9 +64,13 @@ export namespace LlmApi {
         }
         switch (apiConfig.api) {
           case 'openai': {
-            console.info('createOpenAI', apiConfig.key);
-            const openai = createOpenAI({ apiKey: apiConfig.key });
+            console.info('createOpenAI', apiConfig);
+            const openai = createOpenAI({
+              apiKey: apiConfig.key,
+              baseURL: apiConfig.baseUrl,
+            });
             resolve({
+              provider: 'openai',
               hi: openai('gpt-5.2'),
               mid: openai('gpt-5-mini'),
               low: openai('gpt-5-nano'),
@@ -113,40 +124,42 @@ export namespace LlmApi {
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
-    console.info('llmApi:', llmApi);
-    const monitor = new FirstTokenMonitor(cacheKey);
 
     if (llmApi) {
-      // console.log('Query LLM', prompt);
-      // throw new Error('Not implemented');
-      const { textStream } = streamQueryer({
+      const monitor = new FirstTokenMonitor(cacheKey);
+      const providerOptions: Record<string, any> = {};
+      if (llmApi.provider === 'openai') {
+        providerOptions.openai = {
+          reasoningEffort: reasoning,
+        };
+        if (cacheKey) {
+          providerOptions.openai.promptCacheKey = cacheKey;
+        }
+      }
+      const promptObj: string | Array<ModelMessage> = systemPrompt
+        ? [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: attachments
+                ? [
+                    {
+                      type: 'text',
+                      text: prompt,
+                    },
+                    ...attachments,
+                  ]
+                : prompt,
+            },
+          ]
+        : prompt;
+      const { textStream, response } = streamQueryer({
         model: llmApi[model],
-        providerOptions: {
-          openai: {
-            reasoningEffort: reasoning,
-            promptCacheKey: cacheKey ?? undefined,
-          },
-        },
-        prompt: systemPrompt
-          ? [
-              {
-                role: 'system',
-                content: systemPrompt,
-              },
-              {
-                role: 'user',
-                content: attachments
-                  ? [
-                      {
-                        type: 'text',
-                        text: prompt,
-                      },
-                      ...attachments,
-                    ]
-                  : prompt,
-              },
-            ]
-          : prompt,
+        providerOptions,
+        prompt: promptObj,
       });
 
       // Start monitoring for the first token
@@ -161,12 +174,23 @@ export namespace LlmApi {
         }
       } catch (err) {
         monitor.stop();
+        console.error('Error during LLM streaming:', err);
         throw err;
       } finally {
         monitor.stop();
+        console.log(`api call ok ${cacheKey}`);
+        const res = await response;
+        let messages: any[] = [];
+        if (res) {
+          messages = res.messages?.map((m) => m?.content);
+        }
+        fs.writeFile(
+          `${recordPath}/log-${new Date().toISOString()}.json`,
+          JSON.stringify({ ...res, prompt: promptObj, messages }),
+          () => {},
+        );
       }
     } else {
-      monitor.stop();
       throw ErrNoConfig;
     }
   }
@@ -197,8 +221,17 @@ export namespace LlmApi {
     stream: AsyncGenerator<string, any, void>,
   ) => {
     const result: string[] = [];
+    const start = Date.now();
+    let firstToken = -1;
     for await (const part of stream) {
+      if (firstToken === -1) {
+        firstToken = Date.now() - start;
+      }
       result.push(part);
+    }
+    const done = Date.now() - start;
+    if (result[0][0] === '{') {
+      result[0] = `{ "firstToken": ${firstToken}, "done": ${done}, ${result[0].slice(1)}`;
     }
     return result.join('');
   };

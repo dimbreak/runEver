@@ -5,7 +5,7 @@ import type {
   IpcRendererEvent,
   WebContents,
 } from 'electron';
-import { TabWebView } from '../main/webView/tab';
+import type { WebViewLlmSession } from '../agentic/webviewLlmSession';
 
 export const isElectron =
   typeof process !== 'undefined' &&
@@ -23,13 +23,16 @@ class IcpContract<REQ extends Array<any>, RES = any> {
 }
 
 let ipcMain: IpcMain;
-let webViewTabsById: Map<number, TabWebView>;
+let webViewSession: WebViewLlmSession;
 
 const onIpcMainInitialisedHandlers: Array<() => void> = [];
 
-export function initIpcMain(main: IpcMain, tabsById: Map<number, TabWebView>) {
+export function initIpcMain(
+  main: IpcMain,
+  session: WebViewLlmSession,
+) {
   ipcMain = main;
-  webViewTabsById = tabsById;
+  webViewSession = session;
   onIpcMainInitialisedHandlers.forEach((handler) => handler());
   ipcMain.on('ipcToWebViewResponse', (_, handlerId: number, res) => {
     const handler = ipcWebViewHandlers[handlerId];
@@ -108,8 +111,8 @@ export class IpcWebViewContract<
   async invokeFromMain(...args: REQ): Promise<Error | RES> {
     const wv =
       args[0] === -1
-        ? webViewTabsById.values().next().value
-        : webViewTabsById.get(args[0]);
+        ? webViewSession.getAnyTab()
+        : webViewSession.getTab(args[0]);
     if (wv) {
       console.log(`ipcInvoke:${this.channel}`, args);
       const reqId = Date.now() * 100 + Math.floor(Math.random() * 100);
@@ -130,7 +133,7 @@ export class IpcWebViewContract<
   webviewHandle(handler: (...args: Tail<REQ>) => Promise<RES>) {
     window.electron.ipcRenderer.on(
       `ipcInvoke:${this.channel}`,
-      async (_event, ...args: REQ) => {
+      async (_event: any, ...args: REQ) => {
         const res = await handler(...(args.slice(1) as Tail<REQ>));
         window.electron.ipcRenderer.send(`ipcToWebViewResponse`, args[0], res);
       },

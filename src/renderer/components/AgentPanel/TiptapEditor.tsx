@@ -3,11 +3,11 @@ import { Extension, type JSONContent } from '@tiptap/core';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import { cn } from '../utils/cn';
+import { cn } from '../../utils/cn';
 import { SubmitButton } from './SubmitButton';
 
-export type TiptapComposerProps = {
-  onSubmit: (content: JSONContent) => void;
+export type TiptapEditorProps = {
+  onSubmit: (content: JSONContent) => void | boolean | Promise<void | boolean>;
   onStop?: () => void;
   isRunning?: boolean;
   placeholder?: string;
@@ -56,14 +56,14 @@ const EnterSubmitBehavior = Extension.create({
   },
 });
 
-export function TiptapComposer({
+export function TiptapEditor({
   onSubmit,
   onStop,
   isRunning = false,
   placeholder = 'Write something...',
   disabled,
   className,
-}: TiptapComposerProps) {
+}: TiptapEditorProps) {
   const editorRef = React.useRef<any>(null);
   const [isEmpty, setIsEmpty] = React.useState(true);
 
@@ -73,9 +73,16 @@ export function TiptapComposer({
     if (!editor) return;
     const json = editor.getJSON();
     if (getIsEmpty(json)) return;
-    onSubmit(json);
-    editor.commands.clearContent(true);
-    setIsEmpty(true);
+    Promise.resolve()
+      .then(() => onSubmit(json))
+      .then((result) => {
+        if (result === false) return;
+        editor.commands.clearContent(true);
+        setIsEmpty(true);
+      })
+      .catch(() => {
+        // keep editor content on submit failure/cancel
+      });
   }, [isRunning, onSubmit]);
 
   const editor = useEditor({

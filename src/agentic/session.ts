@@ -8,83 +8,12 @@ import {
   WireSubTask,
 } from './execution.schema';
 import { PromptRun } from './promptRun';
-import { Prompt } from './types';
+import { Prompt, WireActionWithWaitAndRec } from './types';
+import { LlmApi } from './api';
 
-// LlmApi.addDummyReturn(
-//   `{
-//   "shouldSpiltTask": "yes: form has multiple fields and calendar interaction (likely >5 actions and uncertain UI)",
-//   "a": [
-//     {
-//       "subTaskPrompt": "Fill full name and work email with provided values",
-//       "addArgs": {
-//         "fullName": "Jamie Parker",
-//         "workEmail": "jamie.parker+742@example.com"
-//       },
-//       "complexity": "m"
-//     },
-//     {
-//       "subTaskPrompt": "Set birthday in the calendar to \${birthYear}-\${birthMonth}-\${birthDay}",
-//       "addArgs": {
-//         "birthYear": "2000",
-//         "birthMonth": "01",
-//         "birthDay": "15"
-//       },
-//       "complexity": "h"
-//     },
-//     {
-//       "subTaskPrompt": "Fill password and confirm password with the provided password",
-//       "addArgs": {
-//         "password": "S3cureP@ssw0rd!"
-//       },
-//       "complexity": "m"
-//     }
-//   ],
-//   "todo": {
-//     "sc": false,
-//     "rc": "Verify that inputs fullName, workEmail, birthYear/birthMonth/birthDay, and password were filled correctly; if correct, click the 'Create account' button to submit."
-//   },
-//   "clearQueue": false
-// }`,
-// );
-// LlmApi.addDummyReturn(`{
-//   "shouldSpiltTask": "no - only two obvious input fields to fill",
-//   "a": [
-//     {
-//       "intent": "fill Full name with \${args.fullName}",
-//       "risk": "m",
-//       "action": {
-//         "k": "input",
-//         "q": {
-//           "id": "__7",
-//           "argKeys": [
-//             "fullName"
-//           ]
-//         },
-//         "v": "\${args.fullName}"
-//       }
-//     },
-//     {
-//       "intent": "fill Work email with \${args.workEmail}",
-//       "risk": "m",
-//       "action": {
-//         "k": "input",
-//         "q": {
-//           "id": "__9",
-//           "argKeys": [
-//             "workEmail"
-//           ]
-//         },
-//         "v": "\${args.workEmail}"
-//       }
-//     }
-//   ],
-//   "clearQueue": false
-// }`);
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
-// LlmApi.addDummyReturn('null');
+LlmApi.addDummyReturn(
+  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
+);
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
@@ -115,7 +44,9 @@ import { Prompt } from './types';
 
 export class ExecutionSession {
   subSessionQueue: ExecutionSession[];
+  actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
+  eventsLogs: string[] = [];
   constructor(
     public id: number,
     public promptQueue: Prompt[],
@@ -138,15 +69,20 @@ export class ExecutionSession {
       this.promptQueue[0]?.goalPrompt ?? 'no prompt',
     );
     let requireScreenshot = false;
-    const { run, promptQueue, id } = this;
-    const { tab, executionSession, args, actions, browserActionLock } = run;
+    const { run, promptQueue, id, actions, subSessionQueue, eventsLogs } = this;
+    const { tab, executionSession, args, browserActionLock } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
-      ExecutorLlmResult,
+      ExecutorLlmResult | undefined,
       void
     >;
     const finish = run.setRunningStatus(this);
+    if (promptQueue.length === 0) {
+      const res = yield* this.execSubSessionQueue();
+      finish();
+      return res;
+    }
     while (promptQueue.length) {
       if (run.stopRequested) {
         finish();
@@ -171,24 +107,39 @@ export class ExecutionSession {
                 `[performed actions]
 -`,
                 `[performed actions]
-- ${actions.map((s) => s.intent).join('\n- ')}`,
+- ${eventsLogs.join('\n- ')}`,
               )
             : runSubPrompt,
           requireScreenshot,
           complexity,
+          run.llmAttachments,
         );
 
         let res:
           | IteratorYieldResult<WireActionWithWait | WireSubTask>
-          | IteratorReturnResult<ExecutorLlmResult>;
+          | IteratorReturnResult<ExecutorLlmResult | undefined>;
         while ((res = await stepsStream.next())) {
           if (run.stopRequested) {
             finish();
             return;
           }
           if (res.done) {
-            if (run.fixingAction?.promptId === promptId) {
+            if (res.value && run.fixingAction?.promptId === promptId) {
               console.log('Fixing action done');
+              if (res.value.todo) {
+                // remove pending if todo exist
+                this.removePendingActions();
+                this.promptQueue = [];
+              }
+              res.value.a.forEach((a) => {
+                if ((a as WireActionWithWait).intent) {
+                  this.addAction({
+                    ...(a as WireActionWithWait),
+                    promptId,
+                    id: run.actionId++,
+                  });
+                }
+              });
               run.fixingAction = null;
               run.execActions();
             }
@@ -200,35 +151,22 @@ export class ExecutionSession {
               return;
             }
 
-            yield* this.execSubSessionQueue();
+            if (this.subSessionQueue.length) {
+              console.log('Run sub session queue');
+              yield* this.waitPageReady(url, start);
+              await this.execSubSessionQueue();
+            }
             if (run.stopRequested) {
               finish();
               return;
             }
 
-            if (res.value.todo) {
-              console.log('Waiting for potential page load');
-              await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+            if (res.value?.todo) {
+              yield* this.waitPageReady(url, start);
+              executionSession.resetSystemPrompt();
               if (run.stopRequested) {
                 finish();
                 return;
-              }
-              if (tab.url === url) {
-                yield PlanAfterRerender;
-                console.log(Date.now() - start, 'Waiting for page re-render');
-                await Network.waitForNetworkIdle0(
-                  tab.networkIdle0,
-                  tab.networkIdle2,
-                ).then(() => Util.sleep(1000));
-              } else {
-                yield PlanAfterNavigation;
-                console.log(
-                  Date.now() - start,
-                  'Waiting for page to load:',
-                  url,
-                );
-                await tab.pageLoadedLock.wait;
-                executionSession.resetSystemPrompt();
               }
               if (run.stopRequested) {
                 finish();
@@ -274,14 +212,19 @@ ${res.value.todo.rc}
               break;
             }
             if ((res.value as WireActionWithWait).intent) {
-              console.log(Date.now() - start, 'exec actions:', res.value);
-              run.addAction({
-                ...(res.value as WireActionWithWait),
-                promptId,
-                id: run.allocActionId(),
-              });
-              run.execActions();
-              yield res.value as WireActionWithWait;
+              if (
+                run.fixingAction === null ||
+                run.fixingAction?.promptId !== promptId
+              ) {
+                console.log(Date.now() - start, 'exec actions:', res.value);
+                this.addAction({
+                  ...(res.value as WireActionWithWait),
+                  promptId,
+                  id: run.allocActionId(),
+                });
+                run.execActions();
+                yield res.value as WireActionWithWait;
+              }
             } else {
               console.log(Date.now() - start, 'exec add sub task:', res.value);
               const newPrompt = run.createPrompt(
@@ -304,14 +247,73 @@ ${res.value.todo.rc}
     }
     finish();
   }
+  async *waitPageReady(url: string, start = Date.now()) {
+    const { tab } = this.run;
+    console.log('Waiting for potential page load');
+    await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+    if (tab.url === url) {
+      yield PlanAfterRerender;
+      console.log(Date.now() - start, 'Waiting for page re-render');
+      await Network.waitForNetworkIdle0(
+        tab.networkIdle0,
+        tab.networkIdle2,
+      ).then(() => Util.sleep(1000));
+    } else {
+      yield PlanAfterNavigation;
+      console.log(Date.now() - start, 'Waiting for page to load:', url);
+      await tab.pageLoadedLock.wait;
+    }
+  }
   async *execSubSessionQueue() {
     const { subSessionQueue } = this;
     while (subSessionQueue.length) {
       const subSession = subSessionQueue.shift()!;
       yield* subSession.exec();
+      this.addLog(subSession.promptQueue[0]?.goalPrompt ?? '');
     }
   }
   addNewSubSession(queue: Prompt[]) {
     this.subSessionQueue.push(this.run.createSession(queue, this));
+  }
+  addAction(action: WireActionWithWaitAndRec) {
+    if (action.action.k === 'setArg') {
+      const kvs = Object.entries(action.action.kv);
+      if (kvs.length > 1) {
+        // split setArg from selector to different actions make webview easier
+        action.action.kv = {};
+        const actions = [];
+        let action0HasId = false;
+        for (const [k, v] of kvs) {
+          if (typeof v === 'string') {
+            action.action.kv[k] = v;
+          } else if (!action0HasId) {
+            action0HasId = true;
+            action.action.kv[k] = v;
+          } else {
+            actions.push({
+              ...action,
+              id: this.run.actionId++,
+              action: { ...action.action, kv: { [k]: v } },
+            });
+          }
+        }
+        this.actions.push(action);
+        this.run.addAction(action);
+        if (actions.length) {
+          this.actions.push(...actions);
+          actions.forEach((a) => this.run.addAction(a));
+        }
+        return;
+      }
+    }
+    this.actions.push(action);
+    this.run.addAction(action);
+  }
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
+    this.run.removePendingActions();
+  }
+  addLog(log: string) {
+    this.eventsLogs.push(log);
   }
 }

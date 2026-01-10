@@ -2,35 +2,25 @@ import {
   app,
   BrowserWindow,
   clipboard,
+  Menu,
   Rectangle,
   WebContentsView,
 } from 'electron';
 import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
+import { LlmApi } from '../../agentic/api';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+import { IframeProgressType } from '../../extensions/iframe/types';
+import type { PromptAttachment } from '../../schema/attachments';
 import { Network } from '../../webView/network';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
-import { LlmApi } from '../llm/api';
-
-const testPrompt: { user: string; system: string } | null = null;
+import { isMac } from '../util';
 
 export class TabWebView {
-  private static userInputResolvers = new Map<
-    number,
-    (answer: Record<string, string>) => void
-  >();
-
-  static resolveUserInput(responseId: number, answer: Record<string, string>) {
-    const resolver = TabWebView.userInputResolvers.get(responseId);
-    if (!resolver) return;
-    TabWebView.userInputResolvers.delete(responseId);
-    resolver(answer);
-  }
-
   url: string;
 
   webView: WebContentsView;
@@ -42,21 +32,23 @@ export class TabWebView {
 
   scrollAdjustment: number;
 
-  llmSession: WebViewLlmSession | undefined;
+  llmSession: WebViewLlmSession;
 
   pageLoadedLock = Util.newLock();
-  pageStartLoadingLock = Util.newLock();
 
   networkIdle0: Util.Lock | undefined;
   networkIdle2: Util.Lock | undefined;
+
+  loadingFrames = new Set<string>();
 
   constructor(
     public initUrl: string,
     public bounds: Rectangle,
     private mainWindow: BrowserWindow,
+    llmSession: WebViewLlmSession,
   ) {
-    this.pageStartLoadingLock.tryLock();
     this.url = initUrl;
+    this.llmSession = llmSession;
     this.webView = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -70,10 +62,36 @@ export class TabWebView {
     this.initView();
   }
 
+  get isFocused() {
+    return this.llmSession.isFocused(this);
+  }
+
+  focus() {
+    this.webView.webContents.focus();
+    this.llmSession.focusTab(this);
+  }
+
+  blur() {
+    // no-op
+  }
+
   stopPrompt(requestId?: number) {
-    this.llmSession?.stopPrompt(requestId);
+    this.llmSession.stopPrompt(requestId);
     this.pageLoadedLock.unlock();
-    this.pageStartLoadingLock.unlock();
+  }
+
+  emitLlmSessionSnapshot(snapshot: unknown | null) {
+    try {
+      if (this.mainWindow?.isDestroyed()) return;
+      const webContents = this.webView?.webContents;
+      if (!webContents || webContents.isDestroyed()) return;
+      ToRendererIpc.llmSessionSnapshot.send(this.mainWindow.webContents, {
+        frameId: webContents.id,
+        snapshot,
+      });
+    } catch (err) {
+      console.error('emitLlmSessionSnapshot failed:', err);
+    }
   }
 
   async confirmHighRiskAction(actionIntent: string) {
@@ -96,49 +114,27 @@ export class TabWebView {
     return !('error' in res) && res.response === 0;
   }
 
-  async askUserInput<
-    Q extends Record<
-      string,
-      | {
-          type: 'string';
-        }
-      | {
-          type: 'select';
-          options: string[];
-        }
-    >,
-  >(message: string, questions: Q): Promise<Record<Extract<keyof Q, string>, string>> {
-    const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
-    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
-      (resolve) => {
-        TabWebView.userInputResolvers.set(responseId, resolve as any);
-      },
-    );
-    ToRendererIpc.toUser.send(this.mainWindow.webContents, {
-      type: 'prompt',
-      message,
-      questions,
-      responseId,
-    });
-    return promise;
-  }
-
   async pushActions(
     actions: WireActionWithWaitAndRec[],
     args: Record<string, any>,
   ) {
-    console.log('pushActions:', actions);
+    const actionStr = JSON.stringify(actions);
+    console.log('pushActions:', actionStr);
     return this.webView.webContents.executeJavaScript(
-      `(async ()=>await window.webView.execActions(${JSON.stringify(actions)}, ${JSON.stringify(args)}))()`,
+      `(async ()=>await window.webView.execActions(${actionStr}, ${JSON.stringify(args)}))()`,
     );
   }
 
-  actionDone(actionId: number, argsDelta: Record<string, string> | undefined) {
-    this.llmSession?.actionDone(actionId, argsDelta);
+  actionDone(
+    actionId: number,
+    argsDelta: Record<string, string> | undefined,
+    iframeId?: string,
+  ) {
+    this.llmSession.actionDone(actionId, argsDelta);
   }
 
-  actionError(error: string, actionId: number) {
-    this.llmSession?.actionError(actionId, error);
+  actionError(error: string, actionId: number, iframeId?: string) {
+    this.llmSession.actionError(actionId, error);
   }
 
   async screenshot(x = 0, y = 0, capWidth = 0, capHeight = 0) {
@@ -157,21 +153,6 @@ export class TabWebView {
     });
   }
 
-  screenshotRect(screenshotRect: Rectangle) {
-    const { width, height } = this.webView.getBounds();
-    if (width > 1920 && height > 1080) {
-      const x = Math.min(screenshotRect.x - 200, 0);
-      const y = Math.min(screenshotRect.y - 200, 0);
-      return this.screenshot(
-        x,
-        y,
-        Math.max(screenshotRect.width + 400, width - x),
-        Math.max(screenshotRect.height + 400, height - y),
-      );
-    }
-    return this.screenshot(screenshotRect.x, screenshotRect.y);
-  }
-
   initView() {
     const {
       webView: { webContents },
@@ -179,7 +160,9 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
+    webContents.userAgent = `Mozilla/5.0 (${isMac ? 'Macintosh; Intel Mac OS X 10.15; rv:147.0' : 'Windows NT 10.0; Win64; x64'}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36`;
     const unlockLoaded = () => {
+      console.log('Page loaded unlockLoaded');
       // Fallback: do not rely solely on bindFrameId to unblock navigation waits.
       // Some navigations (or cross-origin pages) may not re-run our bridge init.
       this.pageLoadedLock.delayUnlock(500);
@@ -194,24 +177,22 @@ export class TabWebView {
       ) {
         console.log('did-start-navigation:', details.url);
         this.url = details.url;
-        this.pageStartLoadingLock.unlock();
-        this.pageLoadedLock.tryLock();
+        this.loadFrameStart('MAIN');
       }
     });
+
     webContents.on(
       'did-frame-navigate',
       (ev, url, _code, _status, isMainFrame) => {
         if (isMainFrame) {
           console.log('did-frame-navigate:', url);
           this.url = url;
-          this.pageStartLoadingLock.tryLock();
           inflight.clear();
           webContents.executeJavaScript(
             `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
-          if (this.llmSession) {
-            this.llmSession.resumeAll();
-          }
+          this.llmSession.resumeAll();
+          this.loadedFrame('MAIN');
         }
       },
     );
@@ -225,40 +206,74 @@ export class TabWebView {
     });
     webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {
-        this.mainWindow.webContents.send('open-new-tab', { url });
+        this.mainWindow.webContents.send('open-new-tab', {
+          url,
+          parentFrameId: frameId,
+        });
       }
       return { action: 'deny' };
     });
     this.webView.setBounds(this.bounds);
-    webContents.loadURL(
-      this.initUrl,
-      // `file://${path.resolve(__dirname, '../../testHtml/moveDom.html')}`,
-    );
     webContents.openDevTools();
     [this.networkIdle0, this.networkIdle2] = Network.initMonitor(
       webContents,
       inflight,
     );
+
+    webContents.on('context-menu', (_, props) => {
+      const { x, y } = props;
+
+      Menu.buildFromTemplate([
+        {
+          label: 'Inspect element',
+          click: () => {
+            webContents.inspectElement(x, y);
+          },
+        },
+      ]).popup({ window: this.mainWindow });
+
+      if (!webContents.debugger.isAttached()) {
+        webContents.debugger.attach('1.3');
+      }
+    });
+
+    webContents.loadURL(
+      this.initUrl,
+      // `file://${path.resolve(__dirname, '../../testHtml/scroll.html')}`,
+    );
+
+    webContents.debugger
+      .sendCommand('DOM.enable')
+      .then(() => webContents.debugger.sendCommand('Page.enable'))
+      .catch((e) => {
+        console.error('debugger error:', e);
+      });
   }
 
   async runPrompt(
     requestId: number,
     prompt: string,
     args?: Record<string, string>,
+    attachments?: PromptAttachment[],
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
   ): Promise<string | undefined> {
     console.info('====>');
     console.info(this.llmSession);
     console.info('prompt:', prompt);
-    console.info('testPrompt:', testPrompt);
     if (this.llmSession) {
-      if (prompt === 'run test' && testPrompt) {
+      if (prompt === 'run test') {
         const promises: Promise<string>[] = [];
-        const query = LlmApi.queryLLMSession(testPrompt.system, 'test');
         for (let i = 0; i < 3; i++) {
-          const stream = query(testPrompt.user, null, 'mid', 'low');
-          promises.push(LlmApi.wrapStream(stream));
+          const stream = LlmApi.queryLLMApi(
+            'user',
+            'system',
+            null,
+            `test_${Date.now()}_${i}`,
+            'mid',
+            'low',
+          );
+          promises.push(LlmApi.wrapStream(stream).catch((e) => e.message));
         }
         const result: string[] = await Promise.all(promises);
         console.info(
@@ -279,8 +294,10 @@ export class TabWebView {
         try {
           const stream = this.llmSession.startPrompt(
             requestId,
+            this,
             prompt,
             args,
+            attachments,
             reasoningEffort,
             modelType,
           );
@@ -307,17 +324,18 @@ export class TabWebView {
       chunk,
     });
   }
-  clipboardLock: Promise<void> = Promise.resolve();
+  static clipboardLock: Promise<void> = Promise.resolve();
   async pasteText(input: string) {
-    await this.clipboardLock;
-    this.clipboardLock = new Promise(async (resolve) => {
+    await TabWebView.clipboardLock;
+    TabWebView.clipboardLock = new Promise(async (resolve) => {
       clipboard.writeText(input);
       const wc = this.webView.webContents;
       wc.focus();
-      if (Util.isMac) {
+      if (isMac) {
         wc.sendInputEvent({
           type: 'keyDown',
           keyCode: 'Meta',
+          modifiers: ['meta'],
         });
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
@@ -325,12 +343,7 @@ export class TabWebView {
           keyCode: 'v',
           modifiers: ['meta'],
         });
-        await Util.sleep(150 + Math.random() * 150);
-        wc.sendInputEvent({
-          type: 'keyUp',
-          keyCode: 'v',
-          modifiers: ['meta'],
-        });
+        wc.paste();
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
           type: 'keyUp',
@@ -340,16 +353,11 @@ export class TabWebView {
         wc.sendInputEvent({
           type: 'keyDown',
           keyCode: 'Control',
+          modifiers: ['control'],
         });
         await Util.sleep(50 + Math.random() * 50);
         wc.sendInputEvent({
           type: 'keyDown',
-          keyCode: 'v',
-          modifiers: ['control'],
-        });
-        await Util.sleep(150 + Math.random() * 150);
-        wc.sendInputEvent({
-          type: 'keyUp',
           keyCode: 'v',
           modifiers: ['control'],
         });
@@ -365,17 +373,72 @@ export class TabWebView {
 
   pageLoaded(frameId: number, scrollAdjustment: number | undefined) {
     console.log('pageLoaded:', this.url);
-    this.pageLoadedLock.delayUnlock(500);
+    this.loadedFrame('MAIN');
     this.frameIds.add(frameId);
     if (scrollAdjustment) {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
     if (!this.llmSession) {
-      this.llmSession = new WebViewLlmSession(this);
+      this.llmSession = new WebViewLlmSession(this.mainWindow);
+      this.emitLlmSessionSnapshot(this.llmSession.getSnapshot());
     } else {
       // Keep the existing session so in-flight prompts don't lose their state.
       this.llmSession.resumeAll();
+    }
+  }
+
+  async setInputFile(
+    inputSelector: string,
+    filePaths: string[],
+  ): Promise<string | undefined> {
+    const wc = this.webView.webContents;
+    const { root } = await wc.debugger.sendCommand('DOM.getDocument', {
+      depth: -1,
+    });
+
+    console.log('root:', root, inputSelector);
+
+    const input = await wc.debugger.sendCommand('DOM.querySelector', {
+      nodeId: root.nodeId,
+      selector: inputSelector,
+    });
+
+    if (!input?.nodeId) return 'input not found';
+
+    const desc = await wc.debugger.sendCommand('DOM.describeNode', {
+      nodeId: input.nodeId,
+    });
+
+    await wc.debugger.sendCommand('DOM.setFileInputFiles', {
+      backendNodeId: desc.node.backendNodeId,
+      files: filePaths,
+    });
+  }
+
+  iframeProgress(iframeId: string, type: IframeProgressType) {
+    if (type === 'unload') {
+      this.loadFrameStart(iframeId);
+    } else if (type === 'loaded') {
+      this.loadedFrame(iframeId);
+    } else if (type === 'action') {
+      // no-op for action progress
+    }
+  }
+
+  loadFrameStart(iframeId: string) {
+    this.loadingFrames.add(iframeId);
+    this.pageLoadedLock.tryLock();
+  }
+
+  loadedFrame(iframeId: string) {
+    if (iframeId === 'MAIN') {
+      this.loadingFrames.clear();
+    } else {
+      this.loadingFrames.delete(iframeId);
+    }
+    if (this.loadingFrames.size === 0) {
+      this.pageLoadedLock.delayUnlock(500);
     }
   }
 }

@@ -131,7 +131,7 @@ export namespace OCRModel {
     let text = (el.textContent || '').replace(/\s+/g, ' ').trim();
     const tagsToIgnore = el.querySelectorAll('script, style, noscript');
     if (tagsToIgnore.length) {
-      for (const tag of tagsToIgnore) {
+      for (const tag of Array.from(tagsToIgnore)) {
         text = text.replace(tag.textContent, '');
       }
     }

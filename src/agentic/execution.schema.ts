@@ -55,9 +55,8 @@ const MouseActionSchema = z.object({
 
 const ScrollActionSchema = z.object({
   k: z.literal('scroll'),
-  x: z.number().optional().nullable(),
-  y: z.number().optional().nullable(),
-  q: z.string().optional().nullable(),
+  to: z.union([WireSelectorSchema, z.tuple([z.number(), z.number()])]),
+  over: WireSelectorSchema.optional().nullable(),
 });
 
 const FocusActionSchema = z.object({
@@ -74,10 +73,21 @@ const DndActionSchema = z.object({
     .optional(),
 });
 
+const SlideToValActionSchema = z.object({
+  k: z.literal('slideToVal'),
+  q: WireSelectorSchema,
+  v: z.number(),
+});
+
 const KeyActionSchema = z.object({
   k: z.literal('key'),
   key: z.string(),
-  a: z.union([z.literal('keyDown'), z.literal('keyUp'), z.literal('keyPress')]),
+  a: z.union([
+    z.literal('keyDown'),
+    z.literal('keyUp'),
+    z.literal('keyDownUp'),
+    z.literal('keyPress'),
+  ]),
   q: WireSelectorSchema.optional(),
   c: z.boolean().optional().nullable(),
   al: z.boolean().optional().nullable(),
@@ -89,7 +99,7 @@ const KeyActionSchema = z.object({
 const InputActionSchema = z.object({
   k: z.literal('input'),
   q: WireSelectorSchema,
-  v: z.string(),
+  v: z.union([z.string(), z.array(z.string())]),
 });
 
 const NotifyUserActionSchema = z.object({
@@ -152,6 +162,7 @@ export const WireActionSchema = z.discriminatedUnion('k', [
   ScrollActionSchema,
   FocusActionSchema,
   DndActionSchema,
+  SlideToValActionSchema,
   KeyActionSchema,
   InputActionSchema,
   NotifyUserActionSchema,
@@ -185,7 +196,6 @@ export const ExecutorLlmResultSchema = z.object({
   a: z.union([z.array(WireActionWithWaitSchema), z.array(WireSubTaskSchema)]),
   e: z.string().optional(),
   todo: FollowupActionSchema.optional().nullable(),
-  clearQueue: z.boolean().optional().nullable(),
 });
 
 /** (Optional) inferred TS types */

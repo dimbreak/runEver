@@ -6,19 +6,18 @@ import type {
 } from 'electron';
 import { IpcMainContract } from './ipc';
 import { LlmApi } from '../main/llm/api';
+import type { PromptAttachment } from '../schema/attachments';
+import { IframeProgressType } from '../extensions/iframe/types';
 
-export type MouseWheelScrollInputEvent = MouseWheelInputEvent & {
-  scrollEl: string;
-};
 export type EventWithDelay = (
   | MouseInputEvent
-  | MouseWheelScrollInputEvent
+  | MouseWheelInputEvent
   | KeyboardInputEvent
 ) & { delayMs?: number };
 
 export namespace ToMainIpc {
   export const createTab = new IpcMainContract<
-    [{ url: string; bounds?: Rectangle }],
+    [{ url: string; bounds?: Rectangle; parentFrameId?: number }],
     { id: number } | { error: string }
   >('create-tab');
   export const operateTab = new IpcMainContract<
@@ -117,6 +116,24 @@ export namespace ToMainIpc {
     ],
     boolean
   >('dispatch-events');
+  export type NativeKeys =
+    | 'ArrowDown'
+    | 'ArrowUp'
+    | 'ArrowLeft'
+    | 'ArrowRight'
+    | 'Enter'
+    | 'Tab'
+    | 'Space'
+    | 'Escape'
+    | string;
+  export const dispatchNativeKeypress = new IpcMainContract<
+    [
+      {
+        keyAndDelays: [NativeKeys, number][];
+      },
+    ],
+    boolean
+  >('dispatch-native-keypress');
   export const pasteInput = new IpcMainContract<
     [
       {
@@ -132,6 +149,7 @@ export namespace ToMainIpc {
         frameId: number;
         actionId: number;
         argsDelta?: Record<string, string>;
+        iframeId?: string;
       },
     ],
     boolean
@@ -142,6 +160,7 @@ export namespace ToMainIpc {
         frameId: number;
         actionId: number;
         error: string;
+        iframeId?: string;
       },
     ],
     boolean
@@ -156,10 +175,21 @@ export namespace ToMainIpc {
         requestId: number;
         streamReturn?: boolean;
         args?: Record<string, string>;
+        attachments?: PromptAttachment[];
       },
     ],
     { error?: string }
   >('run-prompt');
+  export const setInputFile = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        selector: string;
+        filePaths: string[];
+      },
+    ],
+    { error?: string }
+  >('set-input-file');
   export const stopPrompt = new IpcMainContract<
     [
       {
@@ -182,6 +212,14 @@ export namespace ToMainIpc {
       }
     | { error: string }
   >('get-tab-navigation-state');
+  export const getLlmSessionSnapshot = new IpcMainContract<
+    [
+      {
+        frameId: number;
+      },
+    ],
+    { snapshot: unknown } | { error: string }
+  >('get-llm-session-snapshot');
   export const navigateTabHistory = new IpcMainContract<
     [
       {
@@ -196,6 +234,16 @@ export namespace ToMainIpc {
       }
     | { error: string }
   >('navigate-tab-history');
+  export const iframeProgress = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        iframeId: string;
+        type: IframeProgressType;
+      },
+    ],
+    { error?: string }
+  >('iframe-progress');
   export const auditAction = new IpcMainContract<
     [
       {

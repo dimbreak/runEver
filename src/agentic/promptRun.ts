@@ -10,14 +10,17 @@ import {
 import { ExecutionPrompter } from './execution';
 import { RiskOrComplexityLevel } from './execution.schema';
 import { Prompt, WireActionWithWaitAndRec } from './types';
-import { WebViewLlmSession } from './webViewLlmSession';
+import { type WebViewLlmSession } from './webviewLlmSession';
 import { ExecutionSession } from './session';
+import { replaceJsTpl } from '../webView/selector';
 
 export class PromptRun {
   executionSession: ExecutionPrompter;
   args: Record<string, any> = {};
+  llmAttachments: LlmApi.Attachment[] = [];
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
+  actionId = 0;
   browserActionLock = Util.newLock('browserActionLock');
   browserActionLockOk = false;
   prompts: Prompt[] = [];
@@ -33,6 +36,7 @@ export class PromptRun {
   ) {
     this.executionSession = new ExecutionPrompter(tab);
     this.rootSession = new ExecutionSession(0, [], this);
+    this.sessionQueue.push(this.rootSession);
 
     // LlmApi.addDummyReturn(
     //   JSON.stringify({
@@ -150,9 +154,11 @@ export class PromptRun {
         );
       }
       fixingAction!.offset++;
+      this.manager.notifySnapshotChanged();
       return;
     }
     this.actions.push(action);
+    this.manager.notifySnapshotChanged();
   }
 
   actionDone(
@@ -175,6 +181,9 @@ export class PromptRun {
       this.args = { ...this.args, ...argsDelta };
       currentAction.argsDelta = argsDelta;
     }
+    this.sessionQueue[
+      this.prompts[currentAction.promptId!].sessionId ?? -1
+    ]?.addLog(currentAction.intent);
     console.log('Popped actions:', this.actions.length, completedId);
     if (this.stopRequested) return;
     if (this.currentAction < this.actions.length) {
@@ -201,7 +210,7 @@ export class PromptRun {
     } else {
       currentAction.error = [error];
     }
-
+    if (this.stopRequested) return;
     this.fixAction();
   }
 
@@ -294,10 +303,23 @@ these actions are blocking by this error, if you found any of the above actions 
     };
     prompt.id = this.prompts.push(prompt) - 1;
     if (argsAdded) {
-      this.args = { ...this.args, ...argsAdded };
+      this.args = {
+        ...this.args,
+        ...Object.entries(argsAdded).reduce(
+          (acc, [k, v]) => {
+            acc[k] = replaceJsTpl(v, this.args);
+            return acc;
+          },
+          {} as Record<string, string>,
+        ),
+      };
     }
 
     return prompt;
+  }
+
+  removePendingActions() {
+    this.actions = this.actions.filter((a) => !!a.done);
   }
 
   setRunningStatus(session: ExecutionSession) {

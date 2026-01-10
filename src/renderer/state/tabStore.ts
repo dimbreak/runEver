@@ -2,6 +2,8 @@ import { Buffer } from 'buffer';
 import type { Rectangle } from 'electron';
 import { create } from 'zustand';
 import { ToMainIpc } from '../../contracts/toMain';
+import type { UploadedAttachment } from '../services/uploadService';
+import type { PromptAttachment } from '../../schema/attachments';
 import { webviewService } from '../services/webviewService';
 import { resolveInitialUrl } from '../utils/formatter';
 
@@ -13,6 +15,7 @@ export class WebTab {
   isRunning?: boolean;
   frameId: number = -1;
   lastPromptRequestId?: number;
+  parentFrameId?: number;
 
   constructor(init: {
     id: string;
@@ -21,6 +24,7 @@ export class WebTab {
     isRunning?: boolean;
     frameId?: number;
     lastPromptRequestId?: number;
+    parentFrameId?: number;
   }) {
     this.id = init.id;
     this.title = init.title;
@@ -28,26 +32,38 @@ export class WebTab {
     this.isRunning = init.isRunning;
     this.frameId = init.frameId ?? -1;
     this.lastPromptRequestId = init.lastPromptRequestId;
+    this.parentFrameId = init.parentFrameId;
   }
   async runPrompt(
     prompt: string,
     args: Record<string, string>,
     handleResponse: (response: string) => void,
+    attachments?: UploadedAttachment[],
+    requestId?: number,
   ) {
-    const requestId = Date.now() * 100 + Math.floor(Math.random() * 100);
-    this.lastPromptRequestId = requestId;
+    const actualRequestId =
+      requestId ?? Date.now() * 100 + Math.floor(Math.random() * 100);
+    this.lastPromptRequestId = actualRequestId;
     const finish = webviewService.registerPromptResponseHandler(
-      requestId,
+      actualRequestId,
       handleResponse,
     );
     try {
       const { error } = await ToMainIpc.runPrompt.invoke({
         frameId: this.frameId,
         prompt,
-        requestId,
+        requestId: actualRequestId,
         args,
+        attachments: attachments?.map(
+          (f): PromptAttachment => ({
+            name: f.name,
+            mimeType: f.mimeType,
+            data: f.data,
+          }),
+        ),
       });
       if (error) throw new Error(error);
+      return actualRequestId;
     } finally {
       finish();
     }
@@ -134,6 +150,7 @@ type TabState = {
   setActiveTab: (id: string | null) => void;
   addTab: (tab: WebTab, bounds: Rectangle) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
+  removeTabByFrameId: (frameId: number) => void;
   closeAllTabs: () => Promise<void>;
   stopPrompt: (tabId?: string, requestId?: number) => Promise<void>;
   registerFrameId: (tabId: string, frameId: number) => void;
@@ -154,15 +171,42 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Google',
-    url: 'http://localhost:5175/?flow=register',
+    url: 'https://www.google.com',
     isRunning: true,
   }),
+  // new WebTab({
+  //   id: 'tab-1',
+  //   title: 'Google',
+  //   url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
+  //   isRunning: true,
+  // }),
   // new WebTab({
   //   id: 'tab-2',
   //   title: 'OpenAI',
   //   url: 'https://www.openai.com',
   // }),
 ];
+
+const removeTabFromState = (
+  state: Pick<TabState, 'tabs' | 'activeTabId' | 'frameMap'>,
+  id: string,
+) => {
+  const nextTabs = state.tabs.filter((t) => t.id !== id);
+  const wasActive = state.activeTabId === id;
+  let nextActive = state.activeTabId;
+  if (wasActive && nextTabs.length > 0) {
+    nextActive = nextTabs[nextTabs.length - 1].id;
+  } else if (state.activeTabId === id) {
+    nextActive = null;
+  }
+  const nextFrameMap = new Map(state.frameMap);
+  nextFrameMap.delete(id);
+  return {
+    tabs: nextTabs,
+    activeTabId: nextActive,
+    frameMap: nextFrameMap,
+  };
+};
 
 export const useTabStore = create<TabState>((set, get) => ({
   tabs: initialTabs.map((tab) => new WebTab(tab)),
@@ -207,6 +251,7 @@ export const useTabStore = create<TabState>((set, get) => ({
     const frameId = await webviewService.createTab({
       url: resolveInitialUrl(tab.url),
       bounds,
+      parentFrameId: tab.parentFrameId,
     });
     if (!frameId) return;
 
@@ -222,23 +267,15 @@ export const useTabStore = create<TabState>((set, get) => ({
     const { frameMap } = get();
     const frameId = frameMap.get(id);
     await webviewService.closeTab({ frameId: frameId ?? undefined });
-    set((state) => {
-      const nextTabs = state.tabs.filter((t) => t.id !== id);
-      const wasActive = state.activeTabId === id;
-      let nextActive = state.activeTabId;
-      if (wasActive && nextTabs.length > 0) {
-        nextActive = nextTabs[nextTabs.length - 1].id;
-      } else if (state.activeTabId === id) {
-        nextActive = null;
-      }
-      const nextFrameMap = new Map(state.frameMap);
-      nextFrameMap.delete(id);
-      return {
-        tabs: nextTabs,
-        activeTabId: nextActive,
-        frameMap: nextFrameMap,
-      };
-    });
+    set((state) => removeTabFromState(state, id));
+  },
+  removeTabByFrameId: (frameId) => {
+    const entry = Array.from(get().frameMap.entries()).find(
+      ([, id]) => id === frameId,
+    );
+    if (!entry) return;
+    const [tabId] = entry;
+    set((state) => removeTabFromState(state, tabId));
   },
 
   closeAllTabs: async () => {

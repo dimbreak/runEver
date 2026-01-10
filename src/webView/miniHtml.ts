@@ -1,7 +1,11 @@
 import { replaceJsTpl } from './selector';
+import { SliderProfile } from '../agentic/profile/widget/slider.html';
 import { dummyCursor } from './cursor/cursor';
+import { IFrameHelper } from './iframe';
 
 export namespace MiniHtml {
+  export const EL_IN_IFRAME = Symbol('EL_IN_IFRAME');
+  export const iframeById: Record<string, IFrameHelper> = {};
   const PRINT_ATTRS = ['disabled', 'type', 'name', 'method'];
   export type Selector =
     | string
@@ -11,17 +15,17 @@ export namespace MiniHtml {
         filterWith?: 'html' | 'label';
         args?: Record<string, string>;
       };
-  type MeaningfulElement = {
+  export type MeaningfulElement = {
     element: HTMLElement;
     id: string;
     nodes?: (string | MeaningfulElement)[];
     label: string;
-    visible: DomVisible;
+    visible: DomVisible | null; // null = need reload;
     parent?: MeaningfulElement;
     bodyDepth: number;
   };
-  type DomVisible = DOMRect & {
-    visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0';
+  export type DomVisible = DOMRect & {
+    visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0' | '';
     style: CSSStyleDeclaration;
   };
   const spaceRx = /[\s\t\r\n\u200c\u0020\u034f]{2,}/g;
@@ -37,7 +41,7 @@ export namespace MiniHtml {
     }
     return false;
   };
-  const checkVisible = (el: HTMLElement): DomVisible => {
+  export const checkVisible = (el: HTMLElement): DomVisible => {
     const rect = el.getBoundingClientRect();
     const style = window.getComputedStyle(el);
     const visible: DomVisible = {
@@ -54,6 +58,11 @@ export namespace MiniHtml {
       return visible;
     }
     if (rect.width === 0 || rect.height === 0) {
+      const tagName = el.tagName.toLowerCase();
+      if (['option', 'optgroup'].includes(tagName)) {
+        visible.visible = '';
+        return visible;
+      }
       visible.visible = 'size0';
       return visible;
     }
@@ -82,12 +91,48 @@ export namespace MiniHtml {
 
     return visible;
   };
+  const interactiveTags = new Set<string>([
+    'button',
+    'a',
+    'input',
+    'textarea',
+    'select',
+  ]);
   const getReadableAttr = (element: HTMLElement): string => {
+    const tagName = element.tagName.toLowerCase();
+    const role = (element.getAttribute('role') || '').toLowerCase();
+    if (tagName === 'div') {
+      if (element.classList.contains('rc-select')) {
+        const roles = ['rcSelect'];
+        if (element.classList.contains('rc-select-show-search')) {
+          roles.push('combobox');
+        }
+        if (element.classList.contains('rc-select-multiple')) {
+          roles.push('multi');
+        }
+        return `role:${roles.join('-')}`;
+      }
+      if (element.classList.contains('rc-virtual-list-holder-inner')) {
+        return 'role:rcSelect-listbox';
+      }
+    }
+    const res = SliderProfile.checkSlider(tagName, element);
+    if (res) {
+      return res;
+    }
+    if (tagName === 'iframe') {
+      return (
+        element.getAttribute('title') || element.getAttribute('name') || ''
+      );
+    }
     return [
       element.getAttribute('alt') ?? '',
       element.getAttribute('title') ?? '',
       element.getAttribute('aria-label') ?? '',
       element.getAttribute('aria-labelledby') ?? '',
+      role && !interactiveTags.has(tagName)
+        ? `role:${element.getAttribute('role')}`
+        : '',
     ]
       .filter((attr, i, arr) => arr.indexOf(attr) === i)
       .map((attr) => attr.trim())
@@ -121,7 +166,7 @@ export namespace MiniHtml {
 
     return element.getAttribute('contenteditable') === 'true';
   };
-  const quoteAttrVal = (v: string) => (v.includes(' ') ? `"${v}"` : v);
+  export const quoteAttrVal = (v: string) => (v.includes(' ') ? `"${v}"` : v);
   const rgbToHex = (input: string): string => {
     if (!input) return input;
     const s = input;
@@ -155,27 +200,76 @@ export namespace MiniHtml {
     observer: MutationObserver | undefined;
     mutatedElements = new Map<Element, MeaningfulElement | null>();
     lastFullHtml: string | undefined;
-    constructor() {
+    constructor(public idPrefix = '__') {
       this.reset();
     }
-    genHtml(
+    async genHtml(
       meaningfulEl: MeaningfulElement,
       childLevel: number,
       notShow = false,
       parentHighlightStyle: string = '',
       renderedHtml: null | Map<MeaningfulElement, string> = null,
-    ): string {
+      rerendered = false,
+    ): Promise<string> {
       if (meaningfulEl.element.isConnected === false) return '';
+      let thisRendered = rerendered;
+      if (thisRendered || meaningfulEl.visible === null) {
+        meaningfulEl.visible = checkVisible(meaningfulEl.element);
+        thisRendered = true;
+      }
+      if (meaningfulEl instanceof IFrameHelper) {
+        const html = await meaningfulEl.getHtml();
+        if (renderedHtml) {
+          renderedHtml.set(meaningfulEl, html);
+        }
+        return html;
+      }
+      const { visible, element } = meaningfulEl;
+      const tagName = element.tagName.toLowerCase();
+      const { style } = visible;
+      let fontIndex = this.styles.font[style.fontFamily];
+      const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
+      let innerHtml =
+        meaningfulEl.nodes &&
+        (
+          await Promise.all(
+            meaningfulEl.nodes.map(async (node) => {
+              if (typeof node === 'string') return node.trim();
+              if (renderedHtml && renderedHtml.has(node)) {
+                const rendered = renderedHtml.get(node)!;
+                // console.log('reusing rendered html', rendered);
+                renderedHtml.delete(node);
+                return rendered;
+              }
+              return this.genHtml(
+                node,
+                childLevel - 1,
+                visible?.visible !== true,
+                highlightStyle,
+                renderedHtml,
+                thisRendered,
+              );
+            }),
+          )
+        )
+          .join('')
+          .replace(spaceRx, ' ')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&apos;/g, "'")
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"');
+      if (childLevel <= 0 && innerHtml) {
+        innerHtml = '...';
+      }
+      if (element.tagName === 'BODY') {
+        return innerHtml ?? '';
+      }
       const attrs = PRINT_ATTRS.map((attr) => [
         attr,
         meaningfulEl.element.getAttribute(attr),
       ])
         .filter((attr) => !!attr[1])
         .map((attr) => `${attr[0]}=${quoteAttrVal(attr[1]!)}`);
-      const tagName = meaningfulEl.element.tagName.toLowerCase();
-      const { visible, element } = meaningfulEl;
-      const { style } = visible;
-      let fontIndex = this.styles.font[style.fontFamily];
 
       if (fontIndex === undefined) {
         fontIndex = Object.keys(this.styles.font).length;
@@ -194,7 +288,7 @@ export namespace MiniHtml {
           ? ''
           : visible.visible === true
             ? 'show'
-            : `${visible?.visible || 'F'}`,
+            : `${visible.visible === false ? 'hide' : visible.visible}`,
         visible.visible === true
           ? `xywh=${Math.round(visible.x)},${Math.round(visible.y)},${Math.round(visible.width)},${Math.round(visible.height)}`
           : '',
@@ -218,7 +312,6 @@ export namespace MiniHtml {
       ]
         .filter((str) => str.length)
         .join(' ');
-      const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
       if (visible.visible === true) {
         if (parentHighlightStyle && parentHighlightStyle !== highlightStyle) {
           let i = this.styles.highlight[highlightStyle];
@@ -229,34 +322,8 @@ export namespace MiniHtml {
           tagHtmls += ` hls=${i}`;
         }
       }
-      let innerHtml = meaningfulEl.nodes
-        ?.map((node) => {
-          if (typeof node === 'string') return node.trim();
-          if (renderedHtml && renderedHtml.has(node)) {
-            const rendered = renderedHtml.get(node);
-            console.log('reusing rendered html', rendered);
-            renderedHtml.delete(node);
-            return rendered;
-          }
-          return this.genHtml(
-            node,
-            childLevel - 1,
-            visible?.visible !== true,
-            highlightStyle,
-            renderedHtml,
-          );
-        })
-        .join('')
-        .replace(spaceRx, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&apos;/g, "'")
-        .replace(/&amp;/g, '&')
-        .replace(/&quot;/g, '"');
-      if (childLevel <= 0 && innerHtml) {
-        innerHtml = '...';
-      }
       return innerHtml
-        ? `<${tagHtmls}>${innerHtml}</${tagName}>`
+        ? `<${tagHtmls}>${innerHtml ?? ''}</${tagName}>`
         : `<${tagHtmls} />`;
     }
     findMeaningfulFromParent(el: Element): MeaningfulElement | null {
@@ -293,7 +360,7 @@ export namespace MiniHtml {
     }
     handleMutations = (mutations: MutationRecord[]) => {
       let meaningfulEl: MeaningfulElement | null = null;
-      console.log('mutations', mutations, window.isPreloadContext);
+      // console.info('mutations', mutations);
       mutations.forEach((record) => {
         if (record.target === dummyCursor.dom) {
           return;
@@ -309,6 +376,7 @@ export namespace MiniHtml {
                 meaningfulEl,
               );
               if (meaningfulEl) {
+                meaningfulEl.visible = null;
                 if (meaningfulEl.nodes === undefined) {
                   meaningfulEl.nodes = [record.target.textContent!];
                 } else {
@@ -322,18 +390,32 @@ export namespace MiniHtml {
                 }
               }
             }
-            console.log(
-              'txt update',
-              record.target,
-              record.target.parentElement,
-              meaningfulEl,
-            );
+            // console.log(
+            //   'txt update',
+            //   record.target,
+            //   record.target.parentElement,
+            //   meaningfulEl,
+            // );
             return;
           default:
             if (record.target instanceof Element) {
-              meaningfulEl =
-                this.findMeaningfulFromParent(record.target) ?? null;
-              if (record.type === 'childList') {
+              if (record.type === 'attributes') {
+                const elsToCheck: Element[] = [record.target as Element];
+                let childEl;
+                let foundMeaningful;
+                while (elsToCheck.length) {
+                  childEl = elsToCheck.shift()!;
+                  foundMeaningful = this.meaningFulElementByEl.get(childEl);
+                  if (foundMeaningful) {
+                    foundMeaningful.visible = null;
+                    meaningfulEl = foundMeaningful;
+                    break;
+                  }
+                  elsToCheck.push(...Array.from(childEl.children));
+                }
+              } else if (record.type === 'childList') {
+                meaningfulEl =
+                  this.findMeaningfulFromParent(record.target) ?? null;
                 if (record.removedNodes.length) {
                   let toRemove: MeaningfulElement | string | undefined;
                   Array.from(record.removedNodes).forEach((node) => {
@@ -369,6 +451,7 @@ export namespace MiniHtml {
                     }
                     if (toRemove) {
                       if (meaningfulEl) {
+                        meaningfulEl.visible = null;
                         const pos = meaningfulEl.nodes?.indexOf(toRemove);
                         if (pos !== undefined && pos !== -1) {
                           meaningfulEl.nodes?.splice(pos, 1);
@@ -397,7 +480,7 @@ export namespace MiniHtml {
                         toAdd = [];
                         this.parseElement(node as HTMLElement, toAdd);
                       }
-                      console.log('adding', toAdd, meaningfulEl);
+                      // console.log('adding', toAdd, meaningfulEl);
                       toAdd.forEach((addedEl) => {
                         this.mutatedElements.set(
                           (addedEl as MeaningfulElement).element,
@@ -416,6 +499,7 @@ export namespace MiniHtml {
                       return;
                     }
                     if (toAdd && meaningfulEl) {
+                      meaningfulEl.visible = null;
                       if (meaningfulEl.nodes === undefined) {
                         meaningfulEl.nodes = toAdd;
                       } else {
@@ -429,16 +513,18 @@ export namespace MiniHtml {
                               el,
                               meaningfulEl.nodes,
                             );
-                            console.log(
-                              'pos',
-                              pos,
-                              node.previousSibling,
-                              node.nextSibling,
-                              toAdd,
-                              meaningfulEl.nodes,
-                            );
+                            // console.log(
+                            //   'pos',
+                            //   pos,
+                            //   node.previousSibling,
+                            //   node.nextSibling,
+                            //   toAdd,
+                            //   meaningfulEl.nodes,
+                            // );
                             if (pos !== undefined && pos !== -1) {
                               meaningfulEl?.nodes?.splice(pos, 0, ...toAdd);
+                            } else {
+                              meaningfulEl?.nodes?.push(...toAdd);
                             }
                             break;
                           }
@@ -449,16 +535,11 @@ export namespace MiniHtml {
                   });
                 }
               }
+              // console.log('mutation', meaningfulEl);
               this.mutatedElements.set(record.target, meaningfulEl);
             }
         }
       });
-
-      console.log(
-        'mutatedElements',
-        this.mutatedElements.size,
-        window.isPreloadContext,
-      );
     };
     initObserve() {
       if (this.observer) {
@@ -481,7 +562,7 @@ export namespace MiniHtml {
         }
       });
     }
-    genDeltaHtml = (clearMutated = false) => {
+    genDeltaHtml = async (clearMutated = false) => {
       const renderedHtml = new Map<MeaningfulElement, string>();
       console.log(
         this.mutatedElements,
@@ -489,28 +570,32 @@ export namespace MiniHtml {
           (a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)),
         ),
       );
-      Array.from(this.mutatedElements.entries())
-        .sort((a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)))
-        .forEach(([el, meaningfulEl]) => {
-          if (el.isConnected === false) return '';
-          if (meaningfulEl) {
-            this.updateElement(meaningfulEl);
-            renderedHtml.set(
-              meaningfulEl!,
-              this.genHtml(meaningfulEl!, 1, false, '', renderedHtml),
-            );
-          }
-          const toAdd: (MeaningfulElement | string)[] = [];
-          this.parseElement(el as HTMLElement, toAdd);
-          toAdd.forEach((addedEl) => {
-            if (typeof addedEl === 'object') {
+      await Promise.all(
+        Array.from(this.mutatedElements.entries())
+          .sort((a, b) => -(a[1]?.bodyDepth ?? 0 - (b[1]?.bodyDepth ?? 0)))
+          .map(async ([el, meaningfulEl]) => {
+            if (el.isConnected === false) return '';
+            if (meaningfulEl) {
+              this.updateElement(meaningfulEl);
               renderedHtml.set(
-                addedEl!,
-                this.genHtml(addedEl, 9999, false, '', renderedHtml),
+                meaningfulEl!,
+                await this.genHtml(meaningfulEl!, 1, false, '', renderedHtml),
               );
             }
-          });
-        });
+            const toAdd: (MeaningfulElement | string)[] = [];
+            this.parseElement(el as HTMLElement, toAdd);
+            await Promise.all(
+              toAdd.map(async (addedEl) => {
+                if (typeof addedEl === 'object') {
+                  renderedHtml.set(
+                    addedEl!,
+                    await this.genHtml(addedEl, 9999, false, '', renderedHtml),
+                  );
+                }
+              }),
+            );
+          }),
+      );
       const html = Array.from(renderedHtml.values()).join('');
       const { styles, initStyles } = this;
       const newHighlight = Object.entries(styles.highlight).filter(
@@ -558,23 +643,21 @@ export namespace MiniHtml {
       };
       this.initObserve();
     }
-    genFullHtml = () => {
+    genFullHtml = async () => {
       const style = window.getComputedStyle(document.body);
       const { styles } = this;
       this.styles.font[style.fontFamily] = 0;
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff0`)} ${rgbToHex(style.color)}`;
-      console.log(
-        'this.meaningFulElements',
-        this.meaningFulElements,
-        window.isPreloadContext,
-      );
-      const html = this.meaningFulElements
-        .map((el) =>
-          typeof el === 'string'
-            ? el
-            : this.genHtml(el, 9999, false, highlightStyle),
+      console.log('this.meaningFulElements', this.meaningFulElements);
+      const html = (
+        await Promise.all(
+          this.meaningFulElements.map((el) =>
+            typeof el === 'string'
+              ? Promise.resolve(el)
+              : this.genHtml(el, 9999, false, highlightStyle),
+          ),
         )
-        .join('');
+      ).join('');
       this.lastFullHtml = html;
       return `<script>const font = ${JSON.stringify(
         Object.entries(styles.font).reduce(
@@ -593,23 +676,31 @@ export namespace MiniHtml {
       },
       {} as Record<string, string>,
     ),
-  )};</script>${html} //${window.isPreloadContext} ${this.mutatedElements.size}`;
+  )};</script>${html} //${this.mutatedElements.size}`;
     };
     genId(id: string | undefined) {
-      let thisId = id || `__${(this.added++).toString(36)}`;
+      // eslint-disable-next-line no-nested-ternary
+      let thisId = id
+        ? this.idPrefix === '__'
+          ? id
+          : `${this.idPrefix}${id}`
+        : `${this.idPrefix}${(this.added++).toString(36)}`;
       let i = 0;
       while (this.idToEl.has(thisId)) {
-        thisId = `__${(this.added++).toString(36)}-${i++}`;
+        thisId = `${this.idPrefix}${(this.added++).toString(36)}-${i++}`;
       }
       return thisId;
     }
     parseElement(
       element: HTMLElement,
-      meaningFulElements: (MeaningfulElement | string)[] = this
-        .meaningFulElements,
+      meaningFulElements:
+        | (MeaningfulElement | string)[]
+        | undefined = undefined,
       parentMeaningfulElement: MeaningfulElement | undefined = undefined,
       bodyDep = 0,
     ) {
+      // eslint-disable-next-line no-param-reassign
+      meaningFulElements = meaningFulElements ?? this.meaningFulElements;
       let bodyDepth = bodyDep;
       let parentMeaningfulEl = parentMeaningfulElement;
       if (bodyDepth === 0 && element !== document.body) {
@@ -643,6 +734,21 @@ export namespace MiniHtml {
         return;
       }
 
+      if (tagName === 'iframe') {
+        meaningFulElements.push(
+          this.addMeaningfulElement(
+            new IFrameHelper(
+              element as HTMLIFrameElement,
+              element.id,
+              element.getAttribute('name') ?? '',
+              checkVisible(element),
+              bodyDepth,
+              parentMeaningfulEl,
+            ),
+          ),
+        );
+        return;
+      }
       let meaningfulEl: MeaningfulElement | undefined = parentMeaningfulEl;
       const label = getReadableAttr(element);
       const placeholder: MeaningfulElement = {
@@ -653,7 +759,6 @@ export namespace MiniHtml {
         parent: parentMeaningfulEl,
         bodyDepth,
       };
-
       Array.from(element.childNodes).forEach((child) => {
         if (
           child.nodeType === Node.TEXT_NODE &&
@@ -676,7 +781,7 @@ export namespace MiniHtml {
         }
       });
 
-      if (ifInteractive(tagName, element)) {
+      if (ifInteractive(tagName, element) || tagName === 'body') {
         meaningfulEl = this.addMeaningfulElement(placeholder);
         meaningFulElements.push(meaningfulEl);
       } else {
@@ -696,7 +801,6 @@ export namespace MiniHtml {
           meaningfulEl = this.addMeaningfulElement(placeholder);
           meaningFulElements.push(meaningfulEl);
         } else if (placeholder.nodes) {
-          console.log('skipped placeholder', placeholder);
           meaningFulElements.push(...placeholder.nodes);
           placeholder.nodes.forEach((node) => {
             if (typeof node === 'object') {
@@ -716,8 +820,20 @@ export namespace MiniHtml {
     };
     static ErrIdNotFound = new Error('ERR_ID_NOT_FOUND');
 
-    getElementFormId(select: Selector) {
+    getElementFormId(select: Selector): MeaningfulElement | IFrameHelper {
       const selector = typeof select === 'object' ? select : { id: select };
+      if (selector.id.includes(':')) {
+        const parts = selector.id.split(':');
+        if (parts.slice(0, -1).join(':') !== this.idPrefix) {
+          let iframe: IFrameHelper | undefined;
+          for (let i = 0, c = parts.length; i < c; i++) {
+            iframe = iframeById[parts.slice(0, i + 1).join(':')];
+            if (iframe) {
+              return iframe;
+            }
+          }
+        }
+      }
       let meaningfulEl = this.idToEl.get(selector.id);
       if (selector.filterInChild) {
         const filter = replaceJsTpl(
@@ -750,6 +866,9 @@ export namespace MiniHtml {
     }
     genHtmlFormId(select: Selector, parentLevel: number = 0) {
       let el = this.getElementFormId(select);
+      if (el instanceof IFrameHelper) {
+        return el.getHtml(select, parentLevel);
+      }
       for (let lv = parentLevel; lv > 0; lv--) {
         if (el.parent) {
           el = el.parent;
@@ -781,7 +900,6 @@ export namespace MiniHtml {
   let htmlParser: Parser | undefined;
   export const getHtmlParser = () => {
     if (!htmlParser) {
-      console.log('creating html parser');
       htmlParser = new Parser();
     }
     return htmlParser;

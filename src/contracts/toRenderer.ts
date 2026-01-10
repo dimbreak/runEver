@@ -32,4 +32,12 @@ export namespace ToRendererIpc {
       },
     ]
   >('prompt-response');
+  export const llmSessionSnapshot = new IcpRendererContract<
+    [
+      {
+        frameId: number;
+        snapshot: unknown | null;
+      },
+    ]
+  >('llm-session-snapshot');
 }

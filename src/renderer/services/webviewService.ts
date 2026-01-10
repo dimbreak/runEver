@@ -41,13 +41,14 @@ export const webviewService = {
     };
   },
 
-  async createTab(params: { url: string; bounds?: Rectangle }) {
+  async createTab(params: {
+    parentFrameId?: number;
+    url: string;
+    bounds?: Rectangle;
+  }) {
     if (!hasIpc()) return undefined;
     console.info('createTab', params?.url, params?.bounds);
-    const res = await ToMainIpc.createTab.invoke({
-      url: params.url,
-      bounds: params.bounds,
-    });
+    const res = await ToMainIpc.createTab.invoke(params);
     if ('id' in res) return res.id;
     throw new Error(res.error ?? 'Failed to create tab');
   },
