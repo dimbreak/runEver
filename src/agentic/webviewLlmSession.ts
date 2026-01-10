@@ -1,6 +1,6 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Rectangle } from 'electron';
 import fs from 'fs';
-import type { TabWebView } from '../main/webView/tab';
+import { TabWebView } from '../main/webView/tab';
 import { LlmApi } from './api';
 import { PromptRun } from './promptRun';
 import { WireActionWithWaitAndRec } from './types';
@@ -12,6 +12,10 @@ const DEBUG_CONFIRM_ALL_ACTIONS = false;
 const testPrompt: { user: string; system: string } | null = null;
 
 export class WebViewLlmSession {
+  private static readonly PADDING = 0;
+  private static readonly DEFAULT_TABBAR_HEIGHT = 112;
+  private static readonly DEFAULT_SIDEBAR_WIDTH = 430;
+
   private runsByRequestId = new Map<number, PromptRun>();
   private runQueue: number[] = [];
   private activeRequestId: number | null = null;
@@ -33,7 +37,7 @@ export class WebViewLlmSession {
   registerTab(tab: TabWebView) {
     this.tabsById.set(tab.webView.webContents.id, tab);
     if (tab.bounds.width > 0 && tab.bounds.height > 0) {
-      this.focusTab(tab);
+      tab.focus();
       this.runsByRequestId
         .get(this.lastStartedRequestId ?? -1)
         ?.runningSession[0]?.addLog(
@@ -67,6 +71,114 @@ export class WebViewLlmSession {
       this.focusedTab.blur();
     }
     this.focusedTab = tab;
+  }
+
+  getFocusedTab() {
+    return this.focusedTab;
+  }
+
+  getSafeBounds(
+    opts: {
+      sidebarWidth?: number;
+      tabbarHeight?: number;
+      viewportWidth?: number;
+    } = {},
+  ) {
+    const sidebarWidth =
+      opts.sidebarWidth ?? WebViewLlmSession.DEFAULT_SIDEBAR_WIDTH;
+    const tabbarHeight =
+      opts.tabbarHeight ?? WebViewLlmSession.DEFAULT_TABBAR_HEIGHT;
+
+    const win = this.mainWindow?.getBounds();
+    const devtoolsWidth = (win?.width ?? 1024) - (opts.viewportWidth ?? 0);
+    const width = Math.max(
+      320,
+      (win?.width ?? 1024) -
+        sidebarWidth -
+        devtoolsWidth -
+        WebViewLlmSession.PADDING * 2,
+    );
+    const height = Math.max(
+      320,
+      (win?.height ?? 728) - tabbarHeight - WebViewLlmSession.PADDING * 2,
+    );
+    return {
+      x: WebViewLlmSession.PADDING,
+      y: tabbarHeight + WebViewLlmSession.PADDING,
+      width,
+      height,
+    };
+  }
+
+  createTab(detail: { url: string; bounds?: Rectangle }) {
+    const bounds = detail.bounds ?? this.getSafeBounds();
+    const wvTab = new TabWebView(detail.url, bounds, this.mainWindow, this);
+    const frameId = wvTab.webView.webContents.id;
+    wvTab.webView.webContents.once('destroyed', () => this.cleanupTab(frameId));
+    wvTab.webView.webContents.on('render-process-gone', () =>
+      this.cleanupTab(frameId),
+    );
+    this.mainWindow?.contentView.addChildView(wvTab.webView);
+    this.registerTab(wvTab);
+    return { id: frameId };
+  }
+
+  async operateTab(detail: {
+    id: number;
+    bounds?: Rectangle;
+    url?: string;
+    viewportWidth?: number;
+    exeScript?: string;
+    close?: boolean;
+    visible?: boolean;
+    sidebarWidth?: number;
+    tabbarHeight?: number;
+  }) {
+    const frameId = detail.id;
+    const wvTab = this.getTab(frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+    let response;
+    if (detail.close) {
+      // Ensure any in-flight prompt/task is stopped before destroying webContents.
+      wvTab.stopPrompt();
+      wvTab.webView.setVisible(false);
+      this.mainWindow?.contentView.removeChildView(wvTab.webView);
+      this.unregisterTab(frameId);
+      if (!wvTab.webView.webContents.isDestroyed()) {
+        wvTab.webView.webContents.close();
+      }
+      response = 'closed';
+    } else {
+      if (detail.visible !== undefined) {
+        wvTab.webView.setVisible(detail.visible);
+        if (detail.visible) {
+          wvTab.focus();
+        }
+      }
+      if (detail.bounds) {
+        wvTab.webView.setBounds(detail.bounds);
+      } else if (!detail.url && !detail.exeScript) {
+        wvTab.webView.setBounds(
+          this.getSafeBounds({
+            sidebarWidth:
+              detail.sidebarWidth ?? WebViewLlmSession.DEFAULT_SIDEBAR_WIDTH,
+            tabbarHeight:
+              detail.tabbarHeight ?? WebViewLlmSession.DEFAULT_TABBAR_HEIGHT,
+            viewportWidth: detail.viewportWidth,
+          }),
+        );
+      }
+      if (detail.url) {
+        wvTab.webView.webContents.loadURL(detail.url);
+        await Util.sleep(1000);
+      }
+      if (detail.exeScript) {
+        response = await wvTab.webView.webContents.executeJavaScript(
+          detail.exeScript,
+        );
+      }
+    }
+    return { response };
   }
 
   tabsCount() {
@@ -490,7 +602,7 @@ export class WebViewLlmSession {
           );
           return;
         }
-        run.tab.pushActions([nextAction], run.args);
+        this.focusedTab!.pushActions([nextAction], run.args);
       })();
       return;
     }
@@ -520,7 +632,7 @@ export class WebViewLlmSession {
           );
           return;
         }
-        run.tab.pushActions([nextAction], run.args);
+        this.focusedTab!.pushActions([nextAction], run.args);
       })();
       return;
     }
@@ -606,5 +718,33 @@ export class WebViewLlmSession {
       runQueue: [...this.runQueue],
       runs,
     };
+  }
+
+  private cleanupTab(frameId: number) {
+    const wvTab = this.getTab(frameId);
+    if (wvTab) {
+      try {
+        wvTab.stopPrompt();
+      } catch {
+        // ignore cleanup errors
+      }
+      try {
+        wvTab.webView.setVisible(false);
+      } catch {
+        // ignore cleanup errors
+      }
+      try {
+        this.mainWindow?.contentView.removeChildView(wvTab.webView);
+      } catch {
+        // ignore cleanup errors
+      }
+      this.unregisterTab(frameId);
+    }
+
+    try {
+      this.mainWindow?.webContents.send('tab-closed', { frameId });
+    } catch {
+      // ignore teardown errors
+    }
   }
 }
