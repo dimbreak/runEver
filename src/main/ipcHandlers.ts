@@ -12,7 +12,6 @@ import {
   showSystemMessageBox,
 } from './dialogs';
 import { LlmApi } from './llm/api';
-import { TabWebView } from './webView/tab';
 
 function initPromptIpc(session: WebViewLlmSession) {
   const getTab = (frameId: number) => session.getTab(frameId);
@@ -122,61 +121,6 @@ export const setupIpcHandlers = (
   const getTab = (frameId?: number) =>
     typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
 
-  const PADDING = 0;
-  const DEFAULT_TABBAR_HEIGHT = 112;
-  const DEFAULT_SIDEBAR_WIDTH = 430;
-
-  type SafeBoundsOptions = {
-    sidebarWidth?: number;
-    tabbarHeight?: number;
-    viewportWidth?: number;
-  };
-
-  const getSafeBounds = (opts: SafeBoundsOptions = {}) => {
-    const sidebarWidth = opts.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH;
-    const tabbarHeight = opts.tabbarHeight ?? DEFAULT_TABBAR_HEIGHT;
-
-    const win = mainWindow?.getBounds();
-    const devtoolsWidth = win.width - (opts.viewportWidth ?? 0);
-    const width = Math.max(
-      320,
-      (win?.width ?? 1024) - sidebarWidth - devtoolsWidth - PADDING * 2,
-    );
-    const height = Math.max(
-      320,
-      (win?.height ?? 728) - tabbarHeight - PADDING * 2,
-    );
-    return { x: PADDING, y: tabbarHeight + PADDING, width, height };
-  };
-
-  const cleanupTab = (frameId: number) => {
-    const wvTab = getTab(frameId);
-    if (wvTab) {
-      try {
-        wvTab.stopPrompt();
-      } catch {
-        // ignore cleanup errors
-      }
-      try {
-        wvTab.webView.setVisible(false);
-      } catch {
-        // ignore cleanup errors
-      }
-      try {
-        mainWindow?.contentView.removeChildView(wvTab.webView);
-      } catch {
-        // ignore cleanup errors
-      }
-      llmSession.unregisterTab(frameId);
-    }
-
-    try {
-      mainWindow?.webContents.send('tab-closed', { frameId });
-    } catch {
-      // ignore teardown errors
-    }
-  };
-
   // const removeAllWebViews = () => {
   //   webViewTabsById.forEach((tab) => {
   //     mainWindow?.contentView.removeChildView(tab.webView);
@@ -249,61 +193,11 @@ export const setupIpcHandlers = (
       detail,
       event.frameId,
     );
-    const bounds = detail.bounds ?? getSafeBounds();
-    const wvTab = new TabWebView(detail.url, bounds, mainWindow, llmSession);
-    const frameId = wvTab.webView.webContents.id;
-    wvTab.webView.webContents.once('destroyed', () => cleanupTab(frameId));
-    wvTab.webView.webContents.on('render-process-gone', () =>
-      cleanupTab(frameId),
-    );
-    llmSession.registerTab(wvTab);
-    mainWindow?.contentView.addChildView(wvTab.webView);
-    return { id: frameId };
+    return llmSession.createTab(detail);
   });
 
   ToMainIpc.operateTab.handle(async (event, detail) => {
-    const frameId = detail.id;
-    const wvTab = getTab(frameId);
-    if (wvTab) {
-      let response;
-      if (detail.close) {
-        // Ensure any in-flight prompt/task is stopped before destroying webContents.
-        wvTab.stopPrompt();
-        wvTab.webView.setVisible(false);
-        mainWindow?.contentView.removeChildView(wvTab.webView);
-        llmSession.unregisterTab(frameId!);
-        if (!wvTab.webView.webContents.isDestroyed()) {
-          wvTab.webView.webContents.close();
-        }
-        response = 'closed';
-      } else {
-        if (detail.visible !== undefined) {
-          wvTab.webView.setVisible(detail.visible);
-        }
-        if (detail.bounds) {
-          wvTab.webView.setBounds(detail.bounds);
-        } else if (!detail.url && !detail.exeScript) {
-          wvTab.webView.setBounds(
-            getSafeBounds({
-              sidebarWidth: detail.sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH,
-              tabbarHeight: detail.tabbarHeight ?? DEFAULT_TABBAR_HEIGHT,
-              viewportWidth: detail.viewportWidth,
-            }),
-          );
-        }
-        if (detail.url) {
-          wvTab.webView.webContents.loadURL(detail.url);
-          await Util.sleep(1000);
-        }
-        if (detail.exeScript) {
-          response = await wvTab.webView.webContents.executeJavaScript(
-            detail.exeScript,
-          );
-        }
-      }
-      return { response };
-    }
-    return { error: 'Tab not found' };
+    return llmSession.operateTab(detail);
   });
 
   ToMainIpc.getLlmConfig.handle(async (event, frameId) => {

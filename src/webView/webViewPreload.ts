@@ -124,6 +124,24 @@ const handleFrameId = async (event: MessageEvent) => {
   });
   console.log('Setting in preload:', event.data);
   window.removeEventListener('message', handleFrameId);
+  // const events = [];
+  // for (const property in window) {
+  //   if (property.startsWith('on')) {
+  //     events.push(property);
+  //     window[property] = (ev) => {
+  //       console.log(property, ev);
+  //     };
+  //   }
+  // }
+  // console.log(events.join(' '));
+  //
+  // await Util.sleep(2000);
+  //
+  // document.body.querySelector('input')?.focus();
+  // BrowserActions.callActionApi({
+  //   action: 'pasteInput',
+  //   args: { input: '你好，世界' },
+  // });
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

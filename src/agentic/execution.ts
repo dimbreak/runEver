@@ -7,7 +7,6 @@ import {
   WireSubTask,
 } from './execution.schema';
 import { LlmApi } from './api';
-import { TabWebView } from '../main/webView/tab';
 import {
   JsonStreamingEvent,
   JsonStreamingEventType,
@@ -15,6 +14,7 @@ import {
 } from '../main/llm/jsonStreamer';
 import { Profile } from './profile/profile';
 import './profile/registry';
+import { WebViewLlmSession } from './webviewLlmSession';
 
 const ComplexityToModelConfig: Record<
   RiskOrComplexityLevel,
@@ -28,7 +28,7 @@ const ComplexityToModelConfig: Record<
 export class ExecutionPrompter {
   runner: Promise<ReturnType<typeof LlmApi.queryLLMSession>> | undefined;
   requestInSession = 0;
-  constructor(private tab: TabWebView) {}
+  constructor(private tabManager: WebViewLlmSession) {}
   getRunner() {
     console.info('getRunner', this.runner);
     if (!this.runner) {
@@ -63,7 +63,9 @@ export class ExecutionPrompter {
     ExecutorLlmResult | undefined,
     void
   > {
-    const { webView: wv, llmSession } = this.tab;
+    const { tabManager } = this;
+    const tab = tabManager.getFocusedTab()!;
+    const { webView: wv } = tab;
     const rect = wv.getBounds();
     console.log('Executor execPrompt', wv.webContents.id);
     const fullHtml = (await wv.webContents.executeJavaScript(
@@ -78,15 +80,15 @@ export class ExecutionPrompter {
       sub: subPrompt,
       userHeader: `[url]
 ${wv.webContents.getURL()}${
-        llmSession.tabsCount() > 1
+        tabManager.tabsCount() > 1
           ? `
 
 [opened tabs]
-${llmSession
+${tabManager
   .listTabs()
   .map(
-    (tab) =>
-      `${tab.focused ? 'focus ' : ''}${tab.title ? `[${tab.title}] ${tab.url}` : tab.url}`,
+    (t) =>
+      `${t.focused ? 'focus ' : ''}${t.title ? `[${t.title}] ${t.url}` : t.url}`,
   )
   .join('\n')}`
           : ''
@@ -115,7 +117,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
     if (requireScreenshot) {
       attachments.push({
         type: 'image',
-        image: (await this.tab.screenshot()).toJPEG(80),
+        image: (await tab.screenshot()).toJPEG(80),
         mediaType: 'image/jpeg',
       });
     }
@@ -237,7 +239,7 @@ type WireAction =
   | {
       k: 'key';
       key: string;
-      a: 'keyDown' | 'keyUp' | 'keyDownUp' | 'keyPress'; //always use press for typing, downUp for others, unless required/need delay
+      a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press for typing, unless required/need delay
       q?: Selector;
       c?: boolean; // ctrl
       al?: boolean; // alt
