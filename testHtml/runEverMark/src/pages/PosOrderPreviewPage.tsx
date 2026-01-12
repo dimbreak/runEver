@@ -53,7 +53,7 @@ export default function PosOrderPreviewPage() {
 
             <h3>Line items</h3>
             <ul className="summary-list">
-              {lines.map((line, index) => (
+              {lines.map((line: any, index: number) => (
                 <li key={`${line.name}-${index}`}>
                   {line.name} × {line.quantity}
                   <span>${line.total.toFixed(2)}</span>
