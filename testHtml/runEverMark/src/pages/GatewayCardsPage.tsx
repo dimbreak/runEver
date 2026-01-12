@@ -63,7 +63,7 @@ export default function GatewayCardsPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {cards.map((card) => {
-                const estimate = estimateTotal(card);
+                estimateTotal(card);
                 const isSelected = selected === card.id;
                 return (
                   <div

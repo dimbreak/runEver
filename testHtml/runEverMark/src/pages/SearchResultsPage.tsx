@@ -56,7 +56,7 @@ export default function SearchResultsPage() {
         {results.map((result) => {
           const title =
             'titleTemplate' in result
-              ? result.titleTemplate.replace('{query}', query)
+              ? (result as any).titleTemplate.replace('{query}', query)
               : result.title;
           const url = buildUrl(result.url);
           return (

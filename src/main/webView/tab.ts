@@ -47,7 +47,13 @@ export class TabWebView {
     private mainWindow: BrowserWindow,
     llmSession: WebViewLlmSession,
   ) {
-    this.url = initUrl;
+    if (this.initUrl === 'about:runEverMark') {
+      const RESOURCES_PATH = app.isPackaged
+        ? path.join(process.resourcesPath, 'assets')
+        : path.join(__dirname, '../../assets');
+      this.initUrl = `file://${path.join(RESOURCES_PATH, 'runEverMark/index.html')}`;
+    }
+    this.url = this.initUrl;
     this.llmSession = llmSession;
     this.webView = new WebContentsView({
       webPreferences: {

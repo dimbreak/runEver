@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import HomePage from './pages/HomePage';
 import EmailPlatformPage from './pages/EmailPlatformPage';
 import EcommerceProductsPage from './pages/EcommerceProductsPage';
@@ -17,7 +17,7 @@ import PosOrderPreviewPage from './pages/PosOrderPreviewPage';
 import SearchHomePage from './pages/SearchHomePage';
 import SearchResultsPage from './pages/SearchResultsPage';
 
-const routeMap: Record<string, () => JSX.Element> = {
+const routeMap: Record<string, () => React.ReactNode> = {
   '/': HomePage,
   '/email': EmailPlatformPage,
   '/ecomm/products': EcommerceProductsPage,

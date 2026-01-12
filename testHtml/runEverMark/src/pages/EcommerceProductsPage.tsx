@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import ReactSlider from 'react-slider';
-import { Star, StarHalf, Check, Truck, ShoppingCart, Heart } from 'lucide-react';
+import { Star, StarHalf, Check } from 'lucide-react';
 import EcommHeader from '../components/EcommHeader';
 import { productCatalog, productCategories, type Product } from '../data/products';
 import { readSession, writeSession } from '../utils/session';
@@ -53,7 +53,7 @@ function getProductImage(category: string, id: string): string {
     hash = id.charCodeAt(i) + ((hash << 5) - hash);
   }
   const index = Math.abs(hash) % images.length;
-  return `/img/${images[index]}`;
+  return `img/${images[index]}`;
 }
 
 type CartItem = {
@@ -77,8 +77,7 @@ export default function EcommerceProductsPage() {
     PRICE_MIN,
     PRICE_MAX
   ]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>(readCart);
+  const [, setCart] = useState<CartItem[]>(readCart);
 
   const filtered = useMemo(() => {
     const query = search.toLowerCase();
@@ -125,8 +124,6 @@ export default function EcommerceProductsPage() {
     });
   };
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-
   return (
     <div style={{ backgroundColor: '#E3E6E6', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
       <EcommHeader searchValue={search} onSearchChange={setSearch} />
@@ -168,7 +165,7 @@ export default function EcommerceProductsPage() {
                     step={1}
                     value={priceRange}
                     ariaLabel={['Minimum price', 'Maximum price']}
-                    onChange={(value) => setPriceRange(value as [number, number])}
+                    onChange={(value: any) => setPriceRange(value as [number, number])}
                     minDistance={5}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '8px', color: '#0F1111' }}>
