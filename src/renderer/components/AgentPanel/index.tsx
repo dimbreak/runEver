@@ -70,52 +70,52 @@ export const AgentPanel: React.FC = () => {
     [refreshSessionSnapshot],
   );
 
-  const handleCapture = async () => {
-    try {
-      // Get the active tab
-      const currentTab = tabs.find((t) => t.id === activeTabId);
-      if (!currentTab) {
-        if (activeTabId) {
-          addMessage(activeTabId, {
-            id: Date.now(),
-            role: 'assistant',
-            content: textToDoc('No active tab to capture.'),
-            tag: 'Error',
-          });
-        }
-        return;
-      }
+  // const handleCapture = async () => {
+  //   try {
+  //     // Get the active tab
+  //     const currentTab = tabs.find((t) => t.id === activeTabId);
+  //     if (!currentTab) {
+  //       if (activeTabId) {
+  //         addMessage(activeTabId, {
+  //           id: Date.now(),
+  //           role: 'assistant',
+  //           content: textToDoc('No active tab to capture.'),
+  //           tag: 'Error',
+  //         });
+  //       }
+  //       return;
+  //     }
 
-      // Capture screenshot using WebTab method
-      const imageDataUri = await currentTab.captureScreenshot(bounds);
+  //     // Capture screenshot using WebTab method
+  //     const imageDataUri = await currentTab.captureScreenshot(bounds);
 
-      if (imageDataUri) {
-        addMessage(currentTab.id, {
-          id: Date.now(),
-          role: 'assistant',
-          content: textToDoc('Captured current view.'),
-          image: imageDataUri,
-          tag: 'Screenshot',
-        });
-      } else {
-        addMessage(currentTab.id, {
-          id: Date.now(),
-          role: 'assistant',
-          content: textToDoc('Failed to capture screenshot.'),
-          tag: 'Error',
-        });
-      }
-    } catch (err) {
-      if (activeTabId) {
-        addMessage(activeTabId, {
-          id: Date.now(),
-          role: 'assistant',
-          content: textToDoc(`Capture error: ${(err as Error).message}`),
-          tag: 'Error',
-        });
-      }
-    }
-  };
+  //     if (imageDataUri) {
+  //       addMessage(currentTab.id, {
+  //         id: Date.now(),
+  //         role: 'assistant',
+  //         content: textToDoc('Captured current view.'),
+  //         image: imageDataUri,
+  //         tag: 'Screenshot',
+  //       });
+  //     } else {
+  //       addMessage(currentTab.id, {
+  //         id: Date.now(),
+  //         role: 'assistant',
+  //         content: textToDoc('Failed to capture screenshot.'),
+  //         tag: 'Error',
+  //       });
+  //     }
+  //   } catch (err) {
+  //     if (activeTabId) {
+  //       addMessage(activeTabId, {
+  //         id: Date.now(),
+  //         role: 'assistant',
+  //         content: textToDoc(`Capture error: ${(err as Error).message}`),
+  //         tag: 'Error',
+  //       });
+  //     }
+  //   }
+  // };
 
   const updateWebViewLayout = React.useCallback(
     async (sidebarOpen: boolean) => {
@@ -165,12 +165,11 @@ export const AgentPanel: React.FC = () => {
             : 'opacity-0 scale-95 translate-x-4 pointer-events-none'
         }`}
       >
-        <div className="flex shrink-0 items-center gap-3 px-4 py-3 min-h-[88px] border-b border-slate-200 bg-blue-50">
+        <div className="flex justify-between shrink-0 items-center gap-3 px-4 py-3 border-b border-slate-200 bg-blue-50">
           <div className="font-semibold text-slate-800 leading-tight">
-            <div className="text-[13px] text-slate-500">Flowaway</div>
-            <div className="text-[15px]">Agent</div>
+            <div className="text-[15px]">RunEver Agent</div>
           </div>
-          <div className="flex flex-1 items-center gap-2">
+          {/* <div className="flex flex-1 items-center gap-2">
             <button
               type="button"
               onClick={handleCapture}
@@ -178,7 +177,7 @@ export const AgentPanel: React.FC = () => {
             >
               Capture View
             </button>
-          </div>
+          </div> */}
           <button
             type="button"
             onClick={toggleSidebar}

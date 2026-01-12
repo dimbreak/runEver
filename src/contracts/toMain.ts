@@ -206,10 +206,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-        canGoBack: boolean;
-        canGoForward: boolean;
-        url: string;
-      }
+    canGoBack: boolean;
+    canGoForward: boolean;
+    url: string;
+  }
     | { error: string }
   >('get-tab-navigation-state');
   export const getLlmSessionSnapshot = new IpcMainContract<
@@ -228,10 +228,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-        canGoBack: boolean;
-        canGoForward: boolean;
-        url: string;
-      }
+    canGoBack: boolean;
+    canGoForward: boolean;
+    url: string;
+  }
     | { error: string }
   >('navigate-tab-history');
   export const iframeProgress = new IpcMainContract<

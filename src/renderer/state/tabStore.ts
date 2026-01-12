@@ -168,18 +168,18 @@ type TabState = {
 };
 
 const initialTabs = [
-  new WebTab({
-    id: 'tab-1',
-    title: 'Google',
-    url: 'https://www.google.com',
-    isRunning: true,
-  }),
   // new WebTab({
   //   id: 'tab-1',
   //   title: 'Google',
-  //   url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
+  //   url: 'https://www.google.com',
   //   isRunning: true,
   // }),
+  new WebTab({
+    id: 'tab-1',
+    title: 'Google',
+    url: 'https://www.bilibili.com/', // 'http://localhost:5175/?flow=register',
+    isRunning: true,
+  }),
   // new WebTab({
   //   id: 'tab-2',
   //   title: 'OpenAI',

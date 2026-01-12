@@ -31,10 +31,10 @@ export class PromptRun {
   stopRequested = false;
   constructor(
     private manager: WebViewLlmSession,
-    public tab: TabWebView,
+    private thisTab: TabWebView,
     public requestId: number,
   ) {
-    this.executionSession = new ExecutionPrompter(tab);
+    this.executionSession = new ExecutionPrompter(manager);
     this.rootSession = new ExecutionSession(0, [], this);
     this.sessionQueue.push(this.rootSession);
 
@@ -113,6 +113,10 @@ export class PromptRun {
   }
 
   breakPromptForExeErr = false;
+
+  get tab(): TabWebView {
+    return this.manager.getFocusedTab() ?? this.thisTab;
+  }
 
   stop() {
     this.stopRequested = true;
