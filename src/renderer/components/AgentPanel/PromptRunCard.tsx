@@ -25,7 +25,7 @@ export const PromptRunCard: React.FC<PromptRunCardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200 bg-white',
+        'rounded-2xl border border-slate-200 bg-white ml-4 mr-8',
         'px-4 py-3 text-xs text-slate-700 shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)]',
         {
           'space-y-3':

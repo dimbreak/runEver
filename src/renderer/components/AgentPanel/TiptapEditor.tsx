@@ -94,6 +94,7 @@ export function TiptapEditor({
         blockquote: false,
         codeBlock: false,
         horizontalRule: false,
+        dropcursor: false,
       }),
       Placeholder.configure({ placeholder }),
     ],
@@ -131,9 +132,7 @@ export function TiptapEditor({
   }, [editor]);
 
   return (
-    <div
-      className={cn('border-t border-slate-100 bg-white px-4 py-3', className)}
-    >
+    <div className={cn('border-t border-slate-100 bg-white', className)}>
       <div
         className={cn(
           'border-t rounded-lg border border-slate-200',

@@ -8,6 +8,7 @@ import { useFileDropUpload } from '../../hooks/useFileDropUpload';
 import { formatBytes } from '../../utils/formatter';
 import { textToDoc } from '../../utils/contentUtils';
 import { TiptapEditor } from './TiptapEditor';
+import { cn } from '../../utils/cn';
 
 type PromptTextAreaProps = {
   scheduleSessionRefresh: (tabId: string) => void;
@@ -37,6 +38,7 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
     isUploading,
     isDragActive,
     pendingFiles,
+    addFiles,
     removeAttachment,
     clearAttachments,
     dropzoneProps,
@@ -52,8 +54,9 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
       });
     },
   });
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const showAttachments = attachments.length > 0 || isUploading || isDragActive;
 
-  // Pending upload label
   const pendingUploadLabel = React.useMemo(() => {
     if (!isDragActive) return '';
     if (pendingFiles.length === 1) {
@@ -65,7 +68,6 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
     return 'Release to add files';
   }, [isDragActive, pendingFiles]);
 
-  // Agent prompt handling
   const { handlePrompt, handleStop } = useAgentPrompt({
     attachments,
     clearAttachments,
@@ -87,10 +89,23 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
     });
   }, [handleStop, runningRequestId]);
 
+  const handleUploadClick = React.useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files ?? []);
+      addFiles(files);
+      event.target.value = '';
+    },
+    [addFiles],
+  );
+
   return (
     <div className="relative" {...dropzoneProps}>
-      {(attachments.length > 0 || isUploading || isDragActive) && (
-        <div className="border-t border-slate-100 bg-white px-4 pt-3">
+      {showAttachments && (
+        <div className="border-t border-slate-100 bg-white p-2 space-y-2">
           <div className="flex items-center gap-3">
             <div className="text-[12px] font-semibold text-slate-600">
               Attachments
@@ -109,7 +124,7 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
             )}
           </div>
           {attachments.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2 pb-2">
+            <div className="flex flex-wrap gap-2">
               {attachments.map((file) => (
                 <div
                   key={file.id}
@@ -137,21 +152,40 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
         </div>
       )}
 
-      <TiptapEditor
-        onSubmit={handleSubmit}
-        onStop={handleStopClick}
-        isRunning={
-          promptRunningStatus === 'planning' ||
-          promptRunningStatus === 'thinking' ||
-          promptRunningStatus === 'running'
-        }
-        placeholder={placeholder}
-        className={
-          attachments.length > 0 || isUploading || isDragActive
-            ? 'pt-2'
-            : undefined
-        }
-      />
+      <div className="px-2 pb-2">
+        <TiptapEditor
+          onSubmit={handleSubmit}
+          onStop={handleStopClick}
+          isRunning={
+            promptRunningStatus === 'planning' ||
+            promptRunningStatus === 'thinking' ||
+            promptRunningStatus === 'running'
+          }
+          placeholder={placeholder}
+          className="border-t-0"
+        />
+        <div
+          className={cn('flex items-center justify-start bg-white py-1', {
+            'border-t border-slate-100': showAttachments,
+          })}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            multiple
+            onChange={handleFileInputChange}
+          />
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            aria-label="Upload file"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
