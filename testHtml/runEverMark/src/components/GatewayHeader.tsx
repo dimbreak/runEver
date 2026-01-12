@@ -1,15 +1,9 @@
 export default function GatewayHeader() {
   return (
-    <header className="section-header">
-      <div>
-        <h2>Payment gateway</h2>
-        <p className="muted">Login, verify 2FA, and select the best exchange rate.</p>
+    <header style={{ padding: '20px 0', textAlign: 'center', backgroundColor: '#f5f7fa' }}>
+      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#003087', fontFamily: 'Arial, sans-serif' }}>
+        <span style={{ fontStyle: 'italic', fontWeight: 'bold' }}>Pay</span><span style={{ color: '#009cde', fontStyle: 'italic', fontWeight: 'bold' }}>Pal</span>
       </div>
-      <nav className="mini-nav">
-        <a href="#/gateway/login">Login</a>
-        <a href="#/gateway/2fa">2FA</a>
-        <a href="#/gateway/cards">Cards</a>
-      </nav>
     </header>
   );
 }
