@@ -38,6 +38,9 @@ const electronHandler = {
       postMessage(message, '*');
     },
   },
+  apiTrust: {
+    getEnv: () => ipcRenderer.invoke('get-apitrust-env'),
+  },
 };
 
 const webViewHandler = {

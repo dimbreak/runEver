@@ -220,6 +220,15 @@ export namespace ToMainIpc {
     ],
     { snapshot: unknown } | { error: string }
   >('get-llm-session-snapshot');
+  export const getApiTrustEnv = new IpcMainContract<
+    [],
+    {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      apiUrl: string;
+    }
+  >('get-apitrust-env');
   export const navigateTabHistory = new IpcMainContract<
     [
       {

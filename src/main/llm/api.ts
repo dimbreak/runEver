@@ -4,7 +4,8 @@ import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import settings from 'electron-settings';
 import z from 'zod';
-import { envSchema, envVars } from '../../schema/env';
+import { envSchema } from '../../schema/env.schema';
+import { envVars } from '../../schema/env.node';
 import { Util } from '../../webView/util';
 
 export namespace LlmApi {

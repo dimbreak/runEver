@@ -1,9 +1,9 @@
-import './App.css';
 import { useMemo } from 'react';
-import { TabBar } from './components/TabBar';
-import { HomeScreen } from './view/HomeScreen';
+import './App.css';
 import { AgentPanel } from './components/AgentPanel';
+import { TabBar } from './components/TabBar';
 import { useLayoutStore } from './state/layoutStore';
+import { HomeScreen } from './view/HomeScreen';
 
 export default function App() {
   const { isSidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =

@@ -12,6 +12,7 @@ import {
   showSystemMessageBox,
 } from './dialogs';
 import { LlmApi } from './llm/api';
+import { apiTrustEnvVars } from '../schema/env.node';
 
 function initPromptIpc(session: WebViewLlmSession) {
   const getTab = (frameId: number) => session.getTab(frameId);
@@ -213,6 +214,10 @@ export const setupIpcHandlers = (
       settings.setSync('llmConfig', llmConfig);
       return llmConfig;
     }
+  });
+
+  ToMainIpc.getApiTrustEnv.handle(async () => {
+    return apiTrustEnvVars;
   });
 
   ToMainIpc.responsePromptInput.handle(async (_event, arg) => {

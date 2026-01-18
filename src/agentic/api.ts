@@ -6,7 +6,8 @@ import settings from 'electron-settings';
 import z from 'zod';
 import fs from 'fs';
 import { app } from 'electron';
-import { envSchema, envVars, type Env } from '../schema/env';
+import { envSchema, type Env } from '../schema/env.schema';
+import { envVars } from '../schema/env.node';
 import { Util } from '../webView/util';
 import { FirstTokenMonitor } from '../utils/llm';
 

@@ -27,6 +27,9 @@ const electronHandler = {
       ipcRenderer.once(channel, func);
     },
   },
+  apiTrust: {
+    getEnv: () => ipcRenderer.invoke('get-apitrust-env'),
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
