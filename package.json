@@ -87,6 +87,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.85",
+    "@apitrust/react": "file:../apitrust/react-sdk",
     "@electron/notarize": "^3.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@tailwindcss/postcss": "^4.1.17",

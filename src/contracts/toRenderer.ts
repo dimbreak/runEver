@@ -40,4 +40,11 @@ export namespace ToRendererIpc {
       },
     ]
   >('llm-session-snapshot');
+  export const authDeepLink = new IcpRendererContract<
+    [
+      {
+        url: string;
+      },
+    ]
+  >('auth-deeplink');
 }

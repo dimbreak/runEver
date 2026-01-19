@@ -29,6 +29,7 @@ const electronHandler = {
   },
   apiTrust: {
     getEnv: () => ipcRenderer.invoke('get-apitrust-env'),
+    getToken: () => ipcRenderer.invoke('get-apitrust-token'),
   },
 };
 

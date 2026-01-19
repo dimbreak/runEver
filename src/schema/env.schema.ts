@@ -11,8 +11,9 @@ export type Env = z.infer<typeof envSchema>;
 export const apiTrustEnvSchema = z.object({
   clientId: z.string().min(1),
   clientSecret: z.string().min(1),
-  redirectUri: z.string().url(),
-  apiUrl: z.string().url(),
+  redirectUri: z.url(),
+  authBaseUrl: z.url(),
+  apiUrl: z.url(),
 });
 
 export type ApiTrustEnv = z.infer<typeof apiTrustEnvSchema>;

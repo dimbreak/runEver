@@ -18,6 +18,11 @@ import { setupIpcHandlers } from './ipcHandlers';
 import { WebViewLlmSession } from '../agentic/webviewLlmSession';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import { ToRendererIpc } from '../contracts/toRenderer';
+import {
+  peekPendingAuthDeepLink,
+  setPendingAuthDeepLink,
+} from './authDeepLink';
 
 const output = configDotEnv({
   debug: true,
@@ -34,6 +39,50 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+const protocolName = 'runever';
+
+const getDeepLinkFromArgs = (argv: string[]) => {
+  return argv.find((arg) => arg.startsWith(`${protocolName}://`)) ?? null;
+};
+
+const isAppUrl = (url: string) => {
+  const appUrl = resolveHtmlPath('index.html');
+  const appBaseUrl = appUrl.replace(/index\.html$/, '');
+  return url.startsWith(appUrl) || url.startsWith(appBaseUrl);
+};
+
+const normalizeDeepLinkPath = (url: URL) => {
+  const rawPath = url.host ? `/${url.host}${url.pathname}` : url.pathname || '/';
+  const trimmed =
+    rawPath.endsWith('/') && rawPath !== '/' ? rawPath.slice(0, -1) : rawPath;
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+};
+
+const buildAppUrlForDeepLink = (urlString: string) => {
+  const appUrl = resolveHtmlPath('index.html');
+  const url = new URL(urlString);
+  const normalizedPath = normalizeDeepLinkPath(url);
+  const search = url.searchParams.toString();
+  if (search) {
+    return `${appUrl}?${search}#${normalizedPath}`;
+  }
+  return `${appUrl}#${normalizedPath}`;
+};
+
+const sendDeepLinkToRenderer = (url: string) => {
+  setPendingAuthDeepLink(url);
+  if (!mainWindow) return;
+
+  const currentUrl = mainWindow.webContents.getURL();
+  if (currentUrl && !isAppUrl(currentUrl)) {
+    mainWindow.loadURL(buildAppUrlForDeepLink(url));
+    return;
+  }
+  if (!mainWindow.webContents.isLoading()) {
+    ToRendererIpc.authDeepLink.send(mainWindow.webContents, { url });
+  }
+};
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -94,7 +143,18 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  const pendingDeepLink = peekPendingAuthDeepLink();
+  const appUrl = pendingDeepLink
+    ? buildAppUrlForDeepLink(pendingDeepLink)
+    : resolveHtmlPath('index.html');
+  mainWindow.loadURL(appUrl);
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    const pending = peekPendingAuthDeepLink();
+    if (pending) {
+      sendDeepLinkToRenderer(pending);
+    }
+  });
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -114,7 +174,11 @@ const createWindow = async () => {
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
 
-  mainWindow.webContents.setWindowOpenHandler(() => {
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith(`${protocolName}://`)) {
+      sendDeepLinkToRenderer(url);
+      return { action: 'deny' };
+    }
     return {
       action: 'allow',
       overrideBrowserWindowOptions: {
@@ -127,6 +191,13 @@ const createWindow = async () => {
         },
       },
     };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url.startsWith(`${protocolName}://`)) {
+      event.preventDefault();
+      sendDeepLinkToRenderer(url);
+    }
   });
 
   const llmSession = new WebViewLlmSession(mainWindow);
@@ -151,10 +222,45 @@ app.on('window-all-closed', () => {
 
 app.commandLine.appendSwitch('disable-site-isolation-trials');
 
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const url = getDeepLinkFromArgs(argv);
+    if (url) {
+      sendDeepLinkToRenderer(url);
+    }
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  sendDeepLinkToRenderer(url);
+});
+
 app
   .whenReady()
   .then(() => {
+    if (process.defaultApp) {
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient(
+          protocolName,
+          process.execPath,
+          [path.resolve(process.argv[1])],
+        );
+      }
+    } else {
+      app.setAsDefaultProtocolClient(protocolName);
+    }
     createWindow();
+    const initialDeepLink = getDeepLinkFromArgs(process.argv);
+    if (initialDeepLink) {
+      sendDeepLinkToRenderer(initialDeepLink);
+    }
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.

@@ -6,4 +6,7 @@ export const loadApiTrustEnv = async (): Promise<ApiTrustEnv> => {
   return apiTrustEnvSchema.parse(rawEnv);
 };
 
-export const apiTrustEnv = apiTrustEnvSchema.parse(loadApiTrustEnv());
+export const loadApiTrustToken = async (): Promise<string | null> => {
+  const { token } = await window.electron.apiTrust.getToken();
+  return typeof token === 'string' && token.length > 0 ? token : null;
+};
