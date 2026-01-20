@@ -7,9 +7,11 @@ import z from 'zod';
 import fs from 'fs';
 import { app } from 'electron';
 import { envSchema, type Env } from '../schema/env.schema';
-import { envVars } from '../schema/env.node';
+import { apiTrustEnvVars, envVars } from '../schema/env.node';
 import { Util } from '../webView/util';
 import { FirstTokenMonitor } from '../utils/llm';
+import { ApiTrustTokenStore } from '../main/apiTrustTokenStore';
+import { getApiTrustStream } from '../shared/aiGateway';
 
 export namespace LlmApi {
   export const llmConfigSchema = z.object({
@@ -32,6 +34,7 @@ export namespace LlmApi {
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
   const recordPath = `${app.getPath('userData')}/prompt-record`;
+  const apiTrustTokenStore = new ApiTrustTokenStore();
 
   try {
     fs.mkdirSync(recordPath);
@@ -88,7 +91,6 @@ export namespace LlmApi {
 
   const dummyReturns: string[] = [];
   let streamQueryer = streamText;
-
   const streamDummy: any = (
     ...arg: typeof streamText extends (...v: infer T) => any ? T : never
   ) => {
@@ -124,6 +126,51 @@ export namespace LlmApi {
     model: LlmModelType = 'mid',
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
+    try {
+      const apiTrustToken = await apiTrustTokenStore.getToken();
+      let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
+      if (apiTrustToken) {
+        apiTrustStream = await getApiTrustStream({
+          config: {
+            clientId: apiTrustEnvVars.clientId,
+            redirectUri: apiTrustEnvVars.redirectUri,
+            apiUrl: apiTrustEnvVars.apiUrl,
+          },
+          tokenProvider: apiTrustToken,
+          prompt,
+          systemPrompt,
+          attachments,
+        });
+        if (!apiTrustStream) {
+          throw new Error(
+            'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
+          );
+        }
+      }
+      if (apiTrustStream) {
+        const monitor = new FirstTokenMonitor(cacheKey);
+        monitor.start();
+        try {
+          for await (const part of apiTrustStream) {
+            if (!monitor.hasReceived()) {
+              monitor.onFirstToken(part);
+            }
+            yield part;
+          }
+        } catch (err) {
+          monitor.stop();
+          console.error('ApiTrust streaming error:', err);
+          throw err;
+        } finally {
+          monitor.stop();
+        }
+        return;
+      }
+    } catch (error) {
+      console.error('ApiTrust request failed', error);
+      throw error;
+    }
+
     const llmApi = await getLlmApi();
 
     if (llmApi) {

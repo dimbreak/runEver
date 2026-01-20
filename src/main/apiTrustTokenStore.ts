@@ -1,10 +1,11 @@
-import { Entry } from '@napi-rs/keyring';
 import { app } from 'electron';
+import { loadKeyring, type Entry } from '@napi-rs/keyring';
 
 type ApiTrustTokenStoreOptions = {
   service?: string;
   account?: string;
 };
+
 
 export class ApiTrustTokenStore {
   private entry: Entry;
@@ -13,6 +14,7 @@ export class ApiTrustTokenStore {
     const appName = app.getName();
     const service = options.service ?? `${appName}.apitrust`;
     const account = options.account ?? 'access-token';
+    const { Entry } = loadKeyring();
     this.entry = new Entry(service, account);
   }
 

@@ -42,7 +42,14 @@ const configuration: webpack.Configuration = {
 
   target: 'electron-main',
 
-  externals: ['@napi-rs/keyring'],
+  externals: [
+    ({ request }, callback) => {
+      if (request && request.startsWith('@napi-rs/keyring')) {
+        return callback(null, `commonjs2 ${request}`);
+      }
+      return callback();
+    },
+  ],
 
   entry: {
     main: path.join(webpackPaths.srcMainPath, 'main.ts'),
