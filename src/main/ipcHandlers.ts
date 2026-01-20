@@ -19,6 +19,7 @@ import {
   consumePendingAuthDeepLink,
   setPendingAuthDeepLink,
 } from './authDeepLink';
+import { ApiTrustTokenStore } from './apiTrustTokenStore';
 
 function initPromptIpc(session: WebViewLlmSession) {
   const getTab = (frameId: number) => session.getTab(frameId);
@@ -125,6 +126,7 @@ export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
   llmSession: WebViewLlmSession,
 ) => {
+  const apiTrustTokenStore = new ApiTrustTokenStore();
   const getTab = (frameId?: number) =>
     typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
 
@@ -227,8 +229,13 @@ export const setupIpcHandlers = (
   });
 
   ToMainIpc.getApiTrustToken.handle(async () => {
-    const token = settings.getSync('apiTrustToken');
-    return { token: typeof token === 'string' ? token : null };
+    try {
+      const token = await apiTrustTokenStore.getToken();
+      return { token };
+    } catch (error) {
+      console.error('Failed to read ApiTrust token', error);
+      return { token: null };
+    }
   });
 
   ToMainIpc.getPendingAuthDeepLink.handle(async () => {
@@ -240,7 +247,11 @@ export const setupIpcHandlers = (
   });
 
   ToMainIpc.setApiTrustToken.handle(async (_event, payload) => {
-    settings.setSync('apiTrustToken', payload.token ?? null);
+    try {
+      await apiTrustTokenStore.setToken(payload.token ?? null);
+    } catch (error) {
+      console.error('Failed to store ApiTrust token', error);
+    }
   });
 
   let apiTrustAuthWindow: BrowserWindow | null = null;
