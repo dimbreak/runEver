@@ -130,59 +130,131 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
     let event: JsonStreamingEvent;
     let hasError = false;
     let parsedReturn;
+    let execError: Error | null = null;
     const jsonParser = new JsonStreamingParser(true);
+    const handleEvents = (nextEvents: JsonStreamingEvent[]) => {
+      const steps: Array<WireActionWithWait | WireSubTask> = [];
+      if (hasError) return steps;
+      for (event of nextEvents) {
+        if (event.type === JsonStreamingEventType.Error) {
+          console.error('parse error', event);
+          hasError = true;
+          return steps;
+        }
+        if (event.type === JsonStreamingEventType.Array) {
+          if (event.key === 'a') {
+            actionStage++;
+          }
+        } else if (
+          event.type === JsonStreamingEventType.Object &&
+          event.endValue
+        ) {
+          if (actionStage === 1 && typeof event.key === 'number') {
+            const step = WireActionOrSubTaskSchema.safeParse(event.endValue);
+            if (step.success) {
+              steps.push(step.data);
+            } else {
+              console.warn('Exec step error:', step.error);
+            }
+          } else if (event.key === null) {
+            console.log('Exec result end');
+            parsedReturn = event.endValue;
+          }
+        }
+      }
+      return steps;
+    };
+    const extractJsonCandidate = (raw: string) => {
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start === -1 || end === -1 || end <= start) return null;
+      return raw.slice(start, end + 1);
+    };
     try {
       const stream = runner(runPrompt, attachments, modelCfg[0], modelCfg[1]);
       this.requestInSession++;
+      let streamStarted = false;
+      let preamble = '';
       for await (const chunk of stream) {
-        events = jsonParser.push(chunk);
-        if (!hasError) {
-          for (event of events) {
-            if (event.type === JsonStreamingEventType.Error) {
-              console.error('parse error', event);
-              hasError = true;
-              break;
-            }
-            if (event.type === JsonStreamingEventType.Array) {
-              if (event.key === 'a') {
-                actionStage++;
-              }
-            } else if (
-              event.type === JsonStreamingEventType.Object &&
-              event.endValue
-            ) {
-              if (actionStage === 1 && typeof event.key === 'number') {
-                const step = WireActionOrSubTaskSchema.safeParse(
-                  event.endValue,
+        let nextChunk = chunk;
+        if (!streamStarted) {
+          preamble += chunk;
+          const jsonStart = preamble.search(/[{\[]/);
+          if (jsonStart === -1) {
+            continue;
+          }
+          nextChunk = preamble.slice(jsonStart);
+          preamble = '';
+          streamStarted = true;
+        }
+        events = jsonParser.push(nextChunk);
+        for (const step of handleEvents(events)) {
+          yield step;
+        }
+      }
+      if (!streamStarted && preamble.trim().length) {
+        execError = new Error('Executor returned non-JSON response.');
+      }
+      for (const step of handleEvents(jsonParser.end())) {
+        yield step;
+      }
+      if (parsedReturn === undefined) {
+        const endRes = jsonParser.readAll();
+        const trimmed = endRes.trim();
+        if (!trimmed) {
+          execError = new Error('Executor returned empty response.');
+        } else {
+          try {
+            parsedReturn = JSON.parse(trimmed);
+          } catch {
+            const candidate = extractJsonCandidate(trimmed);
+            if (candidate) {
+              try {
+                parsedReturn = JSON.parse(candidate);
+              } catch {
+                execError = new Error(
+                  'Executor returned invalid JSON response.',
                 );
-                if (step.success) {
-                  yield step.data;
-                } else {
-                  console.warn('Exec step error:', step.error);
-                }
-              } else if (event.key === null) {
-                console.log('Exec result end');
-                parsedReturn = event.endValue;
               }
+            } else {
+              execError = new Error('Executor returned invalid JSON response.');
             }
           }
         }
       }
-      if (parsedReturn === undefined) {
-        const endRes = jsonParser.readAll();
-        console.log('Exec end no result', endRes);
-        parsedReturn = JSON.parse(endRes);
-      }
     } catch (e) {
-      console.error('Exec error', e);
+      execError = e instanceof Error ? e : new Error(String(e));
+      console.error('Exec error', execError);
+    }
+    if (execError) {
+      this.requestInSession = 0;
+      this.runner = undefined;
+      if (actionStage === 0 && retry < 3) {
+        console.warn('Retry execPrompt', retry + 1, execError.message);
+        return yield* this.execPrompt(
+          goalPrompt,
+          args,
+          subPrompt,
+          requireScreenshot,
+          complexity,
+          extraAttachments,
+          retry + 1,
+        );
+      }
+      throw execError;
     }
     const jsonRes = ExecutorLlmResultSchema.safeParse(parsedReturn ?? {});
     console.log('Exec result:', jsonRes);
     if (jsonRes.success) {
       return jsonRes.data;
     }
-    console.log('Retry execPrompt', retry);
+    const validationError = new Error(
+      `Invalid executor response: ${jsonRes.error.message}`,
+    );
+    this.requestInSession = 0;
+    this.runner = undefined;
     if (actionStage === 0 && retry < 3) {
+      console.warn('Retry execPrompt', retry + 1, validationError.message);
       return yield* this.execPrompt(
         goalPrompt,
         args,
@@ -193,7 +265,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
         retry + 1,
       );
     }
-    throw new Error('Exec end error');
+    throw validationError;
   }
 
   resetSystemPrompt() {

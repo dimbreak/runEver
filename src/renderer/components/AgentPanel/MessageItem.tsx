@@ -21,16 +21,20 @@ export const MessageItem = React.memo(({ message }: MessageItemProps) => {
       <div
         className={cn('flex max-w-[85%] flex-col', {
           'items-start': !isUser,
-          'items-end': isUser,
+          'items-end pr-4': isUser,
         })}
       >
-        <div
-          className={`mb-1 text-[10px] font-semibold uppercase tracking-wide ${
-            isUser ? 'text-blue-500' : 'text-slate-400'
-          }`}
+        <p
+          className={cn(
+            'h-4 text-[10px] flex items-center font-semibold uppercase tracking-wide',
+            {
+              'text-blue-500': isUser,
+              'text-slate-400': !isUser,
+            },
+          )}
         >
           {isUser ? 'You' : 'Agent'}
-        </div>
+        </p>
         <div
           className={cn(
             'relative rounded-2xl px-3.5 py-3 text-sm leading-relaxed shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)]',

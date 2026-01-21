@@ -4,14 +4,22 @@ import { useLayoutStore } from '../state/layoutStore';
 import { dialogService } from '../services/dialogService';
 import { ToMainIpc } from '../../contracts/toMain';
 import { useAgentStore } from '../state/agentStore';
+import { textToDoc } from '../utils/contentUtils';
 
 export const useIpcListeners = () => {
-  const { addTab, frameMap, updateTabTitle, updateTabUrl, removeTabByFrameId } =
-    useTabStore();
+  const {
+    addTab,
+    frameMap,
+    updateTabTitle,
+    updateTabUrl,
+    removeTabByFrameId,
+    activeTabId,
+  } = useTabStore();
   const { bounds } = useLayoutStore();
-  const setSessionSnapshot = useAgentStore(
-    (state) => state.setSessionSnapshot,
-  );
+  const { setSessionSnapshot, addMessage } = useAgentStore((state) => ({
+    setSessionSnapshot: state.setSessionSnapshot,
+    addMessage: state.addMessage,
+  }));
   useEffect(() => {
     const ipc = window.electron?.ipcRenderer;
     if (!ipc) return;
@@ -64,27 +72,46 @@ export const useIpcListeners = () => {
       'to-user',
       async (_event: any, payload: any) => {
         if (!payload) return;
-        if (payload.type !== 'prompt') return;
-        const questions = payload.questions ?? {};
-        let answer: Record<string, string> | null = null;
-        try {
-          answer = await dialogService.promptInput({
-            title: payload.title,
-            message: payload.message ?? 'Input required',
-            questions,
-            okText: 'OK',
-            cancelText: 'Cancel',
+        if (payload.type === 'prompt') {
+          const questions = payload.questions ?? {};
+          let answer: Record<string, string> | null = null;
+          try {
+            answer = await dialogService.promptInput({
+              title: payload.title,
+              message: payload.message ?? 'Input required',
+              questions,
+              okText: 'OK',
+              cancelText: 'Cancel',
+            });
+          } catch {
+            answer = null;
+          }
+          const fallbackAnswer = Object.keys(questions).reduce(
+            (acc, key) => ({ ...acc, [key]: '' }),
+            {} as Record<string, string>,
+          );
+          await ToMainIpc.responsePromptInput.invoke({
+            id: payload.responseId,
+            answer: answer ?? fallbackAnswer,
           });
-        } catch {
-          answer = null;
+          return;
         }
-        const fallbackAnswer = Object.keys(questions).reduce(
-          (acc, key) => ({ ...acc, [key]: '' }),
-          {} as Record<string, string>,
-        );
-        await ToMainIpc.responsePromptInput.invoke({
-          id: payload.responseId,
-          answer: answer ?? fallbackAnswer,
+        if (!activeTabId) return;
+        let tag = 'Info'
+        if (payload.type === 'error') {
+          tag = 'Error';
+        } else if (payload.type === 'warning') {
+          tag = 'Warning';
+        }
+        const message =
+          typeof payload.message === 'string' && payload.message.length
+            ? payload.message
+            : 'Message received.';
+        addMessage(activeTabId, {
+          id: Date.now(),
+          role: 'assistant',
+          content: textToDoc(message),
+          tag,
         });
       },
     );
@@ -116,6 +143,8 @@ export const useIpcListeners = () => {
       unsubscribeSessionSnapshot?.();
     };
   }, [
+    activeTabId,
+    addMessage,
     addTab,
     frameMap,
     updateTabTitle,
