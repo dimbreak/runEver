@@ -127,7 +127,7 @@ export class ExecutionSession {
             if (this.subSessionQueue.length) {
               console.log('Run sub session queue');
               yield* this.waitPageReady(url, start);
-              await this.execSubSessionQueue();
+              yield* this.execSubSessionQueue();
             }
             if (run.stopRequested) {
               finish();

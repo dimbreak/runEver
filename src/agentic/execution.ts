@@ -129,9 +129,25 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
     let events: JsonStreamingEvent[];
     let event: JsonStreamingEvent;
     let hasError = false;
+    let parseErrorDetail: string | null = null;
+    let parseErrorOffset: number | undefined;
     let parsedReturn;
     let execError: Error | null = null;
+    let rawStream = '';
     const jsonParser = new JsonStreamingParser(true);
+    const buildExecutorError = (message: string, raw?: string) => {
+      const error = new Error(message);
+      if (raw && raw.length) {
+        const snippetLimit = 4000;
+        const snippet =
+          raw.length > snippetLimit
+            ? `${raw.slice(0, snippetLimit)}...`
+            : raw;
+        (error as any).responseSnippet = snippet;
+        (error as any).responseLength = raw.length;
+      }
+      return error;
+    };
     const handleEvents = (nextEvents: JsonStreamingEvent[]) => {
       const steps: Array<WireActionWithWait | WireSubTask> = [];
       if (hasError) return steps;
@@ -139,6 +155,10 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
         if (event.type === JsonStreamingEventType.Error) {
           console.error('parse error', event);
           hasError = true;
+          if (!parseErrorDetail) {
+            parseErrorDetail = event.detail;
+            parseErrorOffset = event.offset;
+          }
           return steps;
         }
         if (event.type === JsonStreamingEventType.Array) {
@@ -176,6 +196,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
       let streamStarted = false;
       let preamble = '';
       for await (const chunk of stream) {
+        rawStream += chunk;
         let nextChunk = chunk;
         if (!streamStarted) {
           preamble += chunk;
@@ -193,7 +214,10 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
         }
       }
       if (!streamStarted && preamble.trim().length) {
-        execError = new Error('Executor returned non-JSON response.');
+        execError = buildExecutorError(
+          'Executor returned non-JSON response.',
+          rawStream.trim(),
+        );
       }
       for (const step of handleEvents(jsonParser.end())) {
         yield step;
@@ -202,7 +226,10 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
         const endRes = jsonParser.readAll();
         const trimmed = endRes.trim();
         if (!trimmed) {
-          execError = new Error('Executor returned empty response.');
+          execError = buildExecutorError(
+            'Executor returned empty response.',
+            rawStream.trim(),
+          );
         } else {
           try {
             parsedReturn = JSON.parse(trimmed);
@@ -212,19 +239,46 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`;
               try {
                 parsedReturn = JSON.parse(candidate);
               } catch {
-                execError = new Error(
-                  'Executor returned invalid JSON response.',
+                const detail = parseErrorDetail
+                  ? ` Parse error: ${parseErrorDetail}${parseErrorOffset !== undefined ? ` @${parseErrorOffset}` : ''}`
+                  : '';
+                execError = buildExecutorError(
+                  `Executor returned invalid JSON response.${detail}`,
+                  rawStream.trim(),
                 );
               }
             } else {
-              execError = new Error('Executor returned invalid JSON response.');
+              const detail = parseErrorDetail
+                ? ` Parse error: ${parseErrorDetail}${parseErrorOffset !== undefined ? ` @${parseErrorOffset}` : ''}`
+                : '';
+              execError = buildExecutorError(
+                `Executor returned invalid JSON response.${detail}`,
+                rawStream.trim(),
+              );
             }
           }
         }
       }
     } catch (e) {
-      execError = e instanceof Error ? e : new Error(String(e));
+      execError =
+        e instanceof Error
+          ? e
+          : buildExecutorError(String(e), rawStream.trim());
       console.error('Exec error', execError);
+    }
+    if (
+      execError &&
+      rawStream.trim().length &&
+      !(execError as any).responseSnippet
+    ) {
+      const snippetLimit = 4000;
+      const trimmed = rawStream.trim();
+      const snippet =
+        trimmed.length > snippetLimit
+          ? `${trimmed.slice(0, snippetLimit)}...`
+          : trimmed;
+      (execError as any).responseSnippet = snippet;
+      (execError as any).responseLength = trimmed.length;
     }
     if (execError) {
       this.requestInSession = 0;
