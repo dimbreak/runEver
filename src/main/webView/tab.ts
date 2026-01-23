@@ -9,6 +9,8 @@ import {
 import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
+// @ts-ignore
+import { CancelError, download } from 'electron-dl';
 import { LlmApi } from '../../agentic/api';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
@@ -47,12 +49,6 @@ export class TabWebView {
     private mainWindow: BrowserWindow,
     llmSession: WebViewLlmSession,
   ) {
-    if (this.initUrl === 'about:runEverMark') {
-      const RESOURCES_PATH = app.isPackaged
-        ? path.join(process.resourcesPath, 'assets')
-        : path.join(__dirname, '../../assets');
-      this.initUrl = `file://${path.join(RESOURCES_PATH, 'runEverMark/index.html')}`;
-    }
     this.url = this.initUrl;
     this.llmSession = llmSession;
     this.webView = new WebContentsView({
@@ -143,7 +139,13 @@ export class TabWebView {
     this.llmSession.actionError(actionId, error);
   }
 
-  async screenshot(x = 0, y = 0, capWidth = 0, capHeight = 0) {
+  async screenshot(
+    x = 0,
+    y = 0,
+    capWidth = 0,
+    capHeight = 0,
+    filename: string | undefined = undefined,
+  ) {
     let width = capWidth;
     let height = capHeight;
     if (width === 0 && height === 0) {
@@ -151,12 +153,26 @@ export class TabWebView {
       width = rect.width;
       height = rect.height;
     }
-    return this.webView.webContents.capturePage({
+    const shot = this.webView.webContents.capturePage({
       x,
       y,
       width,
       height,
     });
+    if (filename) {
+      const data = await shot;
+      const imgPath = `${app.getPath('downloads')}/${filename.includes('.') ? filename : `${filename}.png`}`;
+      fs.writeFileSync(imgPath, (await shot).toPNG());
+      this.llmSession.readableFiles.set(filename, {
+        name: filename,
+        mimeType: 'image/png',
+        data: data.toPNG(),
+        path: imgPath,
+      });
+
+      return data;
+    }
+    return shot;
   }
 
   initView() {
@@ -176,14 +192,16 @@ export class TabWebView {
     webContents.on('did-finish-load', unlockLoaded);
     webContents.on('did-stop-loading', unlockLoaded);
     webContents.on('did-start-navigation', (details) => {
-      if (
-        details.isMainFrame &&
-        !details.isSameDocument &&
-        this.url !== details.url
-      ) {
-        console.log('did-start-navigation:', details.url);
-        this.url = details.url;
-        this.loadFrameStart('MAIN');
+      if (details.isMainFrame && this.url !== details.url) {
+        this.mainWindow?.webContents.send('tab-title-updated', {
+          frameId,
+          url: details.url,
+        });
+        if (!details.isSameDocument) {
+          console.log('did-start-navigation:', details.url);
+          this.url = details.url;
+          this.loadFrameStart('MAIN');
+        }
       }
     });
 
@@ -266,59 +284,29 @@ export class TabWebView {
   ): Promise<string | undefined> {
     console.info('====>');
     if (this.llmSession) {
-      if (prompt === 'run test') {
-        const promises: Promise<string>[] = [];
-        for (let i = 0; i < 3; i++) {
-          const stream = LlmApi.queryLLMApi(
-            'user',
-            'system',
-            null,
-            `test_${Date.now()}_${i}`,
-            'mid',
-            'low',
-          );
-          promises.push(LlmApi.wrapStream(stream).catch((e) => e.message));
-        }
-        const result: string[] = await Promise.all(promises);
-        console.info(
-          'result:',
-          `${app.getPath('userData')}/prompt-lab/test${new Date().toString()}.json`,
-          result,
+      try {
+        const stream = this.llmSession.startPrompt(
+          requestId,
+          this,
+          prompt,
+          args,
+          attachments,
+          reasoningEffort,
+          modelType,
         );
-        try {
-          fs.mkdirSync(`${app.getPath('userData')}/prompt-lab`);
-        } catch (e) {
-          console.error('mkdirSync error:', e);
-        }
-        fs.writeFileSync(
-          `${app.getPath('userData')}/prompt-lab/test${new Date().toISOString()}.json`,
-          JSON.stringify(result, null, 2),
-        );
-      } else {
-        try {
-          const stream = this.llmSession.startPrompt(
-            requestId,
-            this,
-            prompt,
-            args,
-            attachments,
-            reasoningEffort,
-            modelType,
-          );
-          let response;
-          console.info('stream:', stream);
-          while ((response = await stream.next())) {
-            if (!response.done) {
-              console.info('pushPromptResponse:', response.value);
-              this.pushPromptResponse(requestId, response.value);
-            } else {
-              break;
-            }
+        let response;
+        console.info('stream:', stream);
+        while ((response = await stream.next())) {
+          if (!response.done) {
+            console.info('pushPromptResponse:', response.value);
+            this.pushPromptResponse(requestId, response.value);
+          } else {
+            break;
           }
-        } catch (e) {
-          console.error('runPrompt error:', e);
-          return Util.formatError(e);
         }
+      } catch (e) {
+        console.error('runPrompt error:', e);
+        return Util.formatError(e);
       }
     }
   }
@@ -388,7 +376,7 @@ export class TabWebView {
       this.emitLlmSessionSnapshot(this.llmSession.getSnapshot());
     } else {
       // Keep the existing session so in-flight prompts don't lose their state.
-      this.llmSession.resumeAll();
+      // this.llmSession.resumeAll();
     }
   }
 
@@ -416,7 +404,27 @@ export class TabWebView {
 
     await wc.debugger.sendCommand('DOM.setFileInputFiles', {
       backendNodeId: desc.node.backendNodeId,
-      files: filePaths,
+      files: filePaths.map((f) => {
+        const attachment = this.llmSession.readableFiles.get(f);
+        if (!attachment) return f;
+        if (attachment.path) return attachment.path;
+        if (attachment.data) {
+          const tempDir = app.getPath('temp');
+          const safeName = attachment.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const tempPath = path.join(
+            tempDir,
+            `runever_upload_${Date.now()}_${safeName}`,
+          );
+          const content: string | NodeJS.ArrayBufferView =
+            attachment.data instanceof ArrayBuffer
+              ? Buffer.from(attachment.data)
+              : attachment.data;
+          fs.writeFileSync(tempPath, content);
+          attachment.path = tempPath;
+          return tempPath;
+        }
+        return f;
+      }),
     });
   }
 
@@ -443,6 +451,33 @@ export class TabWebView {
     }
     if (this.loadingFrames.size === 0) {
       this.pageLoadedLock.delayUnlock(500);
+    }
+  }
+
+  async download(url: string, filename?: string): Promise<string | undefined> {
+    try {
+      const item = await download(this.mainWindow, url, {
+        filename,
+      });
+      if (item.getState() === 'completed') {
+        if (filename !== undefined) {
+          this.llmSession.readableFiles.set(filename, {
+            name: filename,
+            mimeType: item.getMimeType(),
+            data: null,
+            path: item.getSavePath(),
+          });
+        }
+        return undefined;
+      }
+      return item.getState();
+    } catch (error) {
+      if (error instanceof CancelError) {
+        console.info('item.cancel() was called');
+        return 'cancelled';
+      }
+      console.error(error);
+      return (error as Error).message;
     }
   }
 }

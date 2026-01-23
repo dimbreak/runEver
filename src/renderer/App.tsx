@@ -5,6 +5,7 @@ import { useAuth } from '@apitrust/react';
 import { AgentPanel } from './components/AgentPanel';
 import { TabBar } from './components/TabBar';
 import { useLayoutStore } from './state/layoutStore';
+import { webviewService } from './services/webviewService';
 import { HomeScreen } from './view/HomeScreen';
 import { AuthStartPage } from './view/AuthStartPage';
 import { AuthCallbackPage } from './view/AuthCallbackPage';
@@ -15,6 +16,8 @@ import {
   OWN_KEY_REMEMBER_KEY,
   OWN_KEY_SESSION_KEY,
 } from './constants/auth';
+
+webviewService.registerTabHandler();
 
 const AppShell = () => {
   const { isSidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =

@@ -283,23 +283,29 @@ class DummyCursor {
   }
   async mouseEvent(
     action: MouseInputEvent['type'] | 'click' | 'dblclick',
-    el?: Element,
+    elOrRect?: Element | DOMRect,
     repeat: number = 0,
     modifiers: MouseInputEvent['modifiers'] = undefined,
   ) {
     let { x: clientX, y: clientY } = this;
-    if (el) {
-      let thisEl = el as HTMLElement;
-      if (thisEl instanceof HTMLElement) {
-        // avoid miss click on inline irregular element rect el
-        while (
-          thisEl.children.length &&
-          window.getComputedStyle(thisEl).display === 'inline'
-        ) {
-          thisEl = thisEl.children[0] as HTMLElement;
+    if (elOrRect) {
+      let rect: DOMRect;
+      if (elOrRect instanceof Element) {
+        let thisEl = elOrRect as HTMLElement;
+        if (thisEl instanceof HTMLElement) {
+          // avoid miss click on inline irregular element rect el
+          while (
+            thisEl.children.length &&
+            window.getComputedStyle(thisEl).display === 'inline'
+          ) {
+            thisEl = thisEl.children[0] as HTMLElement;
+          }
         }
+        rect = thisEl.getBoundingClientRect();
+        console.log('mouseEvent el', action, thisEl, rect);
+      } else {
+        rect = elOrRect;
       }
-      const rect = thisEl.getBoundingClientRect();
       const { x, y, width, height } = rect;
       if (
         clientX < x ||
@@ -307,8 +313,7 @@ class DummyCursor {
         clientY < y ||
         clientY > y + height
       ) {
-        console.log('mouseEvent el', action, thisEl, rect);
-        await this.moveToRect(el);
+        await this.moveToRect(rect, true);
         clientX = this.x;
         clientY = this.y;
       }
@@ -410,16 +415,21 @@ class DummyCursor {
   async moveToRect(rectOrEl: DOMRect | Element, exact = false) {
     const thisRect =
       rectOrEl instanceof Element ? rectOrEl.getBoundingClientRect() : rectOrEl;
-    console.log('moveToRect', this.x, this.y, thisRect);
     let { x, y } = thisRect;
+    console.log('moveToRect', this.x, x, this.y, y, thisRect);
     const { width, height } = thisRect;
     if (x > window.innerWidth || y > window.innerHeight || x < 0 || y < 0) {
       let scrolled: { x: number; y: number };
       if (rectOrEl === thisRect) {
         thisRect.x =
-          x < 0 ? Math.max(-window.scrollX, x - 20) : Math.min(0, x - 20);
+          x < 0
+            ? Math.max(-window.scrollX, x - 20)
+            : Math.max(0, x - window.innerWidth / 2);
         thisRect.y =
-          y < 0 ? Math.max(-window.scrollY, y - 20) : Math.min(0, y - 20);
+          y < 0
+            ? Math.max(-window.scrollY, y - 20)
+            : Math.max(0, y - window.innerHeight / 2);
+        console.log('thisRect', window.scrollX, x, window.scrollY, y, thisRect);
         scrolled = await this.scrollTo(thisRect, window, exact);
       } else {
         scrolled = await this.scrollToEl(rectOrEl as Element);
@@ -492,6 +502,103 @@ class DummyCursor {
     this.dom.style.display = '';
     return ret;
   }
+
+  async selectTxt(srcEl: Element, txt: string) {
+    const range = findTextRange(srcEl, txt);
+    if (!range) {
+      console.warn('selectTxt: text not found', txt);
+      return;
+    }
+    const rects = range.getClientRects();
+    if (rects.length === 0) {
+      console.warn('selectTxt: no rects for range', txt);
+      return;
+    }
+
+    const startRect = rects[0];
+    const endRect = rects[rects.length - 1];
+
+    const startEl =
+      range.startContainer instanceof Element
+        ? range.startContainer
+        : range.startContainer.parentElement;
+    const endEl =
+      range.endContainer instanceof Element
+        ? range.endContainer
+        : range.endContainer.parentElement;
+    let elAtPoint = document.elementFromPoint(startRect.x, startRect.y);
+
+    if (elAtPoint !== startEl) {
+      await this.scrollToEl(startEl!);
+    }
+
+    // Click start
+    await this.mouseEvent(
+      'click',
+      new DOMRect(startRect.left, startRect.top + startRect.height / 2, 0, 0),
+    );
+
+    elAtPoint = document.elementFromPoint(endRect.x, endRect.y);
+
+    if (elAtPoint !== endEl) {
+      await this.scrollToEl(endEl!);
+    }
+
+    // Shift click end
+    await this.mouseEvent(
+      'click',
+      new DOMRect(endRect.right, endRect.top + endRect.height / 2, 0, 0),
+      0,
+      ['shift'],
+    );
+  }
+}
+
+function findTextRange(root: Element, txt: string): Range | null {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let node: Node | null;
+  const textNodes: Text[] = [];
+  // eslint-disable-next-line no-cond-assign
+  while ((node = walker.nextNode())) {
+    textNodes.push(node as Text);
+  }
+
+  const fullText = textNodes.map((n) => n.textContent).join('');
+  const startIndex = fullText.indexOf(txt);
+  if (startIndex === -1) return null;
+  const endIndex = startIndex + txt.length;
+
+  let startNode: Text | null = null;
+  let startOffset = 0;
+  let endNode: Text | null = null;
+  let endOffset = 0;
+
+  let currentIndex = 0;
+  for (const textNode of textNodes) {
+    const nodeLength = textNode.textContent?.length ?? 0;
+    const nextIndex = currentIndex + nodeLength;
+
+    if (!startNode && startIndex >= currentIndex && startIndex < nextIndex) {
+      startNode = textNode;
+      startOffset = startIndex - currentIndex;
+    }
+
+    if (!endNode && endIndex > currentIndex && endIndex <= nextIndex) {
+      endNode = textNode;
+      endOffset = endIndex - currentIndex;
+    }
+
+    if (startNode && endNode) break;
+    currentIndex = nextIndex;
+  }
+
+  if (startNode && endNode) {
+    const range = document.createRange();
+    range.setStart(startNode, startOffset);
+    range.setEnd(endNode, endOffset);
+    return range;
+  }
+  return null;
 }
 
 export const dummyCursor = new DummyCursor();

@@ -156,31 +156,31 @@ export const setupIpcHandlers = (
   });
 
   ToMainIpc.takeScreenshot.handle(async (event, arg) => {
-    const { slices, ttlWidth, vpWidth, ttlHeight, vpHeight, frameId } = arg;
+    const {
+      x = 0,
+      y = 0,
+      width,
+      vpWidth,
+      height,
+      vpHeight,
+      frameId,
+      filename,
+    } = arg;
     console.log('takeScreenshot in main process:', frameId);
     const wvTab = getTab(frameId);
     if (wvTab) {
-      const imgs = [];
-      for (const slice of slices) {
-        await wvTab.webView.webContents.executeJavaScript(
-          `window.scrollTo(${slice.x}, ${slice.y});`,
-        );
-        await Util.sleep(100);
-        const width =
-          vpWidth + slice.x > ttlWidth ? ttlWidth - slice.x : vpWidth;
-        const height =
-          vpHeight + slice.y > ttlHeight ? ttlHeight - slice.y : vpHeight;
-        imgs.push(
-          await wvTab.screenshot(
-            vpWidth - width,
-            vpHeight - height,
-            width,
-            height,
-          ),
-        );
-      }
+      const w = vpWidth + x > width ? width - x : vpWidth;
+      const h = vpHeight + y > height ? height - y : vpHeight;
 
-      return imgs.map((img) => img.toPNG());
+      return (
+        await wvTab.screenshot(
+          vpWidth - w,
+          vpHeight - h,
+          width,
+          height,
+          filename,
+        )
+      ).toPNG();
     }
     console.log('takeScreenshot error:', frameId, llmSession.getTabsById());
     return { error: 'Tab not found' };
@@ -488,6 +488,15 @@ EOF
     const wvTab = getTab(frameId);
     if (wvTab) {
       return { error: await wvTab.setInputFile(selector, filePaths) };
+    }
+    return { error: 'Tab not found' };
+  });
+  ToMainIpc.download.handle(async (event, arg) => {
+    console.log('download:', arg);
+    const { frameId, filename, url } = arg;
+    const wvTab = getTab(frameId);
+    if (wvTab) {
+      return { error: await wvTab.download(url, filename) };
     }
     return { error: 'Tab not found' };
   });

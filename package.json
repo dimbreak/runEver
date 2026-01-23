@@ -14,7 +14,7 @@
     "build:dll": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "build:extensions": "tsc -p src/extensions/iframe/tsconfig.json && npm run build:extensions:iframeLazy && node ./.erb/scripts/copy-extensions.js",
     "build:extensions:iframeLazy": "esbuild src/extensions/iframe/iframeLazy.ts --bundle --format=esm --platform=browser --target=es2020 --outfile=src/extensions/iframe/iframeLazy.js --resolve-extensions=.html.ts,.ts,.tsx,.js",
-    "build:runEverMark": "cd testHtml/runEverMark && npm install --legacy-peer-deps && npm run build && cp -r img dist/ && mkdir -p ../../assets/runEverMark && cp -r dist/* ../../assets/runEverMark/",
+    "build:runEverMark": "cd testHtml/runEverMark && npm install --legacy-peer-deps && npm run build && node ../../.erb/scripts/copy-runevermark.js",
     "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.main.prod.ts",
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
@@ -103,6 +103,7 @@
     "ai": "^5.0.112",
     "clsx": "^2.1.1",
     "electron-debug": "^4.1.0",
+    "electron-dl": "^4.0.0",
     "electron-log": "^5.3.2",
     "electron-settings": "^4.0.4",
     "electron-updater": "^6.3.9",
@@ -133,6 +134,7 @@
     "@types/webpack-bundle-analyzer": "^4.7.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260113.1",
     "browserslist-config-erb": "^0.0.3",
     "chalk": "^4.1.2",
     "concurrently": "^9.1.2",
@@ -185,7 +187,6 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "typescript": "^5.8.2",
     "typescript-eslint": "^8.48.1",
     "url-loader": "^4.1.1",
     "webpack": "^5.98.0",
@@ -274,9 +275,9 @@
   "electronmon": {
     "patterns": [
       "!**/**",
+      "!prompt-record/**",
       "src/main/**",
       ".erb/dll/**"
-    ],
-    "logLevel": "quiet"
+    ]
   }
 }

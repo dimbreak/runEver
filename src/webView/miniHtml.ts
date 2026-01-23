@@ -1,7 +1,7 @@
-import { replaceJsTpl } from './selector';
 import { SliderProfile } from '../agentic/profile/widget/slider.html';
 import { dummyCursor } from './cursor/cursor';
 import { IFrameHelper } from './iframe';
+import { CommonUtil } from '../utils/common';
 
 export namespace MiniHtml {
   export const EL_IN_IFRAME = Symbol('EL_IN_IFRAME');
@@ -116,6 +116,7 @@ export namespace MiniHtml {
         return 'role:rcSelect-listbox';
       }
     }
+    let extra = '';
     const res = SliderProfile.checkSlider(tagName, element);
     if (res) {
       return res;
@@ -125,6 +126,16 @@ export namespace MiniHtml {
         element.getAttribute('title') || element.getAttribute('name') || ''
       );
     }
+    if (tagName === 'input') {
+      const t = element.getAttribute('type');
+      if (
+        t === 'checkbox' ||
+        (t === 'radio' && element.getAttribute('checked'))
+      ) {
+        extra = 'checked';
+      }
+    }
+
     return [
       element.getAttribute('alt') ?? '',
       element.getAttribute('title') ?? '',
@@ -133,6 +144,7 @@ export namespace MiniHtml {
       role && !interactiveTags.has(tagName)
         ? `role:${element.getAttribute('role')}`
         : '',
+      extra,
     ]
       .filter((attr, i, arr) => arr.indexOf(attr) === i)
       .map((attr) => attr.trim())
@@ -228,6 +240,10 @@ export namespace MiniHtml {
       const tagName = element.tagName.toLowerCase();
       const { style } = visible;
       let fontIndex = this.styles.font[style.fontFamily];
+      if (fontIndex === undefined) {
+        fontIndex = Object.keys(this.styles.font).length;
+        this.styles.font[style.fontFamily] = fontIndex;
+      }
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
       let innerHtml =
         meaningfulEl.nodes &&
@@ -264,10 +280,8 @@ export namespace MiniHtml {
       if (element.tagName === 'BODY') {
         return innerHtml ?? '';
       }
-      const attrs = PRINT_ATTRS.map((attr) => [
-        attr,
-        meaningfulEl.element.getAttribute(attr),
-      ])
+      const el = meaningfulEl.element;
+      const attrs = PRINT_ATTRS.map((attr) => [attr, el.getAttribute(attr)])
         .filter((attr) => !!attr[1])
         .map((attr) => `${attr[0]}=${quoteAttrVal(attr[1]!)}`);
 
@@ -275,29 +289,36 @@ export namespace MiniHtml {
         fontIndex = Object.keys(this.styles.font).length;
         this.styles.font[style.fontFamily] = fontIndex;
       }
+      const isVisible = visible.visible === true;
+      let href = '';
+      if (isVisible && tagName === 'a') {
+        const h = element.getAttribute('href');
+        if (h && h.includes('://') && !h.startsWith(window.location.origin)) {
+          href = `href=${h.length > 64 ? `${h.slice(0, 64)}...` : h}`;
+        }
+      }
       let tagHtmls = [
         tagName,
-        visible.visible === true
-          ? `id=${meaningfulEl.id ? meaningfulEl.id : ''}`
-          : '',
+        isVisible ? `id=${meaningfulEl.id ? meaningfulEl.id : ''}` : '',
+        href,
         meaningfulEl.label?.length
           ? `label=${quoteAttrVal(meaningfulEl.label)}`
           : '',
         // eslint-disable-next-line no-nested-ternary
         notShow
           ? ''
-          : visible.visible === true
+          : isVisible
             ? 'show'
             : `${visible.visible === false ? 'hide' : visible.visible}`,
-        visible.visible === true
+        isVisible
           ? `xywh=${Math.round(visible.x)},${Math.round(visible.y)},${Math.round(visible.width)},${Math.round(visible.height)}`
           : '',
-        visible.visible === true &&
+        isVisible &&
         style.overflow !== 'hidden' &&
         element.scrollWidth - visible.width > 5
           ? `sw=${Math.round(element.scrollWidth)}`
           : '',
-        visible.visible === true &&
+        isVisible &&
         style.overflow !== 'hidden' &&
         element.scrollHeight - visible.height > 5
           ? `sh=${Math.round(element.scrollHeight)}`
@@ -312,7 +333,7 @@ export namespace MiniHtml {
       ]
         .filter((str) => str.length)
         .join(' ');
-      if (visible.visible === true) {
+      if (isVisible) {
         if (parentHighlightStyle && parentHighlightStyle !== highlightStyle) {
           let i = this.styles.highlight[highlightStyle];
           if (i === undefined) {
@@ -408,6 +429,9 @@ export namespace MiniHtml {
                   foundMeaningful = this.meaningFulElementByEl.get(childEl);
                   if (foundMeaningful) {
                     foundMeaningful.visible = null;
+                    foundMeaningful.label = getReadableAttr(
+                      childEl as HTMLElement,
+                    );
                     meaningfulEl = foundMeaningful;
                     break;
                   }
@@ -610,7 +634,7 @@ export namespace MiniHtml {
         this.mutatedElements.clear();
       }
       return html
-        ? `<script>const font = ${JSON.stringify(
+        ? `<title t="${document.title ?? 'no title'}" /><script>const font = ${JSON.stringify(
             newFont.reduce(
               (acc, s) => {
                 acc[`ff${s[1]}`] = s[0];
@@ -648,7 +672,6 @@ export namespace MiniHtml {
       const { styles } = this;
       this.styles.font[style.fontFamily] = 0;
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff0`)} ${rgbToHex(style.color)}`;
-      console.log('this.meaningFulElements', this.meaningFulElements);
       const html = (
         await Promise.all(
           this.meaningFulElements.map((el) =>
@@ -836,7 +859,7 @@ export namespace MiniHtml {
       }
       let meaningfulEl = this.idToEl.get(selector.id);
       if (selector.filterInChild) {
-        const filter = replaceJsTpl(
+        const filter = CommonUtil.replaceJsTpl(
           selector.filterInChild,
           selector.args ?? {},
         );

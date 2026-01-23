@@ -163,6 +163,7 @@ const configuration: webpack.Configuration = {
     port,
     compress: true,
     hot: false,
+    liveReload: false,
     headers: { 'Access-Control-Allow-Origin': '*' },
     static: {
       publicPath: '/',

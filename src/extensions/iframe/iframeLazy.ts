@@ -1,7 +1,6 @@
 import type { FromIframeMessages, ToIframeMessages } from './types.d.ts';
 import { MiniHtml } from '../../webView/miniHtml';
 import { dummyCursor } from '../../webView/cursor/cursor';
-import { OCRModel } from '../../webView/ocr';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import {
   ActionApi,
@@ -43,9 +42,6 @@ const webViewHandler = {
   getEl(select: MiniHtml.Selector) {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return this.htmlParser.getElementFormId(select);
-  },
-  getOcr(fullPage = false) {
-    return OCRModel.getFromScreenshot(fullPage);
   },
   async execActions(
     actions: WireActionWithWaitAndRec[],
@@ -102,6 +98,9 @@ BrowserActions.setActionApi({
   },
   setInputFile: (args: { selector: string; filePaths: string[] }) => {
     return sendAction('setInputFile', args);
+  },
+  download: (args: { url: string; filename: string | undefined }) => {
+    return sendAction('download', args);
   },
 });
 

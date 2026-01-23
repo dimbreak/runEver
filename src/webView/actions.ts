@@ -1,4 +1,4 @@
-import { getUniqueSelector, replaceJsTpl } from './selector';
+import { getUniqueSelector } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import type { EventWithDelay, ToMainIpc } from '../contracts/toMain';
 import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
@@ -9,6 +9,8 @@ import { WireActionWithWaitAndRec } from '../agentic/types';
 import { MiniHtml } from './miniHtml';
 import { SliderProfile } from '../agentic/profile/widget/slider.webView';
 import { IFrameHelper } from './iframe';
+import { CommonUtil } from '../utils/common';
+import { takeScreenshot } from './screenshot';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -49,6 +51,10 @@ export type ActionApi = {
   setInputFile: (args: {
     selector: string;
     filePaths: string[];
+  }) => Promise<{ error?: string }>;
+  download: (args: {
+    url: string;
+    filename: string | undefined;
   }) => Promise<{ error?: string }>;
 };
 
@@ -111,6 +117,58 @@ export namespace BrowserActions {
     }
     return el.element;
   };
+  export const checkDom = async (
+    t: Extract<WireWait, { t: 'dom' }>['a'],
+    selector: MiniHtml.Selector,
+  ) => {
+    const el = window.webView.getEl(selector);
+    if (el) {
+      await new Promise<void>((resolve) => {
+        const observer = new MutationObserver((mutations) => {
+          for (const mutation of mutations) {
+            switch (t) {
+              case 'attr':
+                if (mutation.type === 'attributes') {
+                  r();
+                  return;
+                }
+                break;
+              case 'childRm':
+                if (mutation.removedNodes.length) {
+                  r();
+                  return;
+                }
+                break;
+              case 'childAdd':
+                if (mutation.addedNodes.length) {
+                  r();
+                  return;
+                }
+                break;
+              case 'txt':
+                if (mutation.type === 'characterData') {
+                  r();
+                  return;
+                }
+                break;
+              case 'any':
+                r();
+                return;
+            }
+          }
+        });
+        const r = () => {
+          resolve();
+          observer.disconnect();
+        };
+        observer.observe(el.element, {
+          attributes: true,
+          childList: true,
+          characterData: true,
+        });
+      });
+    }
+  };
   export const checkDomAppear = async (selector: MiniHtml.Selector) => {
     let el = window.webView.getEl(selector);
     if (el instanceof IFrameHelper) {
@@ -133,6 +191,7 @@ export namespace BrowserActions {
   const waitAction = async (wait: WireWait | undefined) => {
     if (wait) {
       let waitPromise;
+      let waitTime = DEFAULT_TIMEOUT_MS;
       switch (wait.t) {
         case 'time':
           await Util.sleep(wait.ms);
@@ -143,6 +202,10 @@ export namespace BrowserActions {
           } else if (wait.a === 'idle2') {
             waitPromise = Network.networkIdle2.wait;
           }
+          break;
+        case 'dom':
+          waitPromise = checkDom(wait.a, wait.q);
+          waitTime = 300000; // wait for longer
           break;
         case 'appear':
           waitPromise = checkDomAppear(wait.q);
@@ -155,16 +218,12 @@ export namespace BrowserActions {
             return; // let it re-push after navigation
           }
           break;
-        default:
-          throw new Error('Unknown wait type');
       }
-      console.log('wait', wait, waitPromise);
+      console.log('wait', wait, waitPromise, waitTime);
       if (
         waitPromise &&
-        (await Util.awaitWithTimeout(
-          waitPromise,
-          wait.to ?? DEFAULT_TIMEOUT_MS,
-        )) === Util.WaitTimeout
+        (await Util.awaitWithTimeout(waitPromise, wait.to ?? waitTime)) ===
+          Util.WaitTimeout
       ) {
         throw ErrWaitTimeout;
       }
@@ -291,14 +350,75 @@ export namespace BrowserActions {
             }
             // eslint-disable-next-line no-loop-func
             execFn = async (thisAction, risk, thisArgs) => {
+              argsDelta = {};
               setArgs(thisAction, risk, thisArgs, argsDelta);
             };
+            break;
           }
+          case 'screenshot': {
+            if (action.a && (await execInIframeOrEl(rec, action.a, args))) {
+              continue;
+            }
+            const { filename } = action;
+            // eslint-disable-next-line no-loop-func
+            execFn = async (thisAction, risk, thisArgs) => {
+              takeScreenshot(filename, action.el);
+            };
+            break;
+          }
+          case 'download':
+            if (await execInIframeOrEl(rec, action.a, args)) {
+              continue;
+            }
+            let url = '';
+            const { filename } = action;
+            if (action.el) {
+              switch (action.t) {
+                case 'link':
+                  if (action.el.tagName === 'A') {
+                    url = action.el.getAttribute('href') ?? '';
+                  }
+                case 'img':
+                  if (action.el.tagName === 'IMG') {
+                    url = action.el.getAttribute('src') ?? '';
+                  }
+                case 'bg-img':
+                  const style = window.getComputedStyle(action.el);
+                  if (style.backgroundImage) {
+                    url =
+                      /url\((['"]?)(.+)\1\)/.exec(style.backgroundImage)?.[2] ??
+                      '';
+                  }
+              }
+              if (!url) {
+                throw new Error('not downloadable');
+              }
+            } else {
+              throw new Error('link not found');
+            }
+            // eslint-disable-next-line no-loop-func
+            execFn = async () => {
+              const p = callActionApi({
+                action: 'download',
+                args: {
+                  url,
+                  filename: filename ?? undefined,
+                },
+              });
+              if (filename) {
+                await p; // assume use in downstream prompt
+              }
+            };
+            break;
+          case 'selectTxt':
+            if (await execInIframeOrEl(rec, action.q, args)) {
+              continue;
+            }
+            execFn = selectTxt;
+
           case 'setCtx':
             // todo
             break;
-          default:
-            console.warn('Unknown action', action);
         }
         if (rec.pre) {
           await waitAction(rec.pre);
@@ -339,7 +459,11 @@ export namespace BrowserActions {
     // eslint-disable-next-line no-loop-func
     Object.entries(kv).forEach(([k, v]) => {
       if (typeof v === 'string') {
-        args[k] = replaceJsTpl(v, args);
+        const vv = CommonUtil.replaceJsTpl(v, args);
+        if (vv === undefined) {
+          return;
+        }
+        args[k] = vv;
       } else if (typeof v === 'object') {
         const el = action.el ?? getElementById(v.q, risk, args);
         if (!v.attr) {
@@ -370,8 +494,16 @@ export namespace BrowserActions {
         window.location.reload();
         break;
       default:
-        window.location.href = replaceJsTpl(action.u, args);
+        window.location.href = CommonUtil.replaceJsTpl(action.u, args);
     }
+  };
+  export const selectTxt = async (
+    action: Extract<WireActionToExec, { k: 'selectTxt' }>,
+    risk: BrowserActionRisk,
+    args: Record<string, string> = {},
+  ) => {
+    const srcEl = action.el ?? getElementById(action.q, risk, args);
+    await dummyCursor.selectTxt(srcEl, action.txt);
   };
   export const dragAndDrop = async (
     action: Extract<WireActionToExec, { k: 'dragAndDrop' }>,
@@ -438,71 +570,79 @@ export namespace BrowserActions {
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
     console.log('input', action, el, document.activeElement);
+    const values =
+      typeof action.v === 'string'
+        ? [CommonUtil.replaceJsTpl(action.v, args) ?? '']
+        : action.v.map((v) => CommonUtil.replaceJsTpl(v, args) ?? '');
+    if (
+      values.length === 1 &&
+      ((el as HTMLSelectElement) || HTMLInputElement || HTMLTextAreaElement)
+        .value === values[0]
+    ) {
+      return;
+    }
     if (document.activeElement !== el && el !== document.body) {
       console.log('focus', action, el);
       await dummyCursor.mouseEvent('click', el);
     }
-    const values =
-      typeof action.v === 'string'
-        ? [replaceJsTpl(action.v, args)]
-        : action.v.map((v) => replaceJsTpl(v, args));
     if (el.tagName === 'SELECT') {
       const select = el as HTMLSelectElement;
-      let pick = async (updownPress: number, key: ToMainIpc.NativeKeys) => {
-        const keyAndDelays: [ToMainIpc.NativeKeys, number][] = [];
-        for (let i = 0; i < updownPress; i++) {
-          keyAndDelays.push([key, Math.random() * 60 + 60]);
-        }
-        await (
-          await actionApi
-        ).dispatchNativeKeypress({
-          keyAndDelays: [...keyAndDelays, ['Enter', 0]],
-        });
-      };
-      let currentPosition = select.selectedIndex;
-      const modifier = Util.isMac ? 'meta' : 'ctrl';
-      if (select.multiple) {
-        pick = async (updownPress: number, key: ToMainIpc.NativeKeys) => {
-          const events: EventWithDelay[] = [];
-          for (let i = 0; i < updownPress; i++) {
+      const pick = Util.isMac
+        ? async (updownPress: number, key: ToMainIpc.NativeKeys) => {
+            const keyAndDelays: [ToMainIpc.NativeKeys, number][] = [];
+            for (let i = 0; i < updownPress; i++) {
+              keyAndDelays.push([key, Math.random() * 60 + 60]);
+            }
+            await (
+              await actionApi
+            ).dispatchNativeKeypress({
+              keyAndDelays: [...keyAndDelays, ['Enter', 0]],
+            });
+          }
+        : async (updownPress: number, key: ToMainIpc.NativeKeys) => {
+            const events: EventWithDelay[] = [];
+            for (let i = 0; i < updownPress; i++) {
+              events.push(
+                {
+                  type: 'keyDown',
+                  keyCode: key.replace('Arrow', ''),
+                  modifiers: [modifier],
+                  delayMs: Math.random() * 60 + 60,
+                },
+                {
+                  type: 'keyUp',
+                  keyCode: key.replace('Arrow', ''),
+                  modifiers: [modifier],
+                  delayMs: Math.random() * 60 + 60,
+                },
+              );
+            }
             events.push(
               {
                 type: 'keyDown',
-                keyCode: key.replace('Arrow', ''),
-                modifiers: [modifier],
+                keyCode: 'Enter',
+                delayMs: Math.random() * 60 + 60,
+              },
+              {
+                type: 'char',
+                keyCode: 'Enter',
                 delayMs: Math.random() * 60 + 60,
               },
               {
                 type: 'keyUp',
-                keyCode: key.replace('Arrow', ''),
-                modifiers: [modifier],
+                keyCode: 'Enter',
                 delayMs: Math.random() * 60 + 60,
               },
             );
-          }
-          events.push(
-            {
-              type: 'keyDown',
-              keyCode: 'Space',
-              delayMs: Math.random() * 60 + 60,
-            },
-            {
-              type: 'char',
-              keyCode: 'Space',
-              delayMs: Math.random() * 60 + 60,
-            },
-            {
-              type: 'keyUp',
-              keyCode: 'Space',
-              delayMs: Math.random() * 60 + 60,
-            },
-          );
-          await (
-            await actionApi
-          ).dispatchEvents({
-            events,
-          });
-        };
+            await (
+              await actionApi
+            ).dispatchEvents({
+              events,
+            });
+          };
+      let currentPosition = select.selectedIndex;
+      const modifier = Util.isMac ? 'meta' : 'ctrl';
+      if (select.multiple) {
         await dummyCursor.mouseEvent('click', undefined, 1, [modifier]); // cancel the option checked on focus
       }
       for (const value of values) {
@@ -536,34 +676,87 @@ export namespace BrowserActions {
         selector,
         filePaths: values,
       });
-    } else if (values[0].length < 64 && SAFE_KEYPRESS_RE.test(values[0])) {
+    } else {
+      const modifierKey = Util.isMac ? 'Meta' : 'Control';
+      const modifier = Util.isMac ? 'meta' : 'control';
       await (
         await actionApi
       ).dispatchEvents({
-        events: values[0].split('').flatMap((keyCode) => [
+        events: [
           {
             type: 'keyDown',
-            keyCode,
+            keyCode: modifierKey,
+            delayMs: 0,
+          },
+          {
+            type: 'keyDown',
+            keyCode: 'a',
+            modifiers: [modifier],
             delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
           },
           {
             type: 'char',
-            keyCode,
+            keyCode: 'a',
+            modifiers: [modifier],
             delayMs: 0,
           },
           {
             type: 'keyUp',
-            keyCode,
+            keyCode: 'a',
+            modifiers: [modifier],
             delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
           },
-        ]),
+          {
+            type: 'keyUp',
+            keyCode: modifierKey,
+            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+          },
+          {
+            type: 'keyDown',
+            keyCode: 'Backspace',
+            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+          },
+          {
+            type: 'char',
+            keyCode: 'Backspace',
+            delayMs: 0,
+          },
+          {
+            type: 'keyUp',
+            keyCode: 'Backspace',
+            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+          },
+        ],
       });
-    } else {
-      await (
-        await actionApi
-      ).pasteInput({
-        input: values[0],
-      });
+      if (values[0].length < 64 && SAFE_KEYPRESS_RE.test(values[0])) {
+        await (
+          await actionApi
+        ).dispatchEvents({
+          events: values[0].split('').flatMap((keyCode) => [
+            {
+              type: 'keyDown',
+              keyCode,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+            {
+              type: 'char',
+              keyCode,
+              delayMs: 0,
+            },
+            {
+              type: 'keyUp',
+              keyCode,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+          ]),
+        });
+      } else {
+        await (
+          await actionApi
+        ).pasteInput({
+          input: values[0],
+        });
+      }
     }
   };
   export const key = async (

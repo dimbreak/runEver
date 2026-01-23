@@ -1,16 +1,100 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import GatewayHeader from '../components/GatewayHeader';
-import { readSession, writeSession } from '../utils/session';
+import { readSession, writeSession, setBenchmarkResult } from '../utils/session';
 
-export default function GatewayTwoFactorPage() {
+interface Props {
+  entryPoint?: string;
+}
+
+export default function GatewayTwoFactorPage({ entryPoint: propEntryPoint }: Props) {
   const [status, setStatus] = useState('');
   const email = readSession<string>('runEverMark_gateway_email', 'unknown@merchant.test');
+  const [generatedCode, setGeneratedCode] = useState<string>(() => readSession('runEverMark_gateway_2fa_code', ''));
+  const [hasBlurred, setHasBlurred] = useState(false);
+
+  const entryPoint = propEntryPoint || readSession<string>('runEverMark_active_entryPoint', '').replace('#/', '');
+
+  // ... (useEffect remains, uses entryPoint)
+
+
+
+  useEffect(() => {
+    console.log(entryPoint)
+    if (entryPoint === 'ecomm/pro') {
+        let code = readSession<string>('runEverMark_gateway_2fa_code', '');
+
+        if (!code) {
+            code = Math.floor(100000 + Math.random() * 900000).toString();
+            setGeneratedCode(code);
+            writeSession('runEverMark_gateway_2fa_code', code);
+
+    }
+      // Inject Email
+      const emailData = {
+        id: `email-2fa-${Date.now()}`,
+        from: 'security@gatepal.com',
+        subject: 'Your Security Code of GatePal',
+        preview: `Your verification code`,
+        body: `<p>Your verification code is: <strong>${code}</strong></p><p>Do not share this with anyone.</p>`,
+        isStarred: true,
+        isImportant: true,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      localStorage.setItem('runEverMark_inject_email', JSON.stringify(emailData));
+    }
+
+    const handleBlur = () => setHasBlurred(true);
+
+    const handleFocus = () => {
+        if (entryPoint && hasBlurred) {
+            setBenchmarkResult(entryPoint, 'focus_2fa', true);
+        }
+    };
+
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    // Also check visibility change as fallback
+    const handleVis = () => {
+        if (document.visibilityState === 'hidden') {
+            setHasBlurred(true);
+        }
+        if (document.visibilityState === 'visible' && entryPoint && hasBlurred) {
+             setBenchmarkResult(entryPoint, 'focus_2fa', true);
+        }
+    };
+    document.addEventListener('visibilitychange', handleVis);
+
+    return () => {
+        window.removeEventListener('blur', handleBlur);
+        window.removeEventListener('focus', handleFocus);
+        document.removeEventListener('visibilitychange', handleVis);
+    };
+  }, [entryPoint, hasBlurred]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    // Get input value
+    const formData = new FormData(event.currentTarget);
+    const inputCode = String(formData.get('code')).trim();
+
+    if (entryPoint === 'ecomm/pro') {
+       if (inputCode === generatedCode) {
+           setBenchmarkResult(entryPoint, 'check_email_code', true);
+       } else {
+           setStatus('Incorrect code. Please check your email.');
+           return;
+       }
+    }
+
     writeSession('runEverMark_gateway_auth', 'verified');
     setStatus('Verified. Continue to card selection.');
-    window.location.hash = '#/gateway/cards';
+
+    // Small delay to show success msg
+    setTimeout(() => {
+        window.location.hash = '#/gateway/cards';
+    }, 500);
   };
 
   return (
@@ -26,6 +110,7 @@ export default function GatewayTwoFactorPage() {
                     name="code"
                     placeholder="Enter 6-digit code"
                     required
+                    autoComplete="off"
                     style={{
                         width: '100%', padding: '12px 15px', borderRadius: '4px', border: '1px solid #9da3a6', fontSize: '18px', letterSpacing: '2px', textAlign: 'center', boxSizing: 'border-box', height: '50px'
                     }}
@@ -43,7 +128,7 @@ export default function GatewayTwoFactorPage() {
 
                 <a href="#" style={{ fontSize: '14px', color: '#0070ba', textDecoration: 'none', fontWeight: '600', marginTop: '10px' }}>Resend Code</a>
 
-                {status && <p className="muted" style={{ fontSize: '14px', marginTop: '10px' }}>{status}</p>}
+                {status && <p className="muted" style={{ fontSize: '14px', marginTop: '10px', color: status.includes('Incorrect') ? 'red' : 'green' }}>{status}</p>}
             </form>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import type { Rectangle } from 'electron';
 import { ToMainIpc } from '../../contracts/toMain';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+import { useTabStore, WebTab } from '../state/tabStore';
+import { useLayoutStore } from '../state/layoutStore';
 
 type LayoutParams = {
   frameId?: number;
@@ -21,6 +23,42 @@ let promptResponseHandlers: Record<number, (response: string) => void> | null =
   null;
 export const webviewService = {
   hasBridge: hasIpc,
+
+  registerTabHandler() {
+    ToRendererIpc.tab.on(
+      (_, { tabId: frameId, url, actionId, triggerFrameId }) => {
+        const { tabs, setActiveTab, addTab } = useTabStore.getState();
+        const { bounds, toggleUrlBar } = useLayoutStore.getState();
+        if (frameId === -1) {
+          const newTab = new WebTab({
+            id: `tab-${Date.now()}`,
+            title: url ?? 'New Tab',
+            url: url ?? '',
+          });
+          addTab(newTab, bounds);
+        } else {
+          const tab = tabs.find((t) => t.frameId === frameId);
+          if (tab) {
+            setActiveTab(tab.id);
+            toggleUrlBar(true);
+          } else if (actionId !== undefined) {
+            ToMainIpc.actionError.invoke({
+              frameId: triggerFrameId!,
+              actionId,
+              error: 'tab not found',
+            });
+            return;
+          }
+        }
+        if (actionId !== undefined) {
+          ToMainIpc.actionDone.invoke({
+            frameId: triggerFrameId!,
+            actionId,
+          });
+        }
+      },
+    );
+  },
 
   registerPromptResponseHandler(
     thisRequestId: number,

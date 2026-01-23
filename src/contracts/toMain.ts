@@ -46,14 +46,16 @@ export namespace ToMainIpc {
     [
       {
         frameId: number;
-        ttlHeight: number;
-        ttlWidth: number;
+        x?: number;
+        y?: number;
+        height: number;
+        width: number;
         vpHeight: number;
         vpWidth: number;
-        slices: { x: number; y: number }[];
+        filename?: string;
       },
     ],
-    { error: string } | Buffer[]
+    { error: string } | Buffer
   >('take-screenshot');
   export const getLlmConfig = new IpcMainContract<
     [number], // frameId
@@ -236,10 +238,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('get-tab-navigation-state');
   export const getLlmSessionSnapshot = new IpcMainContract<
@@ -300,10 +302,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('navigate-tab-history');
   export const iframeProgress = new IpcMainContract<
@@ -316,6 +318,16 @@ export namespace ToMainIpc {
     ],
     { error?: string }
   >('iframe-progress');
+  export const download = new IpcMainContract<
+    [
+      {
+        frameId: number;
+        url: string;
+        filename?: string;
+      },
+    ],
+    { error?: string }
+  >('download');
   export const auditAction = new IpcMainContract<
     [
       {

@@ -47,4 +47,14 @@ export namespace ToRendererIpc {
       },
     ]
   >('auth-deeplink');
+  export const tab = new IcpRendererContract<
+    [
+      {
+        tabId: number | -1;
+        url?: string;
+        actionId?: number; // if from llm action
+        triggerFrameId?: number; // if from llm action
+      },
+    ]
+  >('tab');
 }

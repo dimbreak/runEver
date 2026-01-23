@@ -158,7 +158,7 @@ export namespace LlmApi {
     attachments: Attachment[] | null = null,
     cacheKey = '',
     model: LlmModelType = 'mid',
-    reasoning: ReasoningEffort = 'low',
+    reasoningEffort: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     if (getAuthMode() !== 'apikey') {
       try {
@@ -225,7 +225,7 @@ export namespace LlmApi {
       const providerOptions: Record<string, any> = {};
       if (llmApi.provider === 'openai') {
         providerOptions.openai = {
-          reasoningEffort: reasoning,
+          reasoningEffort,
         };
         if (cacheKey) {
           providerOptions.openai.promptCacheKey = cacheKey;
@@ -299,7 +299,7 @@ export namespace LlmApi {
                 messages = res.messages?.map((m: ModelMessage) => m?.content);
               }
               fs.writeFile(
-                `${recordPath}/log-${new Date().toISOString()}.json`,
+                `${recordPath}/log-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`,
                 JSON.stringify({ ...res, prompt: promptObj, messages }),
                 () => {},
               );
