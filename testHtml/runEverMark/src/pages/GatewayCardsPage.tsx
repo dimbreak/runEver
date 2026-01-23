@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import GatewayHeader from '../components/GatewayHeader';
-import { writeSession } from '../utils/session';
+import { writeSession, readSession, setBenchmarkResult } from '../utils/session';
 
 type CardOption = {
   id: string;
@@ -30,23 +30,63 @@ const cards: CardOption[] = [
   }
 ];
 
-const baseAmount = 500;
+// Mock GatePal address
+const gatePalAddress = {
+  name: "John Doe",
+  line1: "123 Gateway Blvd",
+  line2: "Apt 4B",
+  city: "San Jose",
+  state: "CA",
+  zip: "95110"
+};
 
-function estimateTotal(card: CardOption) {
-  const fee = (baseAmount * card.feePercent) / 100;
-  const converted = (baseAmount - fee) * card.exchangeRate;
-  return {
-    fee: Number(fee.toFixed(2)),
-    converted: Number(converted.toFixed(2))
-  };
+interface Props {
+  entryPoint?: string;
 }
 
-export default function GatewayCardsPage() {
+export default function GatewayCardsPage({ entryPoint: propEntryPoint }: Props) {
   const [selected, setSelected] = useState('');
+
+  const hash = window.location.hash;
+  const searchParams = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
+  const entryPoint = propEntryPoint || searchParams.get('entryPoint') || readSession<string>('runEverMark_active_entryPoint', '');
+
+  // Read order total from session or fallback to 500
+  const order = readSession<{ total: number } | null>('runEverMark_ecomm_order', null);
+  const baseAmount = order?.total || 500;
+
+  // Helper to calculate total based on dynamic baseAmount
+  const estimateTotal = (card: CardOption) => {
+    const fee = (baseAmount * card.feePercent) / 100;
+    const converted = (baseAmount - fee) * card.exchangeRate;
+    return {
+      fee: Number(fee.toFixed(2)),
+      converted: Number(converted.toFixed(2))
+    };
+  };
+
+  // Determine best card (lowest converted amount)
+  const bestCard = cards.slice().sort((a, b) => {
+      const totalA = estimateTotal(a).converted;
+      const totalB = estimateTotal(b).converted;
+      return totalA - totalB;
+  })[0];
 
   const handlePick = (id: string) => {
     setSelected(id);
     writeSession('runEverMark_gateway_card', id);
+
+    if (entryPoint === '#/ecomm/pro' && bestCard && id === bestCard.id) {
+        setBenchmarkResult(entryPoint, 'pick_best_card', true);
+    }
+  };
+
+  const handleComplete = () => {
+      if (entryPoint) {
+           setBenchmarkResult(entryPoint, 'submit_gateway_order', true);
+      }
+      // Logic to finalize order would go here, probably redirecting back to the main app success page
+      window.location.hash = '#/ecomm/ordered';
   };
 
   return (
@@ -57,13 +97,26 @@ export default function GatewayCardsPage() {
             <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <h3 style={{ margin: 0, color: '#2c2e2f', fontSize: '22px', fontWeight: '400' }}>Choose a way to pay</h3>
                 <p className="muted" style={{ fontSize: '14px', color: '#6c7378' }}>
-                    Total amount: <span style={{ fontWeight: 'bold', color: '#2c2e2f' }}>${baseAmount} USD</span>
+                    Total amount: <span style={{ fontWeight: 'bold', color: '#2c2e2f' }}>${baseAmount.toFixed(2)} USD</span>
                 </p>
+            </div>
+
+             {/* Address Box */}
+             <div style={{ marginBottom: '20px', padding: '15px', borderRadius: '6px', border: '1px solid #e6e6e6', backgroundColor: '#fbfcfe' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', textTransform: 'uppercase', color: '#6c7378', fontWeight: 'bold' }}>Ship to</span>
+                    <a href="#" style={{ fontSize: '12px', color: '#0070ba', textDecoration: 'none' }}>Change</a>
+                </div>
+                <div style={{ fontSize: '14px', color: '#2c2e2f' }}>
+                    <div style={{ fontWeight: 'bold' }}>{gatePalAddress.name}</div>
+                    <div>{gatePalAddress.line1}</div>
+                    <div>{gatePalAddress.line2}</div>
+                    <div>{gatePalAddress.city}, {gatePalAddress.state} {gatePalAddress.zip}</div>
+                </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {cards.map((card) => {
-                estimateTotal(card);
                 const isSelected = selected === card.id;
                 return (
                   <div
@@ -110,6 +163,7 @@ export default function GatewayCardsPage() {
 
             <button
                 disabled={!selected}
+                onClick={handleComplete}
                 style={{
                     width: '100%', backgroundColor: selected ? '#0070ba' : '#e1e7eb', color: selected ? 'white' : '#9da3a6',
                     border: 'none', borderRadius: '24px', padding: '12px', fontSize: '18px', fontWeight: 'bold',

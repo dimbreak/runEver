@@ -24,5 +24,5 @@ export type Prompt = {
   subPrompt?: string;
   argsAdded?: Record<string, string> | null;
   complexity?: RiskOrComplexityLevel;
+  attachments?: string[];
 };
-

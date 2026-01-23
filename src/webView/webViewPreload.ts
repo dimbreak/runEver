@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { type EventWithDelay, ToMainIpc } from '../contracts/toMain';
-import { OCRModel } from './ocr';
 import { dummyCursor } from './cursor/cursor';
 import { BrowserActions } from './actions';
 import { Util } from './util';
@@ -68,9 +67,6 @@ const webViewHandler = {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return this.htmlParser.getElementFormId(select);
   },
-  getOcr(fullPage = false) {
-    return OCRModel.getFromScreenshot(fullPage);
-  },
   async execActions(
     actions: WireActionWithWaitAndRec[],
     args: Record<string, string>,
@@ -135,13 +131,18 @@ const handleFrameId = async (event: MessageEvent) => {
   // }
   // console.log(events.join(' '));
   //
-  // await Util.sleep(2000);
-  //
+  await Util.sleep(2000);
+
   // document.body.querySelector('input')?.focus();
-  // BrowserActions.callActionApi({
-  //   action: 'pasteInput',
-  //   args: { input: '你好，世界' },
-  // });
+  // BrowserActions.input(
+  //   {
+  //     k: 'input',
+  //     q: '',
+  //     el: document.body.querySelector('select')!,
+  //     v: 'Avg. Customer Review',
+  //   },
+  //   'l',
+  // );
 };
 
 // Register immediately to avoid missing early postMessage during navigation.
@@ -196,6 +197,12 @@ BrowserActions.setActionApi({
   },
   setInputFile: (args: { selector: string; filePaths: string[] }) => {
     return ToMainIpc.setInputFile.invoke({
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+  download: (args: { url: string; filename: string | undefined }) => {
+    return ToMainIpc.download.invoke({
       frameId: window.frameId!,
       ...args,
     });

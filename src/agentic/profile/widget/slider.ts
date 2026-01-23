@@ -20,9 +20,8 @@ Profile.register({
   {
     k: 'slideToVal';
     q: Selector;
-    v: number;
-  }
-2. put a todo to observe the result, tolerate the value different since there maybe step size block to reach the exact value.`,
+    num: number;
+  }`,
           };
         }
         return {

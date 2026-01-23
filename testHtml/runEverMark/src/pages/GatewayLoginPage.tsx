@@ -1,18 +1,39 @@
 import { useState, type FormEvent } from 'react';
 import GatewayHeader from '../components/GatewayHeader';
-import { writeSession } from '../utils/session';
+import { writeSession, readSession, setBenchmarkResult } from '../utils/session';
 
-export default function GatewayLoginPage() {
+export default function GatewayLoginPage({entryPointProp}: {entryPointProp?: string}) {
   const [status, setStatus] = useState('');
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get('email') || '');
+    const password = String(formData.get('password') || '');
+    const entryPoint = entryPointProp || readSession<string>('runEverMark_active_entryPoint', '');
+
+    if (entryPoint === 'ecomm/pro') {
+        if (email === 'pikachu@pokemon.com') {
+          setBenchmarkResult(entryPoint, 'gateway_login_email', true);
+        }
+        if(password === 'P@ssword321') {
+          setBenchmarkResult(entryPoint, 'gateway_login_password', true);
+        }
+    } else if (entryPoint) {
+         // Basic flow accepts any
+         setBenchmarkResult(entryPoint, 'gateway_login', true);
+    }
+
+    // Simple validation (accepts anything for now)
     writeSession('runEverMark_gateway_email', email);
     writeSession('runEverMark_gateway_auth', 'pending-2fa');
     setStatus('2FA required. Proceed to verification.');
-    window.location.hash = '#/gateway/2fa';
+
+    if (entryPoint) {
+        window.location.hash = `#/gateway/2fa/${entryPoint}`;
+    } else {
+        window.location.hash = '#/gateway/2fa';
+    }
   };
 
   return (
@@ -22,7 +43,7 @@ export default function GatewayLoginPage() {
         <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '40px', boxShadow: '0 0 10px rgba(0,0,0,0.05)', border: '1px solid #e6e6e6' }}>
             <form className="form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                     <h3 style={{ margin: 0, color: '#2c2e2f', fontSize: '18px', fontWeight: '400' }}>Pay with PayPal</h3>
+                     <h3 style={{ margin: 0, color: '#2c2e2f', fontSize: '18px', fontWeight: '400' }}>Pay with GatePal</h3>
                 </div>
 
                 <input

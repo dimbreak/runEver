@@ -4,9 +4,11 @@ import { Search, ShoppingCart, MapPin, Menu } from 'lucide-react';
 interface Props {
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  onCartClick?: () => void;
+  cartCount?: number;
 }
 
-export default function EcommHeader({ searchValue, onSearchChange }: Props) {
+export default function EcommHeader({ searchValue, onSearchChange, onCartClick, cartCount = 0 }: Props) {
   const [localSearch, setLocalSearch] = useState(searchValue || '');
 
   const handleSearch = () => {
@@ -26,7 +28,7 @@ export default function EcommHeader({ searchValue, onSearchChange }: Props) {
 
         {/* Logo Area */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '5px 10px', border: '1px solid transparent', cursor: 'pointer' }}>
-           <span style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '-1px' }}>runEver<span style={{ color: '#ff9900' }}>Mark</span></span>
+           <span style={{ fontSize: '24px', fontWeight: 'bold', letterSpacing: '-1px' }}>Ra<span style={{ color: '#ff9900' }}>mazon</span></span>
         </div>
 
         {/* Location (Dummy) */}
@@ -45,7 +47,7 @@ export default function EcommHeader({ searchValue, onSearchChange }: Props) {
             </div>
             <input
                 type="text"
-                placeholder="Search runEverMark"
+                placeholder="Search Ramazon"
                 value={localSearch}
                 onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -65,7 +67,7 @@ export default function EcommHeader({ searchValue, onSearchChange }: Props) {
 
             {/* Account */}
              <div style={{ padding: '5px 10px', cursor: 'pointer', lineHeight: '1.2' }}>
-                <div style={{ fontSize: '12px' }}>Hello, sign in</div>
+                <div style={{ fontSize: '12px' }}>Hello, Pikachu</div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold' }}>Account & Lists</div>
             </div>
 
@@ -76,12 +78,12 @@ export default function EcommHeader({ searchValue, onSearchChange }: Props) {
             </div>
 
             {/* Cart */}
-            <div style={{ display: 'flex', alignItems: 'end', padding: '5px 10px', cursor: 'pointer' }}>
+            <div onClick={onCartClick} style={{ display: 'flex', alignItems: 'end', padding: '5px 10px', cursor: 'pointer' }}>
                 <div style={{ position: 'relative' }}>
                     <ShoppingCart size={34} />
-                    <span style={{ position: 'absolute', top: '0', left: '16px', color: '#f08804', fontWeight: 'bold', fontSize: '16px' }}>0</span>
+                    <span style={{ position: 'absolute', top: '0', left: '16px', color: '#f08804', fontWeight: 'bold', fontSize: '16px' }}>{cartCount}</span>
                 </div>
-                <span style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 5px 2px' }}>Cart</span>
+                <span style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 5px 2px' }}>Basket</span>
             </div>
         </div>
       </div>

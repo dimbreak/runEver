@@ -121,7 +121,7 @@ export namespace LlmApi {
     attachments: Attachment[] | null = null,
     cacheKey = '',
     model: LlmModelType = 'mid',
-    reasoning: ReasoningEffort = 'low',
+    reasoningEffort: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
     const llmApi = await getLlmApi();
 
@@ -130,7 +130,7 @@ export namespace LlmApi {
       const providerOptions: Record<string, any> = {};
       if (llmApi.provider === 'openai') {
         providerOptions.openai = {
-          reasoningEffort: reasoning,
+          reasoningEffort,
         };
         if (cacheKey) {
           providerOptions.openai.promptCacheKey = cacheKey;
@@ -156,7 +156,7 @@ export namespace LlmApi {
             },
           ]
         : prompt;
-      const { textStream, response } = streamQueryer({
+      const { textStream, response, reasoning } = streamQueryer({
         model: llmApi[model],
         providerOptions,
         prompt: promptObj,
@@ -179,14 +179,19 @@ export namespace LlmApi {
       } finally {
         monitor.stop();
         console.log(`api call ok ${cacheKey}`);
-        const res = await response;
+        const [res, reasoningRes] = await Promise.all([response, reasoning]);
         let messages: any[] = [];
         if (res) {
           messages = res.messages?.map((m) => m?.content);
         }
         fs.writeFile(
-          `${recordPath}/log-${new Date().toISOString()}.json`,
-          JSON.stringify({ ...res, prompt: promptObj, messages }),
+          `${recordPath}/log-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`,
+          JSON.stringify({
+            ...res,
+            prompt: promptObj,
+            messages,
+            reasoning: reasoningRes,
+          }),
           () => {},
         );
       }

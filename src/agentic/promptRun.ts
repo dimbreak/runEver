@@ -12,12 +12,11 @@ import { RiskOrComplexityLevel } from './execution.schema';
 import { Prompt, WireActionWithWaitAndRec } from './types';
 import { type WebViewLlmSession } from './webviewLlmSession';
 import { ExecutionSession } from './session';
-import { replaceJsTpl } from '../webView/selector';
+import { CommonUtil } from '../utils/common';
 
 export class PromptRun {
   executionSession: ExecutionPrompter;
   args: Record<string, any> = {};
-  llmAttachments: LlmApi.Attachment[] = [];
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
   actionId = 0;
@@ -30,7 +29,7 @@ export class PromptRun {
 
   stopRequested = false;
   constructor(
-    private manager: WebViewLlmSession,
+    public manager: WebViewLlmSession,
     private thisTab: TabWebView,
     public requestId: number,
   ) {
@@ -59,13 +58,21 @@ export class PromptRun {
     args?: Record<string, string>,
     reasoningEffort?: LlmApi.ReasoningEffort,
     modelType?: LlmApi.LlmModelType,
+    attachment?: string[],
   ): AsyncGenerator<string, void, void> {
     this.stopRequested = false;
 
     // todo check stage prompt to correct session
     const { rootSession } = this;
     if (true) {
-      const prompt: Prompt = this.createPrompt(promptTxt, args, 0, 'l');
+      const prompt: Prompt = this.createPrompt(
+        promptTxt,
+        args,
+        0,
+        'l',
+        undefined,
+        attachment,
+      );
       rootSession.promptQueue.push(prompt);
       const stream = rootSession.exec();
       let streamChunk;
@@ -137,6 +144,8 @@ export class PromptRun {
       this.browserActionLockOk = false;
       this.manager.ensureRunLocked(this.requestId);
       this.manager.enqueueRun(this.requestId);
+    } else {
+      console.log('fixing action skip exec');
     }
   }
 
@@ -181,15 +190,28 @@ export class PromptRun {
     }
     this.currentAction++;
     currentAction.done = true;
+    const sess =
+      this.sessionQueue[this.prompts[currentAction.promptId!].sessionId ?? -1];
     if (argsDelta) {
       this.args = { ...this.args, ...argsDelta };
       currentAction.argsDelta = argsDelta;
+      Object.keys(argsDelta).forEach((key) => {
+        if (key.startsWith('$LOAD_FILE:')) {
+          sess.attachmentInNextTodo.push(key.replace('$LOAD_FILE:', ''));
+        }
+      });
     }
-    this.sessionQueue[
-      this.prompts[currentAction.promptId!].sessionId ?? -1
-    ]?.addLog(currentAction.intent);
-    console.log('Popped actions:', this.actions.length, completedId);
-    if (this.stopRequested) return;
+    sess?.addLog(currentAction.intent);
+    console.log(
+      'Popped actions:',
+      this.actions.length,
+      this.currentAction,
+      completedId,
+    );
+    if (this.stopRequested) {
+      console.log('Stopped stopRequested');
+      return;
+    }
     if (this.currentAction < this.actions.length) {
       this.execActions();
     } else {
@@ -214,7 +236,10 @@ export class PromptRun {
     } else {
       currentAction.error = [error];
     }
-    if (this.stopRequested) return;
+    if (this.stopRequested) {
+      console.log('stopped');
+      return;
+    }
     this.fixAction();
   }
 
@@ -294,6 +319,7 @@ these actions are blocking by this error, if you found any of the above actions 
     sessionId: number | undefined = undefined,
     complexity: RiskOrComplexityLevel | undefined = undefined,
     subPrompt: string | undefined = undefined,
+    attachments: string[] | undefined = undefined,
   ): Prompt {
     const prompt: Prompt = {
       id: 0,
@@ -304,6 +330,7 @@ these actions are blocking by this error, if you found any of the above actions 
       complexity:
         complexity ??
         estimatePromptComplexity(`${goalPrompt} ${subPrompt ?? ''}`),
+      attachments,
     };
     prompt.id = this.prompts.push(prompt) - 1;
     if (argsAdded) {
@@ -311,7 +338,10 @@ these actions are blocking by this error, if you found any of the above actions 
         ...this.args,
         ...Object.entries(argsAdded).reduce(
           (acc, [k, v]) => {
-            acc[k] = replaceJsTpl(v, this.args);
+            const vv = CommonUtil.replaceJsTpl(v, this.args);
+            if (vv) {
+              acc[k] = vv;
+            }
             return acc;
           },
           {} as Record<string, string>,

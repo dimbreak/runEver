@@ -28,10 +28,10 @@ export namespace SliderProfile {
       let moveY = dummyCursor.y;
       if (containerRect.width > containerRect.height) {
         pxPerVal = containerRect.width / (vMax - vMin);
-        moveX = pxPerVal * (action.v - vMin) + containerRect.x;
+        moveX = pxPerVal * (action.num - vMin) + containerRect.x;
       } else {
         pxPerVal = containerRect.height / (vMax - vMin);
-        moveY = pxPerVal * (action.v - vMin) + containerRect.y;
+        moveY = pxPerVal * (action.num - vMin) + containerRect.y;
       }
       await BrowserActions.dndByPx(slideEl, moveX, moveY, true);
 
@@ -40,14 +40,14 @@ export namespace SliderProfile {
       let valNow = parseFloat(slideEl.getAttribute('aria-valuenow') ?? '0');
       let toTry = 2;
       let keyCode = 'ArrowRight';
-      while (valNow !== action.v && toTry !== 0) {
+      while (valNow !== action.num && toTry !== 0) {
         if (containerRect.width > containerRect.height) {
-          if (valNow > action.v) {
+          if (valNow > action.num) {
             keyCode = 'Left';
           } else {
             keyCode = 'Right';
           }
-        } else if (valNow > action.v) {
+        } else if (valNow > action.num) {
           keyCode = 'Down';
         } else {
           keyCode = 'Up';

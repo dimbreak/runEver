@@ -4,6 +4,9 @@ import { TabBar } from './components/TabBar';
 import { HomeScreen } from './view/HomeScreen';
 import { AgentPanel } from './components/AgentPanel';
 import { useLayoutStore } from './state/layoutStore';
+import { webviewService } from './services/webviewService';
+
+webviewService.registerTabHandler();
 
 export default function App() {
   const { isSidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =

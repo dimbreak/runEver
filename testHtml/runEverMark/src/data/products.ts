@@ -35,9 +35,52 @@ function makeProduct(index: number): Product {
   const hasDiscount = index % 4 === 0;
   const originalPrice = hasDiscount ? Number((price * 1.25).toFixed(2)) : undefined;
 
+  if (index === 0) {
+      return {
+          id: 'sku-chair',
+          name: 'Desk Chair',
+          category: 'Office',
+          price: 350.00,
+          rating: 4.5,
+          stock: 20,
+          reviewCount: 150,
+          deliveryDate,
+          isPrime: true,
+          isBestSeller: false
+      };
+  }
+  if (index === 1) {
+      return {
+          id: 'sku-keyboard',
+          name: 'Keyboard',
+          category: 'Tech',
+          price: 80.00,
+          rating: 3.5,
+          stock: 50,
+          reviewCount: 200,
+          deliveryDate,
+          isPrime: true,
+          isBestSeller: true
+      };
+  }
+  if (index === 2) {
+      return {
+          id: 'sku-laptop',
+          name: 'Laptop Pro',
+          category: 'Tech',
+          price: 1200.00,
+          rating: 4.9,
+          stock: 10,
+          reviewCount: 89,
+          deliveryDate,
+          isPrime: true,
+          isBestSeller: true
+      };
+  }
+
   return {
     id: `sku-${index + 1}`,
-    name: `${category} Item ${index + 1} - High Quality`, // Slightly longer name
+    name: `${category} Item ${index + 1}`, // Slightly longer name
     category,
     price,
     rating,

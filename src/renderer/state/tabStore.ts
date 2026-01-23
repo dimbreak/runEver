@@ -91,11 +91,10 @@ export class WebTab {
 
     const payload = {
       frameId: this.frameId,
-      ttlHeight: bounds.height,
-      ttlWidth: bounds.width,
+      height: bounds.height,
+      width: bounds.width,
       vpHeight: bounds.height,
       vpWidth: bounds.width,
-      slices: [{ x: 0, y: 0 }],
     };
 
     const imgJpgs = await ToMainIpc.takeScreenshot.invoke(payload);
@@ -176,15 +175,11 @@ const initialTabs = [
   // }),
   new WebTab({
     id: 'tab-1',
-    title: 'Google',
-    url: 'http://localhost:5175/?flow=register',
+    title: 'Benchmark',
+    url: 'runever://benchmark#/ecomm/pro',
+    // url: 'http://localhost:5175/?flow=register',
     isRunning: true,
   }),
-  // new WebTab({
-  //   id: 'tab-2',
-  //   title: 'OpenAI',
-  //   url: 'https://www.openai.com',
-  // }),
 ];
 
 const removeTabFromState = (

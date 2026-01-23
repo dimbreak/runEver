@@ -12,6 +12,17 @@ const WireWaitNetworkSchema = z.object({
   t: z.literal('network'),
   a: z.union([z.literal('idle0'), z.literal('idle2')]),
 });
+const WireWaitDomSchemaV2 = z.object({
+  t: z.literal('dom'),
+  a: z.union([
+    z.literal('any'),
+    z.literal('attr'),
+    z.literal('childAdd'),
+    z.literal('childRm'),
+    z.literal('txt'),
+  ]),
+  q: WireSelectorSchema,
+});
 const WireWaitDomSchema = z.object({
   t: z.union([z.literal('appear'), z.literal('disappear')]),
   q: WireSelectorSchema,
@@ -30,6 +41,7 @@ export const WireWaitSchema = z
   .union([
     WireWaitNetworkSchema,
     WireWaitDomSchema,
+    WireWaitDomSchemaV2,
     WireWaitTimeSchema,
     WireWaitNavigationSchema,
   ])
@@ -64,6 +76,19 @@ const FocusActionSchema = z.object({
   q: WireSelectorSchema,
 });
 
+const DownloadActionSchema = z.object({
+  k: z.literal('download'),
+  a: WireSelectorSchema,
+  t: z.union([z.literal('link'), z.literal('img'), z.literal('bg-img')]),
+  filename: z.string().optional().nullable(),
+});
+
+const ScreenshotActionSchema = z.object({
+  k: z.literal('screenshot'),
+  a: WireSelectorSchema.optional().nullable(),
+  filename: z.string(),
+});
+
 const DndActionSchema = z.object({
   k: z.literal('dragAndDrop'),
   sq: WireSelectorSchema,
@@ -76,7 +101,7 @@ const DndActionSchema = z.object({
 const SlideToValActionSchema = z.object({
   k: z.literal('slideToVal'),
   q: WireSelectorSchema,
-  v: z.number(),
+  num: z.number(),
 });
 
 const KeyActionSchema = z.object({
@@ -151,9 +176,28 @@ const UrlActionSchema = z.object({
   ]),
 });
 
+const TabActionSchema = z.object({
+  k: z.literal('tab'),
+  id: z.number(),
+  url: z.string().optional().nullable(),
+});
+
+const SelectTextActionSchema = z.object({
+  k: z.literal('selectTxt'),
+  q: WireSelectorSchema,
+  txt: z.string(),
+});
+
+const DescriptAttachmentSchema = z.object({
+  name: z.string(),
+  desc: z.string(),
+});
+
 const FollowupActionSchema = z.object({
   rc: z.string(),
   sc: z.boolean().optional().nullable(),
+  reqAtt: z.array(z.string()).optional().nullable(),
+  descAttachment: z.array(DescriptAttachmentSchema).nullable().optional(),
 });
 
 /** Discriminated union by `k` */
@@ -169,6 +213,10 @@ export const WireActionSchema = z.discriminatedUnion('k', [
   SetCtxActionSchema,
   SetArgumentActionSchema,
   UrlActionSchema,
+  DownloadActionSchema,
+  SelectTextActionSchema,
+  TabActionSchema,
+  ScreenshotActionSchema,
 ]);
 
 /** WireAction & { w?: WireWait; to?: number } */
@@ -195,7 +243,7 @@ export const WireActionOrSubTaskSchema = z.union([
 export const ExecutorLlmResultSchema = z.object({
   a: z.union([z.array(WireActionWithWaitSchema), z.array(WireSubTaskSchema)]),
   e: z.string().optional(),
-  todo: FollowupActionSchema.optional().nullable(),
+  todo: z.union([FollowupActionSchema, z.literal('finishedNoToDo')]),
 });
 
 /** (Optional) inferred TS types */
@@ -205,7 +253,11 @@ export type WireFollowupAction = z.infer<typeof FollowupActionSchema>;
 export type WireSubTask = z.infer<typeof WireSubTaskSchema>;
 export type WireActionWithWait = z.infer<typeof WireActionWithWaitSchema>;
 export type WireSelector = z.infer<typeof WireSelectorSchema>;
+export type WireTabAction = z.infer<typeof TabActionSchema>;
 
-export type ExecutorLlmResult = z.infer<typeof ExecutorLlmResultSchema>;
+export type ExecutorLlmResult = Omit<
+  z.infer<typeof ExecutorLlmResultSchema>,
+  'todo'
+> & { todo?: WireFollowupAction };
 export type WireWaitDom = z.infer<typeof WireWaitDomSchema>;
 export type RiskOrComplexityLevel = z.infer<typeof RiskOrComplexityLevelSchema>;

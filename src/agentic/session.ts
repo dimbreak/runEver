@@ -11,9 +11,24 @@ import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
 import { LlmApi } from './api';
 
-LlmApi.addDummyReturn(
-  '{\n  "shouldSplitTask": "no split needed — single straightforward interaction inside the iframe",\n  "a": [\n    {\n      "intent": "fill the iframe search box with \'openai\'",\n      "risk": "l",\n      "action": {\n        "k": "input",\n        "q": {\n          "id": "__45:APjFqb",\n          "argKeys": []\n        },\n        "v": "openai"\n      }\n    },\n    {\n      "intent": "click the Google Search button in the iframe to perform the search",\n      "risk": "l",\n      "action": {\n        "k": "mouse",\n        "a": "click",\n        "q": {\n          "id": "__45:1r",\n          "argKeys": []\n        }\n      }\n    }\n  ]\n}',
-);
+// LlmApi.addDummyReturn(
+//   JSON.stringify({
+//     a: [
+//       {
+//         intent:
+//           'return title and add-to-basket id of product under ${args.maxPrice} with highest reviews',
+//
+//         risk: 'l',
+//
+//         action: {
+//           k: 'setArg',
+//
+//           kv: { selectedTitle: 'Tech Item 15', addToBasketButtonId: '__5p' },
+//         },
+//       },
+//     ],
+//   } as ExecutorLlmResult),
+// );
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
@@ -24,6 +39,7 @@ export class ExecutionSession {
   actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
   eventsLogs: string[] = [];
+  attachmentInNextTodo: string[] = [];
   constructor(
     public id: number,
     public promptQueue: Prompt[],
@@ -45,9 +61,10 @@ export class ExecutionSession {
       'Prompt start:',
       this.promptQueue[0]?.goalPrompt ?? 'no prompt',
     );
+    let retry = 3;
     let requireScreenshot = false;
-    const { run, promptQueue, id, actions, subSessionQueue, eventsLogs } = this;
-    const { tab, executionSession, args, browserActionLock } = run;
+    const { run, promptQueue, id, eventsLogs } = this;
+    const { tab, executionSession, browserActionLock } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
@@ -71,12 +88,14 @@ export class ExecutionSession {
         goalPrompt: runGoalPrompt,
         id: promptId,
         complexity,
+        attachments,
       } = promptItem;
       const start = Date.now();
       try {
+        console.log(eventsLogs);
         stepsStream = executionSession.execPrompt(
           runGoalPrompt,
-          args,
+          run.args,
           runSubPrompt &&
             runSubPrompt.includes(`[performed actions]
 -`)
@@ -89,7 +108,7 @@ export class ExecutionSession {
             : runSubPrompt,
           requireScreenshot,
           complexity,
-          run.llmAttachments,
+          attachments,
         );
 
         let res:
@@ -127,12 +146,16 @@ export class ExecutionSession {
               finish();
               return;
             }
+            if (run.stopRequested) {
+              finish();
+              return;
+            }
 
             if (this.subSessionQueue.length) {
               console.log('Run sub session queue');
-              yield* this.waitPageReady(url, start);
-              await this.execSubSessionQueue();
+              yield* this.execSubSessionQueue();
             }
+
             if (run.stopRequested) {
               finish();
               return;
@@ -141,6 +164,14 @@ export class ExecutionSession {
             if (res.value?.todo) {
               yield* this.waitPageReady(url, start);
               executionSession.resetSystemPrompt();
+              if (res.value.todo.descAttachment) {
+                res.value.todo.descAttachment.forEach((f) => {
+                  const ff = run.manager.readableFiles.get(f.name);
+                  if (ff) {
+                    ff.desc = f.desc;
+                  }
+                });
+              }
               if (run.stopRequested) {
                 finish();
                 return;
@@ -159,18 +190,24 @@ export class ExecutionSession {
               }
               url = tab.url;
               requireScreenshot = res.value.todo.sc ?? false;
-              const subPrompt = `**todo from last executor maybe wrong as page state changed, adjust if it conflict with the [goal]**
+              const subPrompt = `**todo from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status**
 ${res.value.todo.rc}
 
 [performed actions]
 -
 `;
+              const toAttach = res.value.todo.reqAtt ?? [];
+              if (this.attachmentInNextTodo.length) {
+                toAttach.push(...this.attachmentInNextTodo);
+                this.attachmentInNextTodo = [];
+              }
               const newPrompt = run.createPrompt(
                 runGoalPrompt,
                 {},
                 id,
                 estimatePromptComplexity(runGoalPrompt + subPrompt),
                 subPrompt,
+                toAttach,
               );
 
               promptQueue.push(newPrompt);
@@ -182,45 +219,62 @@ ${res.value.todo.rc}
               );
             }
             break;
+          }
+          if (this.breakPromptForExeErr) {
+            console.log(Date.now() - start, 'break prompting for exe err');
+            this.breakPromptForExeErr = false;
+            break;
+          }
+          if ((res.value as WireActionWithWait).intent) {
+            if (
+              run.fixingAction === null ||
+              run.fixingAction?.promptId !== promptId
+            ) {
+              const act = res.value as WireActionWithWait;
+              console.log(Date.now() - start, 'exec actions:', res.value);
+              this.addAction({
+                ...act,
+                promptId,
+                id: run.allocActionId(),
+              });
+              run.execActions();
+
+              yield res.value as WireActionWithWait;
+            }
           } else {
-            if (this.breakPromptForExeErr) {
-              console.log(Date.now() - start, 'break prompting for exe err');
-              this.breakPromptForExeErr = false;
-              break;
-            }
-            if ((res.value as WireActionWithWait).intent) {
-              if (
-                run.fixingAction === null ||
-                run.fixingAction?.promptId !== promptId
-              ) {
-                console.log(Date.now() - start, 'exec actions:', res.value);
-                this.addAction({
-                  ...(res.value as WireActionWithWait),
-                  promptId,
-                  id: run.allocActionId(),
-                });
-                run.execActions();
-                yield res.value as WireActionWithWait;
-              }
-            } else {
-              console.log(Date.now() - start, 'exec add sub task:', res.value);
-              const newPrompt = run.createPrompt(
-                `${(res.value as WireSubTask).subTaskPrompt}
-**do not add subtask**`,
-                (res.value as WireSubTask).addArgs ?? undefined,
-                id,
-                (res.value as WireSubTask).complexity,
-              );
-              this.addNewSubSession([newPrompt]);
-            }
+            console.log(Date.now() - start, 'exec add sub task:', res.value);
+            const newPrompt = run.createPrompt(
+              `${(res.value as WireSubTask).subTaskPrompt}
+**do not add subtask**
+
+[master goal]
+**for reference only not action, in case of conflict with above goal, use setArg to return error to parent session and end yours**
+${runGoalPrompt}`,
+              (res.value as WireSubTask).addArgs ?? undefined,
+              id,
+              (res.value as WireSubTask).complexity,
+            );
+            this.addNewSubSession([newPrompt]);
           }
         }
       } catch (e) {
         console.error('Error in exec prompt:', e);
-        finish();
-        throw e;
+        if (retry === 0) {
+          finish();
+        }
+        retry--;
+        promptQueue.unshift(
+          run.createPrompt(
+            runGoalPrompt,
+            undefined,
+            id,
+            'l',
+            `Fix return error: ${JSON.stringify(e)}`,
+          ),
+        );
       }
       console.log(Date.now() - start, 'exec done', this.promptQueue.length);
+      retry = 3;
     }
     finish();
   }
@@ -245,8 +299,11 @@ ${res.value.todo.rc}
     const { subSessionQueue } = this;
     while (subSessionQueue.length) {
       const subSession = subSessionQueue.shift()!;
+      const goal = (subSession.promptQueue[0]?.goalPrompt ?? '').split(
+        '\n**do not add subtask**',
+      )[0];
       yield* subSession.exec();
-      this.addLog(subSession.promptQueue[0]?.goalPrompt ?? '');
+      this.addLog(goal ?? '');
     }
   }
   addNewSubSession(queue: Prompt[]) {

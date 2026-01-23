@@ -1,3 +1,5 @@
+import { CommonUtil } from '../utils/common';
+
 const quoteRx = /^(['"])[\w\W]+?\1$/;
 
 export const querySelectAll = (
@@ -22,7 +24,7 @@ export const querySelectAll = (
       }
       let search = match.argRaw;
       if (search.includes('${args.')) {
-        search = replaceJsTpl(search, args);
+        search = CommonUtil.replaceJsTpl(search, args);
       }
       if (quoteRx.test(search)) search = search.slice(1, -1);
 
@@ -35,7 +37,7 @@ export const querySelectAll = (
   }
   let querySelector = selector;
   if (querySelector.includes('${args.')) {
-    querySelector = replaceJsTpl(querySelector, args);
+    querySelector = CommonUtil.replaceJsTpl(querySelector, args);
   }
   return Array.from(root.querySelectorAll(querySelector));
 };
@@ -212,25 +214,6 @@ const loopAndFind = (
   return matches;
 };
 
-export const replaceJsTpl = (
-  tpl: string,
-  args: Record<string, string>,
-): string => {
-  if (tpl.includes('${')) {
-    let js = tpl;
-    if (tpl[0] !== '`') {
-      js = `\`${js}\``;
-    }
-    // todo run in iframe sandbox
-    // eslint-disable-next-line no-eval
-    return eval(`((args)=>{
-    const window = undefined, document = undefined;
-    const {${Object.keys(args).join(',')}} = args;
-    return ${js};
-    })(${JSON.stringify(args)})`) as string;
-  }
-  return tpl;
-};
 const FALLBACK_ESCAPE_REGEX = /[^a-zA-Z0-9_-]/g;
 
 const escapeCssIdentifier = (value: string) => {

@@ -25,7 +25,7 @@ export namespace Profile {
     sessionType: SessionType,
     promptParts: Partial<PromptParts>,
   ) => {
-    let acc: Partial<PromptParts> = {};
+    let acc: Partial<PromptParts> = promptParts;
     for (const profile of profiles) {
       if (
         profile.workWithSession === '*' ||
@@ -33,7 +33,7 @@ export namespace Profile {
       ) {
         acc = {
           ...acc,
-          ...(await profile.promptPreprocess?.(sessionType, promptParts)),
+          ...(await profile.promptPreprocess?.(sessionType, acc)),
         };
       }
     }
