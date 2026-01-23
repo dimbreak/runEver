@@ -27,10 +27,7 @@ let webViewSession: WebViewLlmSession;
 
 const onIpcMainInitialisedHandlers: Array<() => void> = [];
 
-export function initIpcMain(
-  main: IpcMain,
-  session: WebViewLlmSession,
-) {
+export function initIpcMain(main: IpcMain, session: WebViewLlmSession) {
   ipcMain = main;
   webViewSession = session;
   onIpcMainInitialisedHandlers.forEach((handler) => handler());
@@ -84,11 +81,10 @@ export class IcpRendererContract<
   }
 
   on(handler: (event: IpcRendererEvent, ...args: REQ) => void) {
-    if (!isMain) {
+    if (!isMain && window?.electron?.ipcRenderer) {
       window.electron.ipcRenderer.on(this.channel, handler);
-      return;
     }
-    throw new Error('IcpContract.on can only be called from renderer process');
+    // throw new Error('IcpContract.on can only be called from renderer process');
   }
 }
 type Tail<T extends any[]> = T extends [any, ...infer R] ? R : never;
