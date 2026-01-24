@@ -72,6 +72,7 @@ export enum Mode {
   STRING,
   NUMBER,
   KEYWORD,
+  SKIP_LINE,
 }
 
 export class JsonStreamingParser {
@@ -113,6 +114,12 @@ export class JsonStreamingParser {
         const ch = chunk[i];
 
         // If we're inside a token mode, handle it first
+        if (this.mode === Mode.SKIP_LINE) {
+          if (ch === '\n') {
+            this.mode = Mode.DEFAULT;
+          }
+          continue;
+        }
         if (this.mode === Mode.STRING) {
           this.consumeStringChar(ch, events);
           continue;
@@ -166,7 +173,13 @@ export class JsonStreamingParser {
         }
 
         // DEFAULT mode
+        if (this.rootDone) continue;
         if (this.isWS(ch)) continue;
+
+        if (ch === '`' && !this.rootStarted) {
+          this.mode = Mode.SKIP_LINE;
+          continue;
+        }
 
         if (ch === '"') {
           // start string (could be a key or a value depending on context)

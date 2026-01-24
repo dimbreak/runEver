@@ -90,6 +90,7 @@
     "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=1000"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.52",
     "@ai-sdk/openai": "^2.0.85",
     "@apitrust/react": "file:../apitrust/react-sdk",
     "@electron/notarize": "^3.0.0",

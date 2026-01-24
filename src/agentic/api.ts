@@ -1,4 +1,8 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import {
+  createGoogleGenerativeAI,
+  type GoogleGenerativeAIProviderOptions,
+} from '@ai-sdk/google';
 import { LanguageModelV2 } from '@ai-sdk/provider';
 import type { FilePart, ImagePart, ModelMessage } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
@@ -62,6 +66,10 @@ export namespace LlmApi {
     hi: LanguageModelV2;
     mid: LanguageModelV2;
     low: LanguageModelV2;
+    makeProviderOptions: (
+      reason: ReasoningEffort,
+      cacheKey: undefined | string,
+    ) => Record<string, any>;
   };
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
@@ -112,6 +120,46 @@ export namespace LlmApi {
               hi: openai('gpt-5.2'),
               mid: openai('gpt-5-mini'),
               low: openai('gpt-5-nano'),
+              makeProviderOptions: (
+                reasoningEffort: ReasoningEffort,
+                cacheKey: string | undefined,
+              ) => {
+                const providerOptions: Record<string, any> = {};
+                providerOptions.openai = {
+                  reasoningEffort,
+                };
+                if (cacheKey) {
+                  providerOptions.openai.promptCacheKey = cacheKey;
+                }
+                return providerOptions;
+              },
+            });
+            break;
+          }
+          case 'google': {
+            console.info('createGoogleGenerativeAI', apiConfig);
+            const google = createGoogleGenerativeAI({
+              apiKey: apiConfig.key,
+              baseURL: apiConfig.baseUrl,
+            });
+            resolve({
+              provider: 'google',
+              hi: google('gemini-3-pro-preview'),
+              mid: google('gemini-3-flash-preview'),
+              low: google('gemini-3-flash-preview'),
+              makeProviderOptions: (
+                reasoningEffort: ReasoningEffort,
+                cacheKey: string | undefined,
+              ) => {
+                const providerOptions: Record<string, any> = {};
+                providerOptions.google = {
+                  thinkingConfig: {
+                    includeThoughts: true,
+                    thinkingLevel: reasoningEffort,
+                  },
+                } satisfies GoogleGenerativeAIProviderOptions;
+                return providerOptions;
+              },
             });
             break;
           }
@@ -222,15 +270,6 @@ export namespace LlmApi {
     const llmApi = await getLlmApi();
 
     if (llmApi) {
-      const providerOptions: Record<string, any> = {};
-      if (llmApi.provider === 'openai') {
-        providerOptions.openai = {
-          reasoningEffort,
-        };
-        if (cacheKey) {
-          providerOptions.openai.promptCacheKey = cacheKey;
-        }
-      }
       const promptObj: string | Array<ModelMessage> = systemPrompt
         ? [
             {
@@ -263,7 +302,7 @@ export namespace LlmApi {
         try {
           const streamResult = streamQueryer({
             model: llmApi[model],
-            providerOptions,
+            providerOptions: llmApi.makeProviderOptions(reasoningEffort, cacheKey),
             prompt: promptObj,
           });
           response = streamResult.response;
