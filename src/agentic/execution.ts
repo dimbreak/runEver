@@ -499,7 +499,7 @@ use only the elements provided in current [html], and work with their id in acti
 [response in valid json format]
 ${responseType}
 
-**only valid JSON response will be accepted**`;
+**only valid JSON response is acceptable, markdown code block quoting will cause error**`;
   }
 
   /*

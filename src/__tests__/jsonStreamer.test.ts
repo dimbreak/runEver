@@ -90,3 +90,45 @@ describe('JsonStreamingParser string concatenation', () => {
     });
   });
 });
+
+describe('LLM markdown code blocks', () => {
+  it('skips markdown code block delimiters', () => {
+    const input = '```json\n{"key": "value"}\n```';
+    const events = collectEvents(input);
+    const errorEvents = events.filter(
+      (event) => event.type === JsonStreamingEventType.Error,
+    );
+    const objectEvents = events.filter(
+      (event) => event.type === JsonStreamingEventType.Object,
+    );
+
+    expect(errorEvents).toHaveLength(0);
+    expect(objectEvents).toHaveLength(2); // Start and end object
+    expect(objectEvents[0]).toMatchObject({
+      key: null,
+    });
+    expect(objectEvents[1]).toMatchObject({
+      key: null,
+    });
+  });
+
+  it('handles split markdown code block delimiters', () => {
+    const chunks = ['`', '`', '`', 'json', '\n', '{"key": "value"}', '\n', '`', '`', '`'];
+    const events = collectChunkedEvents(chunks);
+     const errorEvents = events.filter(
+      (event) => event.type === JsonStreamingEventType.Error,
+    );
+
+    expect(errorEvents).toHaveLength(0);
+  });
+
+  it('ignores trailing content after JSON root is done', () => {
+    const input = '{"key": "value"}\nSome explanation here';
+    const events = collectEvents(input);
+    const errorEvents = events.filter(
+      (event) => event.type === JsonStreamingEventType.Error,
+    );
+
+    expect(errorEvents).toHaveLength(0);
+  });
+});

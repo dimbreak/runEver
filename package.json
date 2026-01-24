@@ -87,6 +87,7 @@
     "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=1000"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.52",
     "@ai-sdk/openai": "^2.0.85",
     "@electron/notarize": "^3.0.0",
     "@hookform/resolvers": "^3.10.0",
@@ -140,11 +141,11 @@
     "css-minimizer-webpack-plugin": "^7.0.2",
     "detect-port": "^2.1.0",
     "dotenv": "^17.2.3",
-    "esbuild": "^0.25.10",
     "electron": "^35.0.2",
     "electron-builder": "^25.1.8",
     "electron-devtools-installer": "^4.0.0",
     "electronmon": "^2.0.3",
+    "esbuild": "^0.25.10",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-erb": "^4.1.0",
