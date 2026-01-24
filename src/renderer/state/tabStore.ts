@@ -152,6 +152,7 @@ type TabState = {
   closeTab: (id: string) => Promise<void>;
   removeTabByFrameId: (frameId: number) => void;
   closeAllTabs: () => Promise<void>;
+  clearTabs: () => void;
   stopPrompt: (tabId?: string, requestId?: number) => Promise<void>;
   registerFrameId: (tabId: string, frameId: number) => void;
   removeFrameId: (tabId: string) => void;
@@ -295,6 +296,9 @@ export const useTabStore = create<TabState>((set, get) => ({
     await Promise.all(closePromises);
 
     set(() => ({ activeTabId: null, frameMap: new Map() }));
+  },
+  clearTabs: () => {
+    set(() => ({ tabs: [], activeTabId: null, frameMap: new Map() }));
   },
   stopPrompt: async (tabId, requestId) => {
     const id = tabId ?? get().activeTabId;

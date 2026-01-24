@@ -4,8 +4,43 @@ import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import settings from 'electron-settings';
 import z from 'zod';
-import { envSchema, envVars } from '../../schema/env';
+import { envSchema } from '../../schema/env.schema';
+import { apiTrustEnvVars, envVars } from '../../schema/env.node';
 import { Util } from '../../webView/util';
+import { ApiTrustTokenStore } from '../apiTrustTokenStore';
+import { getApiTrustStream } from '../../shared/aiGateway';
+
+const getApiTrustErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return typeof error === 'string' ? error : '';
+};
+
+const isApiTrustAuthError = (error: unknown) => {
+  const message = getApiTrustErrorMessage(error).toLowerCase();
+  return (
+    message.includes('unauthorized') ||
+    message.includes('invalid access token') ||
+    message.includes('access token expired') ||
+    message.includes('not authenticated') ||
+    message.includes('missing authorization header')
+  );
+};
+
+const isNoOutputGeneratedError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  if (error instanceof Error) {
+    if (
+      error.name === 'AI_NoOutputGeneratedError' ||
+      error.name === 'NoOutputGeneratedError'
+    ) {
+      return true;
+    }
+  }
+  const flag = Symbol.for('vercel.ai.error.AI_NoOutputGeneratedError');
+  return Boolean((error as Record<symbol, unknown>)[flag]);
+};
 
 export namespace LlmApi {
   export const llmConfigSchema = z.object({
@@ -19,6 +54,8 @@ export namespace LlmApi {
   export type Attachment = ImagePart | FilePart;
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
+
+  const apiTrustTokenStore = new ApiTrustTokenStore();
 
   const getLlmConfig = async () => {
     const loadedConfig = settings.getSync('llmConfig');
@@ -73,7 +110,6 @@ export namespace LlmApi {
 
   const dummyReturns: string[] = [];
   let streamQueryer = streamText;
-
   const streamDummy: any = (
     ...arg: typeof streamText extends (...v: infer T) => any ? T : never
   ) => {
@@ -109,46 +145,116 @@ export namespace LlmApi {
     model: LlmModelType = 'mid',
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
+    try {
+      const apiTrustToken = await apiTrustTokenStore.getToken();
+      let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
+      if (apiTrustToken) {
+        apiTrustStream = await getApiTrustStream({
+          config: {
+            clientId: apiTrustEnvVars.clientId,
+            redirectUri: apiTrustEnvVars.redirectUri,
+            apiUrl: apiTrustEnvVars.apiUrl,
+          },
+          tokenProvider: apiTrustToken,
+          prompt,
+          systemPrompt,
+          attachments,
+        });
+        if (!apiTrustStream) {
+          throw new Error(
+            'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
+          );
+        }
+      }
+      if (apiTrustStream) {
+        yield* apiTrustStream;
+        return;
+      }
+    } catch (error) {
+      console.error('ApiTrust request failed', error);
+      if (isApiTrustAuthError(error)) {
+        try {
+          // Token rejected; clear it so the UI can re-auth.
+          await apiTrustTokenStore.setToken(null);
+          console.warn(
+            'ApiTrust token rejected; falling back to configured LLM provider.',
+          );
+        } catch (clearError) {
+          console.warn('Failed to clear ApiTrust token', clearError);
+        }
+      } else {
+        throw error;
+      }
+    }
+
     const llmApi = await getLlmApi();
     if (llmApi) {
-      const start = Date.now();
-      const { textStream } = streamQueryer({
-        model: llmApi[model],
-        providerOptions: {
-          openai: {
-            reasoningEffort: reasoning,
-            promptCacheKey: cacheKey ?? undefined,
-          },
+      const providerOptions = {
+        openai: {
+          reasoningEffort: reasoning,
+          promptCacheKey: cacheKey ?? undefined,
         },
-        prompt: systemPrompt
-          ? [
-              {
-                role: 'system',
-                content: systemPrompt,
-              },
-              {
-                role: 'user',
-                content: attachments
-                  ? [
-                      {
-                        type: 'text',
-                        text: prompt,
-                      },
-                      ...attachments,
-                    ]
-                  : prompt,
-              },
-            ]
-          : prompt,
-      });
-      let first = true;
-      for await (const part of textStream) {
-        if (first) {
-          console.log('Stream first token', cacheKey, Date.now() - start, part);
-          first = false;
+      };
+      const promptObj = systemPrompt
+        ? [
+            {
+              role: 'system' as const,
+              content: systemPrompt,
+            },
+            {
+              role: 'user' as const,
+              content: attachments
+                ? [
+                    {
+                      type: 'text' as const,
+                      text: prompt,
+                    },
+                    ...attachments,
+                  ]
+                : prompt,
+            },
+          ]
+        : prompt;
+      const maxStreamRetries = 1;
+      let lastError: unknown;
+
+      for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
+        const start = Date.now();
+        let yielded = false;
+        let first = true;
+        try {
+          const { textStream } = streamQueryer({
+            model: llmApi[model],
+            providerOptions,
+            prompt: promptObj,
+          });
+          for await (const part of textStream) {
+            if (first) {
+              console.log(
+                'Stream first token',
+                cacheKey,
+                Date.now() - start,
+                part,
+              );
+              first = false;
+            }
+            yielded = true;
+            yield part;
+          }
+          return;
+        } catch (err) {
+          lastError = err;
+          if (isNoOutputGeneratedError(err) && !yielded) {
+            if (attempt < maxStreamRetries) {
+              console.warn('No output generated; retrying stream.', err);
+              continue;
+            }
+          }
+          throw err;
         }
-        yield part;
       }
+
+      throw lastError ?? new Error('No output generated.');
     } else {
       throw ErrNoConfig;
     }

@@ -249,7 +249,11 @@ export type AgentState = {
   ) => void;
   finishPlanning: (tabId: string, requestId: number) => void;
   startActionThinking: (tabId: string, requestId: number) => void;
-  markThinkingError: (tabId: string, requestId: number) => void;
+  markThinkingError: (
+    tabId: string,
+    requestId: number,
+    errorMessage?: string,
+  ) => void;
   toggleActionExpanded: (tabId: string, actionId: number) => void;
   toggleThinkingExpanded: (tabId: string, thinkingId: string) => void;
   addPromptRun: (
@@ -267,4 +271,3 @@ export type AgentState = {
   setRunningRequestId: (id: number | null) => void;
   clearTab: (tabId: string) => void;
 };
-

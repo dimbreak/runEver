@@ -2,6 +2,7 @@ import * as React from 'react';
 import type { Message } from '../../state/agentStore';
 import { TiptapContent } from '../TiptapContent';
 import { AttachmentPreview } from './AttachmentPreview';
+import { cn } from '../../utils/cn';
 
 type MessageItemProps = {
   message: Message;
@@ -9,26 +10,39 @@ type MessageItemProps = {
 
 export const MessageItem = React.memo(({ message }: MessageItemProps) => {
   const isUser = message.role === 'user';
+
   return (
-    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div
+      className={cn('flex w-full', {
+        'justify-end': isUser,
+        'justify-start': !isUser,
+      })}
+    >
       <div
-        className={`flex max-w-[85%] flex-col ${
-          isUser ? 'items-end' : 'items-start'
-        }`}
+        className={cn('flex max-w-[85%] flex-col', {
+          'items-start': !isUser,
+          'items-end pr-4': isUser,
+        })}
       >
-        <div
-          className={`mb-1 text-[10px] font-semibold uppercase tracking-wide ${
-            isUser ? 'text-blue-500' : 'text-slate-400'
-          }`}
+        <p
+          className={cn(
+            'h-4 text-[10px] flex items-center font-semibold uppercase tracking-wide',
+            {
+              'text-blue-500': isUser,
+              'text-slate-400': !isUser,
+            },
+          )}
         >
           {isUser ? 'You' : 'Agent'}
-        </div>
+        </p>
         <div
-          className={`relative rounded-2xl px-3.5 py-3 text-sm leading-relaxed shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)] ${
-            isUser
-              ? 'bg-linear-to-br from-blue-500 to-sky-400 text-white'
-              : 'bg-white border border-slate-200 text-slate-800'
-          }`}
+          className={cn(
+            'relative rounded-2xl px-3.5 py-3 text-sm leading-relaxed shadow-[0_8px_30px_-20px_rgba(15,23,42,0.35)]',
+            {
+              'bg-linear-to-br from-blue-500 to-sky-400 text-white': isUser,
+              'bg-white border border-slate-200 text-slate-800': !isUser,
+            },
+          )}
         >
           {message.tag && (
             <span
@@ -42,7 +56,7 @@ export const MessageItem = React.memo(({ message }: MessageItemProps) => {
             </span>
           )}
           {message.role === 'assistant' && message.text !== undefined ? (
-            <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-relaxed text-slate-800">
+            <pre className="whitespace-pre-wrap wrap-break-word font-mono text-[12px] leading-relaxed text-slate-800">
               {message.text}
             </pre>
           ) : (

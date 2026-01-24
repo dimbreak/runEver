@@ -328,11 +328,10 @@ these actions are blocking by this error, if you found any of the above actions 
 
   setRunningStatus(session: ExecutionSession) {
     this.runningSession.unshift(session);
+    this.manager.notifySnapshotChanged();
     return () => {
-      this.runningSession = this.runningSession.slice(
-        this.runningSession.indexOf(session),
-        this.runningSession.length,
-      );
+      this.runningSession = this.runningSession.filter((s) => s !== session);
+      this.manager.notifySnapshotChanged();
     };
   }
 }

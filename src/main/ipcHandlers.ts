@@ -4,6 +4,7 @@ import settings from 'electron-settings';
 import type { WebViewLlmSession } from '../agentic/webviewLlmSession';
 import { initIpcMain } from '../contracts/ipc';
 import { ToMainIpc } from '../contracts/toMain';
+import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
 import { Util } from '../webView/util';
 import {
@@ -12,6 +13,13 @@ import {
   showSystemMessageBox,
 } from './dialogs';
 import { LlmApi } from './llm/api';
+import { apiTrustEnvVars } from '../schema/env.node';
+import {
+  clearPendingAuthDeepLink,
+  consumePendingAuthDeepLink,
+  setPendingAuthDeepLink,
+} from './authDeepLink';
+import { ApiTrustTokenStore } from './apiTrustTokenStore';
 
 function initPromptIpc(session: WebViewLlmSession) {
   const getTab = (frameId: number) => session.getTab(frameId);
@@ -118,6 +126,7 @@ export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
   llmSession: WebViewLlmSession,
 ) => {
+  const apiTrustTokenStore = new ApiTrustTokenStore();
   const getTab = (frameId?: number) =>
     typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
 
@@ -213,6 +222,116 @@ export const setupIpcHandlers = (
       settings.setSync('llmConfig', llmConfig);
       return llmConfig;
     }
+  });
+
+  ToMainIpc.getApiTrustEnv.handle(async () => {
+    return apiTrustEnvVars;
+  });
+
+  ToMainIpc.getApiTrustToken.handle(async () => {
+    try {
+      const token = await apiTrustTokenStore.getToken();
+      return { token };
+    } catch (error) {
+      console.error('Failed to read ApiTrust token', error);
+      return { token: null };
+    }
+  });
+
+  ToMainIpc.getPendingAuthDeepLink.handle(async () => {
+    return { url: consumePendingAuthDeepLink() };
+  });
+
+  ToMainIpc.clearPendingAuthDeepLink.handle(async () => {
+    clearPendingAuthDeepLink();
+  });
+
+  ToMainIpc.setApiTrustToken.handle(async (_event, payload) => {
+    try {
+      await apiTrustTokenStore.setToken(payload.token ?? null);
+    } catch (error) {
+      console.error('Failed to store ApiTrust token', error);
+    }
+  });
+
+  let apiTrustAuthWindow: BrowserWindow | null = null;
+  const apiTrustAuthPartition = 'persist:apitrust-auth';
+
+  const closeApiTrustAuthWindow = () => {
+    if (apiTrustAuthWindow && !apiTrustAuthWindow.isDestroyed()) {
+      apiTrustAuthWindow.close();
+    }
+    apiTrustAuthWindow = null;
+  };
+
+  const handleApiTrustCallback = (url: string) => {
+    setPendingAuthDeepLink(url);
+    if (!mainWindow.isDestroyed()) {
+      ToRendererIpc.authDeepLink.send(mainWindow.webContents, { url });
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    closeApiTrustAuthWindow();
+  };
+
+  const attachApiTrustHandlers = (authWindow: BrowserWindow) => {
+    const intercept = (event: { preventDefault: () => void }, targetUrl: string) => {
+      if (!targetUrl.startsWith('runever://')) {
+        return;
+      }
+      console.log('intercept ===========>', targetUrl);
+      event.preventDefault();
+      handleApiTrustCallback(targetUrl);
+    };
+
+    authWindow.webContents.on('will-navigate', intercept);
+    authWindow.webContents.on('will-redirect', intercept);
+    authWindow.webContents.setWindowOpenHandler(({ url }) => {
+      console.log('setWindowOpenHandler ===========>', url);
+      if (url.startsWith('runever://')) {
+        handleApiTrustCallback(url);
+        return { action: 'deny' };
+      }
+      return { action: 'allow' };
+    });
+  };
+
+  ToMainIpc.openApiTrustAuthWindow.handle(async (_event, { url }) => {
+    if (apiTrustAuthWindow && !apiTrustAuthWindow.isDestroyed()) {
+      await apiTrustAuthWindow.loadURL(url);
+      apiTrustAuthWindow.show();
+      apiTrustAuthWindow.focus();
+      return;
+    }
+
+    apiTrustAuthWindow = new BrowserWindow({
+      parent: mainWindow,
+      width: 520,
+      height: 720,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        partition: apiTrustAuthPartition,
+      },
+    });
+
+    apiTrustAuthWindow.on('closed', () => {
+      apiTrustAuthWindow = null;
+    });
+
+    const mainUserAgent = mainWindow.webContents.getUserAgent();
+    const authUserAgent = mainUserAgent.replace(/\s?Electron\/\S+/, '');
+    apiTrustAuthWindow.webContents.setUserAgent(authUserAgent);
+
+    attachApiTrustHandlers(apiTrustAuthWindow);
+
+    apiTrustAuthWindow.once('ready-to-show', () => {
+      apiTrustAuthWindow?.show();
+    });
+
+    await apiTrustAuthWindow.loadURL(url);
   });
 
   ToMainIpc.responsePromptInput.handle(async (_event, arg) => {

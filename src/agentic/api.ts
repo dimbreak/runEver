@@ -6,9 +6,44 @@ import settings from 'electron-settings';
 import z from 'zod';
 import fs from 'fs';
 import { app } from 'electron';
-import { envSchema, envVars, type Env } from '../schema/env';
+import { envSchema, type Env } from '../schema/env.schema';
+import { apiTrustEnvVars, envVars } from '../schema/env.node';
 import { Util } from '../webView/util';
 import { FirstTokenMonitor } from '../utils/llm';
+import { ApiTrustTokenStore } from '../main/apiTrustTokenStore';
+import { getApiTrustStream } from '../shared/aiGateway';
+
+const getApiTrustErrorMessage = (error: unknown) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return typeof error === 'string' ? error : '';
+};
+
+const isApiTrustAuthError = (error: unknown) => {
+  const message = getApiTrustErrorMessage(error).toLowerCase();
+  return (
+    message.includes('unauthorized') ||
+    message.includes('invalid access token') ||
+    message.includes('access token expired') ||
+    message.includes('not authenticated') ||
+    message.includes('missing authorization header')
+  );
+};
+
+const isNoOutputGeneratedError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  if (error instanceof Error) {
+    if (
+      error.name === 'AI_NoOutputGeneratedError' ||
+      error.name === 'NoOutputGeneratedError'
+    ) {
+      return true;
+    }
+  }
+  const flag = Symbol.for('vercel.ai.error.AI_NoOutputGeneratedError');
+  return Boolean((error as Record<symbol, unknown>)[flag]);
+};
 
 export namespace LlmApi {
   export const llmConfigSchema = z.object({
@@ -31,6 +66,7 @@ export namespace LlmApi {
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
   const recordPath = `${app.getPath('userData')}/prompt-record`;
+  const apiTrustTokenStore = new ApiTrustTokenStore();
 
   try {
     fs.mkdirSync(recordPath);
@@ -87,7 +123,6 @@ export namespace LlmApi {
 
   const dummyReturns: string[] = [];
   let streamQueryer = streamText;
-
   const streamDummy: any = (
     ...arg: typeof streamText extends (...v: infer T) => any ? T : never
   ) => {
@@ -123,10 +158,66 @@ export namespace LlmApi {
     model: LlmModelType = 'mid',
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
+    try {
+      const apiTrustToken = await apiTrustTokenStore.getToken();
+      let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
+      if (apiTrustToken) {
+        apiTrustStream = await getApiTrustStream({
+          config: {
+            clientId: apiTrustEnvVars.clientId,
+            redirectUri: apiTrustEnvVars.redirectUri,
+            apiUrl: apiTrustEnvVars.apiUrl,
+          },
+          tokenProvider: apiTrustToken,
+          prompt,
+          systemPrompt,
+          attachments,
+        });
+        if (!apiTrustStream) {
+          throw new Error(
+            'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
+          );
+        }
+      }
+      if (apiTrustStream) {
+        const monitor = new FirstTokenMonitor(cacheKey);
+        monitor.start();
+        try {
+          for await (const part of apiTrustStream) {
+            if (!monitor.hasReceived()) {
+              monitor.onFirstToken(part);
+            }
+            yield part;
+          }
+        } catch (err) {
+          monitor.stop();
+          console.error('ApiTrust streaming error:', err);
+          throw err;
+        } finally {
+          monitor.stop();
+        }
+        return;
+      }
+    } catch (error) {
+      console.error('ApiTrust request failed', error);
+      if (isApiTrustAuthError(error)) {
+        try {
+          // Token rejected; clear it so the UI can re-auth.
+          await apiTrustTokenStore.setToken(null);
+          console.warn(
+            'ApiTrust token rejected; falling back to configured LLM provider.',
+          );
+        } catch (clearError) {
+          console.warn('Failed to clear ApiTrust token', clearError);
+        }
+      } else {
+        throw error;
+      }
+    }
+
     const llmApi = await getLlmApi();
 
     if (llmApi) {
-      const monitor = new FirstTokenMonitor(cacheKey);
       const providerOptions: Record<string, any> = {};
       if (llmApi.provider === 'openai') {
         providerOptions.openai = {
@@ -156,40 +247,68 @@ export namespace LlmApi {
             },
           ]
         : prompt;
-      const { textStream, response } = streamQueryer({
-        model: llmApi[model],
-        providerOptions,
-        prompt: promptObj,
-      });
+      const maxStreamRetries = 1;
+      let lastError: unknown;
 
-      // Start monitoring for the first token
-      monitor.start();
+      for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
+        const monitor = new FirstTokenMonitor(cacheKey);
+        let yielded = false;
+        let success = false;
+        let response: Promise<any> | null = null;
 
-      try {
-        for await (const part of textStream) {
-          if (!monitor.hasReceived()) {
-            monitor.onFirstToken(part);
+        try {
+          const streamResult = streamQueryer({
+            model: llmApi[model],
+            providerOptions,
+            prompt: promptObj,
+          });
+          response = streamResult.response;
+          monitor.start();
+
+          for await (const part of streamResult.textStream) {
+            if (!monitor.hasReceived()) {
+              monitor.onFirstToken(part);
+            }
+            yielded = true;
+            yield part;
           }
-          yield part;
+          success = true;
+        } catch (err) {
+          lastError = err;
+          monitor.stop();
+          if (isNoOutputGeneratedError(err) && !yielded) {
+            if (attempt < maxStreamRetries) {
+              console.warn('No output generated; retrying stream.', err);
+              continue;
+            }
+          }
+          console.error('Error during LLM streaming:', err);
+          throw err;
+        } finally {
+          monitor.stop();
+          if (success && response) {
+            console.log(`api call ok ${cacheKey}`);
+            try {
+              const res = await response;
+              let messages: ModelMessage[] = [];
+              if (res) {
+                messages = res.messages?.map((m: ModelMessage) => m?.content);
+              }
+              fs.writeFile(
+                `${recordPath}/log-${new Date().toISOString()}.json`,
+                JSON.stringify({ ...res, prompt: promptObj, messages }),
+                () => {},
+              );
+            } catch (logError) {
+              console.warn('Failed to write LLM log', logError);
+            }
+          }
         }
-      } catch (err) {
-        monitor.stop();
-        console.error('Error during LLM streaming:', err);
-        throw err;
-      } finally {
-        monitor.stop();
-        console.log(`api call ok ${cacheKey}`);
-        const res = await response;
-        let messages: any[] = [];
-        if (res) {
-          messages = res.messages?.map((m) => m?.content);
-        }
-        fs.writeFile(
-          `${recordPath}/log-${new Date().toISOString()}.json`,
-          JSON.stringify({ ...res, prompt: promptObj, messages }),
-          () => {},
-        );
+
+        if (success) return;
       }
+
+      throw lastError ?? new Error('No output generated.');
     } else {
       throw ErrNoConfig;
     }

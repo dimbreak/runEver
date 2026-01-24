@@ -9,7 +9,6 @@ import {
 } from './execution.schema';
 import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
-import { LlmApi } from './api';
 
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
@@ -128,7 +127,7 @@ export class ExecutionSession {
             if (this.subSessionQueue.length) {
               console.log('Run sub session queue');
               yield* this.waitPageReady(url, start);
-              await this.execSubSessionQueue();
+              yield* this.execSubSessionQueue();
             }
             if (run.stopRequested) {
               finish();
