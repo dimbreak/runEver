@@ -9,7 +9,6 @@ import {
 } from './execution.schema';
 import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
-import { LlmApi } from './api';
 
 // LlmApi.addDummyReturn(
 //   JSON.stringify({

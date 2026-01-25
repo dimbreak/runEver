@@ -1,13 +1,13 @@
 import type {
-  Rectangle,
+  KeyboardInputEvent,
   MouseInputEvent,
   MouseWheelInputEvent,
-  KeyboardInputEvent,
+  Rectangle,
 } from 'electron';
-import { IpcMainContract } from './ipc';
+import { IframeProgressType } from '../extensions/iframe/types';
 import { LlmApi } from '../main/llm/api';
 import type { PromptAttachment } from '../schema/attachments';
-import { IframeProgressType } from '../extensions/iframe/types';
+import { IpcMainContract } from './ipc';
 
 export type EventWithDelay = (
   | MouseInputEvent
@@ -222,6 +222,48 @@ export namespace ToMainIpc {
     ],
     { snapshot: unknown } | { error: string }
   >('get-llm-session-snapshot');
+  export const
+  getApiTrustEnv = new IpcMainContract<
+    [],
+    {
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      apiUrl: string;
+    }
+  >('get-apitrust-env');
+  export const getApiTrustToken = new IpcMainContract<
+    [],
+    {
+      token: string | null;
+    }
+  >('get-apitrust-token');
+  export const getPendingAuthDeepLink = new IpcMainContract<
+    [],
+    {
+      url: string | null;
+    }
+  >('get-pending-auth-deeplink');
+  export const clearPendingAuthDeepLink = new IpcMainContract<
+    [],
+    void
+  >('clear-pending-auth-deeplink');
+  export const setApiTrustToken = new IpcMainContract<
+    [
+      {
+        token: string | null;
+      },
+    ],
+    void
+  >('set-apitrust-token');
+  export const openApiTrustAuthWindow = new IpcMainContract<
+    [
+      {
+        url: string;
+      },
+    ],
+    void
+  >('open-apitrust-auth-window');
   export const navigateTabHistory = new IpcMainContract<
     [
       {

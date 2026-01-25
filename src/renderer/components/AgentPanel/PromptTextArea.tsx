@@ -86,8 +86,21 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
   const handleStopClick = React.useCallback(() => {
     handleStop(runningRequestId).catch((err) => {
       console.error('Error stopping prompt:', err);
+      if (!activeTabId) return;
+      const rawMessage =
+        err instanceof Error ? err.message : String(err ?? '');
+      const trimmedMessage =
+        rawMessage.length > 400
+          ? `${rawMessage.slice(0, 400)}...`
+          : rawMessage || 'Unknown error.';
+      addMessage(activeTabId, {
+        id: Date.now(),
+        role: 'assistant',
+        content: textToDoc(`Stop error: ${trimmedMessage}`),
+        tag: 'Error',
+      });
     });
-  }, [handleStop, runningRequestId]);
+  }, [activeTabId, addMessage, handleStop, runningRequestId]);
 
   const handleUploadClick = React.useCallback(() => {
     fileInputRef.current?.click();

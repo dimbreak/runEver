@@ -130,6 +130,8 @@ export const useAgentPrompt = ({
           await runPromise;
           finishPlanning(tabId, requestId);
           startActionThinking(tabId, requestId);
+          setPromptRunStatus(tabId, requestId, 'completed');
+          setPromptRunningStatus('completed');
         } catch (err) {
           console.error('prompt error:', err);
           promptFailed = true;

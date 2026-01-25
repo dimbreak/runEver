@@ -283,8 +283,6 @@ export class TabWebView {
     modelType?: LlmApi.LlmModelType,
   ): Promise<string | undefined> {
     console.info('====>');
-    console.info(this.llmSession);
-    console.info(`prompt:'${prompt}'`);
     if (this.llmSession) {
       try {
         const stream = this.llmSession.startPrompt(

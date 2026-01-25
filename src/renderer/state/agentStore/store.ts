@@ -11,13 +11,13 @@
 
 import { create } from 'zustand';
 
-import type {
-  AgentState,
-  Message,
-  ThinkingItem,
-  ThinkingItemStatus,
-} from './types';
 import { buildActionItems, buildActionSummary } from './actionUtils';
+import {
+  derivePromptRunningStatus,
+  syncPromptSteps,
+  updatePhaseTimeline,
+  updatePromptRunStatusFromSnapshot,
+} from './promptUtils';
 import {
   closePlanningItemsForActions,
   findLatestRunningItemIndex,
@@ -25,12 +25,11 @@ import {
   syncPhaseItemsFromSnapshot,
   updateActionThinkingItems,
 } from './thinkingUtils';
-import {
-  derivePromptRunningStatus,
-  syncPromptSteps,
-  updatePhaseTimeline,
-  updatePromptRunStatusFromSnapshot,
-} from './promptUtils';
+import type {
+  AgentState,
+  ThinkingItem,
+  ThinkingItemStatus
+} from './types';
 
 /**
  * The main agent store instance.
@@ -430,13 +429,14 @@ export const useAgentStore = create<AgentState>((set) => ({
       };
     }),
 
-  markThinkingError: (tabId, requestId) =>
+  markThinkingError: (tabId, requestId, errorMessage) =>
     set((state) => ({
       thinkingItemsByTabId: {
         ...state.thinkingItemsByTabId,
         [tabId]: markThinkingItemsError(
           state.thinkingItemsByTabId[tabId] ?? [],
           requestId,
+          errorMessage,
         ),
       },
     })),
@@ -551,4 +551,3 @@ export const useAgentStore = create<AgentState>((set) => ({
 
   setRunningRequestId: (id) => set(() => ({ runningRequestId: id })),
 }));
-

@@ -530,9 +530,6 @@ export class WebViewLlmSession {
     const target = tab ?? this.focusedTab ?? this.getAnyTab();
     if (!target) return 'Tab not found';
 
-    console.info('====>');
-    console.info('prompt:', prompt);
-    // console.info('testPrompt:', testPrompt);
     if (prompt === 'run test' && testPrompt) {
       const promises: Promise<string>[] = [];
       for (let i = 0; i < 3; i++) {

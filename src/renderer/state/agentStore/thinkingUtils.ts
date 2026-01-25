@@ -126,21 +126,35 @@ export const closePlanningItemsForActions = (
 export const markThinkingItemsError = (
   items: ThinkingItem[],
   requestId: number,
+  errorMessage?: string,
 ): ThinkingItem[] => {
   if (!items.length) return items;
 
   const now = Date.now();
   let changed = false;
+  const errorDetail =
+    errorMessage && errorMessage.trim()
+      ? `[error]\n${errorMessage.trim()}`
+      : '';
 
   const next = items.map((item) => {
     if (item.requestId !== requestId || item.status !== 'running') return item;
     changed = true;
+    let nextContent = item.content;
+    if (errorDetail) {
+      if (item.content) {
+        nextContent = `${item.content}\n\n${errorDetail}`;
+      } else {
+        nextContent = errorDetail;
+      }
+    }
     return {
       ...item,
       status: 'error' as const,
       endedAt: now,
       durationMs: now - item.startedAt,
       updatedAt: now,
+      content: nextContent,
     };
   });
 
@@ -360,4 +374,3 @@ export const syncPhaseItemsFromSnapshot = (
 
   return changed ? next : items;
 };
-
