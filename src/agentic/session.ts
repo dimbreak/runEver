@@ -10,6 +10,7 @@ import {
 import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
 import { LlmApi } from './api';
+import { CommonUtil } from '../utils/common';
 
 // LlmApi.addDummyReturn(
 //   JSON.stringify({
@@ -33,13 +34,15 @@ import { LlmApi } from './api';
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
-
+const NoNestSubtaskPrompt =
+  '**running a subtask, do not add subtask, if the task on the current UI should split, end this subtask with finishedNoToDo and advise in subtaskResp**';
 export class ExecutionSession {
   subSessionQueue: ExecutionSession[];
   actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
   eventsLogs: string[] = [];
   attachmentInNextTodo: string[] = [];
+  response: string | undefined = undefined;
   constructor(
     public id: number,
     public promptQueue: Prompt[],
@@ -53,7 +56,8 @@ export class ExecutionSession {
     void,
     void
   > {
-    if (this.promptQueue.length === 0) {
+    const { run, promptQueue, id, eventsLogs, parent } = this;
+    if (run.fixingAction.length === 0 && this.promptQueue.length === 0) {
       yield* this.execSubSessionQueue();
       return;
     }
@@ -63,7 +67,6 @@ export class ExecutionSession {
     );
     let retry = 3;
     let requireScreenshot = false;
-    const { run, promptQueue, id, eventsLogs } = this;
     const { tab, executionSession, browserActionLock } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
@@ -72,12 +75,13 @@ export class ExecutionSession {
       void
     >;
     const finish = run.setRunningStatus(this);
-    if (promptQueue.length === 0) {
+    if (run.fixingAction.length === 0 && promptQueue.length === 0) {
       const res = yield* this.execSubSessionQueue();
       finish();
       return res;
     }
-    while (promptQueue.length) {
+    // eslint-disable-next-line no-labels
+    promptQueueLoop: while (promptQueue.length) {
       if (run.stopRequested) {
         finish();
         return;
@@ -120,7 +124,11 @@ export class ExecutionSession {
             return;
           }
           if (res.done) {
-            if (res.value && run.fixingAction?.promptId === promptId) {
+            if (
+              res.value &&
+              run.fixingAction.length &&
+              run.fixingAction[0]?.promptId === promptId
+            ) {
               console.log('Fixing action done');
               if (res.value.todo) {
                 // remove pending if todo exist
@@ -132,26 +140,23 @@ export class ExecutionSession {
                   this.addAction({
                     ...(a as WireActionWithWait),
                     promptId,
-                    id: run.actionId++,
+                    id: run.allocActionId(),
                   });
                 }
               });
-              run.fixingAction = null;
+              run.fixingAction.shift();
               run.execActions();
             }
             console.log(Date.now() - start, 'Waiting for complete prompt');
             // todo fix error sometimes block here
             await browserActionLock.wait;
             if (run.stopRequested) {
-              finish();
-              return;
-            }
-            if (run.stopRequested) {
+              console.log('Stop requested');
               finish();
               return;
             }
 
-            if (this.subSessionQueue.length) {
+            if (run.fixingAction.length === 0 && this.subSessionQueue.length) {
               console.log('Run sub session queue');
               yield* this.execSubSessionQueue();
             }
@@ -163,6 +168,21 @@ export class ExecutionSession {
 
             if (res.value?.todo) {
               yield* this.waitPageReady(url, start);
+              if (url !== tab.url) {
+                if (parent) {
+                  // end subtask when url change to avoid long tail subtask
+
+                  this.response = `url changed, end subtask, remain todo: ${res.value?.todo.rc ?? ''}`;
+                  console.log(
+                    'url changed, end subtask',
+                    url,
+                    tab.url,
+                    this.response,
+                  );
+                  // eslint-disable-next-line no-labels
+                  break promptQueueLoop;
+                }
+              }
               executionSession.resetSystemPrompt();
               if (res.value.todo.descAttachment) {
                 res.value.todo.descAttachment.forEach((f) => {
@@ -196,7 +216,7 @@ ${res.value.todo.rc}
 [performed actions]
 -
 `;
-              const toAttach = res.value.todo.reqAtt ?? [];
+              const toAttach = res.value.todo.readFiles ?? [];
               if (this.attachmentInNextTodo.length) {
                 toAttach.push(...this.attachmentInNextTodo);
                 this.attachmentInNextTodo = [];
@@ -217,6 +237,10 @@ ${res.value.todo.rc}
                 newPrompt.id,
                 promptQueue,
               );
+            } else if (res.value?.subtaskResp) {
+              this.response = res.value.subtaskResp;
+              // eslint-disable-next-line no-labels
+              break promptQueueLoop;
             }
             break;
           }
@@ -227,8 +251,8 @@ ${res.value.todo.rc}
           }
           if ((res.value as WireActionWithWait).intent) {
             if (
-              run.fixingAction === null ||
-              run.fixingAction?.promptId !== promptId
+              run.fixingAction.length ||
+              run.fixingAction[0]?.promptId !== promptId
             ) {
               const act = res.value as WireActionWithWait;
               console.log(Date.now() - start, 'exec actions:', res.value);
@@ -242,10 +266,13 @@ ${res.value.todo.rc}
               yield res.value as WireActionWithWait;
             }
           } else {
+            if (parent) {
+              throw new Error('Nested subtask not supported yet');
+            }
             console.log(Date.now() - start, 'exec add sub task:', res.value);
             const newPrompt = run.createPrompt(
               `${(res.value as WireSubTask).subTaskPrompt}
-**do not add subtask**
+${NoNestSubtaskPrompt}
 
 [master goal]
 **for reference only not action, in case of conflict with above goal, use setArg to return error to parent session and end yours**
@@ -255,6 +282,27 @@ ${runGoalPrompt}`,
               (res.value as WireSubTask).complexity,
             );
             this.addNewSubSession([newPrompt]);
+            if ((res.value as WireSubTask).addArgs) {
+              Object.entries((res.value as WireSubTask).addArgs!).forEach(
+                ([k, v]) => {
+                  const vv = CommonUtil.replaceJsTpl(v, run.args);
+                  if (vv === undefined) {
+                    return;
+                  }
+                  if (vv.startsWith('[') || vv.startsWith('{')) {
+                    try {
+                      const vvv = CommonUtil.flattenArgs(JSON.parse(vv));
+                      Object.assign(run.args, vvv);
+                    } catch (e) {
+                      console.warn(e);
+                      run.args[k] = vv;
+                    }
+                  } else {
+                    run.args[k] = vv;
+                  }
+                },
+              );
+            }
           }
         }
       } catch (e) {
@@ -269,7 +317,7 @@ ${runGoalPrompt}`,
             undefined,
             id,
             'l',
-            `Fix return error: ${JSON.stringify(e)}`,
+            `Fix return error: ${e instanceof Error ? e.message : ''} ${JSON.stringify(e)}`,
           ),
         );
       }
@@ -296,14 +344,23 @@ ${runGoalPrompt}`,
     }
   }
   async *execSubSessionQueue() {
-    const { subSessionQueue } = this;
+    const {
+      subSessionQueue,
+      run: { tab },
+    } = this;
+    const { url } = tab;
     while (subSessionQueue.length) {
       const subSession = subSessionQueue.shift()!;
-      const goal = (subSession.promptQueue[0]?.goalPrompt ?? '').split(
-        '\n**do not add subtask**',
+      const prompt = subSession.promptQueue[0];
+      const goal = (prompt.goalPrompt ?? '').split(
+        `\n${NoNestSubtaskPrompt}`,
       )[0];
-      yield* subSession.exec();
-      this.addLog(goal ?? '');
+      if (url === tab.url) {
+        yield* subSession.exec();
+        this.addLog(`${goal ?? ''}:${subSession.response ?? ''}`);
+      } else {
+        this.addLog(`${goal ?? ''}:skip as url changed`);
+      }
     }
   }
   addNewSubSession(queue: Prompt[]) {
@@ -326,7 +383,7 @@ ${runGoalPrompt}`,
           } else {
             actions.push({
               ...action,
-              id: this.run.actionId++,
+              id: this.run.allocActionId(),
               action: { ...action.action, kv: { [k]: v } },
             });
           }

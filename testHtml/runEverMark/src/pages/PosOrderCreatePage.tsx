@@ -4,8 +4,14 @@ import 'react-calendar/dist/Calendar.css';
 import PosLayout from '../components/PosLayout';
 import { productCatalog } from '../data/products';
 import { readSession, writeSession, setBenchmarkResult } from '../utils/session';
-import Select from 'rc-select';
-import 'rc-select/assets/index.css';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxPopover,
+  ComboboxList,
+  ComboboxOption,
+} from "@reach/combobox";
+import "@reach/combobox/styles.css";
 
 type OrderLine = {
   id: string;
@@ -35,6 +41,80 @@ const emptyLine = () => ({
   unitPrice: 0,
   discount: 0
 });
+
+// Helper component for Product Selection
+const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: string) => void }) => {
+  const [term, setTerm] = useState('');
+
+  // Find current product to display its name
+  const currentProduct = productCatalog.find(p => p.id === value);
+
+  // Update term when value changes externally (initial load or reset)
+  useEffect(() => {
+    if (currentProduct) {
+      setTerm(currentProduct.name);
+    } else {
+      setTerm('');
+    }
+  }, [currentProduct]);
+
+  const handleSelect = (itemValue: string) => {
+    // The value in ComboboxOption is the Name (or whatever satisfies the filter)
+    // But we need to map back to ID.
+    // Wait, reach/combobox passes the value prop of the Option to onSelect.
+    // If we want to pass ID, we should put ID in the value?
+    // But standard combobox behavior is filling the input with the value.
+    // So if I put ID in value, input becomes ID. That's bad.
+
+    // Strategy: Put Name in Option value.
+    // On select, look up the ID by Name.
+    const product = productCatalog.find(p => p.name === itemValue);
+    if (product) {
+      setTerm(product.name);
+      onChange(product.id);
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    if (!term) return productCatalog;
+    return productCatalog.filter(p =>
+      p.name.toLowerCase().includes(term.toLowerCase())
+    );
+  }, [term]);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTerm(event.target.value);
+    // If user clears input, we might want to clear selection?
+    // Or just let them type.
+    // If they type something that doesn't match, value remains what it was?
+    // Or should we clear ID if text doesn't match?
+    // For now, let's keep it simple: strict selection required for ID update via list.
+    // Ideally we clear ID if text mismatch, but let's stick to safe behavior.
+  };
+
+  return (
+    <Combobox onSelect={handleSelect} openOnFocus>
+      <ComboboxInput
+        className="sf-input"
+        value={term}
+        onChange={handleInputChange}
+        onBlur={() =>  setTerm(productCatalog.some(p => p.name === term) ?term:'')}
+        style={{ width: '100%' }}
+        placeholder="Select a product..."
+        autocomplete
+      />
+      {filteredProducts.length > 0 && (
+        <ComboboxPopover className="shadow-popup">
+          <ComboboxList persistSelection>
+            {filteredProducts.map(p => (
+              <ComboboxOption key={p.id} value={p.name} />
+            ))}
+          </ComboboxList>
+        </ComboboxPopover>
+      )}
+    </Combobox>
+  );
+};
 
 export default function PosOrderCreatePage() {
   const savedDraft = readSession<DraftOrder | null>('runEverMark_pos_draft', null);
@@ -125,7 +205,7 @@ export default function PosOrderCreatePage() {
         const city = clientData.city.toLowerCase();
        const region = clientData.region.toLowerCase();
         if (addr && city && region) {
-             setBenchmarkResult(entryPoint, 'input_address', addr.includes('1600 Pennsylvania Ave NW'.toLowerCase()) && city.includes('Washington'.toLowerCase()) && region.includes('dc'.toLowerCase()) && clientData.postal.includes('20500'));
+             setBenchmarkResult(entryPoint, 'input_address', addr.includes('1600 pennsylvania ave nw'.toLowerCase()) && city.includes('washington'.toLowerCase()) && region.includes('dc'.toLowerCase()) && clientData.postal.includes('20500'));
         }
 
         const hasProduct = lines.some(l => l.productId === 'sku-chair' && l.quantity === 1);
@@ -155,7 +235,7 @@ export default function PosOrderCreatePage() {
         const name = clientData.clientName.toLowerCase();
         const email = clientData.clientEmail.toLowerCase();
        if (name) {
-         setBenchmarkResult(entryPoint, 'input_client', name.includes('Northwind Travel'.toLowerCase()));
+         setBenchmarkResult(entryPoint, 'input_client', name.includes('northwind travel'.toLowerCase()));
        }
        if (email) {
          setBenchmarkResult(entryPoint, 'input_client_email', email.includes('contact@client.com'));
@@ -171,7 +251,7 @@ export default function PosOrderCreatePage() {
         const postal = clientData.postal.toLowerCase();
        const region = clientData.region.toLowerCase();
         if (addr && city && postal && region) {
-             setBenchmarkResult(entryPoint, 'input_address', addr === '123 Client St'.toLowerCase() && city === 'Business City'.toLowerCase() && postal === '12345' && region.includes('st'));
+             setBenchmarkResult(entryPoint, 'input_address', addr === '123 client st'.toLowerCase() && city === 'business city'.toLowerCase() && postal === '12345' && region.includes('st'));
         }
 
         const today = new Date();
@@ -254,7 +334,7 @@ export default function PosOrderCreatePage() {
                   {
                     entryPoint === '#/pos/pro' ?
                     <div className="sf-form-element" style={{ position: 'relative' }}>
-                      <label className="sf-label">Delivery Date - 11 months to produce</label>
+                      <label className="sf-label">Delivery Date - order takes 11 months to produce</label>
                       <Calendar
                         onChange={(value: any) => {
                           // value can be Date | Date[] | null. We assume single date selection.
@@ -279,14 +359,6 @@ export default function PosOrderCreatePage() {
 
             <div style={{ borderTop: '1px solid #dddbda', paddingTop: 16, marginBottom: 24 }}>
                  <h3>Order Lines</h3>
-                 <datalist id="product-options">
-                  {productCatalog.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} - ${product.price.toFixed(2)}
-                    </option>
-                  ))}
-                </datalist>
-
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {lines.map((line) => {
                       const total = totals.find((item) => item.id === line.id);
@@ -294,22 +366,10 @@ export default function PosOrderCreatePage() {
                         <div className="sf-card" key={line.id} style={{ background: '#f8f9fb', padding: 12, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
                           <div style={{ flex: 2 }}>
                             <label className="sf-label">Product</label>
-                            <Select
-                               className="sf-input-select"
+                            <ProductCombobox
                                value={line.productId}
-                               onChange={(value) => handleLineChange(line.id, { productId: String(value) })}
-                               style={{ width: '100%' }}
-                               placeholder="Select a product..."
-                               showSearch
-                               optionFilterProp="children"
-                               filterOption={(input, option) =>
-                                 String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
-                               }
-                             >
-                               {productCatalog.map(p => (
-                                 <Select.Option key={p.id} value={p.id}>{p.name}</Select.Option>
-                               ))}
-                             </Select>
+                               onChange={(newId) => handleLineChange(line.id, { productId: newId })}
+                            />
                           </div>
                           <div style={{ width: 100 }}>
                             <label className="sf-label">Unit Price</label>
@@ -390,3 +450,4 @@ export default function PosOrderCreatePage() {
     </PosLayout>
   );
 }
+

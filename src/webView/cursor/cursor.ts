@@ -123,22 +123,35 @@ class DummyCursor {
     let overY = 0;
     let currentScrollLeft = 0;
     let currentScrollTop = 0;
+    let scrollWidth = 0;
+    let scrollHeight = 0;
     if (scrollOver instanceof Window) {
       clientHeight = window.innerHeight;
       clientWidth = window.innerWidth;
       currentScrollLeft = window.scrollX;
       currentScrollTop = window.scrollY;
+      scrollWidth = document.body.scrollWidth;
+      scrollHeight = document.body.scrollHeight;
     } else {
       clientHeight = scrollOver.clientHeight;
       clientWidth = scrollOver.clientWidth;
       // eslint-disable-next-line @typescript-eslint/no-shadow
       const { x, y } = scrollOver.getBoundingClientRect();
-      console.log('overlay rect', x, y, scrollOver);
       overX = x;
       overY = y;
       currentScrollLeft = scrollOver.scrollLeft;
       currentScrollTop = scrollOver.scrollTop;
+      scrollWidth = scrollOver.scrollWidth;
+      scrollHeight = scrollOver.scrollHeight;
     }
+    scrollToX = Math.max(
+      -currentScrollLeft,
+      Math.min(scrollWidth - clientWidth, scrollToX),
+    );
+    scrollToY = Math.max(
+      -currentScrollTop,
+      Math.min(scrollHeight - clientHeight, scrollToY),
+    );
     let offsetX =
       exact || scrollToX < 0 || scrollToX > clientWidth ? scrollToX : 0;
     let offsetY =

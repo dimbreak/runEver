@@ -13,7 +13,7 @@ const WireWaitNetworkSchema = z.object({
   a: z.union([z.literal('idle0'), z.literal('idle2')]),
 });
 const WireWaitDomSchemaV2 = z.object({
-  t: z.literal('dom'),
+  t: z.literal('domLongTime'),
   a: z.union([
     z.literal('any'),
     z.literal('attr'),
@@ -196,7 +196,7 @@ const DescriptAttachmentSchema = z.object({
 const FollowupActionSchema = z.object({
   rc: z.string(),
   sc: z.boolean().optional().nullable(),
-  reqAtt: z.array(z.string()).optional().nullable(),
+  readFiles: z.array(z.string()).optional().nullable(),
   descAttachment: z.array(DescriptAttachmentSchema).nullable().optional(),
 });
 
@@ -244,6 +244,10 @@ export const ExecutorLlmResultSchema = z.object({
   a: z.union([z.array(WireActionWithWaitSchema), z.array(WireSubTaskSchema)]),
   e: z.string().optional(),
   todo: z.union([FollowupActionSchema, z.literal('finishedNoToDo')]),
+  subtaskResp: z
+    .union([z.literal('done'), z.string()])
+    .nullable()
+    .optional(),
 });
 
 /** (Optional) inferred TS types */

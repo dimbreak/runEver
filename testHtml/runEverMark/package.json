@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@reach/combobox": "^0.18.0",
     "jspdf": "^2.5.2",
     "lucide-react": "^0.562.0",
     "quill": "^2.0.3",
-    "rc-select": "^14.16.8",
     "react": "^19.2.1",
     "react-calendar": "^5.1.0",
     "react-data-grid": "^7.0.0-beta.59",

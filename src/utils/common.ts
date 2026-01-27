@@ -9,15 +9,15 @@ export namespace CommonUtil {
         js = `\`${js}\``;
       }
 
-      // Identify keys with dots and replace them in the template
+      // Identify keys with dots or dashes and replace them in the template
       // We sort by length (descending) so that longer matches (e.g. "a.b.c") are replaced before shorter prefixes ("a.b")
-      const dottedKeys = Object.keys(args)
-        .filter((k) => k.includes('.'))
+      const complexKeys = Object.keys(args)
+        .filter((k) => k.includes('.') || k.includes('-'))
         .sort((a, b) => b.length - a.length);
 
       const escapeRx = /[.*+?^${}()|[\]\\]/g;
 
-      for (const key of dottedKeys) {
+      for (const key of complexKeys) {
         // Replace ${args.foo.bar} with ${args['foo.bar']}
         // We look for patterns where 'args.' is followed by the key, ensuring we don't break if it's already bracketed (though unlikely given usage)
         // handling cases like ${args.foo.bar}
@@ -38,9 +38,9 @@ export namespace CommonUtil {
       // Filter keys for valid identifiers for destructuring
       // Valid JS identifiers generally start with [a-zA-Z_$] and contain [a-zA-Z0-9_$]
       // We simply exclude keys with dots or non-identifier characters for the destructuring part.
-      // Dotted keys are now accessed via args['key'] so they don't need to be destructured as variables.
+      // Complex keys (dots or dashes) are now accessed via args['key'] so they don't need to be destructured as variables.
       const validKeys = Object.keys(args).filter((k) =>
-        /^[a-zA-Z_$][a-zA-Z0-9_$.]*$/.test(k),
+        /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(k),
       );
 
       // todo run in iframe sandbox
@@ -52,5 +52,23 @@ export namespace CommonUtil {
     })(${JSON.stringify(args)})`) as string;
     }
     return tpl;
+  };
+  export const flattenArgs = (
+    obj: Record<string, any>,
+    prefix = '',
+    res: Record<string, string> = {},
+  ) => {
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const val = obj[key];
+        const newKey = prefix ? `${prefix}.${key}` : key;
+        if (typeof val === 'object' && val !== null) {
+          flattenArgs(val, newKey, res);
+        } else {
+          res[newKey] = String(val);
+        }
+      }
+    }
+    return res;
   };
 }

@@ -195,7 +195,7 @@ export namespace LlmApi {
             },
           ]
         : prompt;
-      const { textStream, response, reasoning } = streamQueryer({
+      const { textStream, response } = streamQueryer({
         model: llmApi[model],
         providerOptions: llmApi.makeProviderOptions(reasoningEffort, cacheKey),
         prompt: promptObj,
@@ -218,7 +218,7 @@ export namespace LlmApi {
       } finally {
         monitor.stop();
         console.log(`api call ok ${cacheKey}`);
-        const [res, reasoningRes] = await Promise.all([response, reasoning]);
+        const [res] = await Promise.all([response]);
         let messages: any[] = [];
         if (res) {
           messages = res.messages?.map((m) => m?.content);
@@ -229,7 +229,6 @@ export namespace LlmApi {
             ...res,
             prompt: promptObj,
             messages,
-            reasoning: reasoningRes,
           }),
           () => {},
         );

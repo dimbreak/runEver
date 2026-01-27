@@ -16,7 +16,7 @@ import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
 import fs from 'fs';
 // @ts-ignore
-import electronDl from 'electron-dl';
+import electronDl from './download';
 import { setupIpcHandlers } from './ipcHandlers';
 import { WebViewLlmSession } from '../agentic/webviewLlmSession';
 import MenuBuilder from './menu';

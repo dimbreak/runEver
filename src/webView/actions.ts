@@ -118,7 +118,7 @@ export namespace BrowserActions {
     return el.element;
   };
   export const checkDom = async (
-    t: Extract<WireWait, { t: 'dom' }>['a'],
+    t: Extract<WireWait, { t: 'domLongTime' }>['a'],
     selector: MiniHtml.Selector,
   ) => {
     const el = window.webView.getEl(selector);
@@ -203,7 +203,7 @@ export namespace BrowserActions {
             waitPromise = Network.networkIdle2.wait;
           }
           break;
-        case 'dom':
+        case 'domLongTime':
           waitPromise = checkDom(wait.a, wait.q);
           waitTime = 300000; // wait for longer
           break;
@@ -373,15 +373,19 @@ export namespace BrowserActions {
             let url = '';
             const { filename } = action;
             if (action.el) {
+              console.log('download', action.el);
               switch (action.t) {
                 case 'link':
                   if (action.el.tagName === 'A') {
                     url = action.el.getAttribute('href') ?? '';
+                    console.log('download link', url);
                   }
+                  break;
                 case 'img':
                   if (action.el.tagName === 'IMG') {
                     url = action.el.getAttribute('src') ?? '';
                   }
+                  break;
                 case 'bg-img':
                   const style = window.getComputedStyle(action.el);
                   if (style.backgroundImage) {
@@ -389,8 +393,15 @@ export namespace BrowserActions {
                       /url\((['"]?)(.+)\1\)/.exec(style.backgroundImage)?.[2] ??
                       '';
                   }
+                  break;
               }
-              if (!url) {
+              if (url) {
+                try {
+                  url = new URL(url, window.location.href).href;
+                } catch {
+                  // ignore invalid url
+                }
+              } else {
                 throw new Error('not downloadable');
               }
             } else {
@@ -463,7 +474,17 @@ export namespace BrowserActions {
         if (vv === undefined) {
           return;
         }
-        args[k] = vv;
+        if (vv.startsWith('[') || vv.startsWith('{')) {
+          try {
+            const vvv = CommonUtil.flattenArgs(JSON.parse(vv));
+            Object.assign(args, vvv);
+          } catch (e) {
+            console.warn(e);
+            args[k] = vv;
+          }
+        } else {
+          args[k] = vv;
+        }
       } else if (typeof v === 'object') {
         const el = action.el ?? getElementById(v.q, risk, args);
         if (!v.attr) {
@@ -677,57 +698,51 @@ export namespace BrowserActions {
         filePaths: values,
       });
     } else {
-      const modifierKey = Util.isMac ? 'Meta' : 'Control';
-      const modifier = Util.isMac ? 'meta' : 'control';
-      await (
-        await actionApi
-      ).dispatchEvents({
-        events: [
-          {
-            type: 'keyDown',
-            keyCode: modifierKey,
-            delayMs: 0,
-          },
-          {
-            type: 'keyDown',
-            keyCode: 'a',
-            modifiers: [modifier],
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-          {
-            type: 'char',
-            keyCode: 'a',
-            modifiers: [modifier],
-            delayMs: 0,
-          },
-          {
-            type: 'keyUp',
-            keyCode: 'a',
-            modifiers: [modifier],
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-          {
-            type: 'keyUp',
-            keyCode: modifierKey,
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-          {
-            type: 'keyDown',
-            keyCode: 'Backspace',
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-          {
-            type: 'char',
-            keyCode: 'Backspace',
-            delayMs: 0,
-          },
-          {
-            type: 'keyUp',
-            keyCode: 'Backspace',
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-        ],
-      });
+      if ((el as HTMLInputElement).value !== '') {
+        const modifierKey = Util.isMac ? 'Meta' : 'Control';
+        const modifier = Util.isMac ? 'meta' : 'control';
+        setTimeout(() => {
+          (el as HTMLInputElement).select();
+        }, 150);
+        await (
+          await actionApi
+        ).dispatchEvents({
+          // @ts-ignore
+          events: [
+            {
+              type: 'keyDown',
+              keyCode: modifierKey,
+              delayMs: 0,
+            },
+            {
+              type: 'keyDown',
+              keyCode: 'a',
+              modifiers: [modifier],
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+            Util.isMac
+              ? null
+              : {
+                  type: 'char',
+                  keyCode: 'a',
+                  modifiers: [modifier],
+                  delayMs: 0,
+                },
+            {
+              type: 'keyUp',
+              keyCode: 'a',
+              modifiers: [modifier],
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+            {
+              type: 'keyUp',
+              keyCode: modifierKey,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+          ].filter((a) => !!a),
+        });
+      }
+
       if (values[0].length < 64 && SAFE_KEYPRESS_RE.test(values[0])) {
         await (
           await actionApi

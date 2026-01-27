@@ -10,7 +10,7 @@ import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
 // @ts-ignore
-import { CancelError, download } from 'electron-dl';
+import { CancelError, download } from '../download';
 import { LlmApi } from '../../agentic/api';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
