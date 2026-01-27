@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { useAuth } from '@apitrust/react';
@@ -10,6 +10,11 @@ import { AuthStartPage } from './view/AuthStartPage';
 import { AuthCallbackPage } from './view/AuthCallbackPage';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import { ToMainIpc } from '../contracts/toMain';
+import type { AuthMode } from '../schema/auth.schema';
+import {
+  OWN_KEY_REMEMBER_KEY,
+  OWN_KEY_SESSION_KEY,
+} from './constants/auth';
 
 const AppShell = () => {
   const { isSidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =
@@ -50,14 +55,68 @@ const AppShell = () => {
 const AuthGate = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
+  const [ownKeyState, setOwnKeyState] = useState<{
+    isLoading: boolean;
+    hasApiKey: boolean;
+    authMode: AuthMode | null;
+  }>({
+    isLoading: true,
+    hasApiKey: false,
+    authMode: null,
+  });
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const state = await ToMainIpc.getUserAuthState.invoke();
+        if (!cancelled) {
+          setOwnKeyState({
+            isLoading: false,
+            hasApiKey: state.hasApiKey,
+            authMode: state.authMode,
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load user auth state', error);
+          setOwnKeyState({
+            isLoading: false,
+            hasApiKey: false,
+            authMode: null,
+          });
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const allowOwnKey =
+    ownKeyState.authMode === 'apikey' &&
+    ownKeyState.hasApiKey &&
+    (window.localStorage.getItem(OWN_KEY_REMEMBER_KEY) === 'true' ||
+      window.sessionStorage.getItem(OWN_KEY_SESSION_KEY) === 'true');
+
+  useEffect(() => {
+    if (!isLoading && !ownKeyState.isLoading && !isAuthenticated && !allowOwnKey) {
       navigate('/auth', { replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [
+    allowOwnKey,
+    isAuthenticated,
+    isLoading,
+    navigate,
+    ownKeyState.isLoading,
+  ]);
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading || ownKeyState.isLoading) {
+    return null;
+  }
+
+  if (!isAuthenticated && !allowOwnKey) {
     return null;
   }
 
