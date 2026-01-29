@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@apitrust/react';
 import { ToMainIpc } from '../../contracts/toMain';
+import {
+  OWN_KEY_REMEMBER_KEY,
+  OWN_KEY_SESSION_KEY,
+} from '../constants/auth';
 
 const getCallbackParams = () => {
   if (window.location.search) {
@@ -63,6 +67,9 @@ export const AuthCallbackPage = () => {
     }
     sentTokenRef.current = true;
     ToMainIpc.setApiTrustToken.invoke({ token }).catch(() => null);
+    ToMainIpc.setAuthMode.invoke({ mode: 'apitrust' }).catch(() => null);
+    window.localStorage.removeItem(OWN_KEY_REMEMBER_KEY);
+    window.sessionStorage.removeItem(OWN_KEY_SESSION_KEY);
     setStatus('Signed in. Redirecting...');
     navigate('/', { replace: true });
   }, [callbackComplete, isLoading, navigate, token]);

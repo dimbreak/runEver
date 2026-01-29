@@ -2,12 +2,13 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { LanguageModelV2 } from '@ai-sdk/provider';
 import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
-import settings from 'electron-settings';
 import z from 'zod';
 import { envSchema } from '../../schema/env.schema';
-import { apiTrustEnvVars, envVars } from '../../schema/env.node';
+import { apiTrustEnvVars } from '../../schema/env.node';
 import { Util } from '../../webView/util';
 import { ApiTrustTokenStore } from '../apiTrustTokenStore';
+import { UserApiKeyStore } from '../userApiKeyStore';
+import { getAuthMode } from '../authModeStore';
 import { getApiTrustStream } from '../../shared/aiGateway';
 
 const getApiTrustErrorMessage = (error: unknown) => {
@@ -56,20 +57,21 @@ export namespace LlmApi {
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
   const apiTrustTokenStore = new ApiTrustTokenStore();
+  const userApiKeyStore = new UserApiKeyStore();
 
   const getLlmConfig = async () => {
-    const loadedConfig = settings.getSync('llmConfig');
-    try {
-      return llmConfigSchema.parse(loadedConfig) as LlmConfig;
-    } catch (error) {
-      const llmConfig: LlmConfig = {
-        api: envVars.provider,
-        key: envVars.apiKey,
-        error: error instanceof Error ? error.message : undefined,
-      };
-      settings.setSync('llmConfig', llmConfig);
-      return llmConfig;
+    const storedConfig = await userApiKeyStore.getConfig();
+    if (!storedConfig) {
+      return {
+        api: 'openai',
+        key: '',
+        error: 'Missing API key.',
+      } as LlmConfig;
     }
+    return {
+      api: storedConfig.provider,
+      key: storedConfig.apiKey,
+    };
   };
 
   let llmApiPromise: Promise<{
@@ -145,45 +147,47 @@ export namespace LlmApi {
     model: LlmModelType = 'mid',
     reasoning: ReasoningEffort = 'low',
   ): AsyncGenerator<string, void, void> {
-    try {
-      const apiTrustToken = await apiTrustTokenStore.getToken();
-      let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
-      if (apiTrustToken) {
-        apiTrustStream = await getApiTrustStream({
-          config: {
-            clientId: apiTrustEnvVars.clientId,
-            redirectUri: apiTrustEnvVars.redirectUri,
-            apiUrl: apiTrustEnvVars.apiUrl,
-          },
-          tokenProvider: apiTrustToken,
-          prompt,
-          systemPrompt,
-          attachments,
-        });
-        if (!apiTrustStream) {
-          throw new Error(
-            'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
-          );
+    if (getAuthMode() !== 'apikey') {
+      try {
+        const apiTrustToken = await apiTrustTokenStore.getToken();
+        let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
+        if (apiTrustToken) {
+          apiTrustStream = await getApiTrustStream({
+            config: {
+              clientId: apiTrustEnvVars.clientId,
+              redirectUri: apiTrustEnvVars.redirectUri,
+              apiUrl: apiTrustEnvVars.apiUrl,
+            },
+            tokenProvider: apiTrustToken,
+            prompt,
+            systemPrompt,
+            attachments,
+          });
+          if (!apiTrustStream) {
+            throw new Error(
+              'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
+            );
+          }
         }
-      }
-      if (apiTrustStream) {
-        yield* apiTrustStream;
-        return;
-      }
-    } catch (error) {
-      console.error('ApiTrust request failed', error);
-      if (isApiTrustAuthError(error)) {
-        try {
-          // Token rejected; clear it so the UI can re-auth.
-          await apiTrustTokenStore.setToken(null);
-          console.warn(
-            'ApiTrust token rejected; falling back to configured LLM provider.',
-          );
-        } catch (clearError) {
-          console.warn('Failed to clear ApiTrust token', clearError);
+        if (apiTrustStream) {
+          yield* apiTrustStream;
+          return;
         }
-      } else {
-        throw error;
+      } catch (error) {
+        console.error('ApiTrust request failed', error);
+        if (isApiTrustAuthError(error)) {
+          try {
+            // Token rejected; clear it so the UI can re-auth.
+            await apiTrustTokenStore.setToken(null);
+            console.warn(
+              'ApiTrust token rejected; falling back to configured LLM provider.',
+            );
+          } catch (clearError) {
+            console.warn('Failed to clear ApiTrust token', clearError);
+          }
+        } else {
+          throw error;
+        }
       }
     }
 

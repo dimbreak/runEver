@@ -1,6 +1,5 @@
 import { exec } from 'child_process';
 import { BrowserWindow, ipcMain, MouseInputEvent } from 'electron';
-import settings from 'electron-settings';
 import type { WebViewLlmSession } from '../agentic/webviewLlmSession';
 import { initIpcMain } from '../contracts/ipc';
 import { ToMainIpc } from '../contracts/toMain';
@@ -20,6 +19,8 @@ import {
   setPendingAuthDeepLink,
 } from './authDeepLink';
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
+import { UserApiKeyStore } from './userApiKeyStore';
+import { getAuthMode, setAuthMode } from './authModeStore';
 
 function initPromptIpc(session: WebViewLlmSession) {
   const getTab = (frameId: number) => session.getTab(frameId);
@@ -127,6 +128,7 @@ export const setupIpcHandlers = (
   llmSession: WebViewLlmSession,
 ) => {
   const apiTrustTokenStore = new ApiTrustTokenStore();
+  const userApiKeyStore = new UserApiKeyStore();
   const getTab = (frameId?: number) =>
     typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
 
@@ -209,18 +211,72 @@ export const setupIpcHandlers = (
     return llmSession.operateTab(detail);
   });
 
-  ToMainIpc.getLlmConfig.handle(async (event, frameId) => {
-    const loadedConfig = settings.getSync('llmConfig');
+  ToMainIpc.getLlmConfig.handle(async () => {
     try {
-      return LlmApi.llmConfigSchema.parse(loadedConfig) as LlmApi.LlmConfig;
-    } catch (error) {
-      console.error('Llm config error:', error);
-      const llmConfig: LlmApi.LlmConfig = {
-        api: process.env.LLM_API_PROVIDER as 'openai',
-        key: process.env.LLM_API_KEY as string,
+      const config = await userApiKeyStore.getConfig();
+      if (!config) {
+        return {
+          api: 'openai',
+          key: '',
+          error: 'Missing API key.',
+        };
+      }
+      return {
+        api: config.provider,
+        key: config.apiKey,
       };
-      settings.setSync('llmConfig', llmConfig);
-      return llmConfig;
+    } catch (error) {
+      console.error('Failed to read LLM config', error);
+      return {
+        api: 'openai',
+        key: '',
+        error: error instanceof Error ? error.message : 'Missing API key.',
+      };
+    }
+  });
+
+  ToMainIpc.getUserAuthState.handle(async () => {
+    try {
+      const config = await userApiKeyStore.getConfig();
+      return {
+        hasApiKey: Boolean(config?.apiKey),
+        provider: config?.provider ?? null,
+        authMode: getAuthMode(),
+      };
+    } catch (error) {
+      console.error('Failed to read user API key config', error);
+      return {
+        hasApiKey: false,
+        provider: null,
+        authMode: getAuthMode(),
+      };
+    }
+  });
+
+  ToMainIpc.setUserApiKey.handle(async (_event, payload) => {
+    try {
+      await userApiKeyStore.setConfig({
+        provider: payload.provider,
+        apiKey: payload.apiKey,
+      });
+    } catch (error) {
+      console.error('Failed to store user API key', error);
+    }
+  });
+
+  ToMainIpc.clearUserApiKey.handle(async () => {
+    try {
+      await userApiKeyStore.setConfig(null);
+    } catch (error) {
+      console.error('Failed to clear user API key', error);
+    }
+  });
+
+  ToMainIpc.setAuthMode.handle(async (_event, payload) => {
+    try {
+      setAuthMode(payload.mode ?? null);
+    } catch (error) {
+      console.error('Failed to store auth mode', error);
     }
   });
 

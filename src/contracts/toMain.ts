@@ -7,6 +7,8 @@ import type {
 import { IframeProgressType } from '../extensions/iframe/types';
 import { LlmApi } from '../main/llm/api';
 import type { PromptAttachment } from '../schema/attachments';
+import type { AuthMode } from '../schema/auth.schema';
+import type { Env } from '../schema/env.schema';
 import { IpcMainContract } from './ipc';
 
 export type EventWithDelay = (
@@ -57,6 +59,34 @@ export namespace ToMainIpc {
     [number], // frameId
     LlmApi.LlmConfig
   >('get-llm-config');
+  export const getUserAuthState = new IpcMainContract<
+    [],
+    {
+      hasApiKey: boolean;
+      provider: Env['provider'] | null;
+      authMode: AuthMode | null;
+    }
+  >('get-user-auth-state');
+  export const setUserApiKey = new IpcMainContract<
+    [
+      {
+        provider: Env['provider'];
+        apiKey: string;
+      },
+    ],
+    void
+  >('set-user-api-key');
+  export const clearUserApiKey = new IpcMainContract<[], void>(
+    'clear-user-api-key',
+  );
+  export const setAuthMode = new IpcMainContract<
+    [
+      {
+        mode: AuthMode | null;
+      },
+    ],
+    void
+  >('set-auth-mode');
   export const showSystemMessageBox = new IpcMainContract<
     [
       {
