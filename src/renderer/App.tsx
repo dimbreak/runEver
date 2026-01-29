@@ -1,7 +1,9 @@
 import './App.css';
 import { useMemo } from 'react';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { HomeScreen } from './view/HomeScreen';
+import { ArgumentConfigPage } from './view/ArgumentConfigPage';
 import { AgentPanel } from './components/AgentPanel';
 import { useLayoutStore } from './state/layoutStore';
 import { webviewService } from './services/webviewService';
@@ -31,7 +33,12 @@ export default function App() {
           <TabBar />
         </div>
         <div className="flex-1 overflow-hidden">
-          <HomeScreen />
+          <HashRouter>
+            <Routes>
+              <Route path="/" element={<HomeScreen />} />
+              <Route path="/config" element={<ArgumentConfigPage />} />
+            </Routes>
+          </HashRouter>
         </div>
       </div>
       <div
