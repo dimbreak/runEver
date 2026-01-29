@@ -1,9 +1,8 @@
 import './App.css';
 import { useMemo } from 'react';
-import { HashRouter, Route, Routes } from 'react-router-dom';
 import { TabBar } from './components/TabBar';
 import { HomeScreen } from './view/HomeScreen';
-import { ArgumentConfigPage } from './view/ArgumentConfigPage';
+import { ArgumentConfig } from './components/ArgumentConfig';
 import { AgentPanel } from './components/AgentPanel';
 import { useLayoutStore } from './state/layoutStore';
 import { webviewService } from './services/webviewService';
@@ -11,8 +10,15 @@ import { webviewService } from './services/webviewService';
 webviewService.registerTabHandler();
 
 export default function App() {
-  const { isSidebarOpen, sidebarWidth, collapsedWidth, tabbarHeight } =
-    useLayoutStore();
+  const {
+    isSidebarOpen,
+    sidebarWidth,
+    collapsedWidth,
+    tabbarHeight,
+    isConfigOpen,
+    toggleConfig,
+    bounds,
+  } = useLayoutStore();
   const activeSidebarWidth = isSidebarOpen ? sidebarWidth : collapsedWidth;
 
   const leftWidthStyle = useMemo(
@@ -33,12 +39,7 @@ export default function App() {
           <TabBar />
         </div>
         <div className="flex-1 overflow-hidden">
-          <HashRouter>
-            <Routes>
-              <Route path="/" element={<HomeScreen />} />
-              <Route path="/config" element={<ArgumentConfigPage />} />
-            </Routes>
-          </HashRouter>
+          <HomeScreen />
         </div>
       </div>
       <div
@@ -47,6 +48,19 @@ export default function App() {
       >
         <AgentPanel />
       </div>
+      {isConfigOpen && (
+        <div
+          className="fixed z-50 bg-white shadow-sm"
+          style={{
+            left: bounds.x,
+            top: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+          }}
+        >
+          <ArgumentConfig />
+        </div>
+      )}
     </div>
   );
 }

@@ -98,7 +98,9 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
         className="sf-input"
         value={term}
         onChange={handleInputChange}
-        onBlur={() =>  setTerm(productCatalog.some(p => p.name === term) ?term:'')}
+        onBlur={() =>  setTimeout(()=>{
+          setTerm(t=>productCatalog.some(p => p.name === t) ?t:'')
+        }, 200)}
         style={{ width: '100%' }}
         placeholder="Select a product..."
         autocomplete

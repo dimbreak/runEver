@@ -29,7 +29,7 @@ const ComplexityToModelConfig: Record<
 const userPromptRules = `[every request]
 - [goal] will be in absolute priority, while [mission] sometimes given for specific task to archive the goal. stop once the goal is done & ignore mission.
 - [goal] or [mission] could be very long, make taskEstimate in very short natual language. Then check
-  - when the goal/mission has task not have absolute confident to do in current HTML, put in todo only; 
+  - when the goal/mission has task not have absolute confident to do in current HTML, put in todo only;
   - if the task doable in CURRENT HTML is long, say > 3 actions, consider split into subtasks.
   - give actions to work directly.
 - [performed actions] will provided in followup prompts, take what have been done into account to avoid duplication, just do the new actions.
@@ -46,6 +46,7 @@ const userPromptRules = `[every request]
 - when receive attachment without description in readable file list other than screenshot.jpg, use todo.descAttachment to shortly describe the file content for giving context to downstream
 - file from download action can use immediately in todo, just put the same filename in attach and download action.
 - file should only be read on demand, and store necessary info in argument, do not require reading in every todo.
+- if user asked to wait for email/message, **waitMsg MUST DIRECTLY APPLY TO POST WAIT OF TRIGGER ACTION**. Split with todo/subtask may cause missing event.
 
 [safty check]
 - links to external origin will give href, **MUST CHECK the url before click**, make sure matches its description. fraud is common in search engines or sns.
@@ -224,7 +225,7 @@ ${fullHtml}${
                 `${extraAttachments.includes(k.name) ? 'attached ' : ''}${k.name}: ${k.mimeType}${k.desc ? ` desc from previous read:${k.desc}` : ''}`,
             ).join(`
 - `)}
-**can attach with todo.readFiles**`
+**can attach with todo.readFiles, note read file is expensive attach when necessary**`
           : ''
       }
 
@@ -405,7 +406,7 @@ type WireAction =
     }
   | {
       k: 'key';
-      key: string;
+      key: string; // single key, use input for typing words
       a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press for typing, unless required/need delay
       q?: Selector;
       c?: boolean; // ctrl
@@ -415,9 +416,10 @@ type WireAction =
       repeat?: number;
     }
   | {
-      k: 'input'; // for input, textarea, select, also upload file with path in v
+      k: 'input'; // for input, textarea, contentEditable, select, also upload file with path in v
       q: Selector;
       v: string|string[]; // input value, array for multiple select/files
+      c?: 'noClear'; // without this will clear before typing
     }
   | {
       k: 'botherUser';
@@ -429,7 +431,7 @@ type WireAction =
       k: 'setArg';
       answer3Questions: string; // keep short
       // key value pair
-      kv: Record<string, string | {q: Selector, attr?: string}>; //str value or from element
+      kv: Record<string, string | {q: Selector, attr?: 'textContent'|string}>; //str value or from element, attr default textContent
     }
   | {
       k: 'url';
@@ -461,8 +463,13 @@ type WireStep = {
   intent: string;
   risk: 'h' | 'm' | 'l';
   action: WireAction;
-  pre?: WireWait; // wait BEFORE this action, most of the time engine can handle it automatically
-  post?: WireWait; // wait AFTER this action, most of the time engine can handle it automatically
+  pre?: WireWait // wait BEFORE this action, most of the time engine can handle it automatically
+  post?: WireWait | // wait AFTER this action, most of the time engine can handle it automatically
+   { t: 'waitMsg'; // wait for email, messager session dom update, **MUST NOT ADD ACTION AFTER THIS**
+     q: Selector; // dialog container, email list etc
+     id1st: string; // first msg/email dom id in list
+     idLast: string; // last msg/email dom id in list
+   }
 }
 
 type WireSubTaskDoableInCurrentHtml = {
@@ -487,7 +494,7 @@ type LlmWireResult = {
   todo: {
     sc?: boolean; // require screenshot
     rc: string; // after all prompt
-    readFiles?: string[]; // attach readable files
+    readFiles?: string[]; // attach readable files only when you really need the content in file
     descAttachment?: AttachementDesc[];
   } | 'finishedNoToDo';
   subtaskResp?: 'done' | string;

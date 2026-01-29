@@ -15,8 +15,8 @@ const DEBUG_CONFIRM_ALL_ACTIONS = false;
 const testPrompt: { user: string; system: string } | null = {
   user: `[every request]
 - [goal] will be in absolute priority, while [mission] sometimes given for specific task to archive the goal. stop once the goal is done & ignore mission.
-- [goal] or [mission] could be very long, make taskEstimate in very short natual language. Then check
-  - when the goal/mission has task not have absolute confident to do in current HTML, put in todo only; 
+- [goal] or [mission] could be very long, make taskEstimate in very short natual language < 20 words. Then check
+  - when the goal/mission has task not have absolute confident to do in current HTML, put in todo only;
   - if the task doable in CURRENT HTML is long, say > 3 actions, consider split into subtasks.
   - give actions to work directly.
 - [performed actions] will provided in followup prompts, take what have been done into account to avoid duplication, just do the new actions.
@@ -126,66 +126,65 @@ the only legal string format are plain text and args string template **start wit
   use argument tpl in number or object field cause error, covert to other format on your own and use as hardcode if necessary.
 
 [url]
-runever://benchmark/#/pos/create
+runever://benchmark/#/im
 
 [viewport]
-w=1370 h=916
+w=1699 h=916
 
 [html]
-<script>const font = {"ff0":"\\"Fira Sans\\", \\"Gill Sans\\", \\"Trebuchet MS\\", sans-serif","ff1":"-apple-system, \\"system-ui\\", \\"Segoe UI\\", Roboto, Helvetica, Arial, sans-serif","ff2":"Arial, Helvetica, sans-serif"};
-  const hls = {"#0":"13px / 19.5px ff1 #000","#1":"700 18px / 27px ff1 #024","#2":"14px / 21px ff1 #333","#3":"700 18px / 27px ff1 #fff","#4":"500 13px / 19.5px ff1 #07d","#5":"700 16px / 24px ff1 #333","#6":"12px / 18px ff1 #766","#7":"16px / 18px ff2 rgba(16, 16, 16, 0.3)","#8":"16px / 18px ff2 #000","#9":"16px / 24px ff1 #555","#10":"700 18px / 27px ff1 #07d","#11":"500 14px / 21px ff1 #fff","#12":"13px / 19.5px ff1 #333","#13":"700 18px / 27px ff1 #000","#14":"700 12px / 18px ff2 #333","#15":"13.328px / 18px ff2 #ccc","#16":"13.328px / 18px ff2 #aaa","#17":"18px / 27px ff1 #333","#18":"16px / 18px ff2 #333","#19":"16px / 24px ff1 #333","#20":"500 13px / 19.5px ff1 #f00"};</script><div id=__7q show xywh=28,-212,1314,1296 hls=19><span id=__0 show xywh=84,-201,118,27 hls=1>Sellfroce POS</span><div id=__7p show xywh=28,-162,1314,1246><nav id=__7 show xywh=28,-150,239,246><a id=__1 show xywh=28,-150,239,41 hls=2>Dashboard</a><a id=__2 show xywh=28,-109,239,41 hls=2>Orders</a><a id=__3 show xywh=28,-68,239,41 hls=2>Customers</a><a id=__4 show xywh=28,-27,239,41 hls=2>Inventory</a><a id=__5 show xywh=28,14,239,41 hls=2>Reports</a><a id=__6 show xywh=28,55,239,41 hls=2>Settings</a></nav><main id=__7o show xywh=268,-162,1074,1246><div id=__c show xywh=284,-146,1042,66><div id=__a show xywh=301,-129,152,32 hls=13><span id=__8 show xywh=308,-126,18,27 hls=3>📄</span><span id=__9 show xywh=341,-126,112,27>Create Order</span></div><button id=__b show xywh=1227,-129,82,32 hls=4>Refresh</button></div><form id=__7n show xywh=301,-47,1008,1082><div id=__3l show xywh=301,-47,1008,538><div id=__n show xywh=301,-47,492,538><h3 id=__d show xywh=301,-47,492,32 hls=5>Client Information</h3><div id=__g show xywh=301,-3,492,62><label id=__e show xywh=301,-3,492,18 hls=6>Client Name</label><input id=__f show xywh=301,27,492,32 val="Northwind Travel" name=clientName required hls=0 /></div><div id=__j show xywh=301,59,492,62><label id=__h show xywh=301,59,492,18 hls=6>Email</label><input id=__i show xywh=301,89,492,32 val=contact@client.com name=clientEmail type=email required hls=0 /></div><div id=__m show xywh=301,121,492,62><label id=__k show xywh=301,121,492,18 hls=6>Phone</label><input id=__l show xywh=301,151,492,32 val=555-0100 name=clientPhone required hls=0 /></div></div><div id=__3k show xywh=817,-47,492,538><h3 id=__o show xywh=817,-47,492,32 hls=5>Delivery Address</h3><div id=__r show xywh=817,-3,492,62><label id=__p show xywh=817,-3,492,18 hls=6>Street</label><input id=__q show xywh=817,27,492,32 val="123 Client St" name=address required hls=0 /></div><div id=__y show xywh=817,59,492,62><div id=__u show xywh=817,59,400,62><label id=__s show xywh=817,59,400,18 hls=6>City</label><input id=__t show xywh=817,89,400,32 val="Business City" name=city required hls=0 /></div><div id=__x show xywh=1229,59,80,62><label id=__v show xywh=1229,59,80,18 hls=6>Region</label><input id=__w show xywh=1229,89,80,32 val=ST name=region required hls=0 /></div></div><div id=__11 show xywh=817,121,492,62><label id=__z show xywh=817,121,492,18 hls=6>Postal Code</label><input id=__10 show xywh=817,151,492,32 val=12345 name=postal required hls=0 /></div><div id=__3j show xywh=817,183,492,308><label id=__12 show xywh=817,183,492,18 hls=6>Delivery Date - order takes 11 months to produce</label><div id=__3i show xywh=817,209,350,282 hls=18><div id=__19 show xywh=818,210,348,44><button id=__13 show xywh=818,210,44,44 disabled hls=7>«</button><button id=__14 show xywh=862,210,44,44 disabled hls=7>‹</button><button id=__16 show xywh=906,210,172,44 hls=8><span id=__15 show xywh=944,223,97,18>January 2026</span></button><button id=__17 show xywh=1078,210,44,44 hls=8>›</button><button id=__18 show xywh=1122,210,44,44 hls=8>»</button></div><div id=__3h show xywh=818,270,348,220><div id=__1h show xywh=818,270,348,30 hls=14><abbr id=__1a label=Monday show xywh=829,278,28,14>Mon</abbr><abbr id=__1b label=Tuesday show xywh=881,278,24,14>Tue</abbr><abbr id=__1c label=Wednesday show xywh=928,278,28,14>Wed</abbr><abbr id=__1d label=Thursday show xywh=980,278,25,14>Thu</abbr><abbr id=__1e label=Friday show xywh=1032,278,19,14>Fri</abbr><abbr id=__1f label=Saturday show xywh=1080,278,23,14>Sat</abbr><abbr id=__1g label=Sunday show xywh=1128,278,25,14>Sun</abbr></div><div id=__3g show xywh=818,300,348,190><button id=__1j show xywh=818,300,50,38 disabled hls=15><abbr id=__1i label="29 December 2025" show xywh=835,312,15,15>29</abbr></button><button id=__1l show xywh=868,300,50,38 disabled hls=15><abbr id=__1k label="30 December 2025" show xywh=885,312,15,15>30</abbr></button><button id=__1n show xywh=917,300,50,38 disabled hls=15><abbr id=__1m label="31 December 2025" show xywh=935,312,15,15>31</abbr></button><button id=__1p show xywh=967,300,50,38 disabled hls=16><abbr id=__1o label="1 January 2026" show xywh=988,312,7,15>1</abbr></button><button id=__1r show xywh=1017,300,50,38 disabled hls=16><abbr id=__1q label="2 January 2026" show xywh=1038,312,7,15>2</abbr></button><button id=__1t show xywh=1067,300,50,38 disabled hls=16><abbr id=__1s label="3 January 2026" show xywh=1088,312,7,15>3</abbr></button><button id=__1v show xywh=1116,300,50,38 disabled hls=16><abbr id=__1u label="4 January 2026" show xywh=1137,312,7,15>4</abbr></button><button id=__1x show xywh=818,338,50,38 disabled hls=16><abbr id=__1w label="5 January 2026" show xywh=839,350,7,15>5</abbr></button><button id=__1z show xywh=868,338,50,38 disabled hls=16><abbr id=__1y label="6 January 2026" show xywh=889,350,7,15>6</abbr></button><button id=__21 show xywh=917,338,50,38 disabled hls=16><abbr id=__20 label="7 January 2026" show xywh=939,350,7,15>7</abbr></button><button id=__23 show xywh=967,338,50,38 disabled hls=16><abbr id=__22 label="8 January 2026" show xywh=988,350,7,15>8</abbr></button><button id=__25 show xywh=1017,338,50,38 disabled hls=16><abbr id=__24 label="9 January 2026" show xywh=1038,350,7,15>9</abbr></button><button id=__27 show xywh=1067,338,50,38 disabled hls=16><abbr id=__26 label="10 January 2026" show xywh=1084,350,15,15>10</abbr></button><button id=__29 show xywh=1116,338,50,38 disabled hls=16><abbr id=__28 label="11 January 2026" show xywh=1134,350,14,15>11</abbr></button><button id=__2b show xywh=818,376,50,38 disabled hls=16><abbr id=__2a label="12 January 2026" show xywh=835,388,15,15>12</abbr></button><button id=__2d show xywh=868,376,50,38 disabled hls=16><abbr id=__2c label="13 January 2026" show xywh=885,388,15,15>13</abbr></button><button id=__2f show xywh=917,376,50,38 disabled hls=16><abbr id=__2e label="14 January 2026" show xywh=935,388,15,15>14</abbr></button><button id=__2h show xywh=967,376,50,38 disabled hls=16><abbr id=__2g label="15 January 2026" show xywh=985,388,15,15>15</abbr></button><button id=__2j show xywh=1017,376,50,38 disabled hls=16><abbr id=__2i label="16 January 2026" show xywh=1034,388,15,15>16</abbr></button><button id=__2l show xywh=1067,376,50,38 disabled hls=16><abbr id=__2k label="17 January 2026" show xywh=1084,388,15,15>17</abbr></button><button id=__2n show xywh=1116,376,50,38 disabled hls=16><abbr id=__2m label="18 January 2026" show xywh=1134,388,15,15>18</abbr></button><button id=__2p show xywh=818,414,50,38 disabled hls=16><abbr id=__2o label="19 January 2026" show xywh=835,426,15,15>19</abbr></button><button id=__2r show xywh=868,414,50,38 disabled hls=16><abbr id=__2q label="20 January 2026" show xywh=885,426,15,15>20</abbr></button><button id=__2t show xywh=917,414,50,38 disabled hls=16><abbr id=__2s label="21 January 2026" show xywh=935,426,15,15>21</abbr></button><button id=__2v show xywh=967,414,50,38 disabled hls=16><abbr id=__2u label="22 January 2026" show xywh=985,426,15,15>22</abbr></button><button id=__2x show xywh=1017,414,50,38 disabled hls=16><abbr id=__2w label="23 January 2026" show xywh=1034,426,15,15>23</abbr></button><button id=__2z show xywh=1067,414,50,38 disabled hls=16><abbr id=__2y label="24 January 2026" show xywh=1084,426,15,15>24</abbr></button><button id=__31 show xywh=1116,414,50,38 disabled hls=16><abbr id=__30 label="25 January 2026" show xywh=1134,426,15,15>25</abbr></button><button id=__33 show xywh=818,452,50,38 disabled hls=16><abbr id=__32 label="26 January 2026" show xywh=835,464,15,15>26</abbr></button><button id=__35 show xywh=868,452,50,38 disabled hls=16><abbr id=__34 label="27 January 2026" show xywh=885,464,15,15>27</abbr></button><button id=__37 show xywh=917,452,50,38 disabled hls=16><abbr id=__36 label="28 January 2026" show xywh=935,464,15,15>28</abbr></button><button id=__39 show xywh=967,452,50,38 disabled hls=16><abbr id=__38 label="29 January 2026" show xywh=985,464,15,15>29</abbr></button><button id=__3b show xywh=1017,452,50,38 disabled hls=16><abbr id=__3a label="30 January 2026" show xywh=1034,464,15,15>30</abbr></button><button id=__3d show xywh=1067,452,50,38 disabled hls=16><abbr id=__3c label="31 January 2026" show xywh=1084,464,15,15>31</abbr></button><button id=__3f show xywh=1116,452,50,38 disabled hls=15><abbr id=__3e label="1 February 2026" show xywh=1137,464,7,15>1</abbr></button></div></div></div></div></div></div><div id=__7i show xywh=301,515,1008,442><h3 id=__3m show xywh=301,532,1008,33 hls=5>Order Lines</h3><div id=__9h show xywh=301,693,1008,88><div id=__91 show xywh=314,706,520,62><label id=__8z show xywh=314,706,520,18 hls=6>Product</label><div id=__90 label=role:rcSelect-combobox show xywh=314,736,520,32 hls=12><input id=rc_select_1 label=role:combobox show xywh=323,737,502,30 type=search hls=0 /></div></div><div id=__96 show xywh=846,706,100,62><label id=__92 show xywh=846,706,100,18 hls=6>Unit Price</label><div id=__95 show xywh=846,732,100,36><span id=__93 show xywh=854,740,10,24 hls=9>$</span><input id=__94 show xywh=846,736,100,32 val=1200.00 type=number hls=0 /></div></div><div id=__99 show xywh=958,706,80,62><label id=__97 show xywh=958,706,80,18 hls=6>Qty</label><input id=__98 show xywh=958,736,80,32 val=1 type=number hls=0 /></div><div id=__9c show xywh=1050,706,80,62><label id=__9a show xywh=1050,706,80,18 hls=6>Disc %</label><input id=__9b show xywh=1050,736,80,32 val=0 type=number hls=0 /></div><div id=__9f show xywh=1142,712,100,56><div id=__9d show xywh=1142,712,100,18 hls=6>Subtotal</div><strong id=__9e show xywh=1168,741,75,19 hls=5>$0.001.0012.00120.001200.00</strong></div><button id=__9g show xywh=1254,736,42,32 hls=20>✕</button></div><div id=__b2 show xywh=301,809,1008,88><div id=__am show xywh=314,822,520,62><label id=__ak show xywh=314,822,520,18 hls=6>Product</label><div id=__al label=role:rcSelect-combobox show xywh=314,852,520,32 hls=12><input id=rc_select_2 label=role:combobox show xywh=323,853,502,30 type=search hls=0 /></div></div><div id=__ar show xywh=846,822,100,62><label id=__an show xywh=846,822,100,18 hls=6>Unit Price</label><div id=__aq show xywh=846,848,100,36><span id=__ao show xywh=854,856,10,24 hls=9>$</span><input id=__ap show xywh=846,852,100,32 val=80.00 type=number hls=0 /></div></div><div id=__au show xywh=958,822,80,62><label id=__as show xywh=958,822,80,18 hls=6>Qty</label><input id=__at show xywh=958,852,80,32 val=2 type=number hls=0 /></div><div id=__ax show xywh=1050,822,80,62><label id=__av show xywh=1050,822,80,18 hls=6>Disc %</label><input id=__aw show xywh=1050,852,80,32 val=0 type=number hls=0 /></div><div id=__b0 show xywh=1142,828,100,56><div id=__ay show xywh=1142,828,100,18 hls=6>Subtotal</div><strong id=__az show xywh=1178,857,65,19 hls=5>$0.000.018.0080.00160.00</strong></div><button id=__b1 show xywh=1254,852,42,32 hls=20>✕</button></div><datalist hide><option>Desk Chair- $350.00</option><option>Keyboard- $80.00</option><option>Laptop Pro- $1200.00</option><option>Travel Item 4- $26.40</option><option>Office Item 5- $31.20</option><option>Wellness Item 6- $36.00</option><option>Home Item 7- $40.80</option><option>Garden Item 8- $45.60</option><option>Tech Item 9- $50.40</option><option>Travel Item 10- $55.20</option><option>Office Item 11- $20.00</option><option>Wellness Item 12- $24.80</option><option>Home Item 13- $29.60</option><option>Garden Item 14- $34.40</option><option>Tech Item 15- $39.20</option><option>Travel Item 16- $44.00</option><option>Office Item 17- $48.80</option><option>Wellness Item 18- $53.60</option><option>Home Item 19- $58.40</option><option>Garden Item 20- $63.20</option><option>Tech Item 21- $28.00</option><option>Travel Item 22- $32.80</option><option>Office Item 23- $37.60</option><option>Wellness Item 24- $42.40</option><option>Home Item 25- $47.20</option><option>Garden Item 26- $52.00</option><option>Tech Item 27- $56.80</option><option>Travel Item 28- $61.60</option><option>Office Item 29- $66.40</option><option>Wellness Item 30- $71.20</option><option>Home Item 31- $36.00</option><option>Garden Item 32- $40.80</option><option>Tech Item 33- $45.60</option><option>Travel Item 34- $50.40</option><option>Office Item 35- $55.20</option><option>Wellness Item 36- $60.00</option><option>Home Item 37- $64.80</option><option>Garden Item 38- $69.60</option><option>Tech Item 39- $74.40</option><option>Travel Item 40- $79.20</option><option>Office Item 41- $44.00</option><option>Wellness Item 42- $48.80</option><option>Home Item 43- $53.60</option><option>Garden Item 44- $58.40</option><option>Tech Item 45- $63.20</option><option>Travel Item 46- $68.00</option><option>Office Item 47- $72.80</option><option>Wellness Item 48- $77.60</option><option>Home Item 49- $82.40</option><option>Garden Item 50- $87.20</option><option>Tech Item 51- $52.00</option><option>Travel Item 52- $56.80</option><option>Office Item 53- $61.60</option><option>Wellness Item 54- $66.40</option><option>Home Item 55- $71.20</option><option>Garden Item 56- $76.00</option><option>Tech Item 57- $80.80</option><option>Travel Item 58- $85.60</option><option>Office Item 59- $90.40</option><option>Wellness Item 60- $95.20</option><option>Home Item 61- $60.00</option><option>Garden Item 62- $64.80</option><option>Tech Item 63- $69.60</option><option>Travel Item 64- $74.40</option><option>Office Item 65- $79.20</option><option>Wellness Item 66- $84.00</option><option>Home Item 67- $88.80</option><option>Garden Item 68- $93.60</option><option>Tech Item 69- $98.40</option><option>Travel Item 70- $103.20</option><option>Office Item 71- $68.00</option><option>Wellness Item 72- $72.80</option><option>Home Item 73- $77.60</option><option>Garden Item 74- $82.40</option><option>Tech Item 75- $87.20</option><option>Travel Item 76- $92.00</option><option>Office Item 77- $96.80</option><option>Wellness Item 78- $101.60</option><option>Home Item 79- $106.40</option><option>Garden Item 80- $111.20</option><option>Tech Item 81- $76.00</option><option>Travel Item 82- $80.80</option><option>Office Item 83- $85.60</option><option>Wellness Item 84- $90.40</option><option>Home Item 85- $95.20</option><option>Garden Item 86- $100.00</option><option>Tech Item 87- $104.80</option><option>Travel Item 88- $109.60</option><option>Office Item 89- $114.40</option><option>Wellness Item 90- $119.20</option><option>Home Item 91- $84.00</option><option>Garden Item 92- $88.80</option><option>Tech Item 93- $93.60</option><option>Travel Item 94- $98.40</option><option>Office Item 95- $103.20</option><option>Wellness Item 96- $108.00</option><option>Home Item 97- $112.80</option><option>Garden Item 98- $117.60</option><option>Tech Item 99- $122.40</option><option>Travel Item 100- $127.20</option><option>Office Item 101- $92.00</option><option>Wellness Item 102- $96.80</option><option>Home Item 103- $101.60</option><option>Garden Item 104- $106.40</option><option>Tech Item 105- $111.20</option><option>Travel Item 106- $116.00</option><option>Office Item 107- $120.80</option><option>Wellness Item 108- $125.60</option><option>Home Item 109- $130.40</option><option>Garden Item 110- $135.20</option><option>Tech Item 111- $100.00</option><option>Travel Item 112- $104.80</option><option>Office Item 113- $109.60</option><option>Wellness Item 114- $114.40</option><option>Home Item 115- $119.20</option><option>Garden Item 116- $124.00</option><option>Tech Item 117- $128.80</option><option>Travel Item 118- $133.60</option><option>Office Item 119- $138.40</option><option>Wellness Item 120- $143.20</option></datalist><div id=__7g show xywh=301,577,1008,88><div id=__71 show xywh=314,590,520,62><label id=__6z show xywh=314,590,520,18 hls=6>Product</label><div id=__70 label=role:rcSelect-combobox show xywh=314,620,520,32 hls=12><input id=rc_select_0 label=role:combobox show xywh=323,621,502,30 type=search hls=0 /></div></div><div id=__76 show xywh=846,590,100,62><label id=__72 show xywh=846,590,100,18 hls=6>Unit Price</label><div id=__75 show xywh=846,616,100,36><span id=__73 show xywh=854,624,10,24 hls=9>$</span><input id=__74 show xywh=846,620,100,32 val=350.00 type=number hls=0 /></div></div><div id=__79 show xywh=958,590,80,62><label id=__77 show xywh=958,590,80,18 hls=6>Qty</label><input id=__78 show xywh=958,620,80,32 val=3 type=number hls=0 /></div><div id=__7c show xywh=1050,590,80,62><label id=__7a show xywh=1050,590,80,18 hls=6>Disc %</label><input id=__7b show xywh=1050,620,80,32 val=0 type=number hls=0 /></div><div id=__7f show xywh=1142,596,100,56><div id=__7d show xywh=1142,596,100,18 hls=6>Subtotal</div><strong id=__7e show xywh=1167,625,75,19 hls=5>$0.003.0035.00350.001050.00</strong></div><button id=__8y show xywh=1254,620,42,32 hls=20>✕</button></div><button id=__7h show xywh=301,925,131,32 hls=4>+ Add Line Item</button></div><div id=__7m show xywh=301,981,1008,54><div id=__7k show xywh=301,1004,131,27 hls=17>Total:<strong id=__7j show xywh=349,1006,83,22 hls=10>$0.003.0035.00350.001050.001051.001062.001170.002250.002250.012258.002330.002410.00</strong></div><button id=__7l show xywh=1181,999,128,36 type=submit hls=11>Preview Order</button></div></form></main></div></div><div size0><div label=role:listbox>Not Found</div></div><div size0><div label=role:listbox>Not Found</div></div><div size0><div label=role:listbox>Not Found</div></div> //138
+<script>const font = {"ff0":"\\"Fira Sans\\", \\"Gill Sans\\", \\"Trebuchet MS\\", sans-serif","ff1":"-apple-system, BlinkMacSystemFont, \\"Segoe UI\\", Roboto, Helvetica, Arial, sans-serif"};
+  const hls = {"#0":"600 16px / 24px ff1 #000","#1":"12px / 18px ff1 #888","#2":"14px / 21px ff1 #888","#3":"12px / 18px ff1 #fff","#4":"14px / 21px ff1 #fff","#5":"16px / 24px ff1 #000","#6":"20px / 30px ff1 #777","#7":"15px / 22.5px ff1 #000","#8":"24px / 36px ff1 #39e","#9":"11px / 15.4px ff1 #5b6","#10":"11px / 15.4px ff1 #aab","#11":"600 16px / 24px ff1 #fff","#12":"12px / 18px ff1 #cef","#13":"14px / 21px ff1 #cef","#14":"13px / 19.5px ff1 #888","#15":"15px / 21px ff1 #000","#16":"16px / 24px ff1 #fff","#17":"500 15px
+/ 21px ff1 #000"};</script><div id=__10 xywh=170,24,1359,733 hls=5><div id=__1h xywh=490,93,1039,597 sh=760><div outOfDoc><div>Please confirm order 123.</div><span>09:00</span></div><div covered><div>Looks good to me</div><span>09:15</span></div><div id=__1d xywh=1321,83,171,58 hls=15><div id=__1b xywh=1333,91,147,21>Thank you, will submit</div><span id=__1c xywh=1454,118,26,15 hls=9>09:15</span></div><div id=__1g xywh=510,149,139,58 hls=15><div id=__1e xywh=522,157,115,21>You are welcome.</div><span id=__1f xywh=611,184,26,15
+hls=10>09:16</span></div><div id=__1p xywh=1054,216,438,63 hls=15><div id=__1n xywh=1066,224,414,21 hls=17>runever_upload_1769645770543_sample_order_form-1.pdf</div><span id=__1o xywh=1432,256,48,15 hls=9>12:16</span></div><div id=__1s xywh=1335,287,158,242 hls=15><img id=__1q label=attachment xywh=1347,295,134,200 /><span id=__1r xywh=1432,506,48,15 hls=9>12:16</span></div><div id=__1v xywh=915,537,578,58 hls=15><div id=__1t xywh=927,545,554,21>Hi Dillion — I’ve attached the image and the purchase order. Please confirm
+receipt.</div><span id=__1u xywh=1432,572,48,15 hls=9>12:16</span></div><div id=__1y xywh=510,604,625,58 hls=15><div id=__1w xywh=522,612,601,21>Looks good to me, but could you put in remark say the client is vip. then that's good to go.</div><span id=__1x xywh=1075,639,48,15 hls=10>12:16</span></div></div><div id=__1m xywh=490,690,1039,67><button id=__1i xywh=510,711,36,26 hls=6 /><input id=__1j xywh=0,0,0,0 val= type=file /><input id=__1k xywh=556,700,907,47 val= placeholder="Write a message..." hls=7 /><button id=__1l
+xywh=1473,705,36,38 hls=8 /></div><div id=__y xywh=170,24,320,733><input id=__0 xywh=180,34,299,42 val= placeholder=Search /><div id=__x xywh=170,86,319,671><div id=__7 xywh=170,86,319,70 hls=16><img id=__1 label="Manager Dillion" xywh=180,96,50,50 /><div id=__6 xywh=240,96,239,50><div id=__4 xywh=240,97,239,24><span id=__2 xywh=240,97,116,24 hls=11>Manager Dillion</span><span id=__3 xywh=426,97,52,24 hls=12>12:16</span></div><span id=__5 xywh=240,125,180,21 hls=13>Looks good to me, but could you put in remark say the client
+ is vip. then that's good to go.</span></div></div><div id=__g xywh=170,156,319,70><img id=__8 label="Pavel Durov" xywh=180,166,50,50 /><div id=__f xywh=240,166,239,50><div id=__b xywh=240,167,239,24><span id=__9 xywh=240,167,87,24 hls=0>Pavel Durov</span><span id=__a xywh=450,167,28,24 hls=1>12:30</span></div><div id=__e xywh=240,195,239,21><span id=__c xywh=240,195,173,21 hls=2>Check out the new features!</span><span id=__d xywh=459,196,20,18 hls=3>2</span></div></div></div><div id=__n xywh=170,226,319,70><img id=__h
+ label="React Developers" xywh=180,236,50,50 /><div id=__m xywh=240,236,239,50><div id=__k xywh=240,237,239,24><span id=__i xywh=240,237,125,24 hls=0>React Developers</span><span id=__j xywh=450,237,28,24 hls=1>11:15</span></div><span id=__l xywh=240,265,180,21 hls=2>Anyone know how to use hooks?</span></div></div><div id=__w xywh=170,296,319,70><img id=__o label="Family Content" xywh=180,306,50,50 /><div id=__v xywh=240,306,239,50><div id=__r xywh=240,307,239,24><span id=__p xywh=240,307,109,24 hls=0>Family Content</span><span id=__q xywh=428,307,50,24 hls=1>Yesterday</span></div><div id=__u xywh=240,335,239,21><span id=__s xywh=240,335,75,21 hls=2>Dinner at 7?</span><span id=__t xywh=459,336,20,18 hls=3>5</span></div></div></div></div></div><div id=__z xywh=490,24,1039,69><div id=__14 xywh=510,34,116,48><span id=__12 xywh=510,34,116,24 hls=0>Manager Dillion</span><span id=__13 xywh=510,62,99,17 hls=14>last seen recently</span></div></div></div> //17
 
 [readable file]
-- attached sample_order_form.pdf: application/pdf desc from previous read:Source purchase order with client, vendor, item quantities/prices and remark about not delivering on Monday.
-**can attach with todo.readFiles**
+- de583adbfdd8e235c08ae17c8db9e-04.jpg: image/jpeg desc from previous read:Attached user-provided image (photo).
+- sample_order_form-1.pdf: application/pdf desc from previous read:Attached purchase order PDF (contains order PO-1040, total $2060.00).
+**can attach with todo.readFiles, note read file is expensive attach when necessary**
+
+[messager guide]
+- in session container, if not indicated per message, left side is the session targets message, right side is users. **latest messages are at the bottom**,
+- if not specific prompt, get message means last one from prompted sender.
+- waitMsg should only use at the very beginning or after triggering action, like send message and wait reply, **no other action should add after waitMsg**.
+- if the last preformed action say waited, that means wait finished and you should check messages in HTML
+- **MUST SET CURRENT LAST MESSAGE ID IN ARG BEFORE waitMsg**, then compare the HTML with last id in argument to identify new messages
 
 [argument keys]
-clientName: Northwind Travel
-clientEmail: contact@client.com
-clientPhone: 555-0100
-address: 123 Client St
-city: Business City
-region: ST
-postal: 12345
-line1_product: Desk Chair- $350.00
-line1_qty: 3
-line1_price: 350.00
-line2_product: Laptop Pro- $1200.00
-line2_qty: 1
-line2_price: 1200.00
-line3_product: Keyboard- $80.00
-line3_qty: 2
-line3_price: 80.00
-product: Keyboard- $80.00
-qty: 2
-price: 80.00
+jpg: de583adbfdd8e235c08ae17c8db9e-04.jpg
+pdf: sample_order_form-1.pdf
+lastMsgId: __1e
 
-[combobox guide]
-0. pay special attention to role=combobox, try interact with delegate subtask of each combobox, just use todo to execute step by step.
-1. Try step by step with todo, select the value base on the actual list not the just input the given value.
-2. Indentify stage and suggestions by looking at [html], [performed actions] & todo, note that the suggestion list may not be under the combobox itself but a floating visible element mark with role listbox in label. 
-3. Focus the combobox(input element if exist), **ADD TODO** to observe the dropdown / suggestions.
-4. Type the first few chars of search keyword to filter the suggestions, **ADD TODO** to observe the list.
-5. Press enter to select if there is **only one suggestion** matched the full value and go to 7, or,
-6. Click the suggestion if the full value suggestion appeared, or keep typing to filter the suggestions if the suggestion list still long.
-7. Continue picking next value if exist or end task.
+[file upload guide]
+- using input action to upload, put readable file name in the value
+- allow operate hidden input type=file
+- if user said attach/upload in goal, do not botherUser
 
-[form guide]
-0. forms may have dynamic fields added from button or search field, **PREPARE SUFFICIENT FIELDS FOR DATA BEFORE FILLING**.
-1. delegate subtasks for complex widgets like combobox, calendar etc.
-2. **MUST review filled form HTML** is the value match expectation before preview/submit.
+[contentEditable RTE guide]
+- use toolbar for makeups
+- HTML can only be use when it comes with html mode
 
 [goal]
-fill the form with file
+send this two files to dillion and ask him to confirm, wait for his reply then say thank you, copy his reply to Pavel
+
+[attachments]
+- de583adbfdd8e235c08ae17c8db9e-04.jpg (image/jpeg, 120.1 KB)
+
+Use the attached images for this prompt; do not ask the user to upload images unless absolutely required.
 [mission]
 **todo from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status**
-After the subtask adds the new line and selects the product, click Preview Order (button id=__7l) to submit. Verify the order total matches $2410.00 before submitting. Use sample_order_form.pdf for reference.
+After Dillion replies (new message appears in the chat): 1) send him 'Thank you.' 2) copy Dillion's latest reply text into args.dillion_reply (capture the new message text). 3) open Pavel's chat (click the Pavel chat row) and paste args.dillion_reply into the message box, then send. Verify each send is delivered.
 
 [performed actions]
-- Fill Client Information (name, email, phone).:done
-- Fill Delivery Address (street, city, region, postal).:
-- Add order lines: Desk Chair x3, Laptop Pro x1, Keyboard x2 with prices.:filled one new line (line2) fields; one line still needs to be added and filled (line3)
-- Add a new line, set Product to \${args.line3_product}, Qty \${args.line3_qty}, Unit Price \${args.line3_price}:done
+- open Manager Dillion chat by clicking the chat row
+- store attachment filenames for use after navigation: keys jpg and pdf
+- attach files \${args.jpg} and \${args.pdf}
+- fill message with 'Hi Dillion — I’ve attached the image and the purchase order. Please confirm receipt.'
+- click send button and wait for Dillion reply
+
 `,
   system: `[system]
 a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.
@@ -204,14 +203,12 @@ use only the elements provided in current [html], and work with their id in acti
 
 [response in valid json format]
 
-
 type ID = string;
 type Selector = ID | { id: ID, argKeys: (string|null)[] };
 
 type WireWait = { to?: number } & ( // wait timeout in ms
   | { t: 'network'; a: 'idle0' | 'idle2' }
   | { t: 'time'; ms: number }
-  | { t: 'domLongTime'; a: 'any'|'childAdd'|'childRm'|'attr'|'txt'; q: Selector;}
 )
 
 type WireAction =
@@ -238,7 +235,7 @@ type WireAction =
     }
   | {
       k: 'key';
-      key: string;
+      key: string; // single key, use input for typing words
       a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press for typing, unless required/need delay
       q?: Selector;
       c?: boolean; // ctrl
@@ -248,9 +245,10 @@ type WireAction =
       repeat?: number;
     }
   | {
-      k: 'input'; // for input, textarea, select, also upload file with path in v
+      k: 'input'; // for input, textarea, contentEditable, select, also upload file with path in v
       q: Selector;
       v: string|string[]; // input value, array for multiple select/files
+      c?: 'noClear'; // without this will clear before typing
     }
   | {
       k: 'botherUser';
@@ -294,8 +292,11 @@ type WireStep = {
   intent: string;
   risk: 'h' | 'm' | 'l';
   action: WireAction;
-  pre?: WireWait; // wait BEFORE this action, most of the time engine can handle it automatically
-  post?: WireWait; // wait AFTER this action, most of the time engine can handle it automatically
+  pre?: WireWait // wait BEFORE this action, most of the time engine can handle it automatically
+  post?: WireWait | // wait AFTER this action, most of the time engine can handle it automatically
+   { t: 'waitMsg'; // wait for email, messager session dom update, **MUST NOT ADD ACTION AFTER THIS**
+     q: Selector; // dialog container, email list etc
+   }
 }
 
 type WireSubTaskDoableInCurrentHtml = {
@@ -305,7 +306,12 @@ type WireSubTaskDoableInCurrentHtml = {
   complexity: 'h' | 'm' | 'l';
 }
 
-export type LlmWireResult = {
+type AttachementDesc = {
+  name: string;
+  desc: string;
+};
+
+type LlmWireResult = {
   taskEstimate: {
     doableInCurrentHtml: string;
     shouldGoTodo: string;
@@ -315,12 +321,10 @@ export type LlmWireResult = {
   todo: {
     sc?: boolean; // require screenshot
     rc: string; // after all prompt
-    readFiles?: string[]; // attach readable files
-    descAttachment?: {
-        name: string;
-        desc: string;
-    }[];
+    readFiles?: string[]; // attach readable files only when you really need the content in file
+    descAttachment?: AttachementDesc[];
   } | 'finishedNoToDo';
+  subtaskResp?: 'done' | string;
 };
 
 **only valid JSON response is acceptable, markdown code block quoting will cause error**`,

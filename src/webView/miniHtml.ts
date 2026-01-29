@@ -2,7 +2,9 @@ import { SliderProfile } from '../agentic/profile/widget/slider.html';
 import { dummyCursor } from './cursor/cursor';
 import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
+import { checkCalendar } from '../agentic/profile/widget/calendar.html';
 
+const tagMatchRx = /<([a-z0-9]+)([\w\W]*?)<\/\1>/g;
 export namespace MiniHtml {
   export const EL_IN_IFRAME = Symbol('EL_IN_IFRAME');
   export const iframeById: Record<string, IFrameHelper> = {};
@@ -112,7 +114,9 @@ export namespace MiniHtml {
       }
     }
     const extra = '';
-    const res = SliderProfile.checkSlider(tagName, element);
+    const res =
+      SliderProfile.checkSlider(tagName, element) ??
+      checkCalendar(tagName, element);
     if (res) {
       return res;
     }
@@ -261,7 +265,7 @@ export namespace MiniHtml {
       if (childLevel <= 0 && innerHtml) {
         innerHtml = '...';
       }
-      if (element.tagName === 'BODY') {
+      if (tagName === 'body') {
         return innerHtml ?? '';
       }
       const el = meaningfulEl.element;
@@ -270,27 +274,9 @@ export namespace MiniHtml {
         .map((attr) => `${attr[0]}=${quoteAttrVal(attr[1]!)}`);
       let typeAttr = el.getAttribute('type');
 
-      if (typeAttr) {
-        typeAttr = typeAttr.toLowerCase();
-        if (
-          (tagName === 'input' && typeAttr !== 'text') ||
-          (tagName === 'button' && typeAttr !== 'button')
-        ) {
-          attrs.push(`type=${quoteAttrVal(typeAttr)}`);
-        }
-
-        if (
-          tagName === 'input' &&
-          (typeAttr === 'checkbox' || typeAttr === 'radio') &&
-          (el as HTMLInputElement).checked
-        ) {
-          attrs.push(`checked`);
-        }
-      }
-
       attrs.push(
         ...PRINT_EMPTY_ATTRS.filter((attr) => el.hasAttribute(attr)).map(
-          (attr) => `${attr}`,
+          (attr) => `${attr}=1`,
         ),
       );
 
@@ -298,9 +284,36 @@ export namespace MiniHtml {
         fontIndex = Object.keys(this.styles.font).length;
         this.styles.font[style.fontFamily] = fontIndex;
       }
-      const isVisible = visible.visible === true;
+      let isVisible = visible.visible === true;
       let href = '';
-      if (isVisible && tagName === 'a') {
+
+      if (typeAttr) {
+        typeAttr = typeAttr.toLowerCase();
+        if (tagName === 'button' && typeAttr !== 'button') {
+          attrs.push(`type=${quoteAttrVal(typeAttr)}`);
+        } else if (tagName === 'input') {
+          if (
+            (typeAttr === 'checkbox' || typeAttr === 'radio') &&
+            (el as HTMLInputElement).checked
+          ) {
+            attrs.push(`checked`);
+          } else if (typeAttr === 'file') {
+            // force id to file input
+            isVisible = true;
+            attrs.push(`type=${quoteAttrVal(typeAttr)}`);
+          } else if (typeAttr !== 'text') {
+            attrs.push(`type=${quoteAttrVal(typeAttr)}`);
+          }
+        }
+      }
+
+      if (
+        tagName === 'button' &&
+        el.hasAttribute('disabled') &&
+        innerHtml?.includes('<')
+      ) {
+        innerHtml = innerHtml.replace(tagMatchRx, '<$1 disabled=1$2</$1>');
+      } else if (isVisible && tagName === 'a') {
         const h = element.getAttribute('href');
         if (h && h.includes('://') && !h.startsWith(window.location.origin)) {
           href = `href=${h.length > 64 ? `${h.slice(0, 64)}...` : h}`;
@@ -317,7 +330,7 @@ export namespace MiniHtml {
         notShow
           ? ''
           : isVisible
-            ? 'show'
+            ? ''
             : `${visible.visible === false ? 'hide' : visible.visible}`,
         isVisible
           ? `xywh=${Math.round(visible.x)},${Math.round(visible.y)},${Math.round(visible.width)},${Math.round(visible.height)}`

@@ -118,42 +118,61 @@ export namespace BrowserActions {
     return el.element;
   };
   export const checkDom = async (
-    t: Extract<WireWait, { t: 'domLongTime' }>['a'],
-    selector: MiniHtml.Selector,
+    t: 'childAdd', // Extract<WireWait, { t: 'domLongTime' }>['a'],
+    toMonitor: MiniHtml.Selector,
   ) => {
-    const el = window.webView.getEl(selector);
+    const el =
+      toMonitor instanceof Element
+        ? toMonitor
+        : window.webView.getEl(toMonitor)?.element;
     if (el) {
+      const started = Date.now();
+      let to: any = null;
       await new Promise<void>((resolve) => {
         const observer = new MutationObserver((mutations) => {
+          console.log('waitMsg', mutations);
           for (const mutation of mutations) {
             switch (t) {
-              case 'attr':
-                if (mutation.type === 'attributes') {
-                  r();
-                  return;
-                }
-                break;
-              case 'childRm':
-                if (mutation.removedNodes.length) {
-                  r();
-                  return;
-                }
-                break;
+              // case 'attr':
+              //   if (mutation.type === 'attributes') {
+              //     r();
+              //     return;
+              //   }
+              //   break;
+              // case 'childRm':
+              //   if (mutation.removedNodes.length) {
+              //     r();
+              //     return;
+              //   }
+              //   break;
               case 'childAdd':
                 if (mutation.addedNodes.length) {
+                  if (to) {
+                    clearTimeout(to);
+                  }
+                  if (Date.now() - started < 500) {
+                    console.log('waitMsg suspect self message', toMonitor);
+                    // may comes from user themselves, but shorten timeout avoid false negative
+                    to = setTimeout(() => {
+                      console.log('waitMsg suspect self message to', toMonitor);
+                      r();
+                    }, 30000);
+                    return;
+                  }
+                  console.log('waitMsg complete', toMonitor);
                   r();
                   return;
                 }
                 break;
-              case 'txt':
-                if (mutation.type === 'characterData') {
-                  r();
-                  return;
-                }
-                break;
-              case 'any':
-                r();
-                return;
+              // case 'txt':
+              //   if (mutation.type === 'characterData') {
+              //     r();
+              //     return;
+              //   }
+              //   break;
+              // case 'any':
+              //   r();
+              //   return;
             }
           }
         });
@@ -161,7 +180,7 @@ export namespace BrowserActions {
           resolve();
           observer.disconnect();
         };
-        observer.observe(el.element, {
+        observer.observe(el, {
           attributes: true,
           childList: true,
           characterData: true,
@@ -188,45 +207,58 @@ export namespace BrowserActions {
       }
     }
   };
-  const waitAction = async (wait: WireWait | undefined) => {
-    if (wait) {
-      let waitPromise;
-      let waitTime = DEFAULT_TIMEOUT_MS;
-      switch (wait.t) {
-        case 'time':
-          await Util.sleep(wait.ms);
-          break;
-        case 'network':
-          if (wait.a === 'idle0') {
-            waitPromise = Network.waitForNetworkIdle0();
-          } else if (wait.a === 'idle2') {
-            waitPromise = Network.networkIdle2.wait;
-          }
-          break;
-        case 'domLongTime':
-          waitPromise = checkDom(wait.a, wait.q);
-          waitTime = 300000; // wait for longer
-          break;
-        case 'appear':
-          waitPromise = checkDomAppear(wait.q);
-          break;
-        case 'disappear':
-          waitPromise = checkDomDisappear(wait.q);
-          break;
-        case 'navigation':
-          if (wait.url === window.location.href) {
-            return; // let it re-push after navigation
-          }
-          break;
-      }
-      console.log('wait', wait, waitPromise, waitTime);
-      if (
-        waitPromise &&
-        (await Util.awaitWithTimeout(waitPromise, wait.to ?? waitTime)) ===
-          Util.WaitTimeout
-      ) {
-        throw ErrWaitTimeout;
-      }
+  const waitAction = async (
+    wait: WireWait,
+    args: Record<string, string>,
+    argDelta: [string, string][],
+  ) => {
+    let waitPromise;
+    let waitTime = DEFAULT_TIMEOUT_MS;
+    switch (wait.t) {
+      case 'time':
+        await Util.sleep(wait.ms);
+        break;
+      case 'network':
+        if (wait.a === 'idle0') {
+          waitPromise = Network.waitForNetworkIdle0();
+        } else if (wait.a === 'idle2') {
+          waitPromise = Network.networkIdle2.wait;
+        }
+        break;
+      case 'waitMsg':
+        argDelta.push(
+          ['waitMsg1stId', wait.id1st],
+          ['waitMsgLastId', wait.idLast],
+        );
+        args.waitMsg1stId = wait.id1st;
+        args.waitMsgLastId = wait.idLast;
+
+        waitPromise = checkDom('childAdd', wait.q);
+        waitTime = 300000; // wait for longer
+        break;
+      // case 'domLongTime':
+      //   waitPromise = checkDom(wait.a, wait.q);
+      //   waitTime = 300000; // wait for longer
+      //   break;
+      case 'appear':
+        waitPromise = checkDomAppear(wait.q);
+        break;
+      case 'disappear':
+        waitPromise = checkDomDisappear(wait.q);
+        break;
+      case 'navigation':
+        if (wait.url === window.location.href) {
+          return; // let it re-push after navigation
+        }
+        break;
+    }
+    console.log('wait', wait, waitPromise, waitTime);
+    if (
+      waitPromise &&
+      (await Util.awaitWithTimeout(waitPromise, wait.to ?? waitTime)) ===
+        Util.WaitTimeout
+    ) {
+      throw ErrWaitTimeout;
     }
   };
   const execInIframeOrEl = async (
@@ -260,10 +292,17 @@ export namespace BrowserActions {
     let lastPopedActionId = -1;
     const popAction = async (
       actionId: number,
-      argsDelta?: Record<string, string>,
+      argsDeltaEntries?: [string, string][],
     ) => {
       if (lastPopedActionId === actionId) return;
       lastPopedActionId = actionId;
+      const argsDelta = argsDeltaEntries?.reduce(
+        (acc, e) => {
+          acc[e[0]] = e[1];
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
       return (await actionApi).actionDone({
         actionId,
         argsDelta,
@@ -275,7 +314,7 @@ export namespace BrowserActions {
     };
     let rec: WireActionWithWaitAndRec;
     let action: WireActionToExec;
-    let argsDelta: Record<string, string> | undefined;
+    let argsDelta: [string, string][];
     let execFn: (
       action: any,
       risk: BrowserActionRisk,
@@ -288,7 +327,7 @@ export namespace BrowserActions {
       }
       rec = actions[i];
       action = rec.action;
-      argsDelta = undefined;
+      argsDelta = [];
       console.log('actions continue', action);
       try {
         switch (action.k) {
@@ -350,7 +389,6 @@ export namespace BrowserActions {
             }
             // eslint-disable-next-line no-loop-func
             execFn = async (thisAction, risk, thisArgs) => {
-              argsDelta = {};
               setArgs(thisAction, risk, thisArgs, argsDelta);
             };
             break;
@@ -432,13 +470,13 @@ export namespace BrowserActions {
             break;
         }
         if (rec.pre) {
-          await waitAction(rec.pre);
+          await waitAction(rec.pre, args, argsDelta);
         }
         window.onbeforeunload = onbeforeunload(rec.id);
         await execFn(action, rec.risk, args);
         window.onbeforeunload = null;
         if (rec.post) {
-          await waitAction(rec.post);
+          await waitAction(rec.post, args, argsDelta);
         }
         await popAction(rec.id, argsDelta);
       } catch (e) {
@@ -464,7 +502,7 @@ export namespace BrowserActions {
     action: Extract<WireActionToExec, { k: 'setArg' }>,
     risk: BrowserActionRisk,
     args: Record<string, string> = {},
-    argsDelta: Record<string, string> = {},
+    argsDelta: [string, string][] = [],
   ) => {
     const { kv } = action;
     // eslint-disable-next-line no-loop-func
@@ -489,13 +527,13 @@ export namespace BrowserActions {
         const el = action.el ?? getElementById(v.q, risk, args);
         if (!v.attr) {
           args[k] = el.textContent ?? '';
-        } else if (v.attr === 'textContent') {
+        } else if (v.attr === 'textContent' || v.attr === 'innerText') {
           args[k] = el.textContent ?? '';
         } else {
           args[k] = el.getAttribute(v.attr) ?? '';
         }
       }
-      argsDelta[k] = args[k];
+      argsDelta.push([k, args[k]]);
     });
     console.log('setArgument', action, argsDelta);
   };
@@ -591,6 +629,7 @@ export namespace BrowserActions {
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
     console.log('input', action, el, document.activeElement);
+    const typeAttr = el.getAttribute('type');
     const values =
       typeof action.v === 'string'
         ? [CommonUtil.replaceJsTpl(action.v, args) ?? '']
@@ -602,7 +641,11 @@ export namespace BrowserActions {
     ) {
       return;
     }
-    if (document.activeElement !== el && el !== document.body) {
+    if (
+      document.activeElement !== el &&
+      el !== document.body &&
+      typeAttr !== 'file'
+    ) {
       console.log('focus', action, el);
       await dummyCursor.mouseEvent('click', el);
     }
@@ -684,7 +727,7 @@ export namespace BrowserActions {
           throw new Error(`Option not found ${values}`);
         }
       }
-    } else if (el.getAttribute('type') === 'file') {
+    } else if (typeAttr === 'file') {
       const selector = getUniqueSelector(el);
       await (
         await actionApi
@@ -698,7 +741,11 @@ export namespace BrowserActions {
         filePaths: values,
       });
     } else {
-      if ((el as HTMLInputElement).value !== '') {
+      if (
+        (el as HTMLInputElement).value !== '' &&
+        action.c !== 'noClear' &&
+        !el.hasAttribute('contentEditable')
+      ) {
         const modifierKey = Util.isMac ? 'Meta' : 'Control';
         const modifier = Util.isMac ? 'meta' : 'control';
         setTimeout(() => {

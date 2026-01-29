@@ -12,6 +12,13 @@ const WireWaitNetworkSchema = z.object({
   t: z.literal('network'),
   a: z.union([z.literal('idle0'), z.literal('idle2')]),
 });
+
+const WireWaitMsgSchema = z.object({
+  t: z.literal('waitMsg'),
+  q: WireSelectorSchema,
+  id1st: z.string(),
+  idLast: z.string(),
+});
 const WireWaitDomSchemaV2 = z.object({
   t: z.literal('domLongTime'),
   a: z.union([
@@ -41,7 +48,8 @@ export const WireWaitSchema = z
   .union([
     WireWaitNetworkSchema,
     WireWaitDomSchema,
-    WireWaitDomSchemaV2,
+    // WireWaitDomSchemaV2,
+    WireWaitMsgSchema,
     WireWaitTimeSchema,
     WireWaitNavigationSchema,
   ])
@@ -125,6 +133,7 @@ const InputActionSchema = z.object({
   k: z.literal('input'),
   q: WireSelectorSchema,
   v: z.union([z.string(), z.array(z.string())]),
+  c: z.literal('noClear').nullable().optional(),
 });
 
 const NotifyUserActionSchema = z.object({

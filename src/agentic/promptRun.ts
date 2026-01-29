@@ -255,13 +255,13 @@ export class PromptRun {
       this.breakPromptForExeErr = true;
       return;
     }
-    console.log('Try fix error:', actionToFix);
+    const selectedPrompt = this.prompts[actionToFix.promptId!];
+    console.log('Try fix error:', actionToFix, selectedPrompt);
 
-    const { sessionId } = this.prompts[actionToFix.promptId!];
+    const { sessionId } = selectedPrompt;
 
     if (sessionId) {
       const session = this.sessionQueue[sessionId];
-      const selectedPrompt = this.prompts[actionToFix.promptId!];
       if (!selectedPrompt) {
         console.error('Selected prompt not found:', actionToFix.promptId);
         return;
@@ -302,6 +302,8 @@ these actions are blocking by this error, if you found any of the above actions 
       );
 
       this.browserActionLock.unlock();
+    } else {
+      console.log('no session id');
     }
   }
 
