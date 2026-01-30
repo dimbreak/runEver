@@ -34,6 +34,8 @@ type LayoutState = {
   bounds: Rectangle;
   toggleSidebar: () => void;
   toggleUrlBar: (showUrlBar: boolean) => void;
+  isConfigOpen: boolean;
+  toggleConfig: () => void;
 };
 
 export const useLayoutStore = create<LayoutState>((set) => ({
@@ -62,4 +64,6 @@ export const useLayoutStore = create<LayoutState>((set) => ({
         showUrlBar ? expandedHeight : collapsedHeight,
       ),
     })),
+  isConfigOpen: false,
+  toggleConfig: () => set((state) => ({ isConfigOpen: !state.isConfigOpen })),
 }));

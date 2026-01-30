@@ -123,7 +123,7 @@ const handleFrameId = async (event: MessageEvent) => {
     scrollAdjustment,
   });
   console.log('Setting in preload:', event.data);
-  window.removeEventListener('message', handleFrameId);
+  // window.removeEventListener('message', handleFrameId);
   // const events = [];
   // for (const property in window) {
   //   if (property.startsWith('on')) {
@@ -134,16 +134,16 @@ const handleFrameId = async (event: MessageEvent) => {
   //   }
   // }
   // console.log(events.join(' '));
-  //
-  await Util.sleep(2000);
 
-  // document.body.querySelector('input')?.focus();
-  // BrowserActions.input(
+  // await Util.sleep(2000);
+  //
+  // // document.body.querySelector('input')?.focus();
+  // BrowserActions.mouse(
   //   {
-  //     k: 'input',
+  //     k: 'mouse',
+  //     a: 'click',
   //     q: '',
-  //     el: document.body.querySelector('select')!,
-  //     v: 'Avg. Customer Review',
+  //     el: document.querySelector('form .sf-button')!,
   //   },
   //   'l',
   // );

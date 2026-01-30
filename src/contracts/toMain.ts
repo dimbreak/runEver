@@ -74,6 +74,7 @@ export namespace ToMainIpc {
       {
         provider: Env['provider'];
         apiKey: string;
+        baseUrl?: string;
       },
     ],
     void
@@ -238,10 +239,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('get-tab-navigation-state');
   export const getLlmSessionSnapshot = new IpcMainContract<
@@ -252,8 +253,7 @@ export namespace ToMainIpc {
     ],
     { snapshot: unknown } | { error: string }
   >('get-llm-session-snapshot');
-  export const
-  getApiTrustEnv = new IpcMainContract<
+  export const getApiTrustEnv = new IpcMainContract<
     [],
     {
       clientId: string;
@@ -274,10 +274,9 @@ export namespace ToMainIpc {
       url: string | null;
     }
   >('get-pending-auth-deeplink');
-  export const clearPendingAuthDeepLink = new IpcMainContract<
-    [],
-    void
-  >('clear-pending-auth-deeplink');
+  export const clearPendingAuthDeepLink = new IpcMainContract<[], void>(
+    'clear-pending-auth-deeplink',
+  );
   export const setApiTrustToken = new IpcMainContract<
     [
       {
@@ -302,10 +301,10 @@ export namespace ToMainIpc {
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('navigate-tab-history');
   export const iframeProgress = new IpcMainContract<

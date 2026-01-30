@@ -19,7 +19,6 @@ export class PromptRun {
   args: Record<string, any> = {};
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
-  actionId = 0;
   browserActionLock = Util.newLock('browserActionLock');
   browserActionLockOk = false;
   prompts: Prompt[] = [];
@@ -127,7 +126,7 @@ export class PromptRun {
 
   stop() {
     this.stopRequested = true;
-    this.fixingAction = null;
+    this.fixingAction.splice(0, this.fixingAction.length);
     this.browserActionLock.unlock();
   }
 
@@ -140,7 +139,7 @@ export class PromptRun {
   }
 
   async execActions() {
-    if (!this.fixingAction) {
+    if (!this.fixingAction.length) {
       this.browserActionLockOk = false;
       this.manager.ensureRunLocked(this.requestId);
       this.manager.enqueueRun(this.requestId);
@@ -155,8 +154,8 @@ export class PromptRun {
   }
 
   addAction(action: WireActionWithWaitAndRec) {
-    if (this.fixingAction) {
-      const { fixingAction } = this;
+    if (this.fixingAction.length) {
+      const fixingAction = this.fixingAction[0];
       if (fixingAction!.offset === 0) {
         this.actions[fixingAction!.offset + this.currentAction] = action;
       } else {
@@ -247,7 +246,8 @@ export class PromptRun {
     action: WireActionWithWaitAndRec;
     offset: number;
     promptId: number;
-  } | null = null;
+    sessionId: number;
+  }[] = [];
   async fixAction() {
     const actionToFix = this.actions[this.currentAction];
     if (actionToFix.error && actionToFix.error.length >= ExecutionMaxRetry) {
@@ -255,13 +255,13 @@ export class PromptRun {
       this.breakPromptForExeErr = true;
       return;
     }
-    console.log('Try fix error:', actionToFix);
+    const selectedPrompt = this.prompts[actionToFix.promptId!];
+    console.log('Try fix error:', actionToFix, selectedPrompt);
 
-    const { sessionId } = this.prompts[actionToFix.promptId!];
+    const { sessionId } = selectedPrompt;
 
     if (sessionId) {
       const session = this.sessionQueue[sessionId];
-      const selectedPrompt = this.prompts[actionToFix.promptId!];
       if (!selectedPrompt) {
         console.error('Selected prompt not found:', actionToFix.promptId);
         return;
@@ -289,14 +289,21 @@ these actions are blocking by this error, if you found any of the above actions 
             : ''
         }`,
       );
-      session.promptQueue.unshift(prompt);
-      this.fixingAction = {
+      this.fixingAction.push({
         action: actionToFix,
         offset: 0,
         promptId: prompt.id,
-      };
+        sessionId,
+      });
+      session.promptQueue.splice(
+        this.fixingAction.filter((fa) => fa.sessionId === sessionId).length - 1,
+        0,
+        prompt,
+      );
 
       this.browserActionLock.unlock();
+    } else {
+      console.log('no session id');
     }
   }
 

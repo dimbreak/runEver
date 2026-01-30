@@ -19,10 +19,12 @@ import SearchHomePage from './pages/SearchHomePage';
 import SearchResultsPage from './pages/SearchResultsPage';
 
 import DataGridPage from './pages/DataGridPage';
+import TelegramPage from './pages/TelegramPage';
 
 const routeMap: Record<string, () => React.ReactNode> = {
   '/': HomePage,
   '/email': EmailPlatformPage,
+  '/im': TelegramPage,
   '/data-grid': () => <DataGridPage />,
   '/pokemon': () => <DataGridPage entryPoint="pokemon" />,
   '/ecomm/products': () => <EcommerceProductsPage />,
@@ -125,6 +127,7 @@ const routeMap: Record<string, () => React.ReactNode> = {
 const titleMap: Record<string, string> = {
   '/': 'Home - RunEverMark',
   '/email': 'Email Platform - RunEverMark',
+  '/im': 'Teleram - RunEverMark',
   '/data-grid': 'Data Grid - RunEverMark',
   '/ecomm/products': 'Products - E-Commerce - RunEverMark',
   '/ecomm/basic': 'Products (Basic) - E-Commerce - RunEverMark',

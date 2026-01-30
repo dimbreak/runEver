@@ -3,10 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ToMainIpc } from '../../contracts/toMain';
 import type { Env } from '../../schema/env.schema';
-import {
-  OWN_KEY_REMEMBER_KEY,
-  OWN_KEY_SESSION_KEY,
-} from '../constants/auth';
+import { OWN_KEY_REMEMBER_KEY, OWN_KEY_SESSION_KEY } from '../constants/auth';
 
 export const AuthStartPage = () => {
   const navigate = useNavigate();
@@ -16,6 +13,7 @@ export const AuthStartPage = () => {
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [provider, setProvider] = useState<Env['provider']>('openai');
   const [apiKey, setApiKey] = useState('');
+  const [apiUrl, setApiUrl] = useState<string | undefined>(undefined);
   const [rememberOwnKey, setRememberOwnKey] = useState(false);
 
   useEffect(() => {
@@ -80,6 +78,7 @@ export const AuthStartPage = () => {
       await ToMainIpc.setUserApiKey.invoke({
         provider,
         apiKey: trimmedKey,
+        baseUrl: apiUrl,
       });
       await ToMainIpc.setAuthMode.invoke({ mode: 'apikey' });
       window.sessionStorage.setItem(OWN_KEY_SESSION_KEY, 'true');
@@ -158,6 +157,28 @@ export const AuthStartPage = () => {
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
                   placeholder="Paste your API key"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={apiUrl !== undefined}
+                  onChange={(event) =>
+                    setApiUrl(event.target.checked ? '' : undefined)
+                  }
+                />
+                Use custom API url
+              </label>
+              <label
+                className={`block text-sm font-medium text-slate-700 ${apiUrl !== undefined ? '' : 'opacity-50'}`}
+              >
+                Custom API url
+                <input
+                  className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-slate-400 focus:outline-none"
+                  autoComplete="off"
+                  value={apiUrl ?? ''}
+                  disabled={apiUrl === undefined}
+                  onChange={(event) => setApiUrl(event.target.value)}
                 />
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-600">

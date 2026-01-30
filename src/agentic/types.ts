@@ -25,4 +25,5 @@ export type Prompt = {
   argsAdded?: Record<string, string> | null;
   complexity?: RiskOrComplexityLevel;
   attachments?: string[];
+  subtaskResp?: string;
 };

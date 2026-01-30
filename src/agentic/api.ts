@@ -270,26 +270,26 @@ export namespace LlmApi {
     const llmApi = await getLlmApi();
 
     if (llmApi) {
-      const promptObj: string | Array<ModelMessage> = systemPrompt
-        ? [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: attachments
-                ? [
-                    {
-                      type: 'text',
-                      text: prompt,
-                    },
-                    ...attachments,
-                  ]
-                : prompt,
-            },
-          ]
-        : prompt;
+      const promptObj: string | Array<ModelMessage> = [
+        {
+          role: 'user',
+          content: attachments
+            ? [
+                {
+                  type: 'text',
+                  text: prompt,
+                },
+                ...attachments,
+              ]
+            : prompt,
+        },
+      ];
+      if (systemPrompt) {
+        promptObj.push({
+          role: 'system',
+          content: systemPrompt,
+        });
+      }
       const maxStreamRetries = 1;
       let lastError: unknown;
 
@@ -302,7 +302,10 @@ export namespace LlmApi {
         try {
           const streamResult = streamQueryer({
             model: llmApi[model],
-            providerOptions: llmApi.makeProviderOptions(reasoningEffort, cacheKey),
+            providerOptions: llmApi.makeProviderOptions(
+              reasoningEffort,
+              cacheKey,
+            ),
             prompt: promptObj,
           });
           response = streamResult.response;

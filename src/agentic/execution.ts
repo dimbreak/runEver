@@ -28,6 +28,10 @@ const ComplexityToModelConfig: Record<
 
 const userPromptRules = `[every request]
 - [goal] will be in absolute priority, while [mission] sometimes given for specific task to archive the goal. stop once the goal is done & ignore mission.
+- [goal] or [mission] could be very long, make taskEstimate in very short natual language. Then check
+  - when the goal/mission has task not have absolute confident to do in current HTML, put in todo only;
+  - if the task doable in CURRENT HTML is long, say > 3 actions, consider split into subtasks.
+  - give actions to work directly.
 - [performed actions] will provided in followup prompts, take what have been done into account to avoid duplication, just do the new actions.
 - Updated UI state is always provide by the [html].
 - take [html] as source of truth or verification, not rely on arguments.
@@ -41,6 +45,8 @@ const userPromptRules = `[every request]
 - when the argument value is coming from attachment, add filename to the key, like invoice.pdf-total.
 - when receive attachment without description in readable file list other than screenshot.jpg, use todo.descAttachment to shortly describe the file content for giving context to downstream
 - file from download action can use immediately in todo, just put the same filename in attach and download action.
+- file should only be read on demand, and store necessary info in argument, do not require reading in every todo.
+- if user asked to wait for email/message, **waitMsg MUST DIRECTLY APPLY TO POST WAIT OF TRIGGER ACTION**. Split with todo/subtask may cause missing event.
 
 [safty check]
 - links to external origin will give href, **MUST CHECK the url before click**, make sure matches its description. fraud is common in search engines or sns.
@@ -48,19 +54,19 @@ const userPromptRules = `[every request]
 
 [subtask guide]
 - plan sub tasks for **current page & current tab & current visible ui show in HTML only**, each sub task **MUST BE created base on >1 current visible UI**.
-- job in subtask prompt must be able to connect with delegated UI in CURRENT HTML, tasks not applicable with current ui in HTML MUST go to todo.
-- multi attentions task is the primary cause of errors. Make sure the finest granularity is per widget.
+- tasks in shouldGoTodo never put in subtask.
 - prioritise [goal] preference, skip splitting if it explicitly say do not add subtask.
-- MUST create subtask if [goal] falls into one of the following criteria even marginally:
+- MUST create subtask if [goal] or [mission] doable in current HTML falls into one of the following criteria even marginally:
   - dealing with long task more than 5 steps, typically filling form with > 3 field or,
   - interact with calendar, tree menu, combobox, tags picker or other complex/uncertain widget MUST BE operate in their own subtask. Isolate them from other tasks.
-- the final irreversible step MUST BE in todo of the main task, perform after all subtasks done.
-- explain the reason for split or not in shouldSplitTask in minimal natual language.
+- the final irreversible step MUST BE in todo of the main task, perform after all subtasks done, MUST ADD TODO if sub task is created, left >1 steps in todo.
 - sub task prompt must be in short(<20 words) natual language and argument key with delegated task working with **mostly 3 current visible UI elements only**.
+- **Subtask prompt is atomic task UNDER CURRENT STATUS**, do only what you found in HTML absolutely no prediction of status changes.
 - DO NOT GIVE actions, give only high level task WORKABLE ON CURRENT VISIBLE UI IN HTML, let the subtask executor to decide actions.
+- not supporting nested subtask, if you found current subtask should be split, end the current subtask and make advise with subtaskResp, let root executor create new subtasks.
 - use arguments to communicate between main & sub tasks, arguments shared across the whole session. **provide arguments to subtask whenever you can with plain text or argument tpl only**.
-- WireSubTask MUST NOT mix with WireStep, only one type of elements are allowed in a response.
-- MUST ADD TODO if sub task is created, left >1 steps in todo.
+- full set of current arguments will pass to subtask, reset is not necessary.
+- WireSubTaskDoableInCurrentHtml MUST NOT mix with WireStep, only one type of elements are allowed in a response.
 - only create subtask on non-subtask, response only actions and todo when [this is a sub task] appear.
 - estimate the complexity of sub task and h=high, m=medium, l=low, a complex task may contain more actions or uncertain reactions from UI need attempts to get it done. it will give more reasoning power or better model.
    - typically low means obvious task like click a button, fill a input etc.
@@ -77,10 +83,11 @@ const userPromptRules = `[every request]
 - Destructive actions must be bound to a visible UI element.Keyboard shortcuts are not allowed for delete/remove unless explicitly requested by the task or stated on the UI.
 - For multiple fields form, submit action must appear as an isolated response with single action. put in todo and remind next executor to verify input and do submit if inputs are valid.
 - set pre/post hook ONLY IF it is **required by the workflow**. ordinary waiting or rerender/reload event will be handled by engine.
+- wait domLongTime is for async event ONLY, like wait for message, email, llm stream response.
 
 - you should:
 - focus on the [mission] if exist while not conflict with the [goal], use [performed actions] to determine the current status in task.
-- explain intention in WireStep.intent with very short natual language & argument before action, like "click the submit button", "fill in user name with $args.username" etc
+- explain intention in WireStep.intent with very short natual language & argument before action, like \\"click the submit button\\", \\"fill in user name with $args.username\\" etc
 - always mention argument & key in intention if they involved in the element lookup or action.
 - read value and verify result by looking at [html], browser actions cannot help unless you need trigger some specific event to reveal values.
 - assign a risk level to each step
@@ -102,7 +109,7 @@ const userPromptRules = `[every request]
 - Reversible or non-critical actions (e.g. navigation, opening widgets, clicking controls, changing views):
    - You MUST attempt a reasonable action and observe the result.
    - Perform at most one exploratory attempt per control. Decide using the lowest-risk option.
-   - Always trial with one single step if uncertain and mention it in todo, like "The current state is X, I have tried click Y buttom, see how it behaves and decide the next towards the goal.".
+   - Always trial with one single step if uncertain and mention it in todo, like \\"The current state is X, I have tried click Y buttom, see how it behaves and decide the next towards the goal.\\".
    - Observe what changed. Use the result of the attempt to decide the next step.
    - If the result clarifies the behavior, continue.
    - Engine will bother user after hard limit of attempts reached.
@@ -116,6 +123,7 @@ const userPromptRules = `[every request]
 - if argument is in use, always mention the key instead of value.
 - write todo base on assumption that all waiting and action has been done, tell the next executor what to do directly without ask for waiting.
 - require screenshot is expensive, ONLY when the necessary info is likely only appear on media(canvas, svg, img etc), or the html layout is not making much sense.
+- [goal] will be sent in every prompt, do not repeat in todo.
 
 - risk levels:
 - risk = 'l' | 'm' | 'h' - 'l' (low) = scroll, click navigation link/button, mouse over, simple search, open page
@@ -127,9 +135,9 @@ const userPromptRules = `[every request]
 [dynamic action]
 when you use any key from arguments for element lookup, like html or label contains certain argument.key, which may appeared in WireStep.intent, you must **put the used argument keys in Selector.argKeys**. otherwise put empty array.
 argument can be use in all input, url or other **string field** with template string, use like \${args.linkTitle}, make sure args is use within string template.
-javascript string methods may apply to args in string template, like args.linkTitle.toLowerCase().replace(/\s+/g, '-')
+javascript string methods may apply to args in string template, like args.linkTitle.toLowerCase().replace(/s+/g, '-')
 the only legal string format are plain text and args string template **start with '\${args.'** like \${args.linkTitle}, js code other than these will cause error.
-use argument tpl in number or object field cause error, covert to other format on your own and use as hardcode if necessary.
+  use argument tpl in number or object field cause error, covert to other format on your own and use as hardcode if necessary.
 
 `;
 
@@ -214,10 +222,10 @@ ${fullHtml}${
 [readable file]
 - ${Array.from(tabManager.readableFiles.values()).map(
               (k) =>
-                `${extraAttachments.includes(k.name) ? 'attached ' : ''}${k.name}: ${k.mimeType}${k.desc ? ` ${k.desc}` : ''}`,
+                `${extraAttachments.includes(k.name) ? 'attached ' : ''}${k.name}: ${k.mimeType}${k.desc ? ` desc from previous read:${k.desc}` : ''}`,
             ).join(`
 - `)}
-**can attach with todo.files**`
+**can attach with todo.readFiles, note read file is expensive attach when necessary**`
           : ''
       }
 
@@ -361,19 +369,17 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`,
     this.requestInSession = 0;
     // this.runner = undefined;
   }
-
+  // | { t: 'domLongTime'; a: 'any'|'childAdd'|'childRm'|'attr'|'txt'; q: Selector;} // only for waiting async event, like message, email, llm stream response.
   buildSystemPrompt() {
     // | { t: 'navigation'; } // wait for load new page
     // | { t: 'appear' | 'disappear'; q: Selector }
     const responseType = `
-
 type ID = string;
 type Selector = ID | { id: ID, argKeys: (string|null)[] };
 
 type WireWait = { to?: number } & ( // wait timeout in ms
   | { t: 'network'; a: 'idle0' | 'idle2' }
   | { t: 'time'; ms: number }
-  | { t: 'dom'; a: 'any'|'childAdd'|'childRm'|'attr'|'txt'; q: Selector;}
 )
 
 type WireAction =
@@ -400,7 +406,7 @@ type WireAction =
     }
   | {
       k: 'key';
-      key: string;
+      key: string; // single key, use input for typing words
       a: 'keyDown' | 'keyUp' | 'keyPress'; //always use press for typing, unless required/need delay
       q?: Selector;
       c?: boolean; // ctrl
@@ -410,9 +416,10 @@ type WireAction =
       repeat?: number;
     }
   | {
-      k: 'input'; // for input, textarea, select, also upload file with path in v
+      k: 'input'; // for input, textarea, contentEditable, select, also upload file with path in v
       q: Selector;
       v: string|string[]; // input value, array for multiple select/files
+      c?: 'noClear'; // without this will clear before typing
     }
   | {
       k: 'botherUser';
@@ -424,7 +431,7 @@ type WireAction =
       k: 'setArg';
       answer3Questions: string; // keep short
       // key value pair
-      kv: Record<string, string | {q: Selector, attr?: string}>; //str value or from element
+      kv: Record<string, string | {q: Selector, attr?: 'textContent'|string}>; //str value or from element, attr default textContent
     }
   | {
       k: 'url';
@@ -456,30 +463,41 @@ type WireStep = {
   intent: string;
   risk: 'h' | 'm' | 'l';
   action: WireAction;
-  pre?: WireWait; // wait BEFORE this action
-  post?: WireWait; // wait AFTER this action (rare)
+  pre?: WireWait // wait BEFORE this action, most of the time engine can handle it automatically
+  post?: WireWait | // wait AFTER this action, most of the time engine can handle it automatically
+   { t: 'waitMsg'; // wait for email, messager session dom update, **MUST NOT ADD ACTION AFTER THIS**
+     q: Selector; // dialog container, email list etc
+     id1st: string; // first msg/email dom id in list
+     idLast: string; // last msg/email dom id in list
+   }
 }
 
-type WireSubTask = {
+type WireSubTaskDoableInCurrentHtml = {
   baseOnUi: Selector;
   subTaskPrompt: string;
   addArgs?: Record<string, string>; // plain text or string template with args only
   complexity: 'h' | 'm' | 'l';
 }
 
-export type LlmWireResult = {
-  shouldSplitTask: string;
-  a: WireSubTask[] | WireStep[]; // steps or sub tasks, no mix
+type AttachementDesc = {
+  name: string;
+  desc: string;
+};
+
+type LlmWireResult = {
+  taskEstimate: {
+    doableInCurrentHtml: string;
+    shouldGoTodo: string;
+  };
+  a: WireSubTaskDoableInCurrentHtml[] | WireStep[]; // steps or sub tasks, no mix
   e?: string; // error
   todo: {
     sc?: boolean; // require screenshot
     rc: string; // after all prompt
-    reqAtt?: string[]; // attach readable files
-    descAttachment?: {
-        name: string;
-        desc: string;
-    }[];
+    readFiles?: string[]; // attach readable files only when you really need the content in file
+    descAttachment?: AttachementDesc[];
   } | 'finishedNoToDo';
+  subtaskResp?: 'done' | string;
 };`;
     return `[system]
 a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.

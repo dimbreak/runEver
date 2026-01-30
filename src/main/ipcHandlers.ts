@@ -258,6 +258,7 @@ export const setupIpcHandlers = (
       await userApiKeyStore.setConfig({
         provider: payload.provider,
         apiKey: payload.apiKey,
+        baseUrl: payload.baseUrl,
       });
     } catch (error) {
       console.error('Failed to store user API key', error);
@@ -331,7 +332,10 @@ export const setupIpcHandlers = (
   };
 
   const attachApiTrustHandlers = (authWindow: BrowserWindow) => {
-    const intercept = (event: { preventDefault: () => void }, targetUrl: string) => {
+    const intercept = (
+      event: { preventDefault: () => void },
+      targetUrl: string,
+    ) => {
       if (!targetUrl.startsWith('runever://')) {
         return;
       }
