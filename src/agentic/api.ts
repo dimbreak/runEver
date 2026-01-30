@@ -292,7 +292,6 @@ export namespace LlmApi {
       }
       const maxStreamRetries = 1;
       let lastError: unknown;
-
       for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
         const monitor = new FirstTokenMonitor(cacheKey);
         let yielded = false;
