@@ -16,9 +16,9 @@ Profile.register({
         userHeader: `${promptParts.userHeader ?? ''}
 
 [calendar general guide]
-- **BEWARE OF DATE RULES**, look for rules about available date range in sibling label or text
-- **DO NOT PICK DISABLED DATE (DISABLED in HTML TAG)**, review if you picked a date in todo
+- **BEWARE OF DATE RULES**, look for rules about available date range in sibling label or text about date / time.
 - Operate with input field if available, or:
+- **DO NOT PICK DISABLED DATE (DISABLED in HTML TAG)**, review if you picked a date in todo, try your best to look for a enabled date in other month/year.
 - delegate task/subtask to interact with each calendar, do not mix with other tasks, use todo to execute step by step.
 - if all date disabled, **you must lookup from larger time scale**, try month and observe, continue with year if still no good.
 - change time scale button usually bind with the top month label.

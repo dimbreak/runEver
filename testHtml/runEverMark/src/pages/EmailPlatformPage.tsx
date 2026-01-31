@@ -323,17 +323,6 @@ export default function EmailPlatformPage() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Sync state with URL hash
-  useEffect(() => {
-    const hash = window.location.hash.replace('#', '');
-    if (hash.startsWith('/email/')) {
-        const id = hash.split('/email/')[1];
-        if (id !== activeId) setActiveId(id);
-    } else {
-        if (activeId !== null) setActiveId(null);
-    }
-  }, [window.location.hash]); // We need to listen to hash changes
-
   // But we also need to trigger hash change.
   // We can't easily listen to window.location.hash prop changes if it's not passed down.
   // However, App.tsx forces a re-render when hash changes?
@@ -353,8 +342,10 @@ export default function EmailPlatformPage() {
          if (hash.startsWith(prefix)) {
              const id = hash.substring(prefix.length);
              setActiveId(id);
+           document.title = `${emails.find(e=>e.id===id)?.subject} - Rmail email`;
          } else if (hash === '/email') {
              setActiveId(null);
+           document.title = `Rmail email`;
          }
      };
 

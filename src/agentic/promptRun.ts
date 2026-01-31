@@ -135,6 +135,7 @@ export class PromptRun {
   }
 
   getNextAction(): WireActionWithWaitAndRec | undefined {
+    console.log('pending actions', this.actions.slice(this.currentAction - 1));
     return this.actions[this.currentAction];
   }
 
@@ -154,21 +155,6 @@ export class PromptRun {
   }
 
   addAction(action: WireActionWithWaitAndRec) {
-    if (this.fixingAction.length) {
-      const fixingAction = this.fixingAction[0];
-      if (fixingAction!.offset === 0) {
-        this.actions[fixingAction!.offset + this.currentAction] = action;
-      } else {
-        this.actions.splice(
-          fixingAction!.offset + this.currentAction,
-          0,
-          action,
-        );
-      }
-      fixingAction!.offset++;
-      this.manager.notifySnapshotChanged();
-      return;
-    }
     this.actions.push(action);
     this.manager.notifySnapshotChanged();
   }
@@ -258,9 +244,9 @@ export class PromptRun {
     const selectedPrompt = this.prompts[actionToFix.promptId!];
     console.log('Try fix error:', actionToFix, selectedPrompt);
 
-    const { sessionId } = selectedPrompt;
+    const sessionId = selectedPrompt?.sessionId;
 
-    if (sessionId) {
+    if (sessionId !== undefined) {
       const session = this.sessionQueue[sessionId];
       if (!selectedPrompt) {
         console.error('Selected prompt not found:', actionToFix.promptId);
@@ -273,21 +259,11 @@ export class PromptRun {
         sessionId,
         'h',
         `**fix the execution error in [action error]**
+- if it can be fix, return a single replacement action only
+- return multiple actions will clear the waiting queue, consider you are re-running the mission/goal
 
 [action error]
-${JSON.stringify(actionToFix)}${
-          this.actions.length > this.currentAction + 1
-            ? `
-
-[planed actions]
-- ${this.actions
-                .slice(this.currentAction + 1)
-                .map((a) => a.intent)
-                .join('\n- ')}
-
-these actions are blocking by this error, if you found any of the above actions will affected by the fix, press LlmWireResult.clearQueue: true in result and send the new actions.`
-            : ''
-        }`,
+${JSON.stringify(actionToFix)}`,
       );
       this.fixingAction.push({
         action: actionToFix,
@@ -360,7 +336,7 @@ these actions are blocking by this error, if you found any of the above actions 
   }
 
   removePendingActions() {
-    this.actions = this.actions.filter((a) => !!a.done);
+    this.actions = this.actions.slice(0, this.currentAction);
   }
 
   setRunningStatus(session: ExecutionSession) {

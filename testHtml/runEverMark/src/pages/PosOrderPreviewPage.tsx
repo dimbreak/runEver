@@ -134,6 +134,13 @@ export default function PosOrderPreviewPage() {
                 </div>
             </div>
 
+            {draft.remark && (
+              <div className="sf-card" style={{ background: '#f8f9fb', border: 'none', marginBottom: 24 }}>
+                  <div className="sf-label">Remark</div>
+                  <div>{draft.remark}</div>
+              </div>
+            )}
+
             <h4 style={{ marginBottom: 16 }}>Items</h4>
             <div className="sf-list-view">
               {lines.map((line: any, index: number) => (

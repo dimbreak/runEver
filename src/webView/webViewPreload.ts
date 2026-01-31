@@ -6,6 +6,7 @@ import { Util } from './util';
 import { Network } from './network';
 import { MiniHtml } from './miniHtml';
 import { type WireActionWithWaitAndRec } from '../agentic/types';
+import { takeScreenshot } from './screenshot';
 
 Network.initListener();
 
@@ -78,6 +79,9 @@ const webViewHandler = {
     if (actions.length) {
       await BrowserActions.execActions(actions, args);
     }
+  },
+  async screenshot() {
+    await takeScreenshot('test.png');
   },
 };
 

@@ -14,20 +14,45 @@ import { CommonUtil } from '../utils/common';
 
 // LlmApi.addDummyReturn(
 //   JSON.stringify({
+//     taskEstimate: {
+//       doableInCurrentHtml:
+//         'Fill email, fill password, submit sign-in (3 short actions).',
+//       shouldGoTodo:
+//         'After sign-in, check inbox for new order email, extract order details, open POS, create order, preview, handle >1000 checks, download invoice, reply email.',
+//     },
 //     a: [
 //       {
-//         intent:
-//           'return title and add-to-basket id of product under ${args.maxPrice} with highest reviews',
-//
-//         risk: 'l',
-//
+//         intent: 'fill in email with provided credential pikachu@pokemon.com',
+//         risk: 'm',
 //         action: {
-//           k: 'setArg',
-//
-//           kv: { selectedTitle: 'Tech Item 15', addToBasketButtonId: '__5p' },
+//           k: 'input',
+//           q: '___2',
+//           v: 'pikachu@pokemon.com',
+//         },
+//       },
+//       {
+//         intent: 'fill in password with provided credential P@ssword321',
+//         risk: 'm',
+//         action: {
+//           k: 'input',
+//           q: '___5',
+//           v: 'P@ssword321',
+//         },
+//       },
+//       {
+//         intent: 'submit the sign-in form by clicking Next',
+//         risk: 'm',
+//         action: {
+//           k: 'mouse',
+//           a: 'click',
+//           q: '___c',
 //         },
 //       },
 //     ],
+//     todo: {
+//       rc: "After sign-in completes, check the email inbox for a new order message, extract the order details (items, qty, prices, customer info). Then open the POS (runever://benchmark/#/pos), create the order using extracted details, preview the order. If order total > 1000, capture a screenshot of preview and send order details plus screenshot to messenger (runever://benchmark/#/im) requesting manager Dillon's approval. Follow Dillon's advice. After final submit, go to order list, download the invoice, then return to email and reply to the client. Keep using the same credentials.",
+//       sc: false,
+//     },
 //   } as ExecutorLlmResult),
 // );
 // LlmApi.addDummyReturn('null');
@@ -35,7 +60,7 @@ import { CommonUtil } from '../utils/common';
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 const NoNestSubtaskPrompt =
-  '**running a subtask, do not add subtask, if the task on the current UI should split, end this subtask with finishedNoToDo and advise in subtaskResp**';
+  '**running a subtask, do not add subtask, if the task on the current UI should split, end this subtask with finishedNoToDo and shortly < 10words advise in subtaskResp**';
 export class ExecutionSession {
   subSessionQueue: ExecutionSession[];
   actions: WireActionWithWaitAndRec[] = [];
@@ -56,7 +81,8 @@ export class ExecutionSession {
     void,
     void
   > {
-    const { run, promptQueue, id, eventsLogs, parent } = this;
+    const { run, id, eventsLogs, parent } = this;
+    let { promptQueue } = this;
     if (run.fixingAction.length === 0 && this.promptQueue.length === 0) {
       yield* this.execSubSessionQueue();
       return;
@@ -67,7 +93,7 @@ export class ExecutionSession {
     );
     let retry = 3;
     let requireScreenshot = false;
-    const { tab, executionSession, browserActionLock } = run;
+    const { tab, executionSession, browserActionLock, manager } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
@@ -129,22 +155,40 @@ export class ExecutionSession {
               run.fixingAction.length &&
               run.fixingAction[0]?.promptId === promptId
             ) {
-              console.log('Fixing action done');
-              if (res.value.todo) {
+              if (
+                !res.value.todo &&
+                res.value.a.length === 1 &&
+                (res.value.a[0] as WireActionWithWait).intent
+              ) {
+                const fixingAct = run.fixingAction[0].action;
+                fixingAct.intent = (
+                  res.value.a[0] as WireActionWithWait
+                ).intent;
+                fixingAct.action = (
+                  res.value.a[0] as WireActionWithWait
+                ).action;
+                fixingAct.risk = (res.value.a[0] as WireActionWithWait).risk;
+                fixingAct.pre = (res.value.a[0] as WireActionWithWait).pre;
+                fixingAct.post = (res.value.a[0] as WireActionWithWait).post;
+                run.fixingAction.shift();
+                console.log('Fixing action done replace');
+              } else {
                 // remove pending if todo exist
                 this.removePendingActions();
                 this.promptQueue = [];
+                promptQueue = [];
+                run.fixingAction.splice(0, run.fixingAction.length);
+                res.value.a.forEach((a) => {
+                  if ((a as WireActionWithWait).intent) {
+                    this.addAction({
+                      ...(a as WireActionWithWait),
+                      promptId,
+                      id: run.allocActionId(),
+                    });
+                  }
+                });
+                console.log('Fixing action done clear');
               }
-              res.value.a.forEach((a) => {
-                if ((a as WireActionWithWait).intent) {
-                  this.addAction({
-                    ...(a as WireActionWithWait),
-                    promptId,
-                    id: run.allocActionId(),
-                  });
-                }
-              });
-              run.fixingAction.shift();
               run.execActions();
             }
             console.log(Date.now() - start, 'Waiting for complete prompt');
@@ -157,32 +201,51 @@ export class ExecutionSession {
             }
 
             if (run.fixingAction.length === 0 && this.subSessionQueue.length) {
-              console.log('Run sub session queue');
-              yield* this.execSubSessionQueue();
+              if (this.subSessionQueue.length === 1 && res.value) {
+                // prevent llm adding single subtask
+                const subTaskToMerge = this.subSessionQueue.shift()!;
+                if (res.value.todo) {
+                  res.value.todo.rc =
+                    subTaskToMerge?.promptQueue[0].goalPrompt.replace(
+                      NoNestSubtaskPrompt,
+                      `${res.value.todo.rc}\n${NoNestSubtaskPrompt}`,
+                    );
+                } else {
+                  res.value.todo = {
+                    rc: subTaskToMerge?.promptQueue[0].goalPrompt,
+                  };
+                }
+                console.log('merge single subtask to todo', res.value.todo.rc);
+              } else {
+                console.log('Run sub session queue');
+                yield* this.execSubSessionQueue();
+              }
             }
 
             if (run.stopRequested) {
               finish();
               return;
             }
+            const newTabUrl = manager.getFocusedTab()?.url ?? tab.url;
+            console.log('url compare', url, newTabUrl, parent);
+            if (url !== newTabUrl) {
+              if (parent) {
+                // end subtask when url change to avoid long tail subtask
+
+                this.response = `url changed, end subtask, remain todo: ${res.value?.todo?.rc ?? ''}`;
+                console.log(
+                  'url changed, end subtask',
+                  url,
+                  newTabUrl,
+                  this.response,
+                );
+                // eslint-disable-next-line no-labels
+                break promptQueueLoop;
+              }
+            }
 
             if (res.value?.todo) {
               yield* this.waitPageReady(url, start);
-              if (url !== tab.url) {
-                if (parent) {
-                  // end subtask when url change to avoid long tail subtask
-
-                  this.response = `url changed, end subtask, remain todo: ${res.value?.todo.rc ?? ''}`;
-                  console.log(
-                    'url changed, end subtask',
-                    url,
-                    tab.url,
-                    this.response,
-                  );
-                  // eslint-disable-next-line no-labels
-                  break promptQueueLoop;
-                }
-              }
               executionSession.resetSystemPrompt();
               if (res.value.todo.descAttachment) {
                 res.value.todo.descAttachment.forEach((f) => {
@@ -208,7 +271,7 @@ export class ExecutionSession {
                 this.breakPromptForExeErr = false;
                 break;
               }
-              url = tab.url;
+              url = newTabUrl;
               requireScreenshot = res.value.todo.sc ?? false;
               const subPrompt = `**todo from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status**
 ${res.value.todo.rc}
@@ -237,7 +300,10 @@ ${res.value.todo.rc}
                 newPrompt.id,
                 promptQueue,
               );
-            } else if (res.value?.subtaskResp) {
+            } else if (
+              run.fixingAction.length === 0 &&
+              res.value?.subtaskResp
+            ) {
               this.response = res.value.subtaskResp;
               // eslint-disable-next-line no-labels
               break promptQueueLoop;
@@ -250,10 +316,7 @@ ${res.value.todo.rc}
             break;
           }
           if ((res.value as WireActionWithWait).intent) {
-            if (
-              run.fixingAction.length ||
-              run.fixingAction[0]?.promptId !== promptId
-            ) {
+            if (!run.fixingAction.length) {
               const act = res.value as WireActionWithWait;
               console.log(Date.now() - start, 'exec actions:', res.value);
               this.addAction({
@@ -346,7 +409,7 @@ ${runGoalPrompt}`,
   async *execSubSessionQueue() {
     const {
       subSessionQueue,
-      run: { tab },
+      run: { manager, tab },
     } = this;
     const { url } = tab;
     while (subSessionQueue.length) {
@@ -355,7 +418,7 @@ ${runGoalPrompt}`,
       const goal = (prompt.goalPrompt ?? '').split(
         `\n${NoNestSubtaskPrompt}`,
       )[0];
-      if (url === tab.url) {
+      if (url === manager.getFocusedTab()?.url) {
         yield* subSession.exec();
         this.addLog(`${goal ?? ''}:${subSession.response ?? ''}`);
       } else {
@@ -367,36 +430,6 @@ ${runGoalPrompt}`,
     this.subSessionQueue.push(this.run.createSession(queue, this));
   }
   addAction(action: WireActionWithWaitAndRec) {
-    if (action.action.k === 'setArg') {
-      const kvs = Object.entries(action.action.kv);
-      if (kvs.length > 1) {
-        // split setArg from selector to different actions make webview easier
-        action.action.kv = {};
-        const actions = [];
-        let action0HasId = false;
-        for (const [k, v] of kvs) {
-          if (typeof v === 'string') {
-            action.action.kv[k] = v;
-          } else if (!action0HasId) {
-            action0HasId = true;
-            action.action.kv[k] = v;
-          } else {
-            actions.push({
-              ...action,
-              id: this.run.allocActionId(),
-              action: { ...action.action, kv: { [k]: v } },
-            });
-          }
-        }
-        this.actions.push(action);
-        this.run.addAction(action);
-        if (actions.length) {
-          this.actions.push(...actions);
-          actions.forEach((a) => this.run.addAction(a));
-        }
-        return;
-      }
-    }
     this.actions.push(action);
     this.run.addAction(action);
   }

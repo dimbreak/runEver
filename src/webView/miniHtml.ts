@@ -30,6 +30,8 @@ export namespace MiniHtml {
   export type DomVisible = DOMRect & {
     visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0' | '';
     style: CSSStyleDeclaration;
+    XYWH: string;
+    needDim?: boolean;
   };
   const spaceRx = /[\s\t\r\n\u200c\u0020\u034f]{2,}/g;
   const elementContains = (parent: Element, child: Element | null): boolean => {
@@ -51,6 +53,20 @@ export namespace MiniHtml {
       ...JSON.parse(JSON.stringify(rect)),
       visible: true,
       style,
+      XYWH: `${Math.round(rect.x)},${Math.round(rect.y)},${Math.round(rect.width)},${Math.round(rect.height)}`,
+      needDim:
+        style.float !== 'none' ||
+        (style.alignSelf !== 'auto' && style.alignSelf !== 'start') ||
+        style.position === 'fixed' ||
+        style.position === 'absolute' ||
+        style.position === 'sticky' ||
+        style.transform !== 'none' ||
+        (style.position === 'relative' &&
+          ((style.top !== 'auto' && style.top !== '0px') ||
+            (style.left !== 'auto' && style.left !== '0px') ||
+            (style.right !== 'auto' && style.right !== '0px') ||
+            (style.bottom !== 'auto' && style.bottom !== '0px'))) ||
+        style.direction === 'rtl',
     };
     if (
       style.visibility === 'hidden' ||
@@ -210,6 +226,7 @@ export namespace MiniHtml {
       parentHighlightStyle: string = '',
       renderedHtml: null | Map<MeaningfulElement, string> = null,
       rerendered = false,
+      forceDim = false,
     ): Promise<string> {
       if (meaningfulEl.element.isConnected === false) return '';
       let thisRendered = rerendered;
@@ -252,6 +269,7 @@ export namespace MiniHtml {
                 highlightStyle,
                 renderedHtml,
                 thisRendered,
+                forceDim,
               );
             }),
           )
@@ -332,8 +350,8 @@ export namespace MiniHtml {
           : isVisible
             ? ''
             : `${visible.visible === false ? 'hide' : visible.visible}`,
-        isVisible
-          ? `xywh=${Math.round(visible.x)},${Math.round(visible.y)},${Math.round(visible.width)},${Math.round(visible.height)}`
+        isVisible && (forceDim || visible.needDim)
+          ? `xywh=${visible.XYWH}`
           : '',
         isVisible &&
         style.overflow !== 'hidden' &&
@@ -686,7 +704,7 @@ export namespace MiniHtml {
       };
       this.initObserve();
     }
-    genFullHtml = async () => {
+    genFullHtml = async (forceDim = false) => {
       const style = window.getComputedStyle(document.body);
       const { styles } = this;
       this.styles.font[style.fontFamily] = 0;
@@ -696,7 +714,15 @@ export namespace MiniHtml {
           this.meaningFulElements.map((el) =>
             typeof el === 'string'
               ? Promise.resolve(el)
-              : this.genHtml(el, 9999, false, highlightStyle),
+              : this.genHtml(
+                  el,
+                  9999,
+                  false,
+                  highlightStyle,
+                  undefined,
+                  undefined,
+                  forceDim,
+                ),
           ),
         )
       ).join('');
@@ -860,10 +886,10 @@ export namespace MiniHtml {
       default: (filter: string) => (el: MeaningfulElement) =>
         el.label.includes(filter) || el.element.innerHTML.includes(filter),
     };
-    static ErrIdNotFound = new Error('ERR_ID_NOT_FOUND');
 
     getElementFormId(select: Selector): MeaningfulElement | IFrameHelper {
       const selector = typeof select === 'object' ? select : { id: select };
+      selector.id = selector.id.trim();
       if (selector.id.includes(':')) {
         const parts = selector.id.split(':');
         if (parts.slice(0, -1).join(':') !== this.idPrefix) {
@@ -902,7 +928,7 @@ export namespace MiniHtml {
         }
       }
       if (!meaningfulEl || meaningfulEl.element.isConnected === false) {
-        throw Parser.ErrIdNotFound;
+        throw new Error(`ERR_ID_NOT_FOUND:${selector.id}`);
       }
       return meaningfulEl;
     }

@@ -22,7 +22,7 @@ const products = [
 const selectedClient = 'Northwind Travel';
 const orderItems = [];
 for (let i = 0; i < 3; i++) {
-    const prod = products[Math.floor(Math.random() * products.length)];
+    const prod = products[i];
     orderItems.push({
         ...prod,
         quantity: Math.floor(Math.random() * 5) + 1

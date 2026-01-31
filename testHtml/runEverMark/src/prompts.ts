@@ -93,7 +93,9 @@ get the new order email, read the detail. then go to pos system, create order wi
     pro: `login to email account with:
 email: pikachu@pokemon.com
 password: P@ssword321
-get the new order email, download the attached order form pdf. then go to pos system, create order with detail from the the order form. then go to order list and download the invoice. go to email and reply the client`,
+get the new order email, download the attached order form pdf. then go to pos system, create order with detail from the the order form.
+in preview, if order amount > 1000, cap screenshot & go to messager, send him order detail & screenshot seek for manager dillion's approve and do what he advise in case
+after submit go to order list and download the invoice. go to email and reply the client`,
     proHook: () => {
       const results = JSON.parse(localStorage.getItem('runEverMark_benchmark_results') || '{}');
       const task = results['#/pos/pro'];

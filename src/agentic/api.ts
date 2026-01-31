@@ -118,7 +118,7 @@ export namespace LlmApi {
             resolve({
               provider: 'openai',
               hi: openai('gpt-5.2'),
-              mid: openai('gpt-5-mini'),
+              mid: openai('gpt-5-mini-2025-08-07'),
               low: openai('gpt-5-nano'),
               makeProviderOptions: (
                 reasoningEffort: ReasoningEffort,

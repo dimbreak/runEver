@@ -22,7 +22,7 @@ Profile.register({
 2. Indentify stage and suggestions by looking at [html], [performed actions] & todo, note that the suggestion list may not be under the combobox itself but a floating visible element mark with role listbox in label.
 3. Focus the combobox(input element if exist), **ADD TODO** to observe the dropdown / suggestions.
 4. Type the first few chars of search keyword to filter the suggestions, **ADD TODO** to observe the list.
-5. Click the suggestion if the full value suggestion appeared, or keep typing to filter the suggestions if the suggestion list still long.
+5. Click the suggestion if the full value suggestion appeared, or keep typing to filter the suggestions if the suggestion list still long. pick with mouse click.
 6. Continue picking next value if exist or end task.`,
       };
     }

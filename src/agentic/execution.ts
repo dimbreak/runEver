@@ -47,6 +47,7 @@ const userPromptRules = `[every request]
 - file from download action can use immediately in todo, just put the same filename in attach and download action.
 - file should only be read on demand, and store necessary info in argument, do not require reading in every todo.
 - if user asked to wait for email/message, **waitMsg MUST DIRECTLY APPLY TO POST WAIT OF TRIGGER ACTION**. Split with todo/subtask may cause missing event.
+- always open new tab if you need to switch task to a new website, retain the status of current page for reuse.
 
 [safty check]
 - links to external origin will give href, **MUST CHECK the url before click**, make sure matches its description. fraud is common in search engines or sns.
@@ -54,6 +55,7 @@ const userPromptRules = `[every request]
 
 [subtask guide]
 - plan sub tasks for **current page & current tab & current visible ui show in HTML only**, each sub task **MUST BE created base on >1 current visible UI**.
+- you should add multiple subtasks in a chain, adding only 1 subtask means the job should not split.
 - tasks in shouldGoTodo never put in subtask.
 - prioritise [goal] preference, skip splitting if it explicitly say do not add subtask.
 - MUST create subtask if [goal] or [mission] doable in current HTML falls into one of the following criteria even marginally:
@@ -65,7 +67,7 @@ const userPromptRules = `[every request]
 - DO NOT GIVE actions, give only high level task WORKABLE ON CURRENT VISIBLE UI IN HTML, let the subtask executor to decide actions.
 - not supporting nested subtask, if you found current subtask should be split, end the current subtask and make advise with subtaskResp, let root executor create new subtasks.
 - use arguments to communicate between main & sub tasks, arguments shared across the whole session. **provide arguments to subtask whenever you can with plain text or argument tpl only**.
-- full set of current arguments will pass to subtask, reset is not necessary.
+- full set of current arguments will pass to subtask, keys should always unique avoid overwrite, reset is not necessary.
 - WireSubTaskDoableInCurrentHtml MUST NOT mix with WireStep, only one type of elements are allowed in a response.
 - only create subtask on non-subtask, response only actions and todo when [this is a sub task] appear.
 - estimate the complexity of sub task and h=high, m=medium, l=low, a complex task may contain more actions or uncertain reactions from UI need attempts to get it done. it will give more reasoning power or better model.
@@ -96,7 +98,6 @@ const userPromptRules = `[every request]
 - provide key actions. browser engine will trigger pre-required action if possible, like focus before input, scroll and mouse move before click etc.
 - prefer submit form with enter key over click button if input/focused on form element in previous step.
 - only use todo.sc in case of the html does not make much sense on task prompt, like many of media tags without alt/title.
-- only apply LlmWireResult.clearQueue when fixing error.
 - focus on [mission] or [action error] if they appear in task prompt if they align with the [goa].
 - **only botherUser when the task is really uncertain or impossible** to be done, like missing info, large amount of transactions. Uncertainty alone is NOT a reason to bother user.
 
@@ -374,7 +375,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`,
     // | { t: 'navigation'; } // wait for load new page
     // | { t: 'appear' | 'disappear'; q: Selector }
     const responseType = `
-type ID = string;
+type ID = string; //from id attr of html element, no wrap / prefix / suffix
 type Selector = ID | { id: ID, argKeys: (string|null)[] };
 
 type WireWait = { to?: number } & ( // wait timeout in ms
@@ -465,7 +466,7 @@ type WireStep = {
   action: WireAction;
   pre?: WireWait // wait BEFORE this action, most of the time engine can handle it automatically
   post?: WireWait | // wait AFTER this action, most of the time engine can handle it automatically
-   { t: 'waitMsg'; // wait for email, messager session dom update, **MUST NOT ADD ACTION AFTER THIS**
+   { t: 'waitMsg'; // only use when ask to wait for new msg/reply in messager dialog / new email in email inbox, **MUST NOT ADD ACTION AFTER THIS**
      q: Selector; // dialog container, email list etc
      id1st: string; // first msg/email dom id in list
      idLast: string; // last msg/email dom id in list

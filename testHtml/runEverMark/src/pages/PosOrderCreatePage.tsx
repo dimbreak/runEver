@@ -31,6 +31,7 @@ type DraftOrder = {
   postal: string;
   deliveryDate: string;
   supportingDoc: string;
+  remark?: string;
   lines: OrderLine[];
 };
 
@@ -109,8 +110,8 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
         <ComboboxPopover className="shadow-popup">
           <ComboboxList persistSelection>
             {filteredProducts.map(p => (
-              <ComboboxOption key={p.id} value={p.name} />
-            ))}
+              <ComboboxOption key={p.id} value={`${p.name} - $${p.price}`} />
+            )).slice(0, 10)}
           </ComboboxList>
         </ComboboxPopover>
       )}
@@ -133,7 +134,8 @@ export default function PosOrderCreatePage() {
       city: savedDraft?.city ?? '',
       region: savedDraft?.region ?? '',
       postal: savedDraft?.postal ?? '',
-      deliveryDate: savedDraft?.deliveryDate ?? ''
+      deliveryDate: savedDraft?.deliveryDate ?? '',
+      remark: savedDraft?.remark ?? ''
   });
 
   // Calculate min date as Date object for Calendar
@@ -439,7 +441,22 @@ export default function PosOrderCreatePage() {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid #dddbda', paddingTop: 16 }}>
+            <div style={{ marginTop: 24 }}>
+                 <h3>Additional Information</h3>
+                 <div className="sf-form-element">
+                     <label className="sf-label">Remark</label>
+                     <textarea
+                         className="sf-textarea"
+                         name="remark"
+                         value={clientData.remark}
+                         onChange={(e) => setClientData({ ...clientData, remark: e.target.value })}
+                         rows={3}
+                         style={{ width: '100%', resize: 'vertical' }}
+                     />
+                 </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid #dddbda', paddingTop: 16, marginTop: 24 }}>
                 <div style={{ fontSize: 18 }}>
                     Total: <strong style={{ color: '#0176d3'}}>${orderTotal.toFixed(2)}</strong>
                 </div>

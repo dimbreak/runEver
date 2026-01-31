@@ -5,6 +5,7 @@ import {
   Menu,
   Rectangle,
   WebContentsView,
+  nativeImage,
 } from 'electron';
 import settings from 'electron-settings';
 import fs from 'fs';
@@ -148,17 +149,145 @@ export class TabWebView {
   ) {
     let width = capWidth;
     let height = capHeight;
+    const rect = this.webView.getBounds();
     if (width === 0 && height === 0) {
-      const rect = this.webView.getBounds();
       width = rect.width;
       height = rect.height;
     }
-    const shot = this.webView.webContents.capturePage({
-      x,
-      y,
-      width,
-      height,
-    });
+    let shot: Promise<Electron.NativeImage>;
+    if (width > rect.width || height > rect.height) {
+      shot = (async () => {
+        try {
+          const { scrollX, scrollY } =
+            await this.webView.webContents.executeJavaScript(
+              '({scrollX: window.scrollX, scrollY: window.scrollY})',
+            );
+
+          const chunks: {
+            buffer: Buffer;
+            x: number;
+            y: number;
+            w: number;
+            h: number;
+          }[] = [];
+          let scaleFactor = 1;
+
+          const docX = scrollX + x;
+          const docY = scrollY + y;
+          const vpW = rect.width;
+          const vpH = rect.height;
+
+          for (let py = 0; py < height; py += vpH) {
+            for (let px = 0; px < width; px += vpW) {
+              const scrollToX = docX + px;
+              const scrollToY = docY + py;
+
+              await this.webView.webContents.executeJavaScript(
+                `window.scrollTo(${scrollToX}, ${scrollToY})`,
+              );
+              await Util.sleep(150);
+
+              const { x: sx, y: sy } =
+                await this.webView.webContents.executeJavaScript(
+                  '({x: window.scrollX, y: window.scrollY})',
+                );
+
+              const interLeft = Math.max(docX, sx);
+              const interTop = Math.max(docY, sy);
+              const interRight = Math.min(docX + width, sx + vpW);
+              const interBottom = Math.min(docY + height, sy + vpH);
+
+              if (interRight > interLeft && interBottom > interTop) {
+                const capX = interLeft - sx;
+                const capY = interTop - sy;
+                const capW = interRight - interLeft;
+                const capH = interBottom - interTop;
+
+                const image = await this.webView.webContents.capturePage({
+                  x: capX,
+                  y: capY,
+                  width: capW,
+                  height: capH,
+                });
+                const buffer = image.toBitmap();
+
+                if (chunks.length === 0) {
+                  const size = image.getSize();
+                  if (size.width > 0 && size.height > 0) {
+                    scaleFactor = Math.sqrt(
+                      buffer.length / (size.width * size.height * 4),
+                    );
+                  }
+                }
+                chunks.push({
+                  buffer,
+                  x: interLeft - docX,
+                  y: interTop - docY,
+                  w: capW,
+                  h: capH,
+                });
+              }
+            }
+          }
+
+          await this.webView.webContents.executeJavaScript(
+            `window.scrollTo(${scrollX}, ${scrollY})`,
+          );
+
+          const finalW = Math.ceil(width * scaleFactor);
+          const finalH = Math.ceil(height * scaleFactor);
+          const totalBuffer = Buffer.alloc(finalW * finalH * 4);
+
+          for (const chunk of chunks) {
+            const cw = Math.round(chunk.w * scaleFactor);
+            const ch = Math.round(chunk.h * scaleFactor);
+            const dx = Math.round(chunk.x * scaleFactor);
+            const dy = Math.round(chunk.y * scaleFactor);
+            const chunkBuffer = chunk.buffer;
+
+            for (let r = 0; r < ch; r++) {
+              const srcStart = r * cw * 4;
+              const targetRow = dy + r;
+              if (targetRow >= finalH) continue;
+              const dstStart = (targetRow * finalW + dx) * 4;
+              if (
+                srcStart + cw * 4 <= chunkBuffer.length &&
+                dstStart + cw * 4 <= totalBuffer.length
+              ) {
+                chunkBuffer.copy(
+                  totalBuffer,
+                  dstStart,
+                  srcStart,
+                  srcStart + cw * 4,
+                );
+              }
+            }
+          }
+
+          return nativeImage.createFromBitmap(totalBuffer, {
+            width,
+            height,
+            scaleFactor,
+          });
+        } catch (e) {
+          console.error('Scroll screenshot failed, falling back', e);
+          return this.webView.webContents.capturePage({
+            x,
+            y,
+            width,
+            height,
+          });
+        }
+      })();
+    } else {
+      console.log('screenshot', width, height, x, y);
+      shot = this.webView.webContents.capturePage({
+        x,
+        y,
+        width,
+        height,
+      });
+    }
     if (filename) {
       const data = await shot;
       const imgPath = `${app.getPath('downloads')}/${filename.includes('.') ? filename : `${filename}.png`}`;
@@ -197,9 +326,9 @@ export class TabWebView {
           frameId,
           url: details.url,
         });
+        this.url = details.url;
         if (!details.isSameDocument) {
           console.log('did-start-navigation:', details.url);
-          this.url = details.url;
           this.loadFrameStart('MAIN');
         }
       }
@@ -227,6 +356,7 @@ export class TabWebView {
         title,
         url: currentUrl,
       });
+      this.url = currentUrl;
     });
     webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {

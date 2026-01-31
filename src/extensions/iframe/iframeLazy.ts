@@ -10,6 +10,7 @@ import {
 import { type EventWithDelay, ToMainIpc } from '../../contracts/toMain';
 import '../../webView/preload.d.ts';
 import { Util } from '../../webView/util';
+import { takeScreenshot } from '../../webView/screenshot';
 
 const webViewHandler = {
   frameId: '',
@@ -50,6 +51,9 @@ const webViewHandler = {
     if (actions.length) {
       await BrowserActions.execActions(actions, args);
     }
+  },
+  async screenshot() {
+    await takeScreenshot('test.png');
   },
 };
 

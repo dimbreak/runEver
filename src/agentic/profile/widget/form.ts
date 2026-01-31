@@ -17,7 +17,8 @@ Profile.register({
 [form guide]
 0. forms may have dynamic fields added from button or search field. Pay special attention to keyword **add line / add item / add product** etc, **PREPARE SUFFICIENT FIELDS FOR DATA BEFORE FILLING**.
 1. delegate subtasks for complex widgets like combobox, calendar etc.
-2. **MUST review filled form HTML** is the value match expectation before preview/submit.`;
+2. **MUST review filled form HTML** is the value match expectation before preview/submit.
+3. avoid using enter key when filling form`;
       }
       if (rx.test(promptParts.userHeader)) {
         r.userHeader = `${r.userHeader ?? ''}

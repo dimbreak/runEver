@@ -380,16 +380,60 @@ export namespace BrowserActions {
             execFn = SliderProfile.slideToVal;
             break;
           case 'setArg': {
-            // each setArg will have only 1 kv get from selector
-            const firstV = Object.values(action.kv).find(
-              (v) => typeof v === 'object',
-            );
-            if (firstV && (await execInIframeOrEl(rec, firstV.q, args))) {
+            const kvs = Object.entries(action.kv);
+            const setArgActions: Extract<WireActionToExec, { k: 'setArg' }>[] =
+              [action];
+            if (kvs.length > 1) {
+              // split setArg from selector to different actions make webview easier
+              action.kv = {};
+              let action0HasId = false;
+              for (const [k, v] of kvs) {
+                if (typeof v === 'string') {
+                  action.kv[k] = v;
+                } else if (!action0HasId) {
+                  action0HasId = true;
+                  action.kv[k] = v;
+                } else {
+                  setArgActions.push({
+                    ...action,
+                    kv: { [k]: v },
+                  });
+                }
+              }
+            }
+
+            let iframe: IFrameHelper | null | undefined;
+
+            for (const setArgAction of setArgActions) {
+              // each setArg will have only 1 kv get from selector
+              const firstV = Object.values(setArgAction.kv).find(
+                (v) => typeof v === 'object',
+              );
+              if (firstV) {
+                const el = window.webView.getEl(firstV.q);
+                if (el instanceof IFrameHelper) {
+                  if (iframe === undefined) {
+                    iframe = el;
+                  } else if (iframe !== el) {
+                    throw new Error(
+                      'setArg can only have selectors from same frame',
+                    );
+                  }
+                } else {
+                  setArgAction.el = el.element;
+                  iframe = null;
+                }
+              }
+            }
+            if (iframe) {
+              await iframe.exeAction(rec, args);
               continue;
             }
             // eslint-disable-next-line no-loop-func
             execFn = async (thisAction, risk, thisArgs) => {
-              setArgs(thisAction, risk, thisArgs, argsDelta);
+              setArgActions.forEach((setArgAction) =>
+                setArgs(setArgAction, risk, thisArgs, argsDelta),
+              );
             };
             break;
           }

@@ -6,7 +6,12 @@ export const takeScreenshot = async (filename: string, el?: Element) => {
   const vpWidth = window.innerWidth;
   const { x, y, height, width } = el
     ? el.getBoundingClientRect()
-    : { width: vpWidth, height: vpHeight, x: 0, y: 0 };
+    : {
+        width: document.body.scrollWidth,
+        height: document.body.scrollHeight,
+        x: 0,
+        y: 0,
+      };
   await ToMainIpc.takeScreenshot.invoke({
     frameId: window.frameId ?? 0,
     x,
