@@ -369,10 +369,11 @@ export namespace LlmApi {
       attachments: Attachment[] | null = null,
       model: LlmModelType = 'mid',
       reasoning: ReasoningEffort = 'low',
+      overrideSystemPrompt: string | undefined = undefined,
     ) => {
       return queryLLMApi(
         prompt,
-        systemPrompt,
+        overrideSystemPrompt ?? systemPrompt,
         attachments,
         cacheKey,
         model,

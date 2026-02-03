@@ -11,6 +11,7 @@ import { SliderProfile } from '../agentic/profile/widget/slider.webView';
 import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
 import { takeScreenshot } from './screenshot';
+import { fillFormExec } from '../agentic/profile/widget/form/form.html';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -65,7 +66,7 @@ export type ActionApiCallingReq<K extends keyof ActionApi> = {
 
 export type WireActionToExec = WireAction & { el?: Element };
 
-const TypingDelayMsHalf = 40;
+const TypingDelayMsHalf = 30;
 
 const SAFE_KEYPRESS_RE = /^[a-zA-Z0-9 `~!@#$%^&*()\-_=+[\]{};:'",.<>/?]*$/;
 
@@ -373,6 +374,12 @@ export namespace BrowserActions {
             }
             execFn = mouse;
             break;
+          case 'fillForm':
+            if (await execInIframeOrEl(rec, action.q, args)) {
+              continue;
+            }
+            execFn = fillFormExec;
+            break;
           case 'slideToVal': // audit
             if (await execInIframeOrEl(rec, action.q, args)) {
               continue;
@@ -508,9 +515,9 @@ export namespace BrowserActions {
               continue;
             }
             execFn = selectTxt;
-
-          case 'setCtx':
-            // todo
+            break;
+          case 'todo':
+            // should not come here
             break;
         }
         if (rec.pre) {
@@ -560,6 +567,12 @@ export namespace BrowserActions {
           try {
             const vvv = CommonUtil.flattenArgs(JSON.parse(vv));
             Object.assign(args, vvv);
+            argsDelta.push(
+              ...Object.entries(vvv).map(
+                ([kk, vvvv]) => [`${k}.${kk}`, vvvv] as [string, string],
+              ),
+            );
+            return;
           } catch (e) {
             console.warn(e);
             args[k] = vv;

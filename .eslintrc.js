@@ -62,6 +62,7 @@ module.exports = {
     'max-classes-per-file': 'off',
     'no-continue': 'off',
     'default-case': 'off',
+    'no-loop-func': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

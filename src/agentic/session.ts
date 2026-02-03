@@ -4,76 +4,92 @@ import { Util } from '../webView/util';
 import { PlanAfterNavigation, PlanAfterRerender } from './constants';
 import {
   ExecutorLlmResult,
+  WireAction,
   WireActionWithWait,
   WireSubTask,
 } from './execution.schema';
 import { PromptRun } from './promptRun';
 import { Prompt, WireActionWithWaitAndRec } from './types';
 import { LlmApi } from './api';
-import { CommonUtil } from '../utils/common';
+import { SmartAction } from './profile/smartAction';
+import { ExecutionPrompter } from './execution';
 
 // LlmApi.addDummyReturn(
 //   JSON.stringify({
-//     taskEstimate: {
-//       doableInCurrentHtml:
-//         'Fill email, fill password, submit sign-in (3 short actions).',
-//       shouldGoTodo:
-//         'After sign-in, check inbox for new order email, extract order details, open POS, create order, preview, handle >1000 checks, download invoice, reply email.',
-//     },
 //     a: [
 //       {
-//         intent: 'fill in email with provided credential pikachu@pokemon.com',
+//         intent: 'fill email and password fields',
 //         risk: 'm',
 //         action: {
-//           k: 'input',
-//           q: '___2',
-//           v: 'pikachu@pokemon.com',
+//           k: 'fillForm',
+//           q: '__e',
+//           data: [
+//             {
+//               f: 'email',
+//               v: 'pikachu@pokemon.com',
+//             },
+//             {
+//               f: 'password',
+//               v: '95279527',
+//             },
+//           ],
 //         },
 //       },
 //       {
-//         intent: 'fill in password with provided credential P@ssword321',
-//         risk: 'm',
-//         action: {
-//           k: 'input',
-//           q: '___5',
-//           v: 'P@ssword321',
-//         },
-//       },
-//       {
-//         intent: 'submit the sign-in form by clicking Next',
+//         intent: 'click the Next submit button',
 //         risk: 'm',
 //         action: {
 //           k: 'mouse',
 //           a: 'click',
-//           q: '___c',
+//           q: {
+//             id: '__c',
+//             argKeys: [],
+//           },
+//         },
+//         post: {
+//           t: 'network',
+//           a: 'idle0',
 //         },
 //       },
 //     ],
-//     todo: {
-//       rc: "After sign-in completes, check the email inbox for a new order message, extract the order details (items, qty, prices, customer info). Then open the POS (runever://benchmark/#/pos), create the order using extracted details, preview the order. If order total > 1000, capture a screenshot of preview and send order details plus screenshot to messenger (runever://benchmark/#/im) requesting manager Dillon's approval. Follow Dillon's advice. After final submit, go to order list, download the invoice, then return to email and reply to the client. Keep using the same credentials.",
-//       sc: false,
-//     },
-//   } as ExecutorLlmResult),
+//     todo: 'finishedNoToDo',
+//   }),
 // );
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
+
+enum ExeSessTodoStatus {
+  Todo = 0,
+  Done = 1,
+  Cancel = 2,
+}
+
+interface ExeSessTodo {
+  todo: string;
+  status: ExeSessTodoStatus;
+}
+
 const NoNestSubtaskPrompt =
   '**running a subtask, do not add subtask, if the task on the current UI should split, end this subtask with finishedNoToDo and shortly < 10words advise in subtaskResp**';
 export class ExecutionSession {
+  prompter: ExecutionPrompter;
   subSessionQueue: ExecutionSession[];
   actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
   eventsLogs: string[] = [];
+  needFix: string[] = [];
+  todos: ExeSessTodo[] = [];
   attachmentInNextTodo: string[] = [];
   response: string | undefined = undefined;
   constructor(
     public id: number,
     public promptQueue: Prompt[],
-    private run: PromptRun,
+    public run: PromptRun,
     public parent?: ExecutionSession,
   ) {
+    this.prompter = new ExecutionPrompter(run.manager);
     this.subSessionQueue = [];
   }
   async *exec(): AsyncGenerator<
@@ -81,7 +97,7 @@ export class ExecutionSession {
     void,
     void
   > {
-    const { run, id, eventsLogs, parent } = this;
+    const { run, id, eventsLogs, parent, prompter, needFix, todos } = this;
     let { promptQueue } = this;
     if (run.fixingAction.length === 0 && this.promptQueue.length === 0) {
       yield* this.execSubSessionQueue();
@@ -93,7 +109,7 @@ export class ExecutionSession {
     );
     let retry = 3;
     let requireScreenshot = false;
-    const { tab, executionSession, browserActionLock, manager } = run;
+    const { tab, browserActionLock, manager } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
@@ -106,13 +122,15 @@ export class ExecutionSession {
       finish();
       return res;
     }
+    let tip = '';
+    let toAttach: string[] = [];
+    const promptItem = promptQueue.shift()!;
     // eslint-disable-next-line no-labels
-    promptQueueLoop: while (promptQueue.length) {
+    promptQueueLoop: while (promptItem) {
       if (run.stopRequested) {
         finish();
         return;
       }
-      const promptItem = promptQueue.shift()!;
       const {
         subPrompt: runSubPrompt,
         goalPrompt: runGoalPrompt,
@@ -122,23 +140,36 @@ export class ExecutionSession {
       } = promptItem;
       const start = Date.now();
       try {
-        console.log(eventsLogs);
-        stepsStream = executionSession.execPrompt(
+        stepsStream = prompter.execPrompt(
           runGoalPrompt,
           run.args,
-          runSubPrompt &&
-            runSubPrompt.includes(`[performed actions]
--`)
-            ? runSubPrompt.replace(
-                `[performed actions]
--`,
-                `[performed actions]
-- ${eventsLogs.join('\n- ')}`,
-              )
-            : runSubPrompt,
-          requireScreenshot,
-          complexity,
-          attachments,
+          `[todo ${todos.filter((td) => td.status === ExeSessTodoStatus.Todo).length}/${todos.length}]
+${todos.length ? todos.map((td, i) => `${i}:${td.todo}-${ExeSessTodoStatus[td.status]}\n`) : '**you are first executor**, you must use todo action to split the prompt unless you can finish it in few actions'}${
+            tip
+              ? `
+
+[tip from last executor]
+**todo from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status**
+${tip}
+`
+              : ''
+          }${
+            eventsLogs.length
+              ? `
+
+[performed actions]
+${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Math.max(0, eventsLogs.length - 10), eventsLogs.length).join('\n- ')}`
+              : ''
+          }${
+            needFix.length
+              ? `\n\n[action error]\n**consider redo**\n${needFix.splice(0, needFix.length).join('\n')}`
+              : ''
+          }`,
+          {
+            requireScreenshot,
+            complexity,
+            extraAttachments: attachments,
+          },
         );
 
         let res:
@@ -156,7 +187,6 @@ export class ExecutionSession {
               run.fixingAction[0]?.promptId === promptId
             ) {
               if (
-                !res.value.todo &&
                 res.value.a.length === 1 &&
                 (res.value.a[0] as WireActionWithWait).intent
               ) {
@@ -178,15 +208,15 @@ export class ExecutionSession {
                 this.promptQueue = [];
                 promptQueue = [];
                 run.fixingAction.splice(0, run.fixingAction.length);
-                res.value.a.forEach((a) => {
+                for (const a of res.value.a) {
                   if ((a as WireActionWithWait).intent) {
-                    this.addAction({
+                    yield* this.addAction({
                       ...(a as WireActionWithWait),
                       promptId,
                       id: run.allocActionId(),
                     });
                   }
-                });
+                }
                 console.log('Fixing action done clear');
               }
               run.execActions();
@@ -204,18 +234,18 @@ export class ExecutionSession {
               if (this.subSessionQueue.length === 1 && res.value) {
                 // prevent llm adding single subtask
                 const subTaskToMerge = this.subSessionQueue.shift()!;
-                if (res.value.todo) {
-                  res.value.todo.rc =
+                if (res.value.next) {
+                  res.value.next.tip =
                     subTaskToMerge?.promptQueue[0].goalPrompt.replace(
                       NoNestSubtaskPrompt,
-                      `${res.value.todo.rc}\n${NoNestSubtaskPrompt}`,
+                      `${res.value.next.tip}\n${NoNestSubtaskPrompt}`,
                     );
                 } else {
-                  res.value.todo = {
-                    rc: subTaskToMerge?.promptQueue[0].goalPrompt,
+                  res.value.next = {
+                    tip: subTaskToMerge?.promptQueue[0].goalPrompt,
                   };
                 }
-                console.log('merge single subtask to todo', res.value.todo.rc);
+                console.log('merge single subtask to todo', res.value.next.tip);
               } else {
                 console.log('Run sub session queue');
                 yield* this.execSubSessionQueue();
@@ -227,12 +257,11 @@ export class ExecutionSession {
               return;
             }
             const newTabUrl = manager.getFocusedTab()?.url ?? tab.url;
-            console.log('url compare', url, newTabUrl, parent);
             if (url !== newTabUrl) {
               if (parent) {
                 // end subtask when url change to avoid long tail subtask
 
-                this.response = `url changed, end subtask, remain todo: ${res.value?.todo?.rc ?? ''}`;
+                this.response = `url changed, end subtask, remain todo: ${res.value?.next?.tip ?? ''}`;
                 console.log(
                   'url changed, end subtask',
                   url,
@@ -244,11 +273,10 @@ export class ExecutionSession {
               }
             }
 
-            if (res.value?.todo) {
+            if (res.value?.next) {
               yield* this.waitPageReady(url, start);
-              executionSession.resetSystemPrompt();
-              if (res.value.todo.descAttachment) {
-                res.value.todo.descAttachment.forEach((f) => {
+              if (res.value.next.descAttachment) {
+                res.value.next.descAttachment.forEach((f) => {
                   const ff = run.manager.readableFiles.get(f.name);
                   if (ff) {
                     ff.desc = f.desc;
@@ -272,39 +300,20 @@ export class ExecutionSession {
                 break;
               }
               url = newTabUrl;
-              requireScreenshot = res.value.todo.sc ?? false;
-              const subPrompt = `**todo from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status**
-${res.value.todo.rc}
-
-[performed actions]
--
+              requireScreenshot = res.value.next.sc ?? false;
+              tip = `**tip from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status and [performed actions] for what have been completed**
+${res.value.next.tip}
 `;
-              const toAttach = res.value.todo.readFiles ?? [];
+              toAttach = res.value.next.readFiles ?? [];
               if (this.attachmentInNextTodo.length) {
                 toAttach.push(...this.attachmentInNextTodo);
                 this.attachmentInNextTodo = [];
               }
-              const newPrompt = run.createPrompt(
-                runGoalPrompt,
-                {},
-                id,
-                estimatePromptComplexity(runGoalPrompt + subPrompt),
-                subPrompt,
-                toAttach,
-              );
-
-              promptQueue.push(newPrompt);
-              console.log(
-                Date.now() - start,
-                'push todo:',
-                newPrompt.id,
-                promptQueue,
-              );
-            } else if (
-              run.fixingAction.length === 0 &&
-              res.value?.subtaskResp
+            }
+            if (
+              todos.filter((td) => td.status === ExeSessTodoStatus.Todo)
+                .length === 0
             ) {
-              this.response = res.value.subtaskResp;
               // eslint-disable-next-line no-labels
               break promptQueueLoop;
             }
@@ -316,56 +325,24 @@ ${res.value.todo.rc}
             break;
           }
           if ((res.value as WireActionWithWait).intent) {
-            if (!run.fixingAction.length) {
-              const act = res.value as WireActionWithWait;
-              console.log(Date.now() - start, 'exec actions:', res.value);
-              this.addAction({
+            const act = res.value as WireActionWithWait;
+            console.log(
+              Date.now() - start,
+              'exec actions:',
+              act.intent,
+              act.action.k,
+            );
+            if (act.action.k === 'todo') {
+              this.handleTodo(act.action);
+            } else {
+              yield* this.addAction({
                 ...act,
                 promptId,
                 id: run.allocActionId(),
               });
               run.execActions();
-
-              yield res.value as WireActionWithWait;
             }
-          } else {
-            if (parent) {
-              throw new Error('Nested subtask not supported yet');
-            }
-            console.log(Date.now() - start, 'exec add sub task:', res.value);
-            const newPrompt = run.createPrompt(
-              `${(res.value as WireSubTask).subTaskPrompt}
-${NoNestSubtaskPrompt}
-
-[master goal]
-**for reference only not action, in case of conflict with above goal, use setArg to return error to parent session and end yours**
-${runGoalPrompt}`,
-              (res.value as WireSubTask).addArgs ?? undefined,
-              id,
-              (res.value as WireSubTask).complexity,
-            );
-            this.addNewSubSession([newPrompt]);
-            if ((res.value as WireSubTask).addArgs) {
-              Object.entries((res.value as WireSubTask).addArgs!).forEach(
-                ([k, v]) => {
-                  const vv = CommonUtil.replaceJsTpl(v, run.args);
-                  if (vv === undefined) {
-                    return;
-                  }
-                  if (vv.startsWith('[') || vv.startsWith('{')) {
-                    try {
-                      const vvv = CommonUtil.flattenArgs(JSON.parse(vv));
-                      Object.assign(run.args, vvv);
-                    } catch (e) {
-                      console.warn(e);
-                      run.args[k] = vv;
-                    }
-                  } else {
-                    run.args[k] = vv;
-                  }
-                },
-              );
-            }
+            yield res.value as WireActionWithWait;
           }
         }
       } catch (e) {
@@ -380,7 +357,9 @@ ${runGoalPrompt}`,
             undefined,
             id,
             'l',
-            `Fix return error: ${e instanceof Error ? e.message : ''} ${JSON.stringify(e)}`,
+            `Fix return error: ${e instanceof Error ? e.message : ''} ${JSON.stringify(e)}
+[original mission]
+${runSubPrompt}`,
           ),
         );
       }
@@ -429,9 +408,16 @@ ${runGoalPrompt}`,
   addNewSubSession(queue: Prompt[]) {
     this.subSessionQueue.push(this.run.createSession(queue, this));
   }
-  addAction(action: WireActionWithWaitAndRec) {
-    this.actions.push(action);
-    this.run.addAction(action);
+  async *addAction(action: WireActionWithWaitAndRec) {
+    const subtask = await SmartAction.buildSubtask(action, this);
+    console.log('addAction', action.intent, action.action.k);
+    if (subtask) {
+      yield* subtask.exec();
+      this.addLog(`${action.intent}:${subtask.response ?? ''}`);
+    } else {
+      this.actions.push(action);
+      this.run.addAction(action);
+    }
   }
   removePendingActions() {
     this.actions = this.actions.filter((a) => !!a.done);
@@ -439,5 +425,41 @@ ${runGoalPrompt}`,
   }
   addLog(log: string) {
     this.eventsLogs.push(log);
+  }
+
+  private handleTodo(action: Extract<WireAction, { k: 'todo' }>) {
+    const { todos } = this;
+    switch (action.a) {
+      case 'add':
+        if (action.add && action.add.length) {
+          todos.splice(
+            action.pos ?? 0,
+            0,
+            ...action.add.map((todo) => ({
+              todo,
+              status: ExeSessTodoStatus.Todo,
+            })),
+          );
+        }
+        break;
+      case 'cancel':
+        if (
+          action.pos !== undefined &&
+          action.pos !== null &&
+          todos[action.pos]
+        ) {
+          todos[action.pos].status = ExeSessTodoStatus.Cancel;
+        }
+        break;
+      case 'done':
+        if (
+          action.pos !== undefined &&
+          action.pos !== null &&
+          todos[action.pos]
+        ) {
+          todos[action.pos].status = ExeSessTodoStatus.Done;
+        }
+        break;
+    }
   }
 }

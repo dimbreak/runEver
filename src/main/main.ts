@@ -294,16 +294,22 @@ app
     } else {
       app.setAsDefaultProtocolClient(protocolName);
     }
-    const baseDir = app.isPackaged
-      ? path.join(process.resourcesPath, 'assets', 'runEverMark')
-      : path.join(app.getAppPath(), 'assets', 'runEverMark');
+
     protocol.handle('runever', async (request) => {
       const url = new URL(request.url);
 
-      // 只處理 runever://benchmark/...
-      if (url.hostname !== 'benchmark') {
+      let assetName = '';
+      if (url.hostname === 'benchmark') {
+        assetName = 'runEverMark';
+      } else if (url.hostname === 'config') {
+        assetName = 'config_page';
+      } else {
         return new Response('Not found', { status: 404 });
       }
+
+      const baseDir = app.isPackaged
+        ? path.join(process.resourcesPath, 'assets', assetName)
+        : path.join(app.getAppPath(), 'assets', assetName);
 
       // pathname 例如 "/css/app.css"
       let rel = decodeURIComponent(url.pathname || '/');

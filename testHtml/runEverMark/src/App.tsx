@@ -79,6 +79,7 @@ const routeMap: Record<string, () => React.ReactNode> = {
      return <div style={{padding: 20}}>Loading Benchmark...</div>;
   },
   '/pos/pro': () => {
+    removeSession('runEverMark_pos_draft');
     removeSession('runEverMark_email_user');
     removeSession('runEverMark_email_auth');
      writeSession('runEverMark_active_entryPoint', '#/pos/pro');
@@ -92,7 +93,7 @@ const routeMap: Record<string, () => React.ReactNode> = {
        isStarred: true,
        isImportant: true,
        attachments: [
-         { name: 'sample_order_form.pdf', size: 1024, type: 'application/pdf', url: 'sample_order_form.pdf' }
+         { name: 'order_form.pdf', size: 1024, type: 'application/pdf', url: 'order_form.pdf' }
        ]
      };
      localStorage.setItem('runEverMark_inject_email', JSON.stringify(email));

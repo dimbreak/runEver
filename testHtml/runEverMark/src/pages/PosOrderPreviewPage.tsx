@@ -5,7 +5,7 @@ import { readSession, writeSession, setBenchmarkResult } from '../utils/session'
 import { jsPDF } from 'jspdf';
 
 export default function PosOrderPreviewPage() {
-  const draft = readSession<any>('runEverMark_pos_draft', null);
+  const [draft] = useState(() => readSession<any>('runEverMark_pos_draft', null));
   const [status, setStatus] = useState('');
 
   const lines = useMemo(() => {
@@ -40,10 +40,12 @@ export default function PosOrderPreviewPage() {
       id: `PO-${Math.floor(1000 + Math.random() * 9000)}`,
       client: draft?.clientName ?? 'New client',
       status: 'Submitted',
-      total
+      total,
+      submitTime: new Date().toISOString()
     };
-    writeSession('runEverMark_pos_orders', [newOrder, ...existing]);
-    setStatus('Order submitted and added to order list.');
+      writeSession('runEverMark_pos_orders', [newOrder, ...existing]);
+    setStatus(`Order submitted successfully with ID: ${newOrder.id}`);
+    writeSession('runEverMark_pos_draft', null);
   };
 
   const handleDownloadPdf = () => {
@@ -131,6 +133,9 @@ export default function PosOrderPreviewPage() {
                     <div className="sf-label">Shipping Address</div>
                     <div>{draft.address}</div>
                     <div>{draft.city}, {draft.region} {draft.postal}</div>
+
+                    <div className="sf-label" style={{ marginTop: 12 }}>Delivery Date</div>
+                    <div>{draft.deliveryDate || 'Not specified'}</div>
                 </div>
             </div>
 
@@ -156,13 +161,15 @@ export default function PosOrderPreviewPage() {
               Total: <strong style={{ color: '#0176d3' }}>${total.toFixed(2)}</strong>
             </div>
 
-            <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <a href="#/pos/create" className="sf-button">Back to Edit</a>
-                <button className="sf-button brand" onClick={handleSubmit}>
-                  Submit Final Order
-                </button>
-            </div>
-            {status && <p style={{ marginTop: 12, color: 'green', textAlign: 'right' }}>{status}</p>}
+            {!status && (
+                <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                    <a href="#/pos/create" className="sf-button">Back to Edit</a>
+                    <button className="sf-button brand" onClick={handleSubmit}>
+                    Submit Final Order
+                    </button>
+                </div>
+            )}
+            {status && <p style={{ marginTop: 20, color: 'green', textAlign: 'right', fontSize: 16, fontWeight: 'bold' }}>{status}</p>}
           </>
         ) : (
           <p className="muted">No draft order found. Create one first.</p>

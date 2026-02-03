@@ -2,7 +2,11 @@ import { SliderProfile } from '../agentic/profile/widget/slider.html';
 import { dummyCursor } from './cursor/cursor';
 import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
-import { checkCalendar } from '../agentic/profile/widget/calendar.html';
+import {
+  checkCalendar,
+  cleanCalendarHtml,
+} from '../agentic/profile/widget/calendar/calendar.html';
+import { checkFormAndFieldCount } from '../agentic/profile/widget/form/form.html';
 
 const tagMatchRx = /<([a-z0-9]+)([\w\W]*?)<\/\1>/g;
 export namespace MiniHtml {
@@ -132,7 +136,10 @@ export namespace MiniHtml {
     const extra = '';
     const res =
       SliderProfile.checkSlider(tagName, element) ??
-      checkCalendar(tagName, element);
+      checkCalendar(tagName, element) ??
+      (tagName === 'form'
+        ? checkFormAndFieldCount(element as HTMLFormElement)
+        : null);
     if (res) {
       return res;
     }
@@ -249,6 +256,12 @@ export namespace MiniHtml {
         fontIndex = Object.keys(this.styles.font).length;
         this.styles.font[style.fontFamily] = fontIndex;
       }
+
+      let isVisible = visible.visible === true;
+      if (isVisible) {
+        cleanCalendarHtml(meaningfulEl);
+      }
+
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff${fontIndex}`)} ${rgbToHex(style.color)}`;
       let innerHtml =
         meaningfulEl.nodes &&
@@ -302,9 +315,7 @@ export namespace MiniHtml {
         fontIndex = Object.keys(this.styles.font).length;
         this.styles.font[style.fontFamily] = fontIndex;
       }
-      let isVisible = visible.visible === true;
       let href = '';
-
       if (typeAttr) {
         typeAttr = typeAttr.toLowerCase();
         if (tagName === 'button' && typeAttr !== 'button') {

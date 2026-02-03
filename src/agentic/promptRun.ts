@@ -15,7 +15,6 @@ import { ExecutionSession } from './session';
 import { CommonUtil } from '../utils/common';
 
 export class PromptRun {
-  executionSession: ExecutionPrompter;
   args: Record<string, any> = {};
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
@@ -32,7 +31,6 @@ export class PromptRun {
     private thisTab: TabWebView,
     public requestId: number,
   ) {
-    this.executionSession = new ExecutionPrompter(manager);
     this.rootSession = new ExecutionSession(0, [], this);
     this.sessionQueue.push(this.rootSession);
 
@@ -141,9 +139,13 @@ export class PromptRun {
 
   async execActions() {
     if (!this.fixingAction.length) {
-      this.browserActionLockOk = false;
-      this.manager.ensureRunLocked(this.requestId);
-      this.manager.enqueueRun(this.requestId);
+      if (this.actions.length > this.currentAction) {
+        this.browserActionLockOk = false;
+        this.manager.ensureRunLocked(this.requestId);
+        this.manager.enqueueRun(this.requestId);
+      } else {
+        console.log('execActions no action');
+      }
     } else {
       console.log('fixing action skip exec');
     }
@@ -186,7 +188,7 @@ export class PromptRun {
         }
       });
     }
-    sess?.addLog(currentAction.intent);
+    sess?.addLog(`${currentAction.intent}-Done`);
     console.log(
       'Popped actions:',
       this.actions.length,
@@ -225,7 +227,11 @@ export class PromptRun {
       console.log('stopped');
       return;
     }
-    this.fixAction();
+    const sess =
+      this.sessionQueue[this.prompts[currentAction.promptId!].sessionId ?? -1];
+    sess?.addLog(`${currentAction.intent}-Error:${error}`);
+    sess?.needFix.push(JSON.stringify(currentAction));
+    // this.fixAction();
   }
 
   fixingAction: {
@@ -288,9 +294,13 @@ ${JSON.stringify(actionToFix)}`,
     parent: ExecutionSession | undefined = undefined,
   ) {
     const session = new ExecutionSession(0, queue, this, parent);
+    return this.wrapSession(session);
+  }
+
+  wrapSession<S extends ExecutionSession>(session: S): S {
     const sessionId = this.sessionQueue.push(session) - 1;
     session.id = sessionId;
-    queue.forEach((p) => {
+    session.promptQueue.forEach((p) => {
       p.sessionId = sessionId;
     });
     return session;

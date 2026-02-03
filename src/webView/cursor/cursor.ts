@@ -326,7 +326,7 @@ class DummyCursor {
         clientY < y ||
         clientY > y + height
       ) {
-        await this.moveToRect(rect, true);
+        await this.moveToRect(elOrRect, true);
         clientX = this.x;
         clientY = this.y;
       }
@@ -425,7 +425,7 @@ class DummyCursor {
       },
     });
   }
-  async moveToRect(rectOrEl: DOMRect | Element, exact = false) {
+  async moveToRect(rectOrEl: DOMRect | Element, exact = false, retry = 0) {
     const thisRect =
       rectOrEl instanceof Element ? rectOrEl.getBoundingClientRect() : rectOrEl;
     let { x, y } = thisRect;
@@ -451,6 +451,7 @@ class DummyCursor {
       y -= scrolled.y;
     }
     if (!this.dom) {
+      // iframe
       const event: MouseInputEventWithDelay = {
         type: 'mouseMove',
         x: x + width * randomPos(),
@@ -470,10 +471,10 @@ class DummyCursor {
       { x: this.x, y: this.y },
       { x: x + width * randomPos(), y: y + height * randomPos() },
       {
-        durationMs: 300 + Math.random() * 200,
+        // durationMs: 300 + Math.random() * 200,
         hz: 30,
         jitterPx: 1.2,
-        overshootChance: exact ? 0 : 0.45,
+        overshootChance: 0.45,
       },
     );
     let offsetMs = 0;
@@ -495,6 +496,27 @@ class DummyCursor {
     });
     const lastPoint = points[points.length - 1];
     this.moveToXY(lastPoint.x, lastPoint.y);
+    if (retry < 3) {
+      if (rectOrEl === thisRect) {
+        const diffX = Math.abs(thisRect.x - lastPoint.x);
+        const diffY = Math.abs(thisRect.y - lastPoint.y);
+        if (thisRect.width) {
+          if (diffX > thisRect.width || diffY > thisRect.height) {
+            console.log('rect move rect', diffX, diffY, width, height);
+            await this.moveToRect(thisRect, exact, retry + 1);
+          }
+        } else if (diffX > 20 || diffY > 20) {
+          console.log('rect move', diffX, diffY);
+          await this.moveToRect(thisRect, exact, retry + 1);
+        }
+      } else if (
+        document.elementFromPoint(lastPoint.x, lastPoint.y) !== rectOrEl
+      ) {
+        console.log('rect move el', rectOrEl);
+        await this.moveToRect(rectOrEl, exact, retry + 1);
+      }
+    }
+
     await Util.sleep(100);
   }
   moveToXY(x: number, y: number) {

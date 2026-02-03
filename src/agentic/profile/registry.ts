@@ -1,7 +1,7 @@
-import './widget/calendar';
-import './widget/combobox';
+import './widget/calendar/calendar';
+import './widget/combobox/combobox';
 import './widget/fileUpload';
-import './widget/form';
+import './widget/form/form';
 import './widget/list';
 import './widget/iframe';
 import './widget/messager';

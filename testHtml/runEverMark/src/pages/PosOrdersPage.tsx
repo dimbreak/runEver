@@ -26,8 +26,15 @@ const fallbackOrders = [
 ];
 
 export default function PosOrdersPage() {
-  const storedOrders = readSession<typeof fallbackOrders>('runEverMark_pos_orders', []);
-  const orders = [...fallbackOrders, ...(storedOrders.length ? storedOrders : [])];
+  const storedOrders = readSession<any[]>('runEverMark_pos_orders', []);
+  const orders = useMemo(() => {
+    const combined = [...storedOrders, ...fallbackOrders];
+    return combined.sort((a, b) => {
+      const timeA = a.submitTime ? new Date(a.submitTime).getTime() : 0;
+      const timeB = b.submitTime ? new Date(b.submitTime).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [storedOrders]);
   const [activeId, setActiveId] = useState(orders[0]?.id ?? '');
 
   const activeOrder = useMemo(

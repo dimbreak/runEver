@@ -142,15 +142,23 @@ const handleFrameId = async (event: MessageEvent) => {
   // await Util.sleep(2000);
   //
   // // document.body.querySelector('input')?.focus();
-  // BrowserActions.mouse(
+  // const args = {};
+  // const argsDelta: [string, string][] = [];
+  // BrowserActions.setArgs(
   //   {
-  //     k: 'mouse',
-  //     a: 'click',
-  //     q: '',
-  //     el: document.querySelector('form .sf-button')!,
+  //     k: 'setArg',
+  //     kv: {
+  //       orderDetails:
+  //         '{"customer":"Northwind Travel","address":"123 Client St, Business City, ST 12345","phone":"555-0100","email":"contact@client.com","poNumber":"PO-6812","date":"2026-02-01","vendor":{"name":"SalesForce POS System","address":"123 Cloud Way, San Francisco, CA 94105"},"items":[{"name":"Laptop Pro","qty":4,"unitPrice":1200.00,"total":4800.00},{"name":"Desk Chair","qty":2,"unitPrice":350.00,"total":700.00},{"name":"Monitor 4K","qty":3,"unitPrice":450.00,"total":1350.00}],"total":6850.00,"remarks":"We are not open on monday, please do not delivery on monday"}',
+  //       'sample_order_form.pdf-orderDetails':
+  //         '{"customer":"Northwind Travel","address":"123 Client St, Business City, ST 12345","phone":"555-0100","email":"contact@client.com","poNumber":"PO-6812","date":"2026-02-01","vendor":{"name":"SalesForce POS System","address":"123 Cloud Way, San Francisco, CA 94105"},"items":[{"name":"Laptop Pro","qty":4,"unitPrice":1200.00,"total":4800.00},{"name":"Desk Chair","qty":2,"unitPrice":350.00,"total":700.00},{"name":"Monitor 4K","qty":3,"unitPrice":450.00,"total":1350.00}],"total":6850.00,"remarks":"We are not open on monday, please do not delivery on monday"}',
+  //     },
   //   },
   //   'l',
+  //   args,
+  //   argsDelta,
   // );
+  // console.log('-------------------', args, argsDelta);
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

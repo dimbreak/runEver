@@ -14,9 +14,7 @@ const clients = ['Northwind Travel', 'Nova Foods', 'Atlas Retail', 'Tech Solutio
 const products = [
     { name: 'Laptop Pro', price: 1200 },
     { name: 'Desk Chair', price: 350 },
-    { name: 'Monitor 4K', price: 450 },
     { name: 'Keyboard', price: 80 },
-    { name: 'Mouse', price: 40 }
 ];
 
 const selectedClient = 'Northwind Travel';
@@ -37,7 +35,7 @@ const date = new Date().toLocaleDateString();
 const docOrder = new PDFDocument();
 
 try {
-    const stream = fs.createWriteStream(path.join(publicDir, 'sample_order_form.pdf'));
+    const stream = fs.createWriteStream(path.join(publicDir, 'order_form.pdf'));
     stream.on('error', (e) => console.warn('Write error for order form:', e.message));
     docOrder.pipe(stream);
 } catch (e) {
@@ -93,7 +91,7 @@ docOrder.end();
 const docInvoice = new PDFDocument();
 
 try {
-    const stream = fs.createWriteStream(path.join(publicDir, 'sample_invoice.pdf'));
+    const stream = fs.createWriteStream(path.join(publicDir, 'invoice.pdf'));
     stream.on('error', (e) => console.warn('Write error for invoice:', e.message));
     docInvoice.pipe(stream);
 } catch (e) {

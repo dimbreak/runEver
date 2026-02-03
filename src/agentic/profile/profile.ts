@@ -1,3 +1,5 @@
+import { WebContents } from 'electron';
+
 export namespace Profile {
   export type SessionType = 'execution';
   type BasePromptParts = { system?: string; userHeader: string };
@@ -14,6 +16,7 @@ export namespace Profile {
     promptPreprocess?: <T extends Partial<PromptParts>>(
       sessionType: SessionType,
       promptParts: T,
+      webContent: WebContents,
     ) => Promise<T>;
   }
 
@@ -24,6 +27,7 @@ export namespace Profile {
   export const process = async (
     sessionType: SessionType,
     promptParts: Partial<PromptParts>,
+    webContent: WebContents,
   ) => {
     let acc: Partial<PromptParts> = promptParts;
     for (const profile of profiles) {
@@ -33,7 +37,7 @@ export namespace Profile {
       ) {
         acc = {
           ...acc,
-          ...(await profile.promptPreprocess?.(sessionType, acc)),
+          ...(await profile.promptPreprocess?.(sessionType, acc, webContent)),
         };
       }
     }

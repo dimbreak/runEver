@@ -69,7 +69,8 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
 
     // Strategy: Put Name in Option value.
     // On select, look up the ID by Name.
-    const product = productCatalog.find(p => p.name === itemValue);
+    const name = itemValue.split(' - ')[0];
+    const product = productCatalog.find(p => p.name === name);
     if (product) {
       setTerm(product.name);
       onChange(product.id);
@@ -92,7 +93,7 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
     // For now, let's keep it simple: strict selection required for ID update via list.
     // Ideally we clear ID if text mismatch, but let's stick to safe behavior.
   };
-
+console.log(filteredProducts)
   return (
     <Combobox onSelect={handleSelect} openOnFocus>
       <ComboboxInput
@@ -362,7 +363,17 @@ export default function PosOrderCreatePage() {
             </div>
 
             <div style={{ borderTop: '1px solid #dddbda', paddingTop: 16, marginBottom: 24 }}>
-                 <h3>Order Lines</h3>
+                 <h3>Order Lines
+                   <button
+                     style={{float: 'right', marginTop: -4}}
+                     className="sf-button"
+                     type="button"
+                     onClick={() => setLines((current) => [...current, emptyLine()])}
+                   >
+                     + Add Line Item
+                   </button>
+                 </h3>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {lines.map((line) => {
                       const total = totals.find((item) => item.id === line.id);
@@ -430,15 +441,6 @@ export default function PosOrderCreatePage() {
                     })}
                 </div>
 
-                <div style={{ marginTop: 12 }}>
-                    <button
-                      className="sf-button"
-                      type="button"
-                      onClick={() => setLines((current) => [...current, emptyLine()])}
-                    >
-                      + Add Line Item
-                    </button>
-                </div>
             </div>
 
             <div style={{ marginTop: 24 }}>
