@@ -1,13 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DataGrid, Column, RenderEditCellProps } from 'react-data-grid';
 import 'react-data-grid/lib/styles.css';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Box } from 'lucide-react';
+import clsx from 'clsx';
+
+// --- Types ---
 
 interface ArgumentValue {
   value: string;
   isSecret: boolean;
   riskLevel: string;
   domain?: string;
+}
+
+declare global {
+  interface Window {
+    runever?: {
+      getConfig: (key: string) => Promise<{ config: any } | { error: string }>;
+      setConfig: (key: string, config: any) => Promise<{ error?: string }>;
+    };
+  }
 }
 
 interface Row {
@@ -18,32 +30,9 @@ interface Row {
   domain: string;
 }
 
-// Mock initial data
-const initialData: Record<string, ArgumentValue> = {
-  api_key: {
-    value: 'sk-12345',
-    isSecret: true,
-    riskLevel: 'high',
-    domain: 'api.example.com',
-  },
-  theme: { value: 'dark', isSecret: false, riskLevel: 'low' },
-  max_retries: {
-    value: '3',
-    isSecret: false,
-    riskLevel: 'medium',
-    domain: 'service.internal',
-  },
-};
+type TabId = 'arguments';
 
-function getRowsFromConfig(config: Record<string, ArgumentValue>): Row[] {
-  return Object.entries(config).map(([key, val]) => ({
-    key,
-    value: val.value,
-    isSecret: val.isSecret,
-    riskLevel: val.riskLevel,
-    domain: val.domain || '',
-  }));
-}
+// --- Editors ---
 
 function TextEditor({
   row,
@@ -53,7 +42,7 @@ function TextEditor({
 }: RenderEditCellProps<Row>) {
   return (
     <input
-      className="w-full h-full bg-[#333] text-white px-2 outline-none focus:ring-1 focus:ring-blue-500"
+      className="h-full w-full bg-white px-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
       ref={(input) => input?.focus()}
       value={row[column.key as keyof Row] as string}
       onChange={(e) => onRowChange({ ...row, [column.key]: e.target.value })}
@@ -69,14 +58,14 @@ function BooleanEditor({
   onClose,
 }: RenderEditCellProps<Row>) {
   return (
-    <div className="flex items-center justify-center h-full">
+    <div className="flex h-full items-center justify-center bg-white">
       <input
         type="checkbox"
-        className="h-4 w-4"
+        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
         checked={!!row[column.key as keyof Row]}
         onChange={(e) => {
           onRowChange({ ...row, [column.key]: e.target.checked });
-          onClose(true); // Close immediately on toggle? or let user click away
+          onClose(true);
         }}
         onBlur={() => onClose(true)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
@@ -86,10 +75,94 @@ function BooleanEditor({
   );
 }
 
-export default function App() {
-  const [data, setData] = useState<Record<string, ArgumentValue>>(initialData);
+function RiskEditor({ row, onRowChange, onClose }: RenderEditCellProps<Row>) {
+  return (
+    <select
+      className="h-full w-full bg-white px-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+      value={row.riskLevel}
+      onChange={(e) => {
+        onRowChange({ ...row, riskLevel: e.target.value });
+        onClose(true);
+      }}
+      onBlur={() => onClose(true)}
+      // eslint-disable-next-line jsx-a11y/no-autofocus
+      autoFocus
+    >
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
+  );
+}
+
+// --- Utils ---
+
+function getRowsFromConfig(config: Record<string, ArgumentValue>): Row[] {
+  return Object.entries(config).map(([key, val]) => ({
+    key,
+    value: val.value,
+    isSecret: val.isSecret,
+    riskLevel: val.riskLevel,
+    domain: val.domain || '',
+  }));
+}
+
+// --- Components ---
+
+function ArgumentsPage() {
+  const [data, setData] = useState<Record<string, ArgumentValue>>({});
   const [search, setSearch] = useState('');
   const [domainFilter, setDomainFilter] = useState('');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      if (window.runever) {
+        try {
+          const res = await window.runever.getConfig('arguments');
+          if ('config' in res && Array.isArray(res.config)) {
+            const loadedData: Record<string, ArgumentValue> = {};
+            res.config.forEach((arg: any) => {
+              loadedData[arg.name] = {
+                value: arg.value,
+                isSecret: arg.isSecret ?? false,
+                riskLevel: arg.risk ?? 'low',
+                domain: arg.domain,
+              };
+            });
+            setData(loadedData);
+          } else if ('error' in res) {
+            console.error('Failed to load args:', res.error);
+          }
+        } catch (e) {
+          console.error('Error loading config:', e);
+        }
+      }
+      setIsLoaded(true);
+    }
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const saveConfig = async () => {
+      const argsArray = Object.entries(data).map(([name, val]) => ({
+        name,
+        value: val.value,
+        isSecret: val.isSecret,
+        risk: val.riskLevel,
+        domain: val.domain,
+      }));
+      if (window.runever) {
+        await window.runever.setConfig('arguments', argsArray);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      saveConfig();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [data, isLoaded]);
 
   const rows = useMemo(() => getRowsFromConfig(data), [data]);
 
@@ -109,52 +182,41 @@ export default function App() {
       name: 'Is Secret',
       renderEditCell: BooleanEditor,
       renderCell: (props) => (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex h-full items-center justify-center">
           <input
             type="checkbox"
             checked={props.row.isSecret}
             readOnly
-            className="h-4 w-4 accent-blue-500"
+            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
         </div>
       ),
     },
-    { key: 'riskLevel', name: 'Risk Level', renderEditCell: TextEditor }, // Could be a select
+    { key: 'riskLevel', name: 'Risk Level', renderEditCell: RiskEditor },
     { key: 'domain', name: 'Domain', renderEditCell: TextEditor },
   ];
 
-  // Actually onRowsChange signature returns new rows.
   const onRowsChange = (
     newRows: readonly Row[],
     { indexes }: { indexes: number[] },
   ) => {
-    // newRows corresponds to filteredRows with the update applied.
-    // We need to sync this back to `data`.
-
-    // Note: if filter is active, newRows is a subset.
-
-    // We can just iterate the changed indexes.
     indexes.forEach((index) => {
       const newRow = newRows[index];
       const oldRow = filteredRows[index];
 
       setData((prev) => {
         const next = { ...prev };
-
-        // If key changed
         if (oldRow.key !== newRow.key) {
           if (next[oldRow.key]) {
             delete next[oldRow.key];
           }
         }
-
         next[newRow.key] = {
           value: newRow.value,
           isSecret: newRow.isSecret,
           riskLevel: newRow.riskLevel,
           domain: newRow.domain || undefined,
         };
-
         return next;
       });
     });
@@ -168,40 +230,40 @@ export default function App() {
         value: '',
         isSecret: false,
         riskLevel: 'low',
-        domain: domainFilter || undefined, // Default to current filtering domain
+        domain: domainFilter || undefined,
       },
     }));
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#1e1e1e] text-gray-300 p-6">
+    <div className="flex h-full flex-col overflow-hidden">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-2">
+        <h1 className="mb-2 text-2xl font-bold text-slate-900">
           Argument Configuration
         </h1>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-slate-500">
           Manage application arguments and secrets.
         </p>
       </header>
 
-      <div className="flex gap-4 mb-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+      <div className="mb-4 flex gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search arguments..."
-            className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-blue-600"
+            className="w-full rounded-md border border-slate-200 bg-white py-2 pr-4 pl-9 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="relative flex-1 max-w-sm">
-          <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <div className="relative max-w-sm flex-1">
+          <Filter className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Filter by Domain..."
-            className="w-full bg-[#2a2a2a] border border-gray-700 rounded-md py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-blue-600"
+            className="w-full rounded-md border border-slate-200 bg-white py-2 pr-4 pl-9 text-sm text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
             value={domainFilter}
             onChange={(e) => setDomainFilter(e.target.value)}
           />
@@ -210,22 +272,84 @@ export default function App() {
         <button
           type="button"
           onClick={handleAdd}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors text-sm font-medium"
+          className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="h-4 w-4" />
           Add Entry
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden border border-gray-800 rounded-md shadow-inner bg-[#242424]">
+      <div className="flex-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <DataGrid
           columns={columns}
           rows={filteredRows}
-          className="rdg-dark"
+          className="rdg-light h-full"
           onRowsChange={onRowsChange}
           rowClass={() => 'text-sm'}
         />
       </div>
+    </div>
+  );
+}
+
+function Sidebar({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}) {
+  const tabs = [
+    { id: 'arguments', label: 'Arguments', icon: Box },
+    // Future tabs:
+    // { id: 'security', label: 'Security', icon: Shield },
+    // { id: 'general', label: 'General', icon: Settings },
+  ] as const;
+
+  return (
+    <div className="z-10 flex h-full w-20 shrink-0 flex-col items-center border-l border-slate-200 bg-white py-4 shadow-sm">
+      <div className="flex flex-col gap-4">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => onTabChange(tab.id)}
+              className={clsx(
+                'group relative rounded-xl p-3 transition-all duration-200',
+                isActive
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600',
+              )}
+              title={tab.label}
+            >
+              <tab.icon className="h-6 w-6" />
+              {isActive && (
+                <div className="absolute top-1/2 -right-4 h-8 w-1 -translate-y-1/2 rounded-l-full bg-blue-600" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState<TabId>('arguments');
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden p-6">
+        <div className="mx-auto flex h-full max-w-6xl flex-col">
+          {activeTab === 'arguments' && <ArgumentsPage />}
+        </div>
+      </div>
+
+      {/* Right Sidebar */}
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { initIpcMain } from '../contracts/ipc';
 import { ToMainIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
+import { ToRuneverIpc } from '../contracts/toRunever';
 import { Util } from '../webView/util';
 import {
   openBrowserWindowDialog,
@@ -19,7 +20,7 @@ import {
   setPendingAuthDeepLink,
 } from './authDeepLink';
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
-import { UserApiKeyStore } from './userApiKeyStore';
+import { RuneverConfigStore } from './runeverConfigStore';
 import { getAuthMode, setAuthMode } from './authModeStore';
 
 function initPromptIpc(session: WebViewLlmSession) {
@@ -128,7 +129,7 @@ export const setupIpcHandlers = (
   llmSession: WebViewLlmSession,
 ) => {
   const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = new UserApiKeyStore();
+  const userApiKeyStore = new RuneverConfigStore();
   const getTab = (frameId?: number) =>
     typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
 
@@ -213,7 +214,7 @@ export const setupIpcHandlers = (
 
   ToMainIpc.getLlmConfig.handle(async () => {
     try {
-      const config = await userApiKeyStore.getConfig();
+      const config = await userApiKeyStore.getConfig('apiKey');
       if (!config) {
         return {
           api: 'openai',
@@ -237,7 +238,7 @@ export const setupIpcHandlers = (
 
   ToMainIpc.getUserAuthState.handle(async () => {
     try {
-      const config = await userApiKeyStore.getConfig();
+      const config = await userApiKeyStore.getConfig('apiKey');
       return {
         hasApiKey: Boolean(config?.apiKey),
         provider: config?.provider ?? null,
@@ -255,7 +256,7 @@ export const setupIpcHandlers = (
 
   ToMainIpc.setUserApiKey.handle(async (_event, payload) => {
     try {
-      await userApiKeyStore.setConfig({
+      await userApiKeyStore.setConfig('apiKey', {
         provider: payload.provider,
         apiKey: payload.apiKey,
         baseUrl: payload.baseUrl,
@@ -267,7 +268,7 @@ export const setupIpcHandlers = (
 
   ToMainIpc.clearUserApiKey.handle(async () => {
     try {
-      await userApiKeyStore.setConfig(null);
+      await userApiKeyStore.setConfig('apiKey', undefined);
     } catch (error) {
       console.error('Failed to clear user API key', error);
     }
@@ -504,6 +505,51 @@ EOF
     }
     return { error: 'Tab not found' };
   });
+
+  ToRuneverIpc.setConfig.handle(async (_event, arg) => {
+    const { frameId, key, config } = arg;
+    const wvTab = getTab(frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+
+    const url = wvTab.webView.webContents.getURL();
+    if (!url.startsWith('runever:')) {
+      return { error: 'Permission denied: Not a runever: origin' };
+    }
+
+    try {
+      await userApiKeyStore.setConfig(key, config);
+      return {};
+    } catch (e) {
+      return { error: String(e) };
+    }
+  });
+
+  ToRuneverIpc.getConfig.handle(async (_event, arg) => {
+    const { frameId, key } = arg;
+    const wvTab = getTab(frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+
+    const url = wvTab.webView.webContents.getURL();
+    if (!url.startsWith('runever:')) {
+      return { error: 'Permission denied: Not a runever: origin' };
+    }
+
+    try {
+      const config = await userApiKeyStore.getConfig(key);
+      // Ensure we return the correct type, handling null if necessary
+      // For arguments, if null, we might want to return empty array if that's what the type expects,
+      // but if the store returns null it means it failed to load or key doesn't exist.
+      // However, the contract expects { config: ... } | { error: ... }
+      // If config is null, we might treating it as valid null result or default.
+      // Given RunEverConfig, arguments is default [], so getConfig should theoretically return that.
+      // If store returns null, let's return it as is or handle it.
+      // Assuming mapped types handle nulls or we cast.
+      return { config: config as any };
+    } catch (e) {
+      return { error: String(e) };
+    }
+  });
+
   initPromptIpc(llmSession);
 
   // User input requests are dispatched by WebViewLlmSession.askUserInput().

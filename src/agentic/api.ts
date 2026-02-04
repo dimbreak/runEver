@@ -14,7 +14,7 @@ import { apiTrustEnvVars } from '../schema/env.node';
 import { Util } from '../webView/util';
 import { FirstTokenMonitor } from '../utils/llm';
 import { ApiTrustTokenStore } from '../main/apiTrustTokenStore';
-import { UserApiKeyStore } from '../main/userApiKeyStore';
+import { RuneverConfigStore } from '../main/runeverConfigStore';
 import { getAuthMode } from '../main/authModeStore';
 import { getApiTrustStream } from '../shared/aiGateway';
 
@@ -76,14 +76,14 @@ export namespace LlmApi {
 
   const recordPath = `${app.getPath('userData')}/prompt-record`;
   const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = new UserApiKeyStore();
+  const userApiKeyStore = new RuneverConfigStore();
 
   try {
     fs.mkdirSync(recordPath);
   } catch (e) {}
 
   const getLlmConfig = async () => {
-    const storedConfig = await userApiKeyStore.getConfig();
+    const storedConfig = await userApiKeyStore.getConfig('apiKey');
     if (!storedConfig) {
       return {
         api: 'openai',

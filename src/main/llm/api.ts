@@ -7,7 +7,7 @@ import { envSchema } from '../../schema/env.schema';
 import { apiTrustEnvVars } from '../../schema/env.node';
 import { Util } from '../../webView/util';
 import { ApiTrustTokenStore } from '../apiTrustTokenStore';
-import { UserApiKeyStore } from '../userApiKeyStore';
+import { RuneverConfigStore } from '../runeverConfigStore';
 import { getAuthMode } from '../authModeStore';
 import { getApiTrustStream } from '../../shared/aiGateway';
 
@@ -57,10 +57,10 @@ export namespace LlmApi {
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
   const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = new UserApiKeyStore();
+  const userApiKeyStore = new RuneverConfigStore();
 
   const getLlmConfig = async () => {
-    const storedConfig = await userApiKeyStore.getConfig();
+    const storedConfig = await userApiKeyStore.getConfig('apiKey');
     if (!storedConfig) {
       return {
         api: 'openai',

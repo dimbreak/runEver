@@ -5,10 +5,6 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,24 +17,53 @@ body {
   min-height: 100vh;
 }
 
+/* React Data Grid Overrides for Light/Slate Theme */
 .rdg {
   block-size: 100%;
   border: none;
-  background-color: transparent;
-  color: inherit;
+  border-radius: 0.5rem; /* rounded-md */
+  background-color: white;
+  color: #0f172a; /* slate-900 */
 }
 
 .rdg-cell {
-  background-color: #242424;
-  color: white;
-  border-color: #444;
+  background-color: white;
+  color: #334155; /* slate-700 */
+  border-right: 1px solid #e2e8f0; /* slate-200 */
+  border-bottom: 1px solid #e2e8f0; /* slate-200 */
+  padding-inline: 1rem;
 }
 
 .rdg-header-row {
-  background-color: #1a1a1a;
-  color: #ccc;
+  background-color: #f8fafc; /* slate-50 */
+  color: #475569; /* slate-600 */
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0; /* slate-200 */
 }
 
-.rdg-row:hover {
-  background-color: #333;
+.rdg-row:hover .rdg-cell {
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+.rdg-row-selected {
+  background-color: #e0f2fe; /* sky-100, assuming blue accent */
+}
+
+/* Scrollbar styling to match clean aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
 }

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { type EventWithDelay, ToMainIpc } from '../contracts/toMain';
+import { ToRuneverIpc } from '../contracts/toRunever';
 import { dummyCursor } from './cursor/cursor';
 import { BrowserActions } from './actions';
 import { Util } from './util';
@@ -85,14 +86,35 @@ const webViewHandler = {
   },
 };
 
+const runeverHandler = {
+  setConfig: (key: any, config: any) => {
+    return ToRuneverIpc.setConfig.invoke({
+      frameId: window.frameId!,
+      key,
+      config,
+    });
+  },
+  getConfig: (key: any) => {
+    return ToRuneverIpc.getConfig.invoke({
+      frameId: window.frameId!,
+      key,
+    });
+  },
+};
+
 contextBridge.exposeInMainWorld('isPreloadContext', false);
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('webView', webViewHandler);
+if (window.location.protocol === 'runever:') {
+  contextBridge.exposeInMainWorld('runever', runeverHandler);
+  window.runever = runeverHandler;
+}
 
 window.electron = electronHandler;
 window.webView = webViewHandler;
 window.isPreloadContext = true;
 
+export type RuneverHandler = typeof runeverHandler;
 export type WebViewHandler = typeof webViewHandler;
 
 let pendingCursorInit: { x: number; y: number } | null = null;
