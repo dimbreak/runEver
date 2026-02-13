@@ -37,10 +37,7 @@ export default function PosOrdersPage() {
   }, [storedOrders]);
   const [activeId, setActiveId] = useState(orders[0]?.id ?? '');
 
-  const activeOrder = useMemo(
-    () => orders.find((order) => order.id === activeId) ?? orders[0],
-    [orders, activeId]
-  );
+
 
   useEffect(() => {
     const ep = readSession<string>('runEverMark_active_entryPoint', '');
@@ -52,8 +49,8 @@ export default function PosOrdersPage() {
     }
   }, []);
 
-  const handlePrintInvoice = () => {
-     if (!activeOrder) return;
+  const handlePrintInvoice = (order: any) => {
+     if (!order) return;
 
      const doc = new jsPDF();
 
@@ -62,18 +59,18 @@ export default function PosOrdersPage() {
      if (ep === '#/pos/pro') setBenchmarkResult(ep, 'click_download_invoice', true);
 
      doc.setFontSize(20);
-     doc.setTextColor(1, 118, 211); // Sellfroce Blue
+     doc.setTextColor(1, 118, 211); // Sellforce Blue
      doc.text("INVOICE", 160, 20);
 
      doc.setFontSize(12);
      doc.setTextColor(60, 60, 60);
      doc.setFont('helvetica', 'bold');
-     doc.text("Sellfroce POS System", 20, 20);
+     doc.text("Sellforce POS System", 20, 20);
      doc.setFont('helvetica', 'normal');
      doc.setFontSize(10);
      doc.text("123 Cloud Way", 20, 25);
      doc.text("San Francisco, CA 94105", 20, 30);
-     doc.text("support@sellfrocepos.com", 20, 35);
+     doc.text("support@sellforcepos.com", 20, 35);
 
      doc.setDrawColor(200, 200, 200);
      doc.line(20, 40, 190, 40);
@@ -81,14 +78,14 @@ export default function PosOrdersPage() {
      // INVOICE DETAILS
      doc.setFontSize(11);
      doc.setTextColor(0, 0, 0);
-     doc.text(`Invoice Number: INV-${activeOrder.id}`, 20, 55);
+     doc.text(`Invoice Number: INV-${order.id}`, 20, 55);
      doc.text(`Date Issued: ${new Date().toLocaleDateString()}`, 20, 61);
 
      // BILL TO (Client)
      doc.text("Bill To:", 20, 75);
      doc.setFontSize(12);
      doc.setFont('helvetica', 'bold');
-     doc.text(activeOrder.client, 20, 82);
+     doc.text(order.client, 20, 82);
      doc.setFont('helvetica', 'normal');
 
      // SUMMARY TABLE
@@ -102,8 +99,8 @@ export default function PosOrdersPage() {
 
      y += 10;
      doc.setFont('helvetica', 'normal');
-     doc.text(`Order Balance - ${activeOrder.id}`, 25, y);
-     doc.text(`$${activeOrder.total.toFixed(2)}`, 170, y);
+     doc.text(`Order Balance - ${order.id}`, 25, y);
+     doc.text(`$${order.total.toFixed(2)}`, 170, y);
 
      y += 10;
      doc.text("Services and Goods", 25, y);
@@ -116,15 +113,15 @@ export default function PosOrdersPage() {
      doc.setFontSize(12);
      doc.setFont('helvetica', 'bold');
      doc.text("TOTAL DUE", 120, y);
-     doc.text(`$${activeOrder.total.toFixed(2)}`, 170, y);
+     doc.text(`$${order.total.toFixed(2)}`, 170, y);
 
-     doc.save(`${activeOrder.id}_Invoice.pdf`);
+     doc.save(`${order.id}_Invoice.pdf`);
   };
 
   return (
     <PosLayout title="Order List">
       <div className="grid">
-        <div style={{ marginRight: 24, flex: 1 }}>
+        <div style={{ flex: 1 }}>
            <div className="sf-card" style={{ padding: 0 }}>
              {/* List View Header */}
              <div style={{ padding: '12px 16px', borderBottom: '1px solid #dddbda', background: '#f8f9fb', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -146,13 +143,21 @@ export default function PosOrdersPage() {
                     key={order.id}
                     className={`sf-list-item ${order.id === activeId ? 'selected' : ''}`}
                     onClick={() => setActiveId(order.id)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}
                   >
                     <div>
                       <div style={{ color: '#0176d3', fontWeight: 600, fontSize: 14 }}>{order.id}</div>
                       <div className="sf-label" style={{ marginBottom: 0 }}>{order.client}</div>
                     </div>
-                    <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span className="sf-badge" style={{ background: '#ecebea', color: '#080707', padding: '2px 8px', borderRadius: 4, fontSize: 12}}>{order.status}</span>
+                      <button
+                        className="sf-button"
+                        onClick={(e) => { e.stopPropagation(); handlePrintInvoice(order); }}
+                        style={{ fontSize: 12, padding: '4px 12px' }}
+                      >
+                        Download Invoice
+                      </button>
                     </div>
                   </div>
                ))}
@@ -160,36 +165,7 @@ export default function PosOrdersPage() {
            </div>
         </div>
 
-        {/* Record Detail Panel (Right Side, mimicking split view) */}
-        <div style={{ width: 320 }}>
-            {activeOrder && (
-              <div className="sf-card">
-                  <h3>{activeOrder.id}</h3>
 
-                  <div style={{ display: 'grid', gap: 12, marginTop: 16 }}>
-                    <div>
-                      <label className="sf-label">Client Account</label>
-                      <div style={{ borderBottom: '1px solid #dddbda', paddingBottom: 4}}>{activeOrder.client}</div>
-                    </div>
-
-                    <div>
-                      <label className="sf-label">Order Status</label>
-                       <div>{activeOrder.status}</div>
-                    </div>
-
-                    <div>
-                      <label className="sf-label">Total Amount</label>
-                       <div style={{ fontSize: 16, fontWeight: 700 }}>${activeOrder.total.toFixed(2)}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-                     <button className="sf-button brand">Process</button>
-                     <button className="sf-button" onClick={handlePrintInvoice}>Print Invoice</button>
-                  </div>
-              </div>
-            )}
-        </div>
       </div>
     </PosLayout>
   );

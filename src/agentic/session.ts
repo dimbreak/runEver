@@ -4,6 +4,7 @@ import { Util } from '../webView/util';
 import { PlanAfterNavigation, PlanAfterRerender } from './constants';
 import {
   ExecutorLlmResult,
+  RiskOrComplexityLevel,
   WireAction,
   WireActionWithWait,
   WireSubTask,
@@ -14,75 +15,62 @@ import { LlmApi } from './api';
 import { SmartAction } from './profile/smartAction';
 import { ExecutionPrompter } from './execution';
 
-// LlmApi.addDummyReturn(
-//   JSON.stringify({
-//     a: [
-//       {
-//         intent: 'fill email and password fields',
-//         risk: 'm',
-//         action: {
-//           k: 'fillForm',
-//           q: '__e',
-//           data: [
-//             {
-//               f: 'email',
-//               v: 'pikachu@pokemon.com',
-//             },
-//             {
-//               f: 'password',
-//               v: '95279527',
-//             },
-//           ],
-//         },
-//       },
-//       {
-//         intent: 'click the Next submit button',
-//         risk: 'm',
-//         action: {
-//           k: 'mouse',
-//           a: 'click',
-//           q: {
-//             id: '__c',
-//             argKeys: [],
-//           },
-//         },
-//         post: {
-//           t: 'network',
-//           a: 'idle0',
-//         },
-//       },
-//     ],
-//     todo: 'finishedNoToDo',
-//   }),
-// );
+// LlmApi.addDummyReturn([
+//   'prompt-record/log-20260208222244459.json',
+//   'prompt-record/log-20260208222256920.json',
+//   'prompt-record/log-20260208222312702.json',
+//   'prompt-record/log-20260208222329924.json',
+//   'prompt-record/log-20260208222346318.json',
+//   'prompt-record/log-20260208222404411.json',
+//   'prompt-record/log-20260208222502144.json',
+//   'prompt-record/log-20260208222514145.json',
+//   'prompt-record/log-20260208222530941.json',
+// ]);
+
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
+// LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 // LlmApi.addDummyReturn('null');
 
-enum ExeSessTodoStatus {
+export enum ExeSessStatus {
   Todo = 0,
-  Done = 1,
-  Cancel = 2,
+  Working = 1,
+  Verified = 2,
+  Cancel = 3,
+  Abnormal = 4,
 }
 
-interface ExeSessTodo {
-  todo: string;
-  status: ExeSessTodoStatus;
+interface ExeSessCheckPoint {
+  checkPoint: string;
+  status: ExeSessStatus;
+  comment?: string;
 }
 
 const NoNestSubtaskPrompt =
   '**running a subtask, do not add subtask, if the task on the current UI should split, end this subtask with finishedNoToDo and shortly < 10words advise in subtaskResp**';
 export class ExecutionSession {
+  forceComplexity: RiskOrComplexityLevel | undefined;
   prompter: ExecutionPrompter;
   subSessionQueue: ExecutionSession[];
   actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
   eventsLogs: string[] = [];
   needFix: string[] = [];
-  todos: ExeSessTodo[] = [];
-  attachmentInNextTodo: string[] = [];
+  checklist: ExeSessCheckPoint[] = [];
+  attachmentInNextPrompt: string[] = [];
   response: string | undefined = undefined;
+  onCompleted: undefined | ((session: ExecutionSession) => void);
+  updateGoal: (() => string) | undefined;
+  status: ExeSessStatus | string = ExeSessStatus.Todo;
+  notices: string[] = [];
   constructor(
     public id: number,
     public promptQueue: Prompt[],
@@ -97,7 +85,19 @@ export class ExecutionSession {
     void,
     void
   > {
-    const { run, id, eventsLogs, parent, prompter, needFix, todos } = this;
+    const {
+      run,
+      id,
+      eventsLogs,
+      parent,
+      prompter,
+      needFix,
+      checklist,
+      actions,
+      notices,
+      forceComplexity,
+      updateGoal,
+    } = this;
     let { promptQueue } = this;
     if (run.fixingAction.length === 0 && this.promptQueue.length === 0) {
       yield* this.execSubSessionQueue();
@@ -109,7 +109,7 @@ export class ExecutionSession {
     );
     let retry = 3;
     let requireScreenshot = false;
-    const { tab, browserActionLock, manager } = run;
+    const { tab, browserActionLock, manager, getGlobalArgs } = run;
     let { url } = tab;
     let stepsStream: AsyncGenerator<
       WireActionWithWait | WireSubTask,
@@ -125,6 +125,7 @@ export class ExecutionSession {
     let tip = '';
     let toAttach: string[] = [];
     const promptItem = promptQueue.shift()!;
+    this.status = ExeSessStatus.Working;
     // eslint-disable-next-line no-labels
     promptQueueLoop: while (promptItem) {
       if (run.stopRequested) {
@@ -141,15 +142,24 @@ export class ExecutionSession {
       const start = Date.now();
       try {
         stepsStream = prompter.execPrompt(
-          runGoalPrompt,
-          run.args,
-          `[todo ${todos.filter((td) => td.status === ExeSessTodoStatus.Todo).length}/${todos.length}]
-${todos.length ? todos.map((td, i) => `${i}:${td.todo}-${ExeSessTodoStatus[td.status]}\n`) : '**you are first executor**, you must use todo action to split the prompt unless you can finish it in few actions'}${
+          updateGoal ? updateGoal() : runGoalPrompt,
+          run.getArgs(url.split('/').slice(0, 3).join('/')),
+          `${notices.length ? `\n\n${notices.splice(0, notices.length).join('\n\n')}\n\n` : ''}[checklist ${checklist.filter((td) => td.status !== ExeSessStatus.Todo && td.status !== ExeSessStatus.Working).length}/${checklist.length}]
+${
+  checklist.length
+    ? `${checklist.map((cp, i) => formatChecklist(cp, i)).join(',\n')}\n**checklist is from executor may not be 100% correct, stick to guide and rules**\n**WORK IN ORDER one by one, skipping/shuffle absolutely not allowed, repeat ORDER IS IMPORTANT**`
+    : `**you are first executor**, you must use [checklist.add] action to add check points unless you can finish it in few actions${
+        parent
+          ? ''
+          : `
+**breakdown conjunctions like and/then to multiple points, lines**, do A (and/then) B means adding ['A', 'B'], long/mixed check point is hard to trace, harmful.
+**follow [checklist rules], CAREFULLY DOUBLE CHECK if you add everything in proper way**`
+      }`
+}${
             tip
               ? `
 
 [tip from last executor]
-**todo from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status**
 ${tip}
 `
               : ''
@@ -158,7 +168,8 @@ ${tip}
               ? `
 
 [performed actions]
-${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Math.max(0, eventsLogs.length - 10), eventsLogs.length).join('\n- ')}`
+${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Math.max(0, eventsLogs.length - 10), eventsLogs.length).join('\n- ')}
+**identify job status, move forward to goal**`
               : ''
           }${
             needFix.length
@@ -167,8 +178,12 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
           }`,
           {
             requireScreenshot,
-            complexity,
-            extraAttachments: attachments,
+            complexity: forceComplexity ?? complexity,
+            extraAttachments: toAttach.length
+              ? toAttach
+                  .splice(0, toAttach.length)
+                  .concat(...(attachments ?? []))
+              : attachments,
           },
         );
 
@@ -180,6 +195,13 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
             finish();
             return;
           }
+          const newTabUrl = manager.getFocusedTab()?.url ?? tab.url;
+          console.log(
+            Date.now() - start,
+            'Waiting for complete prompt',
+            !!res.value,
+            !res.done,
+          );
           if (res.done) {
             if (
               res.value &&
@@ -256,12 +278,12 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
               finish();
               return;
             }
-            const newTabUrl = manager.getFocusedTab()?.url ?? tab.url;
             if (url !== newTabUrl) {
               if (parent) {
                 // end subtask when url change to avoid long tail subtask
 
-                this.response = `url changed, end subtask, remain todo: ${res.value?.next?.tip ?? ''}`;
+                this.response = `url changed, end subtask, remain next: ${res.value?.next?.tip ?? ''}`;
+                this.status = this.response;
                 console.log(
                   'url changed, end subtask',
                   url,
@@ -273,7 +295,11 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
               }
             }
 
-            if (res.value?.next) {
+            if (res.value?.endSess) {
+              this.status = res.value?.endSess;
+              // eslint-disable-next-line no-labels
+              break promptQueueLoop;
+            } else if (res.value?.next) {
               yield* this.waitPageReady(url, start);
               if (res.value.next.descAttachment) {
                 res.value.next.descAttachment.forEach((f) => {
@@ -287,10 +313,6 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
                 finish();
                 return;
               }
-              if (run.stopRequested) {
-                finish();
-                return;
-              }
               if (this.breakPromptForExeErr) {
                 console.log(
                   Date.now() - start,
@@ -299,20 +321,31 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
                 this.breakPromptForExeErr = false;
                 break;
               }
-              url = newTabUrl;
               requireScreenshot = res.value.next.sc ?? false;
-              tip = `**tip from last executor maybe outdated as page state changed, stick to the [goal] and current [HTML] page status and [performed actions] for what have been completed**
+              tip = `**tip from last executor maybe outdated as page state changed, stick to the [GOAL] and current [HTML] page status and [performed actions] for what have been completed**
 ${res.value.next.tip}
 `;
               toAttach = res.value.next.readFiles ?? [];
-              if (this.attachmentInNextTodo.length) {
-                toAttach.push(...this.attachmentInNextTodo);
-                this.attachmentInNextTodo = [];
+              if (this.attachmentInNextPrompt.length) {
+                toAttach.push(...this.attachmentInNextPrompt);
+                this.attachmentInNextPrompt = [];
               }
             }
+            console.log(
+              'checklist todo',
+              checklist.filter(
+                (td) =>
+                  td.status === ExeSessStatus.Todo ||
+                  td.status === ExeSessStatus.Working,
+              ).length,
+            );
+            url = newTabUrl;
             if (
-              todos.filter((td) => td.status === ExeSessTodoStatus.Todo)
-                .length === 0
+              checklist.filter(
+                (td) =>
+                  td.status === ExeSessStatus.Todo ||
+                  td.status === ExeSessStatus.Working,
+              ).length === 0
             ) {
               // eslint-disable-next-line no-labels
               break promptQueueLoop;
@@ -332,15 +365,31 @@ ${res.value.next.tip}
               act.intent,
               act.action.k,
             );
-            if (act.action.k === 'todo') {
-              this.handleTodo(act.action);
+            if (url === newTabUrl) {
+              if (act.action.k === 'checklist') {
+                this.handleChecklist(act.action, needFix.length > 0);
+              } else {
+                const actionsLen = actions.length;
+                yield* this.addAction({
+                  ...act,
+                  promptId,
+                  id: run.allocActionId(),
+                });
+                if (
+                  actions.length > actionsLen &&
+                  run.browserActionLock.tryLock()
+                ) {
+                  run.execActions();
+                }
+              }
             } else {
-              yield* this.addAction({
-                ...act,
-                promptId,
-                id: run.allocActionId(),
-              });
-              run.execActions();
+              console.log(
+                'action skipped url changed',
+                act.intent,
+                act.action.k,
+                url,
+                newTabUrl,
+              );
             }
             yield res.value as WireActionWithWait;
           }
@@ -367,6 +416,26 @@ ${runSubPrompt}`,
       retry = 3;
     }
     finish();
+    if (this.status === ExeSessStatus.Working) {
+      if (
+        checklist.some(
+          (td) =>
+            td.status === ExeSessStatus.Todo ||
+            td.status === ExeSessStatus.Working,
+        )
+      ) {
+        this.status = ExeSessStatus.Cancel;
+      } else {
+        this.status = checklist.some(
+          (td) => td.status === ExeSessStatus.Verified,
+        )
+          ? ExeSessStatus.Verified
+          : ExeSessStatus.Cancel;
+      }
+    }
+    if (this.onCompleted) {
+      this.onCompleted(this);
+    }
   }
   async *waitPageReady(url: string, start = Date.now()) {
     const { tab } = this.run;
@@ -410,11 +479,51 @@ ${runSubPrompt}`,
   }
   async *addAction(action: WireActionWithWaitAndRec) {
     const subtask = await SmartAction.buildSubtask(action, this);
+    const makeWorking = (): boolean => {
+      if (action.cp && action.cp.length) {
+        for (const p of action.cp) {
+          const cp = this.checklist[p];
+          if (cp) {
+            if (cp.status === ExeSessStatus.Verified) {
+              if (!action.unverify) {
+                this.needFix.push(
+                  `cannot work on verified check point #${p} without unverify option, make sure you have strong reason`,
+                );
+                return false;
+              }
+            }
+            if (
+              cp.status === ExeSessStatus.Todo ||
+              cp.status === ExeSessStatus.Abnormal
+            ) {
+              cp.status = ExeSessStatus.Working;
+              if (cp.comment) {
+                cp.comment = undefined;
+              }
+            }
+          }
+        }
+      }
+      return true;
+    };
     console.log('addAction', action.intent, action.action.k);
     if (subtask) {
+      if (!makeWorking()) return;
       yield* subtask.exec();
       this.addLog(`${action.intent}:${subtask.response ?? ''}`);
+    } else if (action.action.k === 'addNewTask') {
+      this.handleChecklist(
+        {
+          k: 'checklist',
+          a: 'add',
+          pos: action.action.afterCpId,
+          add: action.action.checkPoints,
+        },
+        false,
+        true,
+      );
     } else {
+      if (!makeWorking()) return;
       this.actions.push(action);
       this.run.addAction(action);
     }
@@ -427,39 +536,103 @@ ${runSubPrompt}`,
     this.eventsLogs.push(log);
   }
 
-  private handleTodo(action: Extract<WireAction, { k: 'todo' }>) {
-    const { todos } = this;
+  private handleChecklist(
+    action: Extract<WireAction, { k: 'checklist' }>,
+    hasError: boolean,
+    fromAddNewTask = false,
+  ) {
+    const { checklist } = this;
     switch (action.a) {
       case 'add':
         if (action.add && action.add.length) {
-          todos.splice(
-            action.pos ?? 0,
-            0,
-            ...action.add.map((todo) => ({
-              todo,
-              status: ExeSessTodoStatus.Todo,
-            })),
-          );
+          if (checklist.length === 0 || fromAddNewTask) {
+            checklist.splice(
+              action.pos === undefined || action.pos === null
+                ? 0
+                : action.pos + 1,
+              0,
+              ...action.add.map((checkPoint) => ({
+                checkPoint,
+                status: ExeSessStatus.Todo,
+              })),
+            );
+          } else {
+            this.needFix.push(
+              `checklist add can only use add initial check point, use addNewTask after.`,
+            );
+          }
+        }
+        return;
+      case 'working':
+        if (
+          action.pos !== undefined &&
+          action.pos !== null &&
+          checklist[action.pos]
+        ) {
+          if (
+            action.rework &&
+            checklist[action.pos].status === ExeSessStatus.Verified
+          ) {
+            this.needFix.push(
+              `cannot work on verified check point #${action.pos} without rework option, make sure you have strong reason`,
+            );
+          }
+          checklist[action.pos].status = ExeSessStatus.Working;
         }
         break;
       case 'cancel':
         if (
           action.pos !== undefined &&
           action.pos !== null &&
-          todos[action.pos]
+          checklist[action.pos]
         ) {
-          todos[action.pos].status = ExeSessTodoStatus.Cancel;
+          checklist[action.pos].status = ExeSessStatus.Cancel;
         }
         break;
-      case 'done':
+      case 'verified':
         if (
+          !hasError &&
           action.pos !== undefined &&
           action.pos !== null &&
-          todos[action.pos]
+          checklist[action.pos]
         ) {
-          todos[action.pos].status = ExeSessTodoStatus.Done;
+          if (checklist[action.pos].status === ExeSessStatus.Working) {
+            checklist[action.pos].status = ExeSessStatus.Verified;
+          } else {
+            this.needFix.push(
+              `Cannot mark checkpoint#${action.pos} as done as it's not working status${checklist[action.pos].status === ExeSessStatus.Todo ? ', mark working first' : ''}`,
+            );
+          }
         }
         break;
     }
+    this.addLog(
+      `set check point #${action.pos} to ${typeof action.a === 'string' ? action.a : ExeSessStatus[action.a as ExeSessStatus]} - no actual action`,
+    );
+  }
+  waitMsgComplete(
+    waitMsgId: string | undefined,
+    waitMsgResult: string | undefined,
+    waitMsg1stId?: string,
+    waitMsgLastId?: string,
+  ) {
+    if (!waitMsgResult || waitMsgResult === 'timeout') {
+      this.notices.push(`[Wait ${waitMsgId} timeout]
+**no new message**`);
+    } else {
+      this.notices.push(`[GOT NEW MESSAGE FROM ${waitMsgId}]
+new messages since last wait, **MUST CHECK HTML ID: ${waitMsgResult}**, if you found new task & [GOAL] permits, **MUST USE addNewTask**`);
+    }
   }
 }
+
+const formatChecklist = (cp: ExeSessCheckPoint, i: number): string => {
+  let status = ExeSessStatus[cp.status];
+  if (cp.status === ExeSessStatus.Working) {
+    status = `**${status}**`;
+  }
+  if (cp.status === ExeSessStatus.Abnormal) {
+    status = `**${status}**`;
+  }
+  return `${i}:${status}:${cp.checkPoint}${cp.comment ? `read comment: ${cp.comment}` : ''}`;
+};

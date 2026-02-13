@@ -6,6 +6,7 @@ import {
   Rectangle,
   WebContentsView,
   nativeImage,
+  DownloadItem,
 } from 'electron';
 import settings from 'electron-settings';
 import fs from 'fs';
@@ -311,6 +312,28 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
+
+    webContents.on('render-process-gone', (_e, details) => {
+      console.error('[WCV] render-process-gone', details); // reason / exitCode
+    });
+
+    webContents.on('destroyed', () => {
+      console.error('[WCV] webContents destroyed');
+    });
+
+    webContents.on('did-fail-load', (_e, code, desc, url) => {
+      console.error('[WCV] did-fail-load', { code, desc, url });
+    });
+
+    webContents.on('unresponsive', () => console.error('[WCV] unresponsive'));
+    webContents.on('responsive', () => console.log('[WCV] responsive'));
+
+    // webContents.on('console-message', (_e, level, message, line, sourceId) => {
+    //   if (level > 1) {
+    //     console.log('[WCV console]', { level, message, line, sourceId });
+    //   }
+    // });
+
     webContents.userAgent = `Mozilla/5.0 (${isMac ? 'Macintosh; Intel Mac OS X 10.15; rv:147.0' : 'Windows NT 10.0; Win64; x64'}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36`;
     const unlockLoaded = () => {
       console.log('Page loaded unlockLoaded');
@@ -367,6 +390,7 @@ export class TabWebView {
       }
       return { action: 'deny' };
     });
+
     this.webView.setBounds(this.bounds);
     webContents.openDevTools();
     [this.networkIdle0, this.networkIdle2] = Network.initMonitor(
@@ -415,7 +439,7 @@ export class TabWebView {
     console.info('====>');
     if (this.llmSession) {
       try {
-        const stream = this.llmSession.startPrompt(
+        const stream = await this.llmSession.startPrompt(
           requestId,
           this,
           prompt,
@@ -532,12 +556,14 @@ export class TabWebView {
       nodeId: input.nodeId,
     });
 
-    await wc.debugger.sendCommand('DOM.setFileInputFiles', {
-      backendNodeId: desc.node.backendNodeId,
-      files: filePaths.map((f) => {
-        const attachment = this.llmSession.readableFiles.get(f);
-        if (!attachment) return f;
-        if (attachment.path) return attachment.path;
+    const filesToUpload: string[] = [];
+
+    for (const f of filePaths) {
+      const attachment = this.llmSession.readableFiles.get(f);
+      if (attachment) {
+        if (attachment.path) {
+          filesToUpload.push(attachment.path);
+        }
         if (attachment.data) {
           const tempDir = app.getPath('temp');
           const safeName = attachment.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -551,10 +577,16 @@ export class TabWebView {
               : attachment.data;
           fs.writeFileSync(tempPath, content);
           attachment.path = tempPath;
-          return tempPath;
+          filesToUpload.push(tempPath);
         }
-        return f;
-      }),
+      } else {
+        return `input not found:${f}`;
+      }
+    }
+
+    await wc.debugger.sendCommand('DOM.setFileInputFiles', {
+      backendNodeId: desc.node.backendNodeId,
+      files: filesToUpload,
     });
   }
 
@@ -590,14 +622,7 @@ export class TabWebView {
         filename,
       });
       if (item.getState() === 'completed') {
-        if (filename !== undefined) {
-          this.llmSession.readableFiles.set(filename, {
-            name: filename,
-            mimeType: item.getMimeType(),
-            data: null,
-            path: item.getSavePath(),
-          });
-        }
+        this.downloaded(item, filename);
         return undefined;
       }
       return item.getState();
@@ -609,5 +634,14 @@ export class TabWebView {
       console.error(error);
       return (error as Error).message;
     }
+  }
+
+  downloaded(item: DownloadItem, filename?: string) {
+    this.llmSession.readableFiles.set(filename ?? item.getFilename(), {
+      name: filename ?? item.getFilename(),
+      mimeType: item.getMimeType(),
+      data: null,
+      path: item.getSavePath(),
+    });
   }
 }

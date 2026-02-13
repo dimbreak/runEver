@@ -56,7 +56,9 @@ const isAppUrl = (url: string) => {
 };
 
 const normalizeDeepLinkPath = (url: URL) => {
-  const rawPath = url.host ? `/${url.host}${url.pathname}` : url.pathname || '/';
+  const rawPath = url.host
+    ? `/${url.host}${url.pathname}`
+    : url.pathname || '/';
   const trimmed =
     rawPath.endsWith('/') && rawPath !== '/' ? rawPath.slice(0, -1) : rawPath;
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
@@ -124,6 +126,8 @@ const installExtensions = async () => {
     )
     .catch(console.log);
 };
+
+const setTabManagerForDl = electronDl();
 
 const createWindow = async () => {
   if (isDebug) {
@@ -238,6 +242,7 @@ const createWindow = async () => {
 
   const llmSession = new WebViewLlmSession(mainWindow);
   setupIpcHandlers(mainWindow, llmSession);
+  setTabManagerForDl(llmSession);
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
@@ -257,8 +262,6 @@ app.on('window-all-closed', () => {
 });
 
 app.commandLine.appendSwitch('disable-site-isolation-trials');
-
-electronDl();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -285,11 +288,9 @@ app
   .then(() => {
     if (process.defaultApp) {
       if (process.argv.length >= 2) {
-        app.setAsDefaultProtocolClient(
-          protocolName,
-          process.execPath,
-          [path.resolve(process.argv[1])],
-        );
+        app.setAsDefaultProtocolClient(protocolName, process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
       }
     } else {
       app.setAsDefaultProtocolClient(protocolName);

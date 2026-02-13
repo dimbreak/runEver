@@ -36,15 +36,15 @@ export class ExeSession {
     const wv = this.tab.webView;
     const rect = wv.getBounds();
     const runPrompt = `
-[url] 
-${this.tab.webView.webContents.getURL()} 
+[url]
+${this.tab.webView.webContents.getURL()}
 
-[viewport] 
-w=${rect.width} h=${rect.height} 
+[viewport]
+w=${rect.width} h=${rect.height}
 ${
   args
     ? `
-[argument keys]
+[arguments]
 ${Object.keys(args)
   .map((key) => `${key}}`)
   .join('\n')}`
@@ -76,21 +76,21 @@ ${steps
   .join('\n')}${
       followUp?.pendingActions.length
         ? `
-  
+
   [planned actions]
   ${JSON.stringify(followUp?.pendingActions)}`
         : ''
     }${
       followUp?.htmQ
         ? `
-  
+
   [followup html]
   ${await wv.webContents.executeJavaScript(`window.webView.getHtml('${followUp.htmQ}', ${JSON.stringify(args)})`)}`
         : ''
     }${
       followUp
         ? `
-  
+
   [followup]
   ${followUp.rc}`
         : ''
@@ -124,8 +124,8 @@ ${steps
     return `[system]
 a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.
 
-[role] 
-you are an executor, working on task with web page. takes action guide and html to generate action detail. 
+[role]
+you are an executor, working on task with web page. takes action guide and html to generate action detail.
 **you are interacting with real world, do not trial & error if it potentially update data**
 
 [task guide]
@@ -144,8 +144,8 @@ javascript string methods may apply to args in string template, like args.linkTi
 string template with argument may also be use in other string value like input value or url path.
 
 [customised html rule]
-each tag has w=width, h=height hls=highlightStyle. 
-For grid/absolute/fixed etc unordinary layout, xy will be given. 
+each tag has w=width, h=height hls=highlightStyle.
+For grid/absolute/fixed etc unordinary layout, xy will be given.
 element without w/h means the same as parent.
 element out of current screen will mark scXY with x,y position and reduced content.
 use only the elements provided, don't guess.

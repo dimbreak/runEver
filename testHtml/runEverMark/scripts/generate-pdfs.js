@@ -29,7 +29,7 @@ for (let i = 0; i < 3; i++) {
 const total = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
 const orderId = `PO-${Math.floor(1000 + Math.random() * 9000)}`;
-const date = new Date().toLocaleDateString();
+const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
 // --- GENERATE ORDER FORM (Client Header) ---
 const docOrder = new PDFDocument();

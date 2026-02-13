@@ -47,7 +47,7 @@ export default function PosLoginPage() {
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
              <label className="sf-label">Username</label>
-             <input className="sf-input" name="operator" required placeholder="user@sellfroce-pos.com" />
+             <input className="sf-input" name="operator" required placeholder="user@sellforce-pos.com" />
           </div>
           <div style={{ marginBottom: 16 }}>
              <label className="sf-label">Password</label>

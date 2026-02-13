@@ -29,10 +29,10 @@ export default function HomePage() {
           </a>
         </div>
         <div className="card">
-          <h3>Sellfroce</h3>
+          <h3>Sellforce</h3>
           <p>Login, manage orders, and create a long-form order.</p>
           <a className="button" href="#/pos/login">
-            Open Sellfroce lane
+            Open Sellforce lane
           </a>
         </div>
         <div className="card">

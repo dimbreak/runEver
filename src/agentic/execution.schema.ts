@@ -17,11 +17,12 @@ import {
   SetCtxActionSchema,
   SlideToValActionSchema,
   TabActionSchema,
-  TodoActionSchema,
+  ChecklistActionSchema,
   UrlActionSchema,
   WireSelectorSchema,
   WireWaitDomSchema,
   WireWaitSchema,
+  AddNewTaskActionSchema,
 } from './base.schema';
 import { CalendarActionSchema } from './profile/widget/calendar/calendar.schema';
 import { ComboboxActionSchema } from './profile/widget/combobox/combobox.schema';
@@ -46,7 +47,8 @@ export const WireActionSchema = z.discriminatedUnion('k', [
   FillFormActionSchema,
   CalendarActionSchema,
   ComboboxActionSchema,
-  TodoActionSchema,
+  ChecklistActionSchema,
+  AddNewTaskActionSchema,
 ]);
 
 /** WireAction & { w?: WireWait; to?: number } */
@@ -56,6 +58,8 @@ export const WireActionWithWaitSchema = z.object({
   action: WireActionSchema,
   pre: WireWaitSchema.optional().nullable(),
   post: WireWaitSchema.optional().nullable(),
+  cp: z.number().array().optional().nullable(),
+  unverify: z.boolean().optional().nullable(),
 });
 
 export const WireSubTaskSchema = z.object({
@@ -74,7 +78,7 @@ export const ExecutorLlmResultSchema = z.object({
   a: WireActionWithWaitSchema.array(),
   e: z.string().optional().nullable(),
   next: FollowupActionSchema.nullable().optional(),
-  resp: z.string().optional().nullable(),
+  endSess: z.string().optional().nullable(),
 });
 
 /** (Optional) inferred TS types */

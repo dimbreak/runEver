@@ -9,15 +9,38 @@ type WireWait={ to?:number } & ( // wait timeout in ms
 
 type WireAction=
  |{
-   k:'todo';
-   a:'add'|'cancel'|'done';
-   pos?:number;
-   add?string[];//todos to add
+   k:'addNewTask';//for adding check point for **dynamic new task** in workflow only
+   afterCpId?:number;//add after check point
+   checkPoints:string[];//new checkPoints to add
+   permitFromGoal:string;//sub-string in [GOAL] where allows you to add new task
+   src:string;//source of task
+   taskRisk:'l'|'m'|'h';//MUST FOLLOW [risk rules], will auto botherUser in certain level
+  }
+ |{
+   k:'checklist';
+   a:'working';//use action.cp to save token
+   pos:number;
+   rework?:boolean;//if rework verified
+  }
+ |{
+   k:'checklist';
+   a:'cancel';
+   pos:number;
+   cancelReason?:string;
+  }
+ |{
+   k:'checklist';
+   a:'verified';//check it seriously, only apply to working check point
+   pos:number;
+   verifiedProve?:{
+     domId:string;
+     proveOfWork:string;//short desc on what have you done, and did you get info to continue?;
+   }
   }
  |{
    k:'mouse';
    a:'click'|'dblclick'|'mouseover'|'mouseDown'|'mouseUp'|'mouseenter'|'mousemove';
-   q:Selector;
+   q:Selector;//always on leaf el
    repeat?:number;
   }
  |{
@@ -53,28 +76,25 @@ type WireAction=
    c?:'noClear';// without this will clear before typing
   }
  |{
-   k:'botherUser'; //only use when goal cannot be continued.
+   k:'botherUser'; //only use when goal cannot be continued with trial & observe
    warn:string;
    missingInfos?:string[];
    rc?:string|null;// followup prompt
   }
  |{
-   k:'setArg'; //it is a huge waste for read value with this
+   k:'setArg'; //it only add kv to [arguments], would not read/do anything else
    // key value pair
    kv:Record<string, string |{q:Selector, attr?:'textContent'|string}>;//str value or from element, attr default textContent
-  }
- |{
-   k:'extraGoal'; //very high risk, do not use unless goal explicitly asked to accept requirement/advise from delegated source
-   g: string;
   }
  |{
    k:'url';
    u:'next'|'forward'|'reload';
   }
  |{
-   k:'tab';
+   k:'tab';//will skip actions after this, no action after this
    id:number;// switch to id, -1=new
    url?:string;// go to url on switch
+   noteBeforeLeave:string;//tell what you did in current tab
   }
  |{
    k:'selectTxt';
@@ -82,15 +102,14 @@ type WireAction=
    txt:string;
   }
  |{
-   k:'download';
-   a:Selector;
-   t:'link'|'img'|'bg-img';// what to download
+   k:'download';//for link/button use click
+   a:Selector;//no button
+   t:'link'|'img'|'bg-img';// what to download, no button
    filename?:string;// filename to read in downstream
   }
  |{
-   k:'screenshot';//must not use after action that change page status, like click link, submit form, etc.
+   k:'screenshot';//must not use without wait after action that change page status, like click link, submit form, etc.
    filename:string;//png
-   a?:Selector;
   };
 
 type WireStep={
@@ -100,11 +119,16 @@ type WireStep={
  pre?:WireWait // wait BEFORE this action, most of the time engine can handle it automatically
  post?:WireWait|// wait AFTER this action, most of the time engine can handle it automatically
   {
-   t:'waitMsg';// only use when ask to wait for new msg/reply in messager dialog / new email in email inbox, **MUST NOT ADD ACTION AFTER THIS**
-   q:Selector;// dialog container, email list etc
+   didGoalAskYouToWaitInNoCondition:string;//explain shortly, will be no if it requires anything before
+   didYouSendMsgBeforeWaitReply:string;//explain shortly, not yet/planned means no! stay away!
+    // only use to **wait** for new msg/reply in messager dialog / new email in email inbox, **MUST NOT ADD ACTION AFTER THIS**, only use with mouse/key/focus action
+   t:'blockHereAndWaitForNewIncomingMsg';//only block for 1 of 2 reasons, answer above, you may stop here if no solid yes! just leave q: null
+   q:Selector;// only apply to dialog container, email list etc, must seen the list before apply
    id1st:string;// first msg/email dom id in list
    idLast:string;// last msg/email dom id in list
   }
+  cp?:number[];//bind to check point and set to working
+  unverify?:boolean;//need true if the check point in verify status
 }
 
 type AttachementDesc={
@@ -113,13 +137,13 @@ type AttachementDesc={
 };
 
 type LlmWireResult={
- a:WireStep[];// steps 
+ a:WireStep[];// steps
  e?:string;// error
  next?:{
   sc?:boolean;// require screenshot
-  tip:string;//advisory tip for next executor, very short, add todo if > 15 words
-  readFiles?:string[];// attach readable files only when you really need the content in file
-  descAttachment?:AttachementDesc[];
+  tip:string;//very short advisory tip just 1-2 steps < 16 words, for keeping status use addNewTask
+  readFiles?:string[];//attach readable files only when you really need the content in file, unnecessary reading is harmful
+  descAttachment?:AttachementDesc[];//desc for added info only, can omit, key data to [GOAL] should setArg
  };
- resp?:string; // only when goal completely done or could not continue
-};`;
+ endSess?:string;//only when the task ends abnormally
+}`;

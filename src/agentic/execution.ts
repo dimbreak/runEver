@@ -46,10 +46,8 @@ export class ExecutionPrompter {
     if (!this.runner) {
       // delta too long, reset system prompt
       this.runner = new Promise(async (resolve) => {
-        console.log('Executor runner init');
         resolve(LlmApi.queryLLMSession('', 'executor_'));
       });
-      console.info('this.runner:', this.runner);
     }
     return this.runner;
   }
@@ -66,6 +64,8 @@ export class ExecutionPrompter {
       extraAttachments = [],
     } = opts;
     const { tabManager } = this;
+    const run = tabManager.getPromptRun();
+    let { systemPrompt } = this;
     const tab = tabManager.getFocusedTab()!;
     const { webView: wv } = tab;
     const rect = wv.getBounds();
@@ -76,12 +76,25 @@ export class ExecutionPrompter {
     const runner = await this.getRunner();
     const readableFiles = Array.from(tabManager.readableFiles.keys());
     const modelCfg = ComplexityToModelConfig[complexity];
+    if (subPrompt?.includes('[checklist.add]')) {
+      systemPrompt = systemPrompt.replace(
+        'type WireAction=',
+        `type WireAction=
+ |{
+   k:'checklist';
+   a:'add';
+   pos?:number;
+   add:string[];//checklist to add
+  }`,
+      );
+    }
     const promptParts = await Profile.process(
       'execution',
       {
         goal: goalPrompt,
         sub: subPrompt,
-        system: this.systemPrompt,
+        system: systemPrompt,
+        html: fullHtml,
         userHeader: `[url]
 ${wv.webContents.getURL()}${
           tabManager.tabsCount() > 1
@@ -92,7 +105,7 @@ ${tabManager
   .listTabs()
   .map(
     (t) =>
-      `${t.id}:${t.title ? `[${t.title}] ${t.url}` : t.url}${t.focused ? ' focus' : ''}`,
+      `${t.id}:${t.title ? `[${t.title}] ${t.url}` : t.url}${t.focused ? ' [focus]' : ''}${run && t.id !== undefined && run.tabNotes[t.id] ? `: ${run.tabNotes[t.id]}` : ''}`,
   )
   .join('\n')}`
             : ''
@@ -102,37 +115,44 @@ ${tabManager
 w=${rect.width} h=${rect.height}
 
 [html]
-${fullHtml}${
-          readableFiles.length
-            ? `
+${
+  readableFiles.length
+    ? `
 
 [readable file]
 - ${Array.from(tabManager.readableFiles.values()).map(
-                (k) =>
-                  `${extraAttachments.includes(k.name) ? 'attached ' : ''}${k.name}: ${k.mimeType}${k.desc ? ` desc from previous read:${k.desc}` : ''}`,
-              ).join(`
+        (k) =>
+          `${extraAttachments.includes(k.name) ? 'ATTACHED ' : ''}${k.name}: ${k.mimeType}${k.desc ? ` desc from previous read:${k.desc}` : ''}`,
+      ).join(`
 - `)}
-**can attach with todo.readFiles, note read file is expensive attach when necessary**`
-            : ''
-        }
+${extraAttachments.length ? '' : '**can attach with next.readFiles, note read file is expensive attach when necessary**'}`
+    : ''
+}
 
-[argument keys]
+[arguments]
 ${
   args && Object.keys(args).length
     ? Object.entries(args)
         .map((arg) => `${arg[0]}: ${arg[1]}`)
         .join('\n')
-    : '(no keys)'
-}`,
+    : '(no arg)'
+}
+add by **setArg**`,
       },
       wv.webContents,
     );
     const runPrompt = `${taskHeader}
 
-${promptParts.userHeader}
+${promptParts.userHeader?.replace('[html]\n', `[html]\n${promptParts.html}`)}
 
-[goal]
-${promptParts.goal}${promptParts.sub ? `\n\n${promptParts.sub}` : ''}`;
+[GOAL]
+${promptParts.goal}
+[/GOAL]${promptParts.sub ? `\n\n${promptParts.sub}` : ''}${
+      extraAttachments.length
+        ? `
+**reading ${extraAttachments.join(',')}, save data valuable to [GOAL] in attached files with setArgs avoid re-read**`
+        : ''
+    }`;
     const attachments: LlmApi.Attachment[] = [];
     if (requireScreenshot) {
       attachments.push({
@@ -174,8 +194,9 @@ ${promptParts.goal}${promptParts.sub ? `\n\n${promptParts.sub}` : ''}`;
       '------------------------------------------\nExecutor runner prompt:',
       `${promptParts.userHeader}
 
-[goal]
-${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`,
+[GOAL]
+${promptParts.goal}
+[/GOAL]${promptParts.sub ? `\n\n${promptParts.sub}` : ''}`,
     );
     let actionStage = 0;
     let events: JsonStreamingEvent[];
@@ -184,7 +205,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`,
     let parsedReturn;
     const jsonParser = new JsonStreamingParser(true);
     try {
-      const stream = runner(
+      const stream = await runner(
         runPrompt,
         attachments,
         modelCfg[0],
@@ -193,7 +214,7 @@ ${promptParts.goal}${promptParts.sub ? `\n[mission]\n${promptParts.sub}` : ''}`,
       );
       this.requestInSession++;
       for await (const chunk of stream) {
-        events = jsonParser.push(chunk);
+        events = jsonParser.push(chunk ?? '');
         if (!hasError) {
           for (event of events) {
             if (event.type === JsonStreamingEventType.Error) {

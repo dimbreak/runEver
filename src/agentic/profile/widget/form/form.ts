@@ -11,15 +11,15 @@ Profile.register({
     sessionType: Profile.SessionType,
     promptParts: T,
   ) => {
-    if (promptParts.userHeader) {
+    if (promptParts.userHeader && promptParts.html) {
       const r = promptParts;
-      if (promptParts.userHeader.includes('<form ')) {
+      if (promptParts.html.includes('<form ')) {
         const inSmartAction =
           promptParts.system?.startsWith('[fillForm smart action]') ?? false;
         let longForm = 0;
         let match: RegExpExecArray | null;
         const formIds: string[] = [];
-        while ((match = formRx.exec(promptParts.userHeader))) {
+        while ((match = formRx.exec(promptParts.html))) {
           if (parseInt(match[2], 10) > 2) {
             longForm++;
           }
@@ -29,15 +29,15 @@ Profile.register({
         r.userHeader = `${r.userHeader ?? ''}
 
 [form guide]
-- always use fillForm over input 1 by 1
+- always use fillForm over input 1 by 1 except simple search
 ${
   !inSmartAction
-    ? `- make sure provide all info you know about the form, if data is from files, attach them in fs${
+    ? `- make sure provide all info you know about the form, if data is from files, add them to fs
+- provide any [GOAL] and context if any other task in [GOAL] related to widget within the form${
         longForm &&
         `
-- fillForm must be **last step of the action chain**
-- the submit/next-step button must be exclusive to other actions in the chain
-- put 'VERIFY FORM VALUES IN HTML, ONLY SUBMIT IF YOU HAVE NOTHING TO CHANGE.' in tip prefix if you think the form is ready`
+- fillForm **MUST BE IN ISOLATED CHECK POINT**, cancel the original one and add seperated check points with pos to replace if it mix with other tasks before calling fillForm.
+- assign check point id to cp, the check point status will be handled.`
       }`
     : ''
 }`;
@@ -49,14 +49,14 @@ ${
   q:'${formIds.join("'|'")}'|Selector;//form id
   ${
     longForm && !inSmartAction
-      ? `data:string;//instruction to sub executor for filling the form, suggested values
+      ? `data:string;//give data context and instruction from [GOAL] only, no how-to and field names
   fs:string[];//files as datasource or to upload`
       : 'data:{f:string|Selector;v:string|string[]}[];//field name or selector and value to fill, string or js argument tpl'
   }
 }|`,
         );
       }
-      if (rteRx.test(promptParts.userHeader)) {
+      if (rteRx.test(promptParts.html)) {
         r.userHeader = `${r.userHeader ?? ''}
 
 [contentEditable RTE guide]

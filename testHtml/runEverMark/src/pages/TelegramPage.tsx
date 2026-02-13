@@ -102,7 +102,7 @@ export default function TelegramPage() {
   useEffect(() => {
     if (selectedChat?.id === 999) { // Manager Dillion
        const lastMsg = selectedChat.messages[selectedChat.messages.length - 1];
-       if (lastMsg && lastMsg.sender === 'me') {
+       if (lastMsg && lastMsg.sender === 'me' && lastMsg.text.length) {
         if(timer===undefined) {
            return;
          }
@@ -113,7 +113,7 @@ export default function TelegramPage() {
                timer = undefined;
                const response: Message = {
                    id: Date.now(),
-                   text: "Looks good to me, but could you put in remark say the client is vip. then that's good to go.",
+                   text: "Looks good to me, but could you go back to edit remark add the client is vip. then it can submit.",
                    sender: 'other',
                    time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
                };

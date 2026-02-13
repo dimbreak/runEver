@@ -134,7 +134,7 @@ const defaultEmails: EmailMessage[] = [
   },
   {
     id: 'email-7',
-    from: 'hr@sellfroce.com',
+    from: 'hr@sellforce.com',
     subject: 'Open Enrollment',
     preview: 'It is time to choose your benefits for next year.',
     body: 'Please log in to the employee portal to make your selections by Friday.',
@@ -158,7 +158,7 @@ const defaultEmails: EmailMessage[] = [
   },
   ...Array.from({ length: 30 }).map((_, i) => ({
     id: `email-noise-${i}`,
-    from: ['marketing@ramazon.com', 'updates@gogo.com', 'sales@sellfroce.com', 'news@techdaily.com', 'notifications@social.net'][i % 5],
+    from: ['marketing@ramazon.com', 'updates@gogo.com', 'sales@sellforce.com', 'news@techdaily.com', 'notifications@social.net'][i % 5],
     subject: [
       'Big Savings Inside!',
       'Security Alert: New Sign-in',
@@ -446,6 +446,15 @@ export default function EmailPlatformPage() {
              <span className="icon"><FileIcon size={18} /></span> Drafts
           </a>
         </nav>
+
+        <div className="gmail-user-profile" style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+             <div className="avatar small" style={{ backgroundColor: '#5f6368' }}>
+                 {(readSession<string>('runEverMark_email_user', '') || 'U').charAt(0).toUpperCase()}
+             </div>
+             <div className="user-email" style={{ fontSize: '12px', color: '#5f6368', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                 {readSession<string>('runEverMark_email_user', 'user@example.com')}
+             </div>
+        </div>
       </aside>
 
       <main className="gmail-main">
@@ -783,7 +792,6 @@ function InlineReply({ onReply }: InlineReplyProps) {
           <div className="reply-content">
              <div className="reply-header">
                 <span className="reply-type"><Reply size={16} className="icon-mr"/> Reply</span>
-                <span className="icon">▼</span>
              </div>
 
              <QuillEditor

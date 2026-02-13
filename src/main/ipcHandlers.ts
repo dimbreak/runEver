@@ -20,11 +20,12 @@ import {
   setPendingAuthDeepLink,
 } from './authDeepLink';
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
-import { RuneverConfigStore } from './runeverConfigStore';
+import { RunEverConfig, RuneverConfigStore } from './runeverConfigStore';
 import { getAuthMode, setAuthMode } from './authModeStore';
 
 function initPromptIpc(session: WebViewLlmSession) {
-  const getTab = (frameId: number) => session.getTab(frameId);
+  const getTab = (frameId: number | undefined) =>
+    frameId === undefined ? session.getFocusedTab() : session.getTab(frameId);
   ToMainIpc.actionDone.handle(async (event, arg) => {
     console.log('Pop actions:', arg);
     const { frameId, actionId, argsDelta } = arg;
@@ -129,7 +130,7 @@ export const setupIpcHandlers = (
   llmSession: WebViewLlmSession,
 ) => {
   const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = new RuneverConfigStore();
+  const userApiKeyStore = RuneverConfigStore.getInstance();
   const getTab = (frameId?: number) =>
     typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
 
@@ -406,7 +407,7 @@ export const setupIpcHandlers = (
       const wc = wvTab.webView.webContents;
       wc.focus();
       let mv: MouseInputEvent | undefined;
-      console.log('Dispatch events in main process:', arg);
+      console.log('Dispatch events in main process:', arg.events);
       for (const ev of events) {
         if (ev.delayMs) {
           await Util.sleep(ev.delayMs);
@@ -508,6 +509,7 @@ EOF
 
   ToRuneverIpc.setConfig.handle(async (_event, arg) => {
     const { frameId, key, config } = arg;
+    console.log('setConfig in renderer process:', arg);
     const wvTab = getTab(frameId);
     if (!wvTab) return { error: 'Tab not found' };
 
@@ -518,6 +520,11 @@ EOF
 
     try {
       await userApiKeyStore.setConfig(key, config);
+      if (key === 'arguments') {
+        wvTab.llmSession
+          .getPromptRun()
+          ?.setGlobalArgs(config as RunEverConfig['arguments']);
+      }
       return {};
     } catch (e) {
       return { error: String(e) };
@@ -526,6 +533,7 @@ EOF
 
   ToRuneverIpc.getConfig.handle(async (_event, arg) => {
     const { frameId, key } = arg;
+    console.log('getConfig in renderer process:', arg);
     const wvTab = getTab(frameId);
     if (!wvTab) return { error: 'Tab not found' };
 

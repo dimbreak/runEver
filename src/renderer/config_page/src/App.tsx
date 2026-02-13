@@ -50,50 +50,51 @@ function TextEditor({
     />
   );
 }
+//
+// function BooleanEditor({
+//   row,
+//   column,
+//   onRowChange,
+//   onClose,
+// }: RenderEditCellProps<Row>) {
+//   return (
+//     <div className="flex h-full items-center justify-center bg-white">
+//       <input
+//         type="checkbox"
+//         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+//         checked={!!row[column.key as keyof Row]}
+//         onChange={(e) => {
+//           onRowChange({ ...row, [column.key]: e.target.checked });
+//           onClose(true);
+//         }}
+//         onBlur={() => onClose(true)}
+//         // eslint-disable-next-line jsx-a11y/no-autofocus
+//         autoFocus
+//       />
+//     </div>
+//   );
+// }
 
-function BooleanEditor({
-  row,
-  column,
-  onRowChange,
-  onClose,
-}: RenderEditCellProps<Row>) {
-  return (
-    <div className="flex h-full items-center justify-center bg-white">
-      <input
-        type="checkbox"
-        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-        checked={!!row[column.key as keyof Row]}
-        onChange={(e) => {
-          onRowChange({ ...row, [column.key]: e.target.checked });
-          onClose(true);
-        }}
-        onBlur={() => onClose(true)}
-        // eslint-disable-next-line jsx-a11y/no-autofocus
-        autoFocus
-      />
-    </div>
-  );
-}
-
-function RiskEditor({ row, onRowChange, onClose }: RenderEditCellProps<Row>) {
-  return (
-    <select
-      className="h-full w-full bg-white px-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-      value={row.riskLevel}
-      onChange={(e) => {
-        onRowChange({ ...row, riskLevel: e.target.value });
-        onClose(true);
-      }}
-      onBlur={() => onClose(true)}
-      // eslint-disable-next-line jsx-a11y/no-autofocus
-      autoFocus
-    >
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-  );
-}
+// function RiskEditor({ row, onRowChange, onClose }: RenderEditCellProps<Row>) {
+//   return (
+//     <select
+//       className="h-full w-full bg-white px-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+//       value={row.riskLevel}
+//       onChange={(e) => {
+//         console.log(e.target.value);
+//         onRowChange({ ...row, riskLevel: e.target.value });
+//         onClose(true);
+//       }}
+//       onBlur={() => onClose(true)}
+//       // eslint-disable-next-line jsx-a11y/no-autofocus
+//       autoFocus
+//     >
+//       <option value="low">Low</option>
+//       <option value="medium">Medium</option>
+//       <option value="high">High</option>
+//     </select>
+//   );
+// }
 
 // --- Utils ---
 
@@ -120,6 +121,7 @@ function ArgumentsPage() {
       if (window.runever) {
         try {
           const res = await window.runever.getConfig('arguments');
+          console.log('Loading args...', res);
           if ('config' in res && Array.isArray(res.config)) {
             const loadedData: Record<string, ArgumentValue> = {};
             res.config.forEach((arg: any) => {
@@ -174,28 +176,6 @@ function ArgumentsPage() {
     });
   }, [rows, search, domainFilter]);
 
-  const columns: Column<Row>[] = [
-    { key: 'key', name: 'Key', renderEditCell: TextEditor },
-    { key: 'value', name: 'Value', renderEditCell: TextEditor },
-    {
-      key: 'isSecret',
-      name: 'Is Secret',
-      renderEditCell: BooleanEditor,
-      renderCell: (props) => (
-        <div className="flex h-full items-center justify-center">
-          <input
-            type="checkbox"
-            checked={props.row.isSecret}
-            readOnly
-            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-          />
-        </div>
-      ),
-    },
-    { key: 'riskLevel', name: 'Risk Level', renderEditCell: RiskEditor },
-    { key: 'domain', name: 'Domain', renderEditCell: TextEditor },
-  ];
-
   const onRowsChange = (
     newRows: readonly Row[],
     { indexes }: { indexes: number[] },
@@ -221,6 +201,56 @@ function ArgumentsPage() {
       });
     });
   };
+
+  const columns: Column<Row>[] = [
+    { key: 'key', name: 'Key', renderEditCell: TextEditor },
+    { key: 'value', name: 'Value', renderEditCell: TextEditor },
+    {
+      key: 'isSecret',
+      name: 'Is Secret',
+      renderCell: (props) => (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-static-element-interactions
+        <div
+          className="flex h-full items-center justify-center"
+          onClick={() => {
+            onRowsChange([{ ...props.row, isSecret: !props.row.isSecret }], {
+              indexes: [props.rowIdx],
+            });
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={props.row.isSecret}
+            className="pointer-events-none h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'riskLevel',
+      name: 'Risk Level',
+      editable: true,
+      renderCell: (props) => {
+        return (
+          <select
+            className="h-full w-full bg-white px-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+            value={props.row.riskLevel}
+            onChange={(e) => {
+              console.log(e.target.value);
+              onRowsChange([{ ...props.row, riskLevel: e.target.value }], {
+                indexes: [props.rowIdx],
+              });
+            }}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        );
+      },
+    },
+    { key: 'domain', name: 'Domain', renderEditCell: TextEditor },
+  ];
 
   const handleAdd = () => {
     const newKey = `new_arg_${Date.now()}`;

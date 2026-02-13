@@ -1,9 +1,9 @@
 import { Profile } from '../profile';
 
-const rx = /(filter|sort)(ing)? /i;
+const rx = /(?:inbox|bcc)/i;
 
 Profile.register({
-  name: 'list',
+  name: 'email',
   workWithSession: ['execution'],
   promptPreprocess: async <T extends Partial<Profile.ExePromptParts>>(
     sessionType: Profile.SessionType,
@@ -18,9 +18,9 @@ Profile.register({
         ...promptParts,
         userHeader: `${promptParts.userHeader}
 
-[list guide]
-1. **Assume some items are out of the list**, MUST apply filter / sort if the goal has certain requirement before picking item.
-2. rate, rank, comparison always MEANS SORTING`,
+[email guide]
+- you must read the email in detail/reading view, and **DOWNLOAD ATTACHMENT** < 1MB even not instructed
+- you cannot read email from inbox/list`,
       };
     }
     return promptParts;

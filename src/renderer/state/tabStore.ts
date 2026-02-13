@@ -177,7 +177,7 @@ const initialTabs = [
   new WebTab({
     id: 'tab-1',
     title: 'Benchmark',
-    url: 'runever://benchmark#/pos/pro',
+    url: 'runever://config',
     // url: 'http://localhost:5175/?flow=register',
     isRunning: true,
   }),

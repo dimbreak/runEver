@@ -36,6 +36,25 @@ class BuildExtensionsPlugin {
   }
 }
 
+class LogWhyCompilePlugin {
+  apply(compiler: webpack.Compiler): void {
+    compiler.hooks.watchRun.tap('LogWhyCompilePlugin', () => {
+      if (compiler.modifiedFiles) {
+        const changedFiles = Array.from(compiler.modifiedFiles, (file) => `\n  ${file}`).join('');
+        console.log('===============================');
+        console.log('[LogWhyCompilePlugin] FILES CHANGED:', changedFiles);
+        console.log('===============================');
+      }
+      if (compiler.removedFiles) {
+        const removedFiles = Array.from(compiler.removedFiles, (file) => `\n  ${file}`).join('');
+        console.log('===============================');
+        console.log('[LogWhyCompilePlugin] FILES REMOVED:', removedFiles);
+        console.log('===============================');
+      }
+    });
+  }
+}
+
 const configuration: webpack.Configuration = {
   devtool: 'inline-source-map',
 
@@ -79,6 +98,8 @@ const configuration: webpack.Configuration = {
     }),
 
     new BuildExtensionsPlugin(),
+
+    new LogWhyCompilePlugin(),
 
     new CopyWebpackPlugin({
       patterns: [

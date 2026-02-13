@@ -17,6 +17,7 @@ const dist = webpackPaths.dllPath;
 const dllExcludes = [
   'tailwindcss',
   '@tailwindcss/postcss',
+  '@esbuild/win32-x64',
   '@napi-rs/keyring',
   '@apitrust/react',
   '@tailwindcss/node',

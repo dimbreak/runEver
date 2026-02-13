@@ -14,8 +14,8 @@ export const WireWaitNetworkSchema = z.object({
 });
 
 export const WireWaitMsgSchema = z.object({
-  t: z.literal('waitMsg'),
-  q: WireSelectorSchema,
+  t: z.literal('blockHereAndWaitForNewIncomingMsg'),
+  q: WireSelectorSchema.nullable().optional(),
   id1st: z.string(),
   idLast: z.string(),
 });
@@ -73,11 +73,34 @@ export const MouseActionSchema = z.object({
   repeat: z.number().optional().nullable(),
 });
 
-export const TodoActionSchema = z.object({
-  k: z.literal('todo'),
-  a: z.union([z.literal('add'), z.literal('cancel'), z.literal('done')]),
+export const ChecklistActionSchema = z.object({
+  k: z.literal('checklist'),
+  a: z.union([
+    z.literal('add'),
+    z.literal('cancel'),
+    z.literal('working'),
+    z.literal('verified'),
+  ]),
+  rework: z.boolean().optional().nullable(),
   pos: z.number().optional().nullable(),
   add: z.string().array().optional().nullable(),
+  cancelReason: z.string().optional().nullable(),
+  verifiedProve: z
+    .object({
+      domId: z.string(),
+      proveOfWork: z.string(),
+    })
+    .optional()
+    .nullable(),
+});
+
+export const AddNewTaskActionSchema = z.object({
+  k: z.literal('addNewTask'),
+  afterCpId: z.number().optional().nullable(),
+  checkPoints: z.string().array(),
+  permitFromGoal: z.string(),
+  src: z.string(),
+  taskRisk: RiskOrComplexityLevelSchema,
 });
 
 export const ScrollActionSchema = z.object({
@@ -196,6 +219,7 @@ export const TabActionSchema = z.object({
   k: z.literal('tab'),
   id: z.number(),
   url: z.string().optional().nullable(),
+  noteBeforeLeave: z.string(),
 });
 
 export const SelectTextActionSchema = z.object({

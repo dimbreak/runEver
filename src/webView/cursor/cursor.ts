@@ -75,8 +75,8 @@ class DummyCursor {
       while (elToCheck) {
         if (elToCheck === body) {
           if (
-            window.innerWidth < document.body.scrollWidth ||
-            window.innerHeight < document.body.scrollHeight
+            window.innerWidth < body.scrollWidth ||
+            window.innerHeight < body.scrollHeight
           ) {
             toScrollEls.push(window);
           }
@@ -429,9 +429,13 @@ class DummyCursor {
     const thisRect =
       rectOrEl instanceof Element ? rectOrEl.getBoundingClientRect() : rectOrEl;
     let { x, y } = thisRect;
-    console.log('moveToRect', this.x, x, this.y, y, thisRect);
     const { width, height } = thisRect;
-    if (x > window.innerWidth || y > window.innerHeight || x < 0 || y < 0) {
+    if (
+      x + width > window.innerWidth ||
+      y + height > window.innerHeight ||
+      x < 0 ||
+      y < 0
+    ) {
       let scrolled: { x: number; y: number };
       if (rectOrEl === thisRect) {
         thisRect.x =
@@ -442,7 +446,6 @@ class DummyCursor {
           y < 0
             ? Math.max(-window.scrollY, y - 20)
             : Math.max(0, y - window.innerHeight / 2);
-        console.log('thisRect', window.scrollX, x, window.scrollY, y, thisRect);
         scrolled = await this.scrollTo(thisRect, window, exact);
       } else {
         scrolled = await this.scrollToEl(rectOrEl as Element);
@@ -704,7 +707,8 @@ function calculateScrollAdjustments(
 
     // --- 水平計算 ---
     if (virtualTarget.left < view.left) {
-      deltaX = virtualTarget.left - view.left;
+      deltaX =
+        virtualTarget.right > view.right ? 0 : virtualTarget.left - view.left;
     } else if (virtualTarget.right > view.right) {
       deltaX =
         virtualTarget.width > geo.clientWidth
@@ -714,7 +718,8 @@ function calculateScrollAdjustments(
 
     // --- 垂直計算 ---
     if (virtualTarget.top < view.top) {
-      deltaY = virtualTarget.top - view.top;
+      deltaY =
+        virtualTarget.bottom > view.bottom ? 0 : virtualTarget.top - view.top;
     } else if (virtualTarget.bottom > view.bottom) {
       deltaY =
         virtualTarget.height > geo.clientHeight

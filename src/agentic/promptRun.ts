@@ -1,3 +1,5 @@
+import { Writeable } from 'zod/v3';
+import { $strip } from 'zod/v4/core';
 import { TabWebView } from '../main/webView/tab';
 import { Util } from '../webView/util';
 import { estimatePromptComplexity } from '../utils/llm';
@@ -13,8 +15,10 @@ import { Prompt, WireActionWithWaitAndRec } from './types';
 import { type WebViewLlmSession } from './webviewLlmSession';
 import { ExecutionSession } from './session';
 import { CommonUtil } from '../utils/common';
+import { RunEverConfig, RuneverConfigStore } from '../main/runeverConfigStore';
 
 export class PromptRun {
+  tabNotes: Record<number, string> = {};
   args: Record<string, any> = {};
   actions: WireActionWithWaitAndRec[] = [];
   currentAction = 0;
@@ -24,6 +28,8 @@ export class PromptRun {
   rootSession: ExecutionSession;
   sessionQueue: ExecutionSession[] = [];
   runningSession: ExecutionSession[] = [];
+  globalArgs: RunEverConfig['arguments'] = [];
+  secretArgs: Record<string, string> = {};
 
   stopRequested = false;
   constructor(
@@ -49,6 +55,30 @@ export class PromptRun {
     //     this.breakPlanningForExeErr,
     //   );
     // }, 2000);
+  }
+  getSecretArg(key: string): string | undefined {
+    return this.secretArgs[key];
+  }
+  getGlobalArgs(domain: string): Record<string, string> {
+    return this.globalArgs
+      .filter((a) => !a.domain || domain.includes(a.domain))
+      .reduce(
+        (acc, a) => {
+          acc[a.name] = a.isSecret ? '**SECRET**' : a.value;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+  }
+  setGlobalArgs(args: RunEverConfig['arguments']) {
+    this.globalArgs = this.globalArgs.splice(
+      0,
+      this.globalArgs.length,
+      ...args,
+    );
+  }
+  getArgs(domain: string) {
+    return { ...this.getGlobalArgs(domain), ...this.args };
   }
   async *initPrompt(
     promptTxt: string,
@@ -122,6 +152,10 @@ export class PromptRun {
     return this.manager.getFocusedTab() ?? this.thisTab;
   }
 
+  tabNote(noteBeforeLeave: string) {
+    this.tabNotes[this.tab.frameIds.values().next().value!] = noteBeforeLeave;
+  }
+
   stop() {
     this.stopRequested = true;
     this.fixingAction.splice(0, this.fixingAction.length);
@@ -141,7 +175,7 @@ export class PromptRun {
     if (!this.fixingAction.length) {
       if (this.actions.length > this.currentAction) {
         this.browserActionLockOk = false;
-        this.manager.ensureRunLocked(this.requestId);
+        // this.manager.ensureRunLocked(this.requestId);
         this.manager.enqueueRun(this.requestId);
       } else {
         console.log('execActions no action');
@@ -167,11 +201,11 @@ export class PromptRun {
   ) {
     if (this.actions.length === 0) return;
     const currentAction = this.actions[this.currentAction];
-    if (currentAction.id !== completedId) {
+    if (!currentAction || currentAction.id !== completedId) {
       console.warn(
         'Popping actions out of order:',
         completedId,
-        this.actions[this.currentAction].id,
+        this.actions[this.currentAction]?.id,
       );
       return;
     }
@@ -180,13 +214,34 @@ export class PromptRun {
     const sess =
       this.sessionQueue[this.prompts[currentAction.promptId!].sessionId ?? -1];
     if (argsDelta) {
-      this.args = { ...this.args, ...argsDelta };
+      const waitMsgs: Record<string, string> = {};
+      this.args = {
+        ...this.args,
+        ...Object.entries(argsDelta)
+          .filter(([k, v]) => {
+            if (k.startsWith('waitMsg')) {
+              waitMsgs[k] = v;
+              return false;
+            }
+            return true;
+          })
+          .reduce(
+            (acc, kv) => {
+              acc[kv[0]] = kv[1];
+              return acc;
+            },
+            {} as Record<string, string>,
+          ),
+      };
       currentAction.argsDelta = argsDelta;
-      Object.keys(argsDelta).forEach((key) => {
-        if (key.startsWith('$LOAD_FILE:')) {
-          sess.attachmentInNextTodo.push(key.replace('$LOAD_FILE:', ''));
-        }
-      });
+      if (Object.keys(waitMsgs).length) {
+        sess?.waitMsgComplete(
+          waitMsgs.waitMsgId,
+          waitMsgs.waitMsgResult,
+          waitMsgs.waitMsg1stId,
+          waitMsgs.waitMsgLastId,
+        );
+      }
     }
     sess?.addLog(`${currentAction.intent}-Done`);
     console.log(
@@ -223,14 +278,25 @@ export class PromptRun {
     } else {
       currentAction.error = [error];
     }
-    if (this.stopRequested) {
-      console.log('stopped');
-      return;
-    }
     const sess =
       this.sessionQueue[this.prompts[currentAction.promptId!].sessionId ?? -1];
     sess?.addLog(`${currentAction.intent}-Error:${error}`);
     sess?.needFix.push(JSON.stringify(currentAction));
+    this.currentAction++;
+    if (this.stopRequested) {
+      console.log('Stopped stopRequested');
+      return;
+    }
+    console.log(
+      'continue after error',
+      this.currentAction,
+      this.actions.length,
+    );
+    if (this.currentAction < this.actions.length) {
+      this.execActions();
+    } else {
+      this.browserActionLock.delayUnlock(500);
+    }
     // this.fixAction();
   }
 

@@ -49,13 +49,16 @@ const webViewHandler = {
   htmlParser: undefined as MiniHtml.Parser | undefined,
   getHtmlParser() {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
-    console.log(this.htmlParser);
     return this.htmlParser;
+  },
+  getIdFromEl(el: Element, checkChildIfNotFound = true) {
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return this.htmlParser.getIdByEl(el, checkChildIfNotFound);
   },
   getHtml(
     select: MiniHtml.Selector | null = null,
     outerLevel = 0,
-    placeholdDummy = '__',
+    placeholdDummy = '®',
   ) {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     if (select) {
@@ -65,7 +68,7 @@ const webViewHandler = {
     }
     return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
   },
-  getDeltaHtml(placeholdDummy = '__') {
+  getDeltaHtml(placeholdDummy = '®') {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return dummyCursor.hide(() => this.htmlParser!.genDeltaHtml());
   },
@@ -87,14 +90,22 @@ const webViewHandler = {
 };
 
 const runeverHandler = {
-  setConfig: (key: any, config: any) => {
+  setConfig: async (key: any, config: any) => {
+    console.log('setConfig', key, config);
+    while (!window.frameId) {
+      await Util.sleep(100);
+    }
     return ToRuneverIpc.setConfig.invoke({
       frameId: window.frameId!,
       key,
       config,
     });
   },
-  getConfig: (key: any) => {
+  getConfig: async (key: any) => {
+    console.log('getConfig', key);
+    while (!window.frameId) {
+      await Util.sleep(100);
+    }
     return ToRuneverIpc.getConfig.invoke({
       frameId: window.frameId!,
       key,
@@ -148,39 +159,15 @@ const handleFrameId = async (event: MessageEvent) => {
     id: event.data.frameId,
     scrollAdjustment,
   });
+  window.removeEventListener('message', handleFrameId);
   console.log('Setting in preload:', event.data);
-  // window.removeEventListener('message', handleFrameId);
-  // const events = [];
-  // for (const property in window) {
-  //   if (property.startsWith('on')) {
-  //     events.push(property);
-  //     window[property] = (ev) => {
-  //       console.log(property, ev);
-  //     };
+  // Object.keys(window).forEach((key) => {
+  //   if (/^on/.test(key)) {
+  //     window.addEventListener(key.slice(2), (event) => {
+  //       console.log(key, event);
+  //     });
   //   }
-  // }
-  // console.log(events.join(' '));
-
-  // await Util.sleep(2000);
-  //
-  // // document.body.querySelector('input')?.focus();
-  // const args = {};
-  // const argsDelta: [string, string][] = [];
-  // BrowserActions.setArgs(
-  //   {
-  //     k: 'setArg',
-  //     kv: {
-  //       orderDetails:
-  //         '{"customer":"Northwind Travel","address":"123 Client St, Business City, ST 12345","phone":"555-0100","email":"contact@client.com","poNumber":"PO-6812","date":"2026-02-01","vendor":{"name":"SalesForce POS System","address":"123 Cloud Way, San Francisco, CA 94105"},"items":[{"name":"Laptop Pro","qty":4,"unitPrice":1200.00,"total":4800.00},{"name":"Desk Chair","qty":2,"unitPrice":350.00,"total":700.00},{"name":"Monitor 4K","qty":3,"unitPrice":450.00,"total":1350.00}],"total":6850.00,"remarks":"We are not open on monday, please do not delivery on monday"}',
-  //       'sample_order_form.pdf-orderDetails':
-  //         '{"customer":"Northwind Travel","address":"123 Client St, Business City, ST 12345","phone":"555-0100","email":"contact@client.com","poNumber":"PO-6812","date":"2026-02-01","vendor":{"name":"SalesForce POS System","address":"123 Cloud Way, San Francisco, CA 94105"},"items":[{"name":"Laptop Pro","qty":4,"unitPrice":1200.00,"total":4800.00},{"name":"Desk Chair","qty":2,"unitPrice":350.00,"total":700.00},{"name":"Monitor 4K","qty":3,"unitPrice":450.00,"total":1350.00}],"total":6850.00,"remarks":"We are not open on monday, please do not delivery on monday"}',
-  //     },
-  //   },
-  //   'l',
-  //   args,
-  //   argsDelta,
-  // );
-  // console.log('-------------------', args, argsDelta);
+  // });
 };
 
 // Register immediately to avoid missing early postMessage during navigation.
@@ -201,6 +188,7 @@ BrowserActions.setActionApi({
     argsDelta?: Record<string, string> | undefined;
     iframeId?: string;
   }) => {
+    console.log('action done', args);
     return ToMainIpc.actionDone.invoke({
       frameId: window.frameId!,
       ...args,

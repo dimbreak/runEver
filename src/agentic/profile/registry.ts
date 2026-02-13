@@ -1,5 +1,6 @@
 import './widget/calendar/calendar';
 import './widget/combobox/combobox';
+import './widget/email';
 import './widget/fileUpload';
 import './widget/form/form';
 import './widget/list';

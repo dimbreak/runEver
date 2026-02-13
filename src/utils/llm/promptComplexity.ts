@@ -18,6 +18,5 @@ export const estimatePromptComplexity = (
   const p = prompt.toLowerCase();
   if (/verify|confirm|make sure|\[action error]/.test(p)) return 'h';
   // eslint-disable-next-line no-nested-ternary
-  return p.length < 64 ? 'l' : p.length > 256 ? 'h' : 'm';
+  return p.length < 256 ? 'l' : p.length > 1024 ? 'h' : 'm';
 };
-

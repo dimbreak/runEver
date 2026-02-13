@@ -51,6 +51,7 @@ const routeMap: Record<string, () => React.ReactNode> = {
   '/gateway/cards': () => <GatewayCardsPage />,
   '/pos/basic': () => {
 
+    removeSession('runEverMark_pos_draft');
     removeSession('runEverMark_email_user');
     removeSession('runEverMark_email_auth');
      writeSession('runEverMark_active_entryPoint', '#/pos/basic');

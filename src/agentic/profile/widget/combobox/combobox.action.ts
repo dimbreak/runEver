@@ -1,6 +1,6 @@
 import { SmartAction } from '../../smartAction';
 import { ComboboxAction } from './combobox.schema';
-import { type ExecutionSession } from '../../../session';
+import { type ExecutionSession, ExeSessStatus } from '../../../session';
 import { estimatePromptComplexity } from '../../../../utils/llm';
 import { SmartActionSession } from '../../smartAction.class';
 
@@ -10,20 +10,20 @@ class ComboboxSmartAction extends SmartActionSession {
     parentSession: ExecutionSession,
   ) {
     super(parentSession, 'combobox');
+    this.forceComplexity = 'l';
   }
   initPrompt() {
     const { action, run } = this;
     const goalPrompt = `Set the combobox at ${action.action.q} to closest value of '${action.action.v}': ${action.intent}
-    
+
 [combobox trial steps]
-0. pay special attention to role=combobox, try interact with delegate subtask of each combobox, just use tip to execute step by step.
-1. Try step by step with tip, select the value base on the actual list not the just input the given value.
-2. Indentify stage and suggestions by looking at [html], [performed actions] & tip, note that the suggestion list may not be under the combobox itself but a floating visible element mark with role listbox in label.
-3. Focus the combobox(input element if exist), **ADD TIP** to observe the dropdown / suggestions.
-4. Type the first few chars of search keyword to filter the suggestions, **ADD TIP** to observe the list.
-5. Click the suggestion if the full value suggestion appeared, or keep typing to filter the suggestions if the suggestion list still long. pick with mouse click.
-6. The outcome of combobox is uncertain, always add [todo] to check if the value is correctly set.
-7. The display value of input may vary from dropdown list after picked, trust previous executor if the value looks close enough.`;
+- Add check point for search value, check point for mouse click option value and another to check value
+- Try step by step with tip, select the value base on the actual list not the search. actual value maybe different from option text, **MUST PICK BY CLICK THE OPTION**.
+- **input the 50% of search keyword**, **ADD next.tipo** and let next executor to observe the list.
+- Click the suggested option if the full value suggestion appeared, or keep typing a few char to filter the suggestions if the suggestion list still long. **MUST PICK WITH MOUSE CLICK ONLY**.
+- The display value maybe just searching, not actually picked, **MUST PICK BY CLICK THE OPTION**.
+- The display value maybe vary from expected one, pick & accept if the values close enough.
+- CONFIRM WITH MOUSE CLICK even there is just one suggestion, ABSOLUTELY REQUIRED`;
     this.promptQueue.push(
       run.createPrompt(
         goalPrompt,
@@ -37,11 +37,20 @@ class ComboboxSmartAction extends SmartActionSession {
 
 SmartAction.register(async (action, parent: ExecutionSession) => {
   if (action.action.k === 'combobox') {
-    const calendarAction = action as SmartAction.IAction<ComboboxAction>;
+    const comboboxAction = action as SmartAction.IAction<ComboboxAction>;
     const sess = parent.run.wrapSession(
-      new ComboboxSmartAction(calendarAction, parent),
+      new ComboboxSmartAction(comboboxAction, parent),
     );
     sess.initPrompt();
+    if ((comboboxAction.cp ?? null) !== null && comboboxAction.cp!.length) {
+      sess.onCompleted = () => {
+        const cp = parent.checklist[comboboxAction.cp![0]];
+        if (typeof sess.status === 'string') {
+          cp.status = ExeSessStatus.Abnormal;
+          cp.comment = sess.status;
+        }
+      };
+    }
     return sess;
   }
   return null;

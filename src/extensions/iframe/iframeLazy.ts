@@ -18,13 +18,17 @@ const webViewHandler = {
   getHtmlParser() {
     if (!this.htmlParser || this.htmlParser.idPrefix !== `${this.frameId}:`)
       this.htmlParser = new MiniHtml.Parser(`${this.frameId}:`);
-    console.log(this.htmlParser);
     return this.htmlParser;
+  },
+  getIdFromEl(el: Element, checkChildIfNotFound = true) {
+    if (!this.htmlParser || this.htmlParser.idPrefix !== `${this.frameId}:`)
+      this.htmlParser = new MiniHtml.Parser(`${this.frameId}:`);
+    return this.htmlParser.getIdByEl(el, checkChildIfNotFound);
   },
   getHtml(
     select: MiniHtml.Selector | null = null,
     outerLevel = 0,
-    idPrefix: string = '__',
+    idPrefix: string = '®',
   ) {
     if (!this.htmlParser || this.htmlParser.idPrefix !== idPrefix)
       this.htmlParser = new MiniHtml.Parser(idPrefix);

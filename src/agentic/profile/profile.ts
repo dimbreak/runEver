@@ -7,6 +7,7 @@ export namespace Profile {
     type: 'execution';
     goal: string;
     sub?: string;
+    html?: string;
   } & BasePromptParts;
   export type PromptParts = ExePromptParts;
 

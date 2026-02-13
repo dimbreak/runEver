@@ -5,8 +5,9 @@ import { CommonUtil } from '../../../../utils/common';
 
 export const checkFormAndFieldCount = (element: HTMLFormElement) => {
   const fields = element.querySelectorAll(
-    'input:not([type="hidden"]), select, textarea',
+    'input:not([type="hidden"],[type="submit"]), select, textarea',
   );
+  console.log('fields', fields);
   if (fields.length > 0) {
     return `fields:${Array.from(fields).filter((f) => f.clientWidth !== 0 && f.clientHeight !== 0).length}`;
   }
@@ -24,7 +25,7 @@ export const fillFormExec = async (
     const formEl = action.el ?? webView.getEl(action.q).element;
 
     if (formEl instanceof HTMLFormElement) {
-      let fieldEls: HTMLElement[];
+      let fieldEls: HTMLElement[] | null = null;
       let fieldEl: HTMLElement | undefined;
       let strVs: string[];
       let strV: string;
@@ -32,10 +33,19 @@ export const fillFormExec = async (
       let kv: FillFormValue;
       const errors: string[] = [];
       for (kv of fillFormAction.data) {
-        fieldEls = (typeof kv.f === 'string'
-          ? Array.from(formEl.querySelectorAll(`[name="${kv.f}"]`))
-          : null) ?? [webView.getEl(kv.f).element];
+        fieldEls =
+          typeof kv.f === 'string'
+            ? Array.from(formEl.querySelectorAll(`[name="${kv.f}"]`))
+            : null;
+        if (fieldEls === null || fieldEls.length === 0) {
+          fieldEls = [webView.getEl(kv.f).element];
+        }
         if (fieldEls.length === 0) {
+          console.log(
+            `Cannot find field '${kv.f}'`,
+            formEl.querySelectorAll(`[name="${kv.f}"]`),
+            webView.getEl(kv.f),
+          );
           errors.push(`Cannot find field ${kv.f}`);
           continue;
         }

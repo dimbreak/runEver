@@ -17,6 +17,7 @@ import { ApiTrustTokenStore } from '../main/apiTrustTokenStore';
 import { RuneverConfigStore } from '../main/runeverConfigStore';
 import { getAuthMode } from '../main/authModeStore';
 import { getApiTrustStream } from '../shared/aiGateway';
+import { AsyncQueue } from '../utils/asyncQueue';
 
 const getApiTrustErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -118,7 +119,7 @@ export namespace LlmApi {
             resolve({
               provider: 'openai',
               hi: openai('gpt-5.2'),
-              mid: openai('gpt-5-mini-2025-08-07'),
+              mid: openai('gpt-5-mini'),
               low: openai('gpt-5-nano'),
               makeProviderOptions: (
                 reasoningEffort: ReasoningEffort,
@@ -128,9 +129,9 @@ export namespace LlmApi {
                 providerOptions.openai = {
                   reasoningEffort,
                 };
-                if (cacheKey) {
-                  providerOptions.openai.promptCacheKey = cacheKey;
-                }
+                // if (cacheKey) {
+                //   providerOptions.openai.promptCacheKey = cacheKey;
+                // }
                 return providerOptions;
               },
             });
@@ -186,28 +187,51 @@ export namespace LlmApi {
         let remain = res!;
         let end = 0;
         while (remain.length) {
-          end = Math.min(remain.length, Math.floor(Math.random() * 5 + 1));
+          end = Math.min(remain.length, Math.floor(Math.random() * 10 + 1));
           yield remain.slice(0, end);
           remain = remain.slice(end);
-          await Util.sleep(Math.random() * 100);
+          await Util.sleep(Math.random() * 20 + 10);
         }
       })(),
     } as any as ReturnType<typeof streamText>;
   };
 
-  export const addDummyReturn = (text: string) => {
-    dummyReturns.push(text);
+  export const addDummyReturn = (text: string | string[]) => {
+    if (Array.isArray(text)) {
+      text.forEach((item) => {
+        if (item.startsWith('prompt-record/')) {
+          // fs.readFile()
+          const jsonStr = fs.readFileSync(`${__dirname}/../../${item}`, 'utf8');
+          try {
+            const j = JSON.parse(jsonStr);
+            const res = (j.messages as any[][])[0].find(
+              (m: any) => m.type === 'text',
+            ).text;
+            dummyReturns.push(res);
+            console.log('addDummyReturn', item, res.slice(0, 32));
+          } catch (e) {
+            console.log('addDummyReturn', item);
+            console.error('addDummyReturn', item, e);
+          }
+        } else {
+          dummyReturns.push(item);
+        }
+      });
+    } else {
+      dummyReturns.push(text);
+    }
     streamQueryer = streamDummy;
   };
 
-  export async function* queryLLMApi(
+  export async function queryLLMApi(
     prompt: string,
     systemPrompt = '',
     attachments: Attachment[] | null = null,
     cacheKey = '',
     model: LlmModelType = 'mid',
     reasoningEffort: ReasoningEffort = 'low',
-  ): AsyncGenerator<string, void, void> {
+  ): Promise<AsyncQueue<string>> {
+    const q = new AsyncQueue<string>();
     if (getAuthMode() !== 'apikey') {
       try {
         const apiTrustToken = await apiTrustTokenStore.getToken();
@@ -233,21 +257,24 @@ export namespace LlmApi {
         if (apiTrustStream) {
           const monitor = new FirstTokenMonitor(cacheKey);
           monitor.start();
-          try {
-            for await (const part of apiTrustStream) {
-              if (!monitor.hasReceived()) {
-                monitor.onFirstToken(part);
+          (async () => {
+            try {
+              for await (const part of apiTrustStream) {
+                if (!monitor.hasReceived()) {
+                  monitor.onFirstToken(part);
+                }
+                q.push(part);
               }
-              yield part;
+            } catch (err) {
+              monitor.stop();
+              console.error('ApiTrust streaming error:', err);
+              q.fail(err as Error);
+            } finally {
+              monitor.stop();
+              q.close();
             }
-          } catch (err) {
-            monitor.stop();
-            console.error('ApiTrust streaming error:', err);
-            throw err;
-          } finally {
-            monitor.stop();
-          }
-          return;
+          })();
+          return q;
         }
       } catch (error) {
         console.error('ApiTrust request failed', error);
@@ -292,71 +319,76 @@ export namespace LlmApi {
       }
       const maxStreamRetries = 1;
       let lastError: unknown;
-      for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
-        const monitor = new FirstTokenMonitor(cacheKey);
-        let yielded = false;
-        let success = false;
-        let response: Promise<any> | null = null;
 
-        try {
-          const streamResult = streamQueryer({
-            model: llmApi[model],
-            providerOptions: llmApi.makeProviderOptions(
-              reasoningEffort,
-              cacheKey,
-            ),
-            prompt: promptObj,
-          });
-          response = streamResult.response;
-          monitor.start();
+      (async () => {
+        for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
+          const monitor = new FirstTokenMonitor(cacheKey);
+          let yielded = false;
+          let success = false;
+          let response: Promise<any> | null = null;
 
-          for await (const part of streamResult.textStream) {
-            if (!monitor.hasReceived()) {
-              monitor.onFirstToken(part);
-            }
-            yielded = true;
-            yield part;
-          }
-          success = true;
-        } catch (err) {
-          lastError = err;
-          monitor.stop();
-          if (isNoOutputGeneratedError(err) && !yielded) {
-            if (attempt < maxStreamRetries) {
-              console.warn('No output generated; retrying stream.', err);
-              continue;
-            }
-          }
-          console.error('Error during LLM streaming:', err);
-          throw err;
-        } finally {
-          monitor.stop();
-          if (success && response) {
-            console.log(`api call ok ${cacheKey}`);
-            try {
-              const res = await response;
-              let messages: ModelMessage[] = [];
-              if (res) {
-                messages = res.messages?.map((m: ModelMessage) => m?.content);
+          try {
+            const streamResult = streamQueryer({
+              model: llmApi[model],
+              providerOptions: llmApi.makeProviderOptions(
+                reasoningEffort,
+                cacheKey,
+              ),
+              prompt: promptObj,
+            });
+            response = streamResult.response;
+            monitor.start();
+
+            for await (const part of streamResult.textStream) {
+              if (!monitor.hasReceived()) {
+                monitor.onFirstToken(part);
               }
-              fs.writeFile(
-                `${recordPath}/log-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`,
-                JSON.stringify({ ...res, prompt: promptObj, messages }),
-                () => {},
-              );
-            } catch (logError) {
-              console.warn('Failed to write LLM log', logError);
+              yielded = true;
+              q.push(part);
+            }
+            success = true;
+          } catch (err) {
+            lastError = err;
+            monitor.stop();
+            if (isNoOutputGeneratedError(err) && !yielded) {
+              if (attempt < maxStreamRetries) {
+                console.warn('No output generated; retrying stream.', err);
+                continue;
+              }
+            }
+            console.error('Error during LLM streaming:', err);
+            q.fail(err as Error);
+          } finally {
+            monitor.stop();
+            q.close();
+            if (success && response) {
+              console.log(`api call ok ${cacheKey}`);
+              try {
+                const res = await response;
+                let messages: ModelMessage[] = [];
+                if (res) {
+                  messages = res.messages?.map((m: ModelMessage) => m?.content);
+                }
+                fs.writeFile(
+                  `${recordPath}/log-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`,
+                  JSON.stringify({ ...res, prompt: promptObj, messages }),
+                  () => {},
+                );
+              } catch (logError) {
+                console.warn('Failed to write LLM log', logError);
+              }
             }
           }
+
+          if (success) return;
         }
-
-        if (success) return;
-      }
-
-      throw lastError ?? new Error('No output generated.');
-    } else {
-      throw ErrNoConfig;
+        if (lastError) {
+          q.fail(new Error('No output generated.'));
+        }
+      })();
+      return q;
     }
+    throw ErrNoConfig;
   }
 
   export const queryLLMSession = (
@@ -382,9 +414,7 @@ export namespace LlmApi {
     };
   };
 
-  export const wrapStream = async (
-    stream: AsyncGenerator<string, any, void>,
-  ) => {
+  export const wrapStream = async (stream: AsyncQueue<string>) => {
     const result: string[] = [];
     const start = Date.now();
     let firstToken = -1;
@@ -392,7 +422,7 @@ export namespace LlmApi {
       if (firstToken === -1) {
         firstToken = Date.now() - start;
       }
-      result.push(part);
+      result.push(part ?? '');
     }
     const done = Date.now() - start;
     if (result[0][0] === '{') {

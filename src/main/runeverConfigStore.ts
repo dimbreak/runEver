@@ -48,6 +48,14 @@ export class RuneverConfigStore {
   private entry: KeyringEntry;
   private cachedConfig: RunEverConfig | undefined;
 
+  static instance: RuneverConfigStore | null = null;
+  static getInstance() {
+    if (RuneverConfigStore.instance === null) {
+      RuneverConfigStore.instance = new RuneverConfigStore();
+    }
+    return RuneverConfigStore.instance;
+  }
+
   constructor(options: UserApiKeyStoreOptions = {}) {
     const appName = app.getName();
     const service = options.service ?? `${appName}.user-api-key`;

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import PosLayout from '../components/PosLayout';
 import { productCatalog } from '../data/products';
 import { readSession, writeSession, setBenchmarkResult } from '../utils/session';
-import { jsPDF } from 'jspdf';
+// import { jsPDF } from 'jspdf';
 
 export default function PosOrderPreviewPage() {
   const [draft] = useState(() => readSession<any>('runEverMark_pos_draft', null));
@@ -47,70 +47,70 @@ export default function PosOrderPreviewPage() {
     setStatus(`Order submitted successfully with ID: ${newOrder.id}`);
     writeSession('runEverMark_pos_draft', null);
   };
-
-  const handleDownloadPdf = () => {
-      const doc = new jsPDF();
-
-      // Client Header
-      doc.setFontSize(22);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'bold');
-      doc.text(draft.clientName || 'CLIENT COMPANY', 20, 25);
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(60, 60, 60);
-      doc.text(draft.clientEmail || '', 20, 32);
-      doc.text(draft.clientPhone || '', 20, 37);
-      doc.text(draft.address || '', 20, 42);
-      doc.text(`${draft.city || ''}, ${draft.region || ''} ${draft.postal || ''}`, 20, 47);
-
-      // Title
-      doc.setFontSize(24);
-      doc.setTextColor(1, 118, 211);
-      doc.text("PURCHASE ORDER", 120, 25);
-
-      // Client Info
-      doc.setFontSize(12);
-      doc.text("Bill To:", 20, 40);
-      doc.setFontSize(10);
-      doc.text(draft.clientName || 'N/A', 20, 46);
-      doc.text(draft.clientEmail || '', 20, 52);
-      doc.text(draft.clientPhone || '', 20, 58);
-
-      doc.text("Ship To:", 120, 40);
-      doc.text(draft.address || '', 120, 46);
-      doc.text(`${draft.city || ''}, ${draft.region || ''} ${draft.postal || ''}`, 120, 52);
-
-      // Line Items Header
-      let y = 80;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(20, y, 190, y);
-      y += 5;
-      doc.setFont('helvetica', 'bold');
-      doc.text("Product", 20, y);
-      doc.text("Qty", 140, y);
-      doc.text("Total", 170, y);
-      doc.setFont('helvetica', 'normal');
-      y += 5;
-      doc.line(20, y, 190, y);
-      y += 10;
-
-      // Line Items
-      lines.forEach((line: any) => {
-          doc.text(line.name, 20, y);
-          doc.text(String(line.quantity), 140, y);
-          doc.text(`$${line.total.toFixed(2)}`, 170, y);
-          y += 10;
-      });
-
-      // Total
-      y += 10;
-      doc.setFont('helvetica', 'bold');
-      doc.text(`TOTAL: $${total.toFixed(2)}`, 140, y);
-
-      doc.save(`OrderForm_${draft.clientName.replace(/\s+/g, '')}.pdf`);
-  };
+  //
+  // const handleDownloadPdf = () => {
+  //     const doc = new jsPDF();
+  //
+  //     // Client Header
+  //     doc.setFontSize(22);
+  //     doc.setTextColor(0, 0, 0);
+  //     doc.setFont('helvetica', 'bold');
+  //     doc.text(draft.clientName || 'CLIENT COMPANY', 20, 25);
+  //
+  //     doc.setFontSize(10);
+  //     doc.setFont('helvetica', 'normal');
+  //     doc.setTextColor(60, 60, 60);
+  //     doc.text(draft.clientEmail || '', 20, 32);
+  //     doc.text(draft.clientPhone || '', 20, 37);
+  //     doc.text(draft.address || '', 20, 42);
+  //     doc.text(`${draft.city || ''}, ${draft.region || ''} ${draft.postal || ''}`, 20, 47);
+  //
+  //     // Title
+  //     doc.setFontSize(24);
+  //     doc.setTextColor(1, 118, 211);
+  //     doc.text("PURCHASE ORDER", 120, 25);
+  //
+  //     // Client Info
+  //     doc.setFontSize(12);
+  //     doc.text("Bill To:", 20, 40);
+  //     doc.setFontSize(10);
+  //     doc.text(draft.clientName || 'N/A', 20, 46);
+  //     doc.text(draft.clientEmail || '', 20, 52);
+  //     doc.text(draft.clientPhone || '', 20, 58);
+  //
+  //     doc.text("Ship To:", 120, 40);
+  //     doc.text(draft.address || '', 120, 46);
+  //     doc.text(`${draft.city || ''}, ${draft.region || ''} ${draft.postal || ''}`, 120, 52);
+  //
+  //     // Line Items Header
+  //     let y = 80;
+  //     doc.setDrawColor(200, 200, 200);
+  //     doc.line(20, y, 190, y);
+  //     y += 5;
+  //     doc.setFont('helvetica', 'bold');
+  //     doc.text("Product", 20, y);
+  //     doc.text("Qty", 140, y);
+  //     doc.text("Total", 170, y);
+  //     doc.setFont('helvetica', 'normal');
+  //     y += 5;
+  //     doc.line(20, y, 190, y);
+  //     y += 10;
+  //
+  //     // Line Items
+  //     lines.forEach((line: any) => {
+  //         doc.text(line.name, 20, y);
+  //         doc.text(String(line.quantity), 140, y);
+  //         doc.text(`$${line.total.toFixed(2)}`, 170, y);
+  //         y += 10;
+  //     });
+  //
+  //     // Total
+  //     y += 10;
+  //     doc.setFont('helvetica', 'bold');
+  //     doc.text(`TOTAL: $${total.toFixed(2)}`, 140, y);
+  //
+  //     doc.save(`OrderForm_${draft.clientName.replace(/\s+/g, '')}.pdf`);
+  // };
 
   return (
     <PosLayout title="Preview Order">
@@ -118,8 +118,7 @@ export default function PosOrderPreviewPage() {
         {draft ? (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h3>Order Summary</h3>
-                <button className="sf-button" onClick={handleDownloadPdf}>⬇ Download Order Form (PDF)</button>
+                <h3>Order Preview</h3>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
@@ -165,7 +164,7 @@ export default function PosOrderPreviewPage() {
                 <div style={{ marginTop: 32, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                     <a href="#/pos/create" className="sf-button">Back to Edit</a>
                     <button className="sf-button brand" onClick={handleSubmit}>
-                    Submit Final Order
+                    Save Order
                     </button>
                 </div>
             )}

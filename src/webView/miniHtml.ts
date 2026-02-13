@@ -223,7 +223,7 @@ export namespace MiniHtml {
     observer: MutationObserver | undefined;
     mutatedElements = new Map<Element, MeaningfulElement | null>();
     lastFullHtml: string | undefined;
-    constructor(public idPrefix = '__') {
+    constructor(public idPrefix = '®') {
       this.reset();
     }
     async genHtml(
@@ -345,7 +345,7 @@ export namespace MiniHtml {
       } else if (isVisible && tagName === 'a') {
         const h = element.getAttribute('href');
         if (h && h.includes('://') && !h.startsWith(window.location.origin)) {
-          href = `href=${h.length > 64 ? `${h.slice(0, 64)}...` : h}`;
+          href = `href=${h.split('/')[2]}`;
         }
       }
       let tagHtmls = [
@@ -394,6 +394,21 @@ export namespace MiniHtml {
       return innerHtml
         ? `<${tagHtmls}>${innerHtml ?? ''}</${tagName}>`
         : `<${tagHtmls} />`;
+    }
+    getIdByEl(
+      el: Element | null,
+      checkChildIfNotFound: boolean,
+    ): string | undefined {
+      let id = el ? this.meaningFulElementByEl.get(el)?.id : undefined;
+      if (id === undefined && el?.children.length && checkChildIfNotFound) {
+        for (let i = 0; i < el.children.length; i++) {
+          id = this.getIdByEl(el.children.item(i), true);
+          if (id) {
+            return id;
+          }
+        }
+      }
+      return id;
     }
     findMeaningfulFromParent(el: Element): MeaningfulElement | null {
       let parent: Element | null = el;
@@ -760,7 +775,7 @@ export namespace MiniHtml {
     genId(id: string | undefined) {
       // eslint-disable-next-line no-nested-ternary
       let thisId = id
-        ? this.idPrefix === '__'
+        ? this.idPrefix === '®'
           ? id
           : `${this.idPrefix}${id}`
         : `${this.idPrefix}${(this.added++).toString(36)}`;
@@ -829,7 +844,10 @@ export namespace MiniHtml {
         return;
       }
       let meaningfulEl: MeaningfulElement | undefined = parentMeaningfulEl;
-      const label = getReadableAttr(element);
+      let label = getReadableAttr(element);
+      if (label.length > 32) {
+        label = `${label.slice(0, 32)}...`;
+      }
       const placeholder: MeaningfulElement = {
         id: element.id,
         element,

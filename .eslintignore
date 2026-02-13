@@ -33,4 +33,4 @@ npm-debug.log.*
 !.erb
 
 testHtml
-
+src/renderer/config_page/preload.d.ts

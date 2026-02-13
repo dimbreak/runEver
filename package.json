@@ -33,7 +33,8 @@
     "clean": "npm run clean:modules && npm run clean:dll",
     "clean:modules": "rm -rf node_modules",
     "clean:dll": "rm -rf .erb/dll",
-    "prepare": "husky"
+    "prepare": "husky",
+    "mcp:server": "ts-node src/main/mcp/server.ts"
   },
   "browserslist": [
     "extends browserslist-config-erb"
@@ -91,10 +92,12 @@
     "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=1000"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@ai-sdk/google": "^2.0.52",
     "@ai-sdk/openai": "^2.0.85",
     "@apitrust/react": "file:../apitrust/react-sdk",
     "@electron/notarize": "^3.0.0",
+    "@esbuild/win32-x64": "^0.27.2",
     "@hookform/resolvers": "^3.10.0",
     "@napi-rs/keyring": "^1.2.0",
     "@tailwindcss/postcss": "^4.1.17",
@@ -125,6 +128,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
+    "@esbuild/win32-x64": "^0.27.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
     "@svgr/webpack": "^8.1.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
@@ -284,5 +288,8 @@
       "src/main/**",
       ".erb/dll/**"
     ]
+  },
+  "optionalDependencies": {
+    "lightningcss-win32-x64-msvc": "^1.30.2"
   }
 }

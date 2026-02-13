@@ -46,6 +46,7 @@ const emptyLine = () => ({
 // Helper component for Product Selection
 const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: string) => void }) => {
   const [term, setTerm] = useState('');
+  const [to, setTo] = useState<any>(undefined);
 
   // Find current product to display its name
   const currentProduct = productCatalog.find(p => p.id === value);
@@ -53,39 +54,41 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
   // Update term when value changes externally (initial load or reset)
   useEffect(() => {
     if (currentProduct) {
+      if(to) {
+        clearTimeout(to);
+      }
       setTerm(currentProduct.name);
-    } else {
-      setTerm('');
     }
-  }, [currentProduct]);
+  }, [currentProduct, to]);
 
   const handleSelect = (itemValue: string) => {
-    // The value in ComboboxOption is the Name (or whatever satisfies the filter)
-    // But we need to map back to ID.
-    // Wait, reach/combobox passes the value prop of the Option to onSelect.
-    // If we want to pass ID, we should put ID in the value?
-    // But standard combobox behavior is filling the input with the value.
-    // So if I put ID in value, input becomes ID. That's bad.
-
-    // Strategy: Put Name in Option value.
-    // On select, look up the ID by Name.
+    console.log(itemValue);
     const name = itemValue.split(' - ')[0];
     const product = productCatalog.find(p => p.name === name);
     if (product) {
+      if(to) {
+        clearTimeout(to);
+      }
       setTerm(product.name);
       onChange(product.id);
+    }else{
+      onChange('')
     }
   };
 
   const filteredProducts = useMemo(() => {
     if (!term) return productCatalog;
+    const kw = term.toLowerCase().split(' - ')[0];
     return productCatalog.filter(p =>
-      p.name.toLowerCase().includes(term.toLowerCase())
+      p.name.toLowerCase().includes(kw)
     );
   }, [term]);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTerm(event.target.value);
+    if(event.target.value.length < 2) {
+      onChange('')
+    }
     // If user clears input, we might want to clear selection?
     // Or just let them type.
     // If they type something that doesn't match, value remains what it was?
@@ -93,16 +96,24 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
     // For now, let's keep it simple: strict selection required for ID update via list.
     // Ideally we clear ID if text mismatch, but let's stick to safe behavior.
   };
-console.log(filteredProducts)
+
   return (
     <Combobox onSelect={handleSelect} openOnFocus>
       <ComboboxInput
         className="sf-input"
         value={term}
         onChange={handleInputChange}
-        onBlur={() =>  setTimeout(()=>{
-          setTerm(t=>productCatalog.some(p => p.name === t) ?t:'')
-        }, 200)}
+        onBlur={() =>  {
+          setTo(setTimeout(()=>setTerm(t=>{
+            console.log(333, currentProduct, t)
+            if(currentProduct?.name===t) {
+              return t;
+            } else {
+              onChange('');
+              return '';
+            }
+          }), 200));
+        }}
         style={{ width: '100%' }}
         placeholder="Select a product..."
         autocomplete
@@ -363,7 +374,8 @@ export default function PosOrderCreatePage() {
             </div>
 
             <div style={{ borderTop: '1px solid #dddbda', paddingTop: 16, marginBottom: 24 }}>
-                 <h3>Order Lines
+                 <h3>
+                   Order Lines
                    <button
                      style={{float: 'right', marginTop: -4}}
                      className="sf-button"
@@ -376,6 +388,7 @@ export default function PosOrderCreatePage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {lines.map((line) => {
+                      console.log(line)
                       const total = totals.find((item) => item.id === line.id);
                       return (
                         <div className="sf-card" key={line.id} style={{ background: '#f8f9fb', padding: 12, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
@@ -397,6 +410,7 @@ export default function PosOrderCreatePage() {
                                     step="0.01"
                                     style={{ paddingLeft: 20 }}
                                     value={line.unitPrice}
+                                    disabled={!line.productId}
                                     onChange={(event) => handleLineChange(line.id, { unitPrice: Number(event.target.value) })}
                                 />
                             </div>
@@ -408,6 +422,7 @@ export default function PosOrderCreatePage() {
                               type="number"
                               min={1}
                               value={line.quantity}
+                              disabled={!line.productId}
                               onChange={(event) => handleLineChange(line.id, { quantity: Number(event.target.value) })}
                             />
                           </div>
@@ -419,6 +434,7 @@ export default function PosOrderCreatePage() {
                               min={0}
                               max={50}
                               value={line.discount}
+                              disabled={!line.productId}
                               onChange={(event) => handleLineChange(line.id, { discount: Number(event.target.value) })}
                             />
                           </div>

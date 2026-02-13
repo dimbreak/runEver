@@ -86,7 +86,6 @@ export namespace BrowserActions {
     return (await actionApi)[req.action](req.args as any) as any;
   };
   export const ErrWaitTimeout = new Error('Run action wait timeout');
-  let runningActionSet: WireActionWithWaitAndRec[] | null = null;
   export const checkDomDisappear = async (selector: MiniHtml.Selector) => {
     let el = window.webView.getEl(selector);
     if (el instanceof IFrameHelper) {
@@ -119,8 +118,9 @@ export namespace BrowserActions {
     return el.element;
   };
   export const checkDom = async (
-    t: 'childAdd', // Extract<WireWait, { t: 'domLongTime' }>['a'],
-    toMonitor: MiniHtml.Selector,
+    t: 'childAdd',
+    toMonitor: MiniHtml.Selector | Element,
+    argDelta: [string, string][],
   ) => {
     const el =
       toMonitor instanceof Element
@@ -129,6 +129,7 @@ export namespace BrowserActions {
     if (el) {
       const started = Date.now();
       let to: any = null;
+      const mutationRecs: MutationRecord[] = [];
       await new Promise<void>((resolve) => {
         const observer = new MutationObserver((mutations) => {
           console.log('waitMsg', mutations);
@@ -151,6 +152,7 @@ export namespace BrowserActions {
                   if (to) {
                     clearTimeout(to);
                   }
+                  mutationRecs.push(mutation);
                   if (Date.now() - started < 500) {
                     console.log('waitMsg suspect self message', toMonitor);
                     // may comes from user themselves, but shorten timeout avoid false negative
@@ -177,9 +179,25 @@ export namespace BrowserActions {
             }
           }
         });
-        const r = () => {
-          resolve();
+        const r = async () => {
           observer.disconnect();
+          await Util.sleep(100);
+          console.log('waitMsg end', mutationRecs);
+          argDelta.push([
+            'waitMsgResult',
+            mutationRecs
+              .flatMap((mr) =>
+                Array.from(mr.addedNodes).map((n) => {
+                  console.log(n, window.webView.getIdFromEl(n as Element));
+                  return n.nodeType === Node.ELEMENT_NODE
+                    ? window.webView.getIdFromEl(n as Element)
+                    : '';
+                }),
+              )
+              .filter((id) => !!id)
+              .join(','),
+          ]);
+          resolve();
         };
         observer.observe(el, {
           attributes: true,
@@ -212,9 +230,13 @@ export namespace BrowserActions {
     wait: WireWait,
     args: Record<string, string>,
     argDelta: [string, string][],
+    isPost = false,
   ) => {
     let waitPromise;
     let waitTime = DEFAULT_TIMEOUT_MS;
+    let onTimeout: () => void = () => {
+      throw ErrWaitTimeout;
+    };
     switch (wait.t) {
       case 'time':
         await Util.sleep(wait.ms);
@@ -226,16 +248,21 @@ export namespace BrowserActions {
           waitPromise = Network.networkIdle2.wait;
         }
         break;
-      case 'waitMsg':
-        argDelta.push(
-          ['waitMsg1stId', wait.id1st],
-          ['waitMsgLastId', wait.idLast],
-        );
-        args.waitMsg1stId = wait.id1st;
-        args.waitMsgLastId = wait.idLast;
-
-        waitPromise = checkDom('childAdd', wait.q);
-        waitTime = 300000; // wait for longer
+      case 'blockHereAndWaitForNewIncomingMsg':
+        if (isPost && wait.q) {
+          argDelta.push(
+            ['waitMsg1stId', wait.id1st],
+            ['waitMsgLastId', wait.idLast],
+            ['waitMsgId', typeof wait.q === 'string' ? wait.q : wait.q.id],
+          );
+          onTimeout = () => {
+            argDelta.push(['waitMsgResult', 'timeout']);
+          };
+          waitPromise = checkDom('childAdd', wait.q, argDelta);
+          waitTime = 60000; // wait for longer
+        } else {
+          waitPromise = Promise.resolve(); // only wait for post
+        }
         break;
       // case 'domLongTime':
       //   waitPromise = checkDom(wait.a, wait.q);
@@ -259,7 +286,7 @@ export namespace BrowserActions {
       (await Util.awaitWithTimeout(waitPromise, wait.to ?? waitTime)) ===
         Util.WaitTimeout
     ) {
-      throw ErrWaitTimeout;
+      onTimeout();
     }
   };
   const execInIframeOrEl = async (
@@ -275,19 +302,12 @@ export namespace BrowserActions {
     action.action.el = el.element;
     return false;
   };
+  let htmlParser: MiniHtml.Parser;
   export const execActions = async (
     actions: WireActionWithWaitAndRec[],
     args: Record<string, string>,
   ) => {
-    if (runningActionSet?.length) {
-      const lastId = runningActionSet[runningActionSet.length - 1].id;
-      const toAdd = actions.filter((a) => a.id > lastId);
-      console.log('actions added', actions.length, toAdd);
-      runningActionSet.push(...toAdd);
-      return;
-    }
-    window.webView.getHtmlParser(); // make sure html parser is ready before actions start
-    runningActionSet = actions;
+    htmlParser = window.webView.getHtmlParser(); // make sure html parser is
 
     let canContinue = true;
     let lastPopedActionId = -1;
@@ -468,6 +488,10 @@ export namespace BrowserActions {
                   if (action.el.tagName === 'A') {
                     url = action.el.getAttribute('href') ?? '';
                     console.log('download link', url);
+                  } else if (action.el.tagName === 'BUTTON') {
+                    throw new Error(
+                      'download failed, MUST USE CLICK FOR BUTTON',
+                    );
                   }
                   break;
                 case 'img':
@@ -516,7 +540,7 @@ export namespace BrowserActions {
             }
             execFn = selectTxt;
             break;
-          case 'todo':
+          case 'checklist':
             // should not come here
             break;
         }
@@ -527,7 +551,7 @@ export namespace BrowserActions {
         await execFn(action, rec.risk, args);
         window.onbeforeunload = null;
         if (rec.post) {
-          await waitAction(rec.post, args, argsDelta);
+          await waitAction(rec.post, args, argsDelta, true);
         }
         await popAction(rec.id, argsDelta);
       } catch (e) {
@@ -547,7 +571,6 @@ export namespace BrowserActions {
       c = actions.length;
       console.log('actions continue', action, c);
     }
-    runningActionSet = null;
   };
   export const setArgs = async (
     action: Extract<WireActionToExec, { k: 'setArg' }>,
@@ -847,7 +870,7 @@ export namespace BrowserActions {
         });
       }
 
-      if (values[0].length < 64 && SAFE_KEYPRESS_RE.test(values[0])) {
+      if (values[0].length < 32 && SAFE_KEYPRESS_RE.test(values[0])) {
         await (
           await actionApi
         ).dispatchEvents({

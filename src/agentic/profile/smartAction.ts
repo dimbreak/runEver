@@ -6,6 +6,7 @@ export namespace SmartAction {
     intent: string;
     action: A;
     risk: RiskOrComplexityLevel;
+    cp?: number[] | null;
   };
   type Handler = (
     action: IAction,

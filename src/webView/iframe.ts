@@ -38,6 +38,9 @@ export class IFrameHelper {
     public parent?: MiniHtml.MeaningfulElement,
     public nodes?: (string | MiniHtml.MeaningfulElement)[],
   ) {
+    if (label.length > 32) {
+      this.label = `${label.slice(0, 32)}...`;
+    }
     if (idVal) {
       MiniHtml.iframeById[idVal] = this;
     }

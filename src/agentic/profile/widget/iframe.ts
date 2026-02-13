@@ -7,8 +7,8 @@ Profile.register({
     sessionType: Profile.SessionType,
     promptParts: T,
   ) => {
-    if (promptParts.userHeader) {
-      if (promptParts.userHeader.includes('<iframe')) {
+    if (promptParts.userHeader && promptParts.html) {
+      if (promptParts.html.includes('<iframe')) {
         return {
           ...promptParts,
           userHeader: `${promptParts.userHeader}

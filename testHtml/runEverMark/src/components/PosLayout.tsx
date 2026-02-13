@@ -24,7 +24,7 @@ export default function PosLayout({ title, children }: { title: string; children
             <rect x="14" y="14" width="4" height="4" rx="1" />
           </svg>
         </div>
-        <span className="sf-app-name">Sellfroce POS</span>
+        <span className="sf-app-name">Sellforce POS</span>
       </header>
 
       <div className="sf-body">
