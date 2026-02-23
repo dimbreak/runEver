@@ -31,8 +31,8 @@
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
     "clean": "npm run clean:modules && npm run clean:dll",
-    "clean:modules": "rm -rf node_modules",
-    "clean:dll": "rm -rf .erb/dll",
+    "clean:modules": "rimraf node_modules",
+    "clean:dll": "rimraf .erb/dll",
     "prepare": "husky",
     "mcp:server": "ts-node src/main/mcp/server.ts"
   },
@@ -93,11 +93,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "@ai-sdk/google": "^2.0.52",
-    "@ai-sdk/openai": "^2.0.85",
+    "@ai-sdk/google": "^3.0.29",
+    "@ai-sdk/openai": "^3.0.29",
+    "@ai-sdk/openai-compatible": "^2.0.30",
+    "@ai-sdk/provider": "^3.0.8",
     "@apitrust/react": "file:../apitrust/react-sdk",
     "@electron/notarize": "^3.0.0",
-    "@esbuild/win32-x64": "^0.27.2",
     "@hookform/resolvers": "^3.10.0",
     "@napi-rs/keyring": "^1.2.0",
     "@tailwindcss/postcss": "^4.1.17",
@@ -105,7 +106,7 @@
     "@tiptap/extension-placeholder": "^3.14.0",
     "@tiptap/react": "^3.14.0",
     "@tiptap/starter-kit": "^3.14.0",
-    "ai": "^5.0.112",
+    "ai": "^6.0.86",
     "clsx": "^2.1.1",
     "electron-debug": "^4.1.0",
     "electron-dl": "^4.0.0",
@@ -128,7 +129,6 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",
-    "@esbuild/win32-x64": "^0.27.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
     "@svgr/webpack": "^8.1.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
@@ -143,7 +143,7 @@
     "@types/webpack-bundle-analyzer": "^4.7.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
-    "@typescript/native-preview": "^7.0.0-dev.20260113.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260218.1",
     "browserslist-config-erb": "^0.0.3",
     "chalk": "^4.1.2",
     "concurrently": "^9.1.2",
@@ -288,8 +288,5 @@
       "src/main/**",
       ".erb/dll/**"
     ]
-  },
-  "optionalDependencies": {
-    "lightningcss-win32-x64-msvc": "^1.30.2"
   }
 }

@@ -5,7 +5,7 @@ import {
   BrowserWindow,
   shell,
   dialog,
-  type Session,
+  type Session as ElectronSession,
   type DownloadItem,
   type WebContents,
   type Event,
@@ -16,7 +16,8 @@ import { unusedFilenameSync } from 'unused-filename';
 import pupa from 'pupa';
 // @ts-ignore
 import extName from 'ext-name';
-import { WebViewLlmSession } from '../agentic/webviewLlmSession';
+import { Session } from '../agentic/session';
+import { RunEverWindow } from './window';
 
 export class CancelError extends Error {}
 
@@ -66,7 +67,7 @@ const getFilenameFromMime = (name: string, mime: string) => {
 };
 
 function registerListener(
-  session: Session,
+  session: ElectronSession,
   options: DownloadOptions,
   callback: (error: Error | null, item?: DownloadItem) => void = () => {},
 ) {
@@ -219,9 +220,13 @@ function registerListener(
           });
         }
 
-        console.log('downloaded', options.manualDownload, !!tabManager);
-        if (!options.manualDownload && tabManager) {
-          tabManager.getFocusedTab()?.downloaded(item);
+        const win = Electron.BrowserWindow.fromWebContents(webContents);
+        const rWin = RunEverWindow.windowById.get(win?.id ?? -1);
+        console.log('downloaded', options.manualDownload, rWin);
+        if (!options.manualDownload && rWin) {
+          rWin.getAgenticSessions().forEach((s) => {
+            s.downloaded(item);
+          });
         }
 
         callback(null, item);
@@ -236,8 +241,6 @@ function registerListener(
   session.on('will-download', listener);
 }
 
-let tabManager: WebViewLlmSession | undefined;
-
 export default function electronDl(options: DownloadOptions = {}) {
   app.on('session-created', (session) => {
     registerListener(session, options, (error, _) => {
@@ -247,13 +250,10 @@ export default function electronDl(options: DownloadOptions = {}) {
       }
     });
   });
-  return (manager: WebViewLlmSession) => {
-    tabManager = manager;
-  };
 }
 
 export async function download(
-  window_: BrowserWindow,
+  window_: RunEverWindow,
   url: string,
   options: DownloadOptions,
   retry = 0,

@@ -35,6 +35,7 @@ const dllExcludes = [
   'lightningcss-freebsd-x64',
   'lightningcss-win32-arm64-msvc',
   'lightningcss-win32-x64-msvc',
+  '@modelcontextprotocol/sdk',
 ];
 
 const configuration: webpack.Configuration = {

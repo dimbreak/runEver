@@ -1,28 +1,24 @@
 import {
   app,
-  BrowserWindow,
   clipboard,
   Menu,
   Rectangle,
   WebContentsView,
   nativeImage,
-  DownloadItem,
 } from 'electron';
 import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
 // @ts-ignore
 import { CancelError, download } from '../download';
-import { LlmApi } from '../../agentic/api';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
-import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
-import { ToRendererIpc } from '../../contracts/toRenderer';
+import { Session } from '../../agentic/session';
 import { IframeProgressType } from '../../extensions/iframe/types';
-import type { PromptAttachment } from '../../schema/attachments';
 import { Network } from '../../webView/network';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
 import { isMac } from '../util';
+import { RunEverWindow } from '../window';
 
 export class TabWebView {
   url: string;
@@ -36,7 +32,7 @@ export class TabWebView {
 
   scrollAdjustment: number;
 
-  llmSession: WebViewLlmSession;
+  session: Session;
 
   pageLoadedLock = Util.newLock();
 
@@ -48,11 +44,11 @@ export class TabWebView {
   constructor(
     public initUrl: string,
     public bounds: Rectangle,
-    private mainWindow: BrowserWindow,
-    llmSession: WebViewLlmSession,
+    private mainWindow: RunEverWindow,
+    llmSession: Session,
   ) {
     this.url = this.initUrl;
-    this.llmSession = llmSession;
+    this.session = llmSession;
     this.webView = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -67,35 +63,63 @@ export class TabWebView {
   }
 
   get isFocused() {
-    return this.llmSession.isFocused(this);
+    return this.session.isFocused(this);
   }
 
   focus() {
     this.webView.webContents.focus();
-    this.llmSession.focusTab(this);
+    this.session.focusTab(this);
   }
 
   blur() {
     // no-op
   }
 
-  stopPrompt(requestId?: number) {
-    this.llmSession.stopPrompt(requestId);
+  stopPrompt() {
+    this.session.stopPrompt();
     this.pageLoadedLock.unlock();
   }
 
-  emitLlmSessionSnapshot(snapshot: unknown | null) {
-    try {
-      if (this.mainWindow?.isDestroyed()) return;
-      const webContents = this.webView?.webContents;
-      if (!webContents || webContents.isDestroyed()) return;
-      ToRendererIpc.llmSessionSnapshot.send(this.mainWindow.webContents, {
-        frameId: webContents.id,
-        snapshot,
-      });
-    } catch (err) {
-      console.error('emitLlmSessionSnapshot failed:', err);
+  async operate(detail: {
+    bounds?: Rectangle;
+    url?: string;
+    viewportWidth?: number;
+    exeScript?: string;
+    visible?: boolean;
+    sidebarWidth?: number;
+    tabbarHeight?: number;
+  }) {
+    let response;
+    if (detail.visible !== undefined) {
+      this.webView.setVisible(detail.visible);
+      if (detail.visible) {
+        this.focus();
+      }
     }
+    console.log('operate bounds:', detail.bounds);
+    if (detail.bounds) {
+      console.log('operate bounds:', detail.bounds);
+      this.webView.setBounds(detail.bounds);
+      this.bounds = detail.bounds;
+    } else if (!detail.url && !detail.exeScript) {
+      this.webView.setBounds(
+        this.session.getSafeBounds({
+          sidebarWidth: detail.sidebarWidth ?? Session.DEFAULT_SIDEBAR_WIDTH,
+          tabbarHeight: detail.tabbarHeight ?? Session.DEFAULT_TABBAR_HEIGHT,
+          viewportWidth: detail.viewportWidth,
+        }),
+      );
+    }
+    if (detail.url) {
+      this.webView.webContents.loadURL(detail.url);
+      await Util.sleep(1000);
+    }
+    if (detail.exeScript) {
+      response = await this.webView.webContents.executeJavaScript(
+        detail.exeScript,
+      );
+    }
+    return response;
   }
 
   async confirmHighRiskAction(actionIntent: string) {
@@ -127,18 +151,6 @@ export class TabWebView {
     return this.webView.webContents.executeJavaScript(
       `(async ()=>await window.webView.execActions(${actionStr}, ${JSON.stringify(args)}))()`,
     );
-  }
-
-  actionDone(
-    actionId: number,
-    argsDelta: Record<string, string> | undefined,
-    iframeId?: string,
-  ) {
-    this.llmSession.actionDone(actionId, argsDelta);
-  }
-
-  actionError(error: string, actionId: number, iframeId?: string) {
-    this.llmSession.actionError(actionId, error);
   }
 
   async screenshot(
@@ -293,7 +305,7 @@ export class TabWebView {
       const data = await shot;
       const imgPath = `${app.getPath('downloads')}/${filename.includes('.') ? filename : `${filename}.png`}`;
       fs.writeFileSync(imgPath, (await shot).toPNG());
-      this.llmSession.readableFiles.set(filename, {
+      this.session.readableFiles.set(filename, {
         name: filename,
         mimeType: 'image/png',
         data: data.toPNG(),
@@ -365,9 +377,9 @@ export class TabWebView {
           this.url = url;
           inflight.clear();
           webContents.executeJavaScript(
-            `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
+            `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, sessionId: ${this.session.id}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
-          this.llmSession.resumeAll();
+          this.session.resumeAll();
           this.loadedFrame('MAIN');
         }
       },
@@ -428,48 +440,6 @@ export class TabWebView {
       });
   }
 
-  async runPrompt(
-    requestId: number,
-    prompt: string,
-    args?: Record<string, string>,
-    attachments?: PromptAttachment[],
-    reasoningEffort?: LlmApi.ReasoningEffort,
-    modelType?: LlmApi.LlmModelType,
-  ): Promise<string | undefined> {
-    console.info('====>');
-    if (this.llmSession) {
-      try {
-        const stream = await this.llmSession.startPrompt(
-          requestId,
-          this,
-          prompt,
-          args,
-          attachments,
-          reasoningEffort,
-          modelType,
-        );
-        let response;
-        console.info('stream:', stream);
-        while ((response = await stream.next())) {
-          if (!response.done) {
-            console.info('pushPromptResponse:', response.value);
-            this.pushPromptResponse(requestId, response.value);
-          } else {
-            break;
-          }
-        }
-      } catch (e) {
-        console.error('runPrompt error:', e);
-        return Util.formatError(e);
-      }
-    }
-  }
-  pushPromptResponse(requestId: number, chunk: string) {
-    ToRendererIpc.promptResponse.send(this.mainWindow!.webContents, {
-      requestId,
-      chunk,
-    });
-  }
   static clipboardLock: Promise<void> = Promise.resolve();
   async pasteText(input: string) {
     await TabWebView.clipboardLock;
@@ -525,13 +495,6 @@ export class TabWebView {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
-    if (!this.llmSession) {
-      this.llmSession = new WebViewLlmSession(this.mainWindow);
-      this.emitLlmSessionSnapshot(this.llmSession.getSnapshot());
-    } else {
-      // Keep the existing session so in-flight prompts don't lose their state.
-      // this.llmSession.resumeAll();
-    }
   }
 
   async setInputFile(
@@ -559,7 +522,7 @@ export class TabWebView {
     const filesToUpload: string[] = [];
 
     for (const f of filePaths) {
-      const attachment = this.llmSession.readableFiles.get(f);
+      const attachment = this.session.readableFiles.get(f);
       if (attachment) {
         if (attachment.path) {
           filesToUpload.push(attachment.path);
@@ -622,7 +585,7 @@ export class TabWebView {
         filename,
       });
       if (item.getState() === 'completed') {
-        this.downloaded(item, filename);
+        this.session.downloaded(item, filename);
         return undefined;
       }
       return item.getState();
@@ -636,12 +599,10 @@ export class TabWebView {
     }
   }
 
-  downloaded(item: DownloadItem, filename?: string) {
-    this.llmSession.readableFiles.set(filename ?? item.getFilename(), {
-      name: filename ?? item.getFilename(),
-      mimeType: item.getMimeType(),
-      data: null,
-      path: item.getSavePath(),
-    });
+  pushSecret(secretStr: string) {
+    console.log('pushSecret:', secretStr);
+    this.webView.webContents.executeJavaScript(
+      `window.webView.setSecret(${secretStr})`,
+    );
   }
 }

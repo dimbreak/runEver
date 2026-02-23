@@ -11,6 +11,8 @@ import { type EventWithDelay, ToMainIpc } from '../../contracts/toMain';
 import '../../webView/preload.d.ts';
 import { Util } from '../../webView/util';
 import { takeScreenshot } from '../../webView/screenshot';
+import type { RunEverConfig } from '../../main/runeverConfigStore';
+import { CommonUtil } from '../../utils/common';
 
 const webViewHandler = {
   frameId: '',
@@ -58,6 +60,25 @@ const webViewHandler = {
   },
   async screenshot() {
     await takeScreenshot('test.png');
+  },
+  secrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecretArgs: {} as Record<string, string>,
+  setSecret(secrets: Record<string, RunEverConfig['arguments'][number]>) {
+    this.secrets = secrets;
+  },
+  getSecretArgs(): Record<string, string> {
+    return this.domainSecretArgs;
+  },
+  filterSecret() {
+    console.log('filterSecret', this.secrets);
+    this.domainSecrets = CommonUtil.filterArgDomain(
+      this.secrets,
+      window.location.origin,
+    );
+    for (const [key, value] of Object.entries(this.domainSecrets)) {
+      this.domainSecretArgs[key] = value.value;
+    }
   },
 };
 
@@ -115,7 +136,7 @@ BrowserActions.setActionApi({
 window.addEventListener(
   'message',
   async (event: MessageEvent<ToIframeMessages>) => {
-    console.log('got message in iframe', event.data);
+    // console.log('got message in iframe', event.data);
     switch (event.data.type) {
       case 'GET_HTML': {
         const { frameId, select, outerLevel } = event.data;
@@ -231,3 +252,6 @@ window.addEventListener(
     }
   },
 );
+window.addEventListener('load', () => {
+  window.webView.filterSecret();
+});

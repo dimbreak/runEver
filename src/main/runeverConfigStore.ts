@@ -18,7 +18,7 @@ const { Entry } = runtimeRequire(
 ) as typeof import('@napi-rs/keyring');
 
 const storedApiKeySchema = z.object({
-  provider: z.enum(['openai', 'google']),
+  provider: z.enum(['openai', 'google', 'zai']),
   apiKey: z.string(),
   baseUrl: z.string().optional(),
 });

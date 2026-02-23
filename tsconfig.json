@@ -3,7 +3,7 @@
     "incremental": true,
     "target": "es2022",
     "module": "node16",
-    "lib": ["dom", "es2022"],
+    "lib": ["dom", "es2022", "ESNext.Intl"],
     "jsx": "react-jsx",
     "strict": true,
     "sourceMap": true,
@@ -12,7 +12,8 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "outDir": ".erb/dll"
+    "outDir": ".erb/dll",
+    "skipLibCheck": true
   },
   "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
 }

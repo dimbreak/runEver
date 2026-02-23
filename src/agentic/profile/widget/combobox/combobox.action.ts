@@ -1,19 +1,21 @@
 import { SmartAction } from '../../smartAction';
 import { ComboboxAction } from './combobox.schema';
-import { type ExecutionSession, ExeSessStatus } from '../../../session';
+import { type ExecutionTask, ExeTaskStatus } from '../../../task';
 import { estimatePromptComplexity } from '../../../../utils/llm';
 import { SmartActionSession } from '../../smartAction.class';
 
 class ComboboxSmartAction extends SmartActionSession {
   constructor(
+    intent: string,
     private action: SmartAction.IAction<ComboboxAction>,
-    parentSession: ExecutionSession,
+    parentSession: ExecutionTask,
   ) {
-    super(parentSession, 'combobox');
+    super(intent, parentSession, 'combobox');
     this.forceComplexity = 'l';
+    this.parentCheckPointId = action.cp?.[0];
   }
   initPrompt() {
-    const { action, run } = this;
+    const { action, session } = this;
     const goalPrompt = `Set the combobox at ${action.action.q} to closest value of '${action.action.v}': ${action.intent}
 
 [combobox trial steps]
@@ -25,7 +27,7 @@ class ComboboxSmartAction extends SmartActionSession {
 - The display value maybe vary from expected one, pick & accept if the values close enough.
 - CONFIRM WITH MOUSE CLICK even there is just one suggestion, ABSOLUTELY REQUIRED`;
     this.promptQueue.push(
-      run.createPrompt(
+      session.createPrompt(
         goalPrompt,
         undefined,
         this.id,
@@ -35,18 +37,18 @@ class ComboboxSmartAction extends SmartActionSession {
   }
 }
 
-SmartAction.register(async (action, parent: ExecutionSession) => {
+SmartAction.register(async (action, parent: ExecutionTask) => {
   if (action.action.k === 'combobox') {
     const comboboxAction = action as SmartAction.IAction<ComboboxAction>;
-    const sess = parent.run.wrapSession(
-      new ComboboxSmartAction(comboboxAction, parent),
+    const sess = parent.session.wrapSession(
+      new ComboboxSmartAction(action.intent, comboboxAction, parent),
     );
     sess.initPrompt();
     if ((comboboxAction.cp ?? null) !== null && comboboxAction.cp!.length) {
       sess.onCompleted = () => {
         const cp = parent.checklist[comboboxAction.cp![0]];
         if (typeof sess.status === 'string') {
-          cp.status = ExeSessStatus.Abnormal;
+          cp.status = ExeTaskStatus.Abnormal;
           cp.comment = sess.status;
         }
       };

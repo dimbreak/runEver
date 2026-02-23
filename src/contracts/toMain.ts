@@ -10,6 +10,7 @@ import type { PromptAttachment } from '../schema/attachments';
 import type { AuthMode } from '../schema/auth.schema';
 import type { Env } from '../schema/env.schema';
 import { IpcMainContract } from './ipc';
+import { type SessionStatus } from '../agentic/session';
 
 export type EventWithDelay = (
   | MouseInputEvent
@@ -19,12 +20,20 @@ export type EventWithDelay = (
 
 export namespace ToMainIpc {
   export const createTab = new IpcMainContract<
-    [{ url: string; bounds?: Rectangle; parentFrameId?: number }],
+    [
+      {
+        sessionId: number;
+        url: string;
+        bounds?: Rectangle;
+        parentFrameId?: number;
+      },
+    ],
     { id: number } | { error: string }
   >('create-tab');
   export const operateTab = new IpcMainContract<
     [
       {
+        sessionId: number;
         id: number;
         bounds?: Rectangle;
         url?: string;
@@ -39,12 +48,13 @@ export namespace ToMainIpc {
     { error: string } | { response: any }
   >('operate-tab');
   export const bindFrameId = new IpcMainContract<
-    [{ id: number; scrollAdjustment?: number }],
+    [{ sessionId?: number; frameId: number; scrollAdjustment?: number }],
     { error?: string } | void
   >('bind-frame-id');
   export const takeScreenshot = new IpcMainContract<
     [
       {
+        sessionId: number;
         frameId: number;
         x?: number;
         y?: number;
@@ -57,10 +67,6 @@ export namespace ToMainIpc {
     ],
     { error: string } | Buffer
   >('take-screenshot');
-  export const getLlmConfig = new IpcMainContract<
-    [number], // frameId
-    LlmApi.LlmConfig
-  >('get-llm-config');
   export const getUserAuthState = new IpcMainContract<
     [],
     {
@@ -114,6 +120,7 @@ export namespace ToMainIpc {
   export const openPromptInputDialog = new IpcMainContract<
     [
       {
+        sessionId?: number;
         title?: string;
         message: string;
         questions: Record<
@@ -137,12 +144,13 @@ export namespace ToMainIpc {
     | { error: string }
   >('open-prompt-input-dialog');
   export const responsePromptInput = new IpcMainContract<
-    [{ answer: Record<string, string>; id: number }],
+    [{ sessionId?: number; answer: Record<string, string>; id: number }],
     undefined
   >('response-prompt-input');
   export const dispatchEvents = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         events: EventWithDelay[];
       },
@@ -170,6 +178,7 @@ export namespace ToMainIpc {
   export const pasteInput = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         input: string;
       },
@@ -179,6 +188,7 @@ export namespace ToMainIpc {
   export const actionDone = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         actionId: number;
         argsDelta?: Record<string, string>;
@@ -190,6 +200,7 @@ export namespace ToMainIpc {
   export const actionError = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         actionId: number;
         error: string;
@@ -201,7 +212,7 @@ export namespace ToMainIpc {
   export const runPrompt = new IpcMainContract<
     [
       {
-        frameId: number;
+        sessionId: number;
         prompt: string;
         reasoningEffort?: LlmApi.ReasoningEffort;
         modelType?: LlmApi.LlmModelType;
@@ -216,6 +227,7 @@ export namespace ToMainIpc {
   export const setInputFile = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         selector: string;
         filePaths: string[];
@@ -226,7 +238,7 @@ export namespace ToMainIpc {
   export const stopPrompt = new IpcMainContract<
     [
       {
-        frameId: number;
+        sessionId: number;
         requestId?: number;
       },
     ],
@@ -235,6 +247,7 @@ export namespace ToMainIpc {
   export const getTabNavigationState = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
       },
     ],
@@ -245,14 +258,6 @@ export namespace ToMainIpc {
       }
     | { error: string }
   >('get-tab-navigation-state');
-  export const getLlmSessionSnapshot = new IpcMainContract<
-    [
-      {
-        frameId: number;
-      },
-    ],
-    { snapshot: unknown } | { error: string }
-  >('get-llm-session-snapshot');
   export const getApiTrustEnv = new IpcMainContract<
     [],
     {
@@ -296,6 +301,7 @@ export namespace ToMainIpc {
   export const navigateTabHistory = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         direction: 'back' | 'forward';
       },
@@ -310,6 +316,7 @@ export namespace ToMainIpc {
   export const iframeProgress = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         iframeId: string;
         type: IframeProgressType;
@@ -320,6 +327,7 @@ export namespace ToMainIpc {
   export const download = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         url: string;
         filename?: string;
@@ -327,20 +335,28 @@ export namespace ToMainIpc {
     ],
     { error?: string }
   >('download');
-  export const auditAction = new IpcMainContract<
-    [
-      {
-        frameId: number;
-        actionId: number;
-        html: string;
-        selector: string;
-        screenshotRect: Rectangle;
-        extraInfo: Record<string, string>;
-      },
-    ],
-    {
-      approved: boolean;
-      error: string | null;
-    }
-  >('audit-action');
+  export const newSession = new IpcMainContract<
+    [number], // current sessionId to get window
+    { id?: number; error?: string }
+  >('new-session');
+  export const closeSession = new IpcMainContract<
+    [number], // sessionId
+    { error?: string }
+  >('close-session');
+  // export const auditAction = new IpcMainContract<
+  //   [
+  //     {
+  //       frameId: number;
+  //       actionId: number;
+  //       html: string;
+  //       selector: string;
+  //       screenshotRect: Rectangle;
+  //       extraInfo: Record<string, string>;
+  //     },
+  //   ],
+  //   {
+  //     approved: boolean;
+  //     error: string | null;
+  //   }
+  // >('audit-action');
 }

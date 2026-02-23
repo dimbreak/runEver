@@ -1,19 +1,21 @@
 import { SmartAction } from '../../smartAction';
 import { CalendarAction } from './calendar.schema';
-import { type ExecutionSession, ExeSessStatus } from '../../../session';
+import { type ExecutionTask, ExeTaskStatus } from '../../../task';
 import { estimatePromptComplexity } from '../../../../utils/llm';
 import { SmartActionSession } from '../../smartAction.class';
 
 class CalendarSmartAction extends SmartActionSession {
   constructor(
+    intent: string,
     private action: SmartAction.IAction<CalendarAction>,
-    parentSession: ExecutionSession,
+    parentSession: ExecutionTask,
   ) {
-    super(parentSession, 'calendar');
+    super(intent, parentSession, 'calendar');
     this.forceComplexity = 'l';
+    this.parentCheckPointId = action.cp?.[0];
   }
   initPrompt() {
-    const { action, run } = this;
+    const { action, session } = this;
     const goalPrompt = `Set date at calendar ${action.action.q}. Context:
 ${Object.entries(action.action.ctx)
   .map(([k, v]) => `${k}:${v}`)
@@ -44,7 +46,7 @@ ${Object.entries(action.action.ctx)
 6. repeat clicks action MUST BE perform base on **observed date update scale** or explicit button text/label, fixing error is much more expensive then observe with a tip.
 7. use highlight style to determine if a date is selected, should have different hls number from other dates. if delegated date disabled mean the task is impossible`;
     this.promptQueue.push(
-      run.createPrompt(
+      session.createPrompt(
         goalPrompt,
         undefined,
         this.id,
@@ -54,11 +56,11 @@ ${Object.entries(action.action.ctx)
   }
 }
 
-SmartAction.register(async (action, parent: ExecutionSession) => {
+SmartAction.register(async (action, parent: ExecutionTask) => {
   if (action.action.k === 'calendar') {
     const calendarAction = action as SmartAction.IAction<CalendarAction>;
-    const sess = parent.run.wrapSession(
-      new CalendarSmartAction(calendarAction, parent),
+    const sess = parent.session.wrapSession(
+      new CalendarSmartAction(action.intent, calendarAction, parent),
     );
     sess.initPrompt();
     if ((calendarAction.cp ?? null) !== null && calendarAction.cp!.length) {
@@ -67,11 +69,11 @@ SmartAction.register(async (action, parent: ExecutionSession) => {
         console.log(cp, sess.status);
         if (
           cp &&
-          sess.status !== ExeSessStatus.Todo &&
-          sess.status !== ExeSessStatus.Working
+          sess.status !== ExeTaskStatus.Todo &&
+          sess.status !== ExeTaskStatus.Working
         ) {
           if (typeof sess.status === 'string') {
-            cp.status = ExeSessStatus.Abnormal;
+            cp.status = ExeTaskStatus.Abnormal;
             cp.comment = sess.status;
           } else {
             cp.status = sess.status;

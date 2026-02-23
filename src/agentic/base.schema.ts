@@ -9,7 +9,7 @@ export const WireSelectorSchema = z.union([
 ]);
 export const RiskOrComplexityLevelSchema = z.literal(['l', 'm', 'h']);
 export const WireWaitNetworkSchema = z.object({
-  t: z.literal('network'),
+  t: z.literal('net'),
   a: z.union([z.literal('idle0'), z.literal('idle2')]),
 });
 

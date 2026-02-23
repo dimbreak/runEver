@@ -1,12 +1,13 @@
-import { ExecutionSession } from '../session';
+import { ExecutionTask } from '../task';
 import { smartActionHeader } from '../prompts/header';
 
-export class SmartActionSession extends ExecutionSession {
+export class SmartActionSession extends ExecutionTask {
   constructor(
-    private parentSession: ExecutionSession,
+    intent: string,
+    private parentSession: ExecutionTask,
     public name: string,
   ) {
-    super(0, [], parentSession.run, parentSession);
+    super(intent, 0, [], parentSession.session, parentSession);
     this.prompter.header = smartActionHeader;
     this.prompter.systemPrompt = `[${name} smart action]
 ${this.prompter.systemPrompt}`;

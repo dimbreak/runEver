@@ -320,6 +320,10 @@ class DummyCursor {
         rect = elOrRect;
       }
       const { x, y, width, height } = rect;
+      if (height === 0 || width === 0) {
+        console.log('mouseEvent target rect is zero', elOrRect, rect);
+        throw new Error('mouseEvent target size is zero');
+      }
       if (
         clientX < x ||
         clientX > x + width ||
@@ -515,8 +519,15 @@ class DummyCursor {
       } else if (
         document.elementFromPoint(lastPoint.x, lastPoint.y) !== rectOrEl
       ) {
-        console.log('rect move el', rectOrEl);
-        await this.moveToRect(rectOrEl, exact, retry + 1);
+        if (
+          retry === 0 ||
+          !document
+            .elementsFromPoint(lastPoint.x, lastPoint.y)
+            .includes(rectOrEl as Element)
+        ) {
+          console.log('rect move el', rectOrEl);
+          await this.moveToRect(rectOrEl, exact, retry + 1);
+        }
       }
     }
 

@@ -12,6 +12,7 @@ import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
 import { takeScreenshot } from './screenshot';
 import { fillFormExec } from '../agentic/profile/widget/form/form.html';
+import { RunEverConfig } from '../main/runeverConfigStore';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -241,7 +242,7 @@ export namespace BrowserActions {
       case 'time':
         await Util.sleep(wait.ms);
         break;
-      case 'network':
+      case 'net':
         if (wait.a === 'idle0') {
           waitPromise = Network.waitForNetworkIdle0();
         } else if (wait.a === 'idle2') {
@@ -549,10 +550,10 @@ export namespace BrowserActions {
         }
         window.onbeforeunload = onbeforeunload(rec.id);
         await execFn(action, rec.risk, args);
-        window.onbeforeunload = null;
         if (rec.post) {
           await waitAction(rec.post, args, argsDelta, true);
         }
+        window.onbeforeunload = null;
         await popAction(rec.id, argsDelta);
       } catch (e) {
         await (

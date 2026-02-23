@@ -5,6 +5,7 @@ import { useTabStore, WebTab } from '../state/tabStore';
 import { useLayoutStore } from '../state/layoutStore';
 
 type LayoutParams = {
+  sessionId: number;
   frameId?: number;
   tabId?: string;
   bounds?: Rectangle;
@@ -31,13 +32,13 @@ export const webviewService = {
         const { bounds, toggleUrlBar } = useLayoutStore.getState();
         if (frameId === -1) {
           const newTab = new WebTab({
-            id: `tab-${Date.now()}`,
+            id: -1,
             title: url ?? 'New Tab',
             url: url ?? '',
           });
           addTab(newTab, bounds);
         } else {
-          const tab = tabs.find((t) => t.frameId === frameId);
+          const tab = tabs.find((t) => t.id === frameId);
           if (tab) {
             setActiveTab(tab.id);
             toggleUrlBar(true);
@@ -80,6 +81,7 @@ export const webviewService = {
   },
 
   async createTab(params: {
+    sessionId: number;
     parentFrameId?: number;
     url: string;
     bounds?: Rectangle;
@@ -96,6 +98,7 @@ export const webviewService = {
     const { frameId, tabId } = params;
     if (!frameId && !tabId) return;
     await ToMainIpc.operateTab.invoke({
+      sessionId: params.sessionId,
       id: frameId ?? -1,
       bounds: params.bounds,
       sidebarWidth: params.sidebarWidth,
@@ -106,12 +109,13 @@ export const webviewService = {
     });
   },
 
-  async closeTab(params: { frameId?: number }) {
+  async closeTab(params: { frameId?: number; sessionId?: number }) {
     if (!hasIpc()) return;
     const { frameId } = params;
     if (!frameId) return;
-    console.info('closeTab', frameId);
+    console.info('closeTab', frameId, ToMainIpc);
     await ToMainIpc.operateTab.invoke({
+      sessionId: params.sessionId ?? -1,
       id: frameId ?? -1,
       close: true,
     });

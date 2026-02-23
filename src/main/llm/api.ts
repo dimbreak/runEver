@@ -1,5 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import { LanguageModelV2 } from '@ai-sdk/provider';
+import { LanguageModelV2, LanguageModelV3 } from '@ai-sdk/provider';
 import type { FilePart, ImagePart } from '@ai-sdk/provider-utils';
 import { streamText } from 'ai';
 import z from 'zod';
@@ -75,14 +75,14 @@ export namespace LlmApi {
   };
 
   let llmApiPromise: Promise<{
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
+    hi: LanguageModelV3;
+    mid: LanguageModelV3;
+    low: LanguageModelV3;
   } | null>;
   const getLlmApi = async (): Promise<{
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
+    hi: LanguageModelV3;
+    mid: LanguageModelV3;
+    low: LanguageModelV3;
   } | null> => {
     if (!llmApiPromise) {
       llmApiPromise = new Promise(async (resolve) => {

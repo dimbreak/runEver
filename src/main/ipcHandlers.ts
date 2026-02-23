@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { BrowserWindow, ipcMain, MouseInputEvent } from 'electron';
-import type { WebViewLlmSession } from '../agentic/webviewLlmSession';
+import type { Session } from '../agentic/session';
 import { initIpcMain } from '../contracts/ipc';
 import { ToMainIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
@@ -12,7 +12,6 @@ import {
   openPromptInputDialog,
   showSystemMessageBox,
 } from './dialogs';
-import { LlmApi } from './llm/api';
 import { apiTrustEnvVars } from '../schema/env.node';
 import {
   clearPendingAuthDeepLink,
@@ -22,33 +21,36 @@ import {
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
 import { RunEverConfig, RuneverConfigStore } from './runeverConfigStore';
 import { getAuthMode, setAuthMode } from './authModeStore';
+import { RunEverWindow } from './window';
 
-function initPromptIpc(session: WebViewLlmSession) {
-  const getTab = (frameId: number | undefined) =>
-    frameId === undefined ? session.getFocusedTab() : session.getTab(frameId);
+const getSession = (sessionId?: number): Session =>
+  RunEverWindow.getAgenticSession(sessionId)!;
+
+function initPromptIpc() {
+  const getTab = (
+    sessionId: number | undefined,
+    frameId: number | undefined,
+  ) => {
+    const session = getSession(sessionId);
+    return frameId === undefined
+      ? session.getFocusedTab()
+      : session.getTab(frameId);
+  };
   ToMainIpc.actionDone.handle(async (event, arg) => {
     console.log('Pop actions:', arg);
-    const { frameId, actionId, argsDelta } = arg;
-    const wvTab = getTab(frameId);
-    if (wvTab) {
-      wvTab.actionDone(actionId, argsDelta);
-      return true;
-    }
-    return false;
+    const { sessionId, actionId, argsDelta } = arg;
+    getSession(sessionId).actionDone(actionId, argsDelta);
+    return true;
   });
   ToMainIpc.actionError.handle(async (event, arg) => {
     console.log('Err actions:', arg);
-    const { frameId, actionId, error } = arg;
-    const wvTab = getTab(frameId);
-    if (wvTab) {
-      wvTab.actionError(error, actionId);
-      return true;
-    }
-    return false;
+    const { sessionId, actionId, error } = arg;
+    getSession(sessionId).actionError(actionId, error);
+    return true;
   });
   ToMainIpc.iframeProgress.handle(async (event, arg) => {
-    const { frameId, type, iframeId } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, type, iframeId } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       wvTab.iframeProgress(iframeId, type);
       return {};
@@ -58,7 +60,7 @@ function initPromptIpc(session: WebViewLlmSession) {
   ToMainIpc.runPrompt.handle(async (event, arg) => {
     console.info('Run prompt:', arg);
     const {
-      frameId,
+      sessionId,
       prompt,
       modelType,
       reasoningEffort,
@@ -67,6 +69,7 @@ function initPromptIpc(session: WebViewLlmSession) {
       attachments,
     } = arg;
     console.info('runPrompt in main process:', arg);
+    const session = getSession(sessionId);
     const error = await session.runPrompt(
       requestId,
       prompt,
@@ -74,28 +77,18 @@ function initPromptIpc(session: WebViewLlmSession) {
       attachments,
       reasoningEffort,
       modelType,
-      frameId,
     );
     return { error };
   });
 
   ToMainIpc.stopPrompt.handle(async (_event, arg) => {
-    const { frameId, requestId } = arg;
-    const wvTab = getTab(frameId);
-    if (!wvTab) return { stopped: false, error: 'Tab not found' };
-    wvTab.stopPrompt(requestId);
+    const { sessionId } = arg;
+    getSession(sessionId).stopPrompt();
     return { stopped: true };
   });
 
-  ToMainIpc.getLlmSessionSnapshot.handle(async (_event, arg) => {
-    const wvTab = getTab(arg.frameId);
-    if (!wvTab) return { error: 'Tab not found' };
-    const snapshot = wvTab.llmSession?.getSnapshot() ?? null;
-    return { snapshot };
-  });
-
   ToMainIpc.getTabNavigationState.handle(async (_event, arg) => {
-    const wvTab = getTab(arg.frameId);
+    const wvTab = getTab(arg.sessionId, arg.frameId);
     if (!wvTab) return { error: 'Tab not found' };
     const wc = wvTab.webView.webContents;
     // Use navigationHistory API to check navigation state
@@ -108,7 +101,7 @@ function initPromptIpc(session: WebViewLlmSession) {
   });
 
   ToMainIpc.navigateTabHistory.handle(async (_event, arg) => {
-    const wvTab = getTab(arg.frameId);
+    const wvTab = getTab(arg.sessionId, arg.frameId);
     if (!wvTab) return { error: 'Tab not found' };
     const wc = wvTab.webView.webContents;
     const navHistory = wc.navigationHistory;
@@ -125,14 +118,13 @@ function initPromptIpc(session: WebViewLlmSession) {
   });
 }
 
-export const setupIpcHandlers = (
-  mainWindow: BrowserWindow,
-  llmSession: WebViewLlmSession,
-) => {
+export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
   const apiTrustTokenStore = new ApiTrustTokenStore();
   const userApiKeyStore = RuneverConfigStore.getInstance();
-  const getTab = (frameId?: number) =>
-    typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
+  const getTab = (sessionId?: number, frameId?: number) => {
+    const session = getSession(sessionId);
+    return typeof frameId === 'number' ? session.getTab(frameId) : undefined;
+  };
 
   // const removeAllWebViews = () => {
   //   webViewTabsById.forEach((tab) => {
@@ -143,10 +135,10 @@ export const setupIpcHandlers = (
   // };
 
   console.log('starting main process ipc-example');
-  initIpcMain(ipcMain, llmSession);
+  initIpcMain(ipcMain);
 
   ToMainIpc.bindFrameId.handle(async (event, arg) => {
-    const wvTab = getTab(arg.id);
+    const wvTab = getTab(arg.sessionId, arg.frameId);
     console.log('bindFrameId in main process:', event.frameId, arg);
     if (wvTab) {
       wvTab.pageLoaded(event.frameId, arg.scrollAdjustment);
@@ -159,6 +151,7 @@ export const setupIpcHandlers = (
 
   ToMainIpc.takeScreenshot.handle(async (event, arg) => {
     const {
+      sessionId,
       x = 0,
       y = 0,
       width,
@@ -169,7 +162,7 @@ export const setupIpcHandlers = (
       filename,
     } = arg;
     console.log('takeScreenshot in main process:', frameId);
-    const wvTab = getTab(frameId);
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       const w = vpWidth + x > width ? width - x : vpWidth;
       const h = vpHeight + y > height ? height - y : vpHeight;
@@ -184,7 +177,7 @@ export const setupIpcHandlers = (
         )
       ).toPNG();
     }
-    console.log('takeScreenshot error:', frameId, llmSession.getTabsById());
+    console.log('takeScreenshot error:', frameId);
     return { error: 'Tab not found' };
   });
 
@@ -206,35 +199,11 @@ export const setupIpcHandlers = (
       detail,
       event.frameId,
     );
-    return llmSession.createTab(detail);
+    return getSession(detail.sessionId).createTab(detail);
   });
 
   ToMainIpc.operateTab.handle(async (event, detail) => {
-    return llmSession.operateTab(detail);
-  });
-
-  ToMainIpc.getLlmConfig.handle(async () => {
-    try {
-      const config = await userApiKeyStore.getConfig('apiKey');
-      if (!config) {
-        return {
-          api: 'openai',
-          key: '',
-          error: 'Missing API key.',
-        };
-      }
-      return {
-        api: config.provider,
-        key: config.apiKey,
-      };
-    } catch (error) {
-      console.error('Failed to read LLM config', error);
-      return {
-        api: 'openai',
-        key: '',
-        error: error instanceof Error ? error.message : 'Missing API key.',
-      };
-    }
+    return getSession(detail.sessionId)?.operateTab(detail);
   });
 
   ToMainIpc.getUserAuthState.handle(async () => {
@@ -397,12 +366,12 @@ export const setupIpcHandlers = (
   });
 
   ToMainIpc.responsePromptInput.handle(async (_event, arg) => {
-    llmSession.resolveUserInput(arg.id, arg.answer);
+    getSession(arg.sessionId).resolveUserInput(arg.id, arg.answer);
   });
 
   ToMainIpc.dispatchEvents.handle(async (event, arg) => {
-    const { frameId, events } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, events } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       const wc = wvTab.webView.webContents;
       wc.focus();
@@ -480,8 +449,8 @@ EOF
 
   ToMainIpc.pasteInput.handle(async (event, arg) => {
     console.log('Paste input:', arg);
-    const { frameId, input } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, input } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       await wvTab.pasteText(input);
       return true;
@@ -490,8 +459,8 @@ EOF
   });
   ToMainIpc.setInputFile.handle(async (event, arg) => {
     console.log('setInputFile:', arg);
-    const { frameId, selector, filePaths } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, selector, filePaths } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       return { error: await wvTab.setInputFile(selector, filePaths) };
     }
@@ -499,8 +468,8 @@ EOF
   });
   ToMainIpc.download.handle(async (event, arg) => {
     console.log('download:', arg);
-    const { frameId, filename, url } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, filename, url } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       return { error: await wvTab.download(url, filename) };
     }
@@ -510,7 +479,7 @@ EOF
   ToRuneverIpc.setConfig.handle(async (_event, arg) => {
     const { frameId, key, config } = arg;
     console.log('setConfig in renderer process:', arg);
-    const wvTab = getTab(frameId);
+    const wvTab = getTab(undefined, frameId);
     if (!wvTab) return { error: 'Tab not found' };
 
     const url = wvTab.webView.webContents.getURL();
@@ -521,9 +490,7 @@ EOF
     try {
       await userApiKeyStore.setConfig(key, config);
       if (key === 'arguments') {
-        wvTab.llmSession
-          .getPromptRun()
-          ?.setGlobalArgs(config as RunEverConfig['arguments']);
+        getSession().setGlobalArgs(config as RunEverConfig['arguments']);
       }
       return {};
     } catch (e) {
@@ -534,7 +501,7 @@ EOF
   ToRuneverIpc.getConfig.handle(async (_event, arg) => {
     const { frameId, key } = arg;
     console.log('getConfig in renderer process:', arg);
-    const wvTab = getTab(frameId);
+    const wvTab = getTab(undefined, frameId);
     if (!wvTab) return { error: 'Tab not found' };
 
     const url = wvTab.webView.webContents.getURL();
@@ -558,7 +525,26 @@ EOF
     }
   });
 
-  initPromptIpc(llmSession);
+  ToMainIpc.newSession.handle(async (_event, currentSessionId) => {
+    const currentSession = getSession(currentSessionId);
+    let win = mainWindow;
+    if (currentSession && (currentSession as any).mainWindow) {
+      win = (currentSession as any).mainWindow;
+    }
+    const newSession = win.newAgenticSession();
+    return { id: newSession.id };
+  });
+
+  ToMainIpc.closeSession.handle(async (_event, sessionId) => {
+    const session = getSession(sessionId);
+    if (session) {
+      await session.end();
+      return {};
+    }
+    return { error: 'Session not found' };
+  });
+
+  initPromptIpc();
 
   // User input requests are dispatched by WebViewLlmSession.askUserInput().
 };

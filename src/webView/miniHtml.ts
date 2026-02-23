@@ -442,9 +442,9 @@ export namespace MiniHtml {
       }
       return nodes.length;
     }
-    handleMutations = (mutations: MutationRecord[]) => {
+    handleMutations = async (mutations: MutationRecord[]) => {
       let meaningfulEl: MeaningfulElement | null = null;
-      // console.info('mutations', mutations);
+      console.info('mutations', mutations);
       mutations.forEach((record) => {
         if (record.target === dummyCursor.dom) {
           return;
@@ -455,11 +455,11 @@ export namespace MiniHtml {
               meaningfulEl =
                 this.meaningFulElementByEl.get(record.target.parentElement) ??
                 null;
-              this.mutatedElements.set(
-                record.target.parentElement,
-                meaningfulEl,
-              );
               if (meaningfulEl) {
+                this.mutatedElements.set(
+                  record.target.parentElement,
+                  meaningfulEl,
+                );
                 meaningfulEl.visible = null;
                 if (meaningfulEl.nodes === undefined) {
                   meaningfulEl.nodes = [record.target.textContent!];
@@ -526,10 +526,14 @@ export namespace MiniHtml {
                         );
                       }
                       if (toRemove && meaningfulEl) {
-                        meaningfulEl.nodes?.splice(
-                          meaningfulEl.nodes?.indexOf(toRemove),
-                          1,
-                        );
+                        const p = meaningfulEl.nodes?.indexOf(toRemove);
+                        if (p !== undefined && p !== -1) {
+                          // console.log('removing', toRemove, meaningfulEl);
+                          meaningfulEl.nodes?.splice(
+                            meaningfulEl.nodes?.indexOf(toRemove),
+                            1,
+                          );
+                        }
                       }
                     } else if (node.nodeType === Node.TEXT_NODE) {
                       toRemove = node.textContent ?? undefined;
@@ -627,6 +631,13 @@ export namespace MiniHtml {
             }
         }
       });
+      // console.info(
+      //   'after mutations',
+      //   mutations,
+      //   (await this.genFullHtml()).length,
+      //   (this.meaningFulElements[0] as MeaningfulElement).nodes?.slice(),
+      //   this.idPrefix,
+      // );
     };
     initObserve() {
       if (this.observer) {

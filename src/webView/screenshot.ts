@@ -13,6 +13,7 @@ export const takeScreenshot = async (filename: string, el?: Element) => {
         y: 0,
       };
   await ToMainIpc.takeScreenshot.invoke({
+    sessionId: window.sessionId ?? 0,
     frameId: window.frameId ?? 0,
     x,
     y,

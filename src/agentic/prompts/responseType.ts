@@ -3,7 +3,7 @@ type ID=string;//from id attr of html element, no wrap/prefix/suffix
 type Selector=ID |{ id:ID, argKeys:(string|null)[]};
 
 type WireWait={ to?:number } & ( // wait timeout in ms
- |{ t:'network';a:'idle0'|'idle2' }
+ |{ t:'net';a:'idle0'|'idle2' }
  |{ t:'time';ms:number }
 )
 
@@ -113,7 +113,7 @@ type WireAction=
   };
 
 type WireStep={
- intent:string;
+ intent:string;//short, < 8 words
  risk:'h'|'m'|'l';
  action:WireAction;
  pre?:WireWait // wait BEFORE this action, most of the time engine can handle it automatically

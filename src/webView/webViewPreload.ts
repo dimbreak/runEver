@@ -8,6 +8,8 @@ import { Network } from './network';
 import { MiniHtml } from './miniHtml';
 import { type WireActionWithWaitAndRec } from '../agentic/types';
 import { takeScreenshot } from './screenshot';
+import type { RunEverConfig } from '../main/runeverConfigStore';
+import { CommonUtil } from '../utils/common';
 
 Network.initListener();
 
@@ -87,6 +89,27 @@ const webViewHandler = {
   async screenshot() {
     await takeScreenshot('test.png');
   },
+  secrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecretArgs: {} as Record<string, string>,
+  setSecret(secrets: Record<string, RunEverConfig['arguments'][number]>) {
+    console.log('setSecret', secrets);
+    this.secrets = secrets;
+    this.filterSecret();
+  },
+  getSecretArgs(): Record<string, string> {
+    return this.domainSecretArgs;
+  },
+  filterSecret() {
+    console.log('filterSecret', this.secrets);
+    this.domainSecrets = CommonUtil.filterArgDomain(
+      this.secrets,
+      window.location.origin,
+    );
+    for (const [key, value] of Object.entries(this.domainSecrets)) {
+      this.domainSecretArgs[key] = value.value;
+    }
+  },
 };
 
 const runeverHandler = {
@@ -140,6 +163,7 @@ const tryInitCursor = () => {
 const handleFrameId = async (event: MessageEvent) => {
   if (!event?.data?.frameId) return;
   window.frameId = event.data.frameId;
+  window.sessionId = event.data.sessionId;
 
   // Cursor needs <body>; if message arrives early, defer.
   pendingCursorInit = {
@@ -156,7 +180,8 @@ const handleFrameId = async (event: MessageEvent) => {
     scrollAdjustment ?? event.data.scrollAdjustment,
   );
   ToMainIpc.bindFrameId.invoke({
-    id: event.data.frameId,
+    sessionId: window.sessionId,
+    frameId: event.data.frameId,
     scrollAdjustment,
   });
   window.removeEventListener('message', handleFrameId);
@@ -173,7 +198,10 @@ const handleFrameId = async (event: MessageEvent) => {
 // Register immediately to avoid missing early postMessage during navigation.
 window.addEventListener('message', handleFrameId);
 window.addEventListener('DOMContentLoaded', () => tryInitCursor());
-window.addEventListener('load', () => tryInitCursor());
+window.addEventListener('load', () => {
+  tryInitCursor();
+  window.webView.filterSecret();
+});
 
 // Warm up cache (kept for compatibility with existing behavior).
 try {
@@ -190,6 +218,7 @@ BrowserActions.setActionApi({
   }) => {
     console.log('action done', args);
     return ToMainIpc.actionDone.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
@@ -200,6 +229,7 @@ BrowserActions.setActionApi({
     iframeId?: string;
   }) => {
     return ToMainIpc.actionError.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
@@ -211,24 +241,28 @@ BrowserActions.setActionApi({
   },
   dispatchEvents: (args: { events: EventWithDelay[] }) => {
     return ToMainIpc.dispatchEvents.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
   },
   pasteInput: (args: { input: string }) => {
     return ToMainIpc.pasteInput.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
   },
   setInputFile: (args: { selector: string; filePaths: string[] }) => {
     return ToMainIpc.setInputFile.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
   },
   download: (args: { url: string; filename: string | undefined }) => {
     return ToMainIpc.download.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });

@@ -8,6 +8,7 @@ declare global {
     webView: WebViewHandler;
     runever: RuneverHandler;
     frameId?: number;
+    sessionId?: number;
     electronDummyCursor?: HTMLDivElement;
     isPreloadContext?: boolean;
   }

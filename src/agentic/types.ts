@@ -1,11 +1,11 @@
 import { RiskOrComplexityLevel, WireActionWithWait } from './execution.schema';
-
+import { WireActionStatus } from '../schema/taskSnapshot';
 /**
  * Extended wire action type with additional tracking properties
  * for execution state management
  */
 export type WireActionWithWaitAndRec = WireActionWithWait & {
-  done?: boolean;
+  status: WireActionStatus;
   error?: string[];
   stepPrompt?: string;
   promptId?: number;

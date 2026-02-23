@@ -44,21 +44,21 @@ export const UrlBar: React.FC<UrlBarProps> = ({ url = '', tab = null }) => {
 
   return (
     <form
-      className="flex w-full items-center gap-2 rounded-lg border-slate-200 bg-white"
+      className="flex w-full items-center gap-1 rounded-lg border-slate-200 bg-white"
       onSubmit={handleSubmit(onFormSubmit)}
     >
       <UrlBarNavButtons tab={tab} url={url} />
       <Input
         type="text"
         placeholder="Enter a URL or search term"
-        className="flex-1 border-none focus:ring-0 shadow-none focus:border-none"
+        className="flex-1 border-none shadow-none focus:border-none focus:ring-0"
         {...register('url')}
       />
       <Button type="submit" disabled={formState.isSubmitting} size="sm">
         Go
       </Button>
       {formState.errors.url && (
-        <span className="text-[11px] font-medium text-rose-600 px-1">
+        <span className="px-1 text-[11px] font-medium text-rose-600">
           {formState.errors.url.message}
         </span>
       )}

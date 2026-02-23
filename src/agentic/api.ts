@@ -1,11 +1,12 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   createGoogleGenerativeAI,
   type GoogleGenerativeAIProviderOptions,
 } from '@ai-sdk/google';
-import { LanguageModelV2 } from '@ai-sdk/provider';
+import { LanguageModelV2, LanguageModelV3 } from '@ai-sdk/provider';
 import type { FilePart, ImagePart, ModelMessage } from '@ai-sdk/provider-utils';
-import { streamText } from 'ai';
+import { streamText, generateText, createGateway } from 'ai';
 import z from 'zod';
 import fs from 'fs';
 import { app } from 'electron';
@@ -64,9 +65,10 @@ export namespace LlmApi {
   export type Attachment = ImagePart | FilePart;
   export type LlmApiModels = {
     provider: Env['provider'];
-    hi: LanguageModelV2;
-    mid: LanguageModelV2;
-    low: LanguageModelV2;
+    hi: LanguageModelV2 | LanguageModelV3;
+    mid: LanguageModelV2 | LanguageModelV3;
+    low: LanguageModelV2 | LanguageModelV3;
+    streaming: boolean;
     makeProviderOptions: (
       reason: ReasoningEffort,
       cacheKey: undefined | string,
@@ -77,7 +79,7 @@ export namespace LlmApi {
 
   const recordPath = `${app.getPath('userData')}/prompt-record`;
   const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = new RuneverConfigStore();
+  const userApiKeyStore = RuneverConfigStore.getInstance();
 
   try {
     fs.mkdirSync(recordPath);
@@ -121,6 +123,7 @@ export namespace LlmApi {
               hi: openai('gpt-5.2'),
               mid: openai('gpt-5-mini'),
               low: openai('gpt-5-nano'),
+              streaming: true,
               makeProviderOptions: (
                 reasoningEffort: ReasoningEffort,
                 cacheKey: string | undefined,
@@ -148,6 +151,7 @@ export namespace LlmApi {
               hi: google('gemini-3-pro-preview'),
               mid: google('gemini-3-flash-preview'),
               low: google('gemini-3-flash-preview'),
+              streaming: true,
               makeProviderOptions: (
                 reasoningEffort: ReasoningEffort,
                 cacheKey: string | undefined,
@@ -160,6 +164,29 @@ export namespace LlmApi {
                   },
                 } satisfies GoogleGenerativeAIProviderOptions;
                 return providerOptions;
+              },
+            });
+            break;
+          }
+          case 'zai': {
+            console.info('createOpenAI(glm)', apiConfig);
+            const zai = createOpenAICompatible({
+              name: 'zai',
+              apiKey: apiConfig.key,
+              baseURL:
+                apiConfig.baseUrl || 'https://open.bigmodel.cn/api/paas/v4',
+            });
+            resolve({
+              provider: 'zai',
+              hi: zai('glm-5'),
+              mid: zai('glm-4.7-flash'),
+              low: zai('glm-4.7-flash'),
+              streaming: true,
+              makeProviderOptions: (
+                reasoningEffort: ReasoningEffort,
+                cacheKey: string | undefined,
+              ) => {
+                return {};
               },
             });
             break;
@@ -321,14 +348,18 @@ export namespace LlmApi {
       let lastError: unknown;
 
       (async () => {
+        let streamer = streamQueryer;
+        if (!llmApi.streaming) {
+          streamer = fakeStreamer;
+        }
         for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
           const monitor = new FirstTokenMonitor(cacheKey);
           let yielded = false;
           let success = false;
-          let response: Promise<any> | null = null;
+          let response: PromiseLike<any> | null = null;
 
           try {
-            const streamResult = streamQueryer({
+            const streamResult = streamer({
               model: llmApi[model],
               providerOptions: llmApi.makeProviderOptions(
                 reasoningEffort,
@@ -429,5 +460,33 @@ export namespace LlmApi {
       result[0] = `{ "firstToken": ${firstToken}, "done": ${done}, ${result[0].slice(1)}`;
     }
     return result.join('');
+  };
+
+  const fakeStreamer: any = (
+    ...request: typeof streamText extends (...v: infer T) => any ? T : never
+  ) => {
+    const res = generateText({
+      model: request[0].model,
+      providerOptions: request[0].providerOptions,
+      prompt:
+        typeof request[0].prompt === 'string' ? request[0].prompt : undefined,
+      messages: Array.isArray(request[0].prompt)
+        ? (request[0].prompt as ModelMessage[])
+        : undefined,
+    } as any);
+    return {
+      request: request[0],
+      textStream: (async function* () {
+        let remain = (await res).text;
+        let end = 0;
+        while (remain.length) {
+          end = Math.min(remain.length, Math.floor(Math.random() * 10 + 1));
+          yield remain.slice(0, end);
+          remain = remain.slice(end);
+          await Util.sleep(Math.random() * 20 + 10);
+        }
+      })(),
+      response: res.then((r) => r.response),
+    } as any as ReturnType<typeof streamText>;
   };
 }

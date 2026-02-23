@@ -14,7 +14,7 @@ import {
 } from '../main/llm/jsonStreamer';
 import { Profile } from './profile/profile';
 import './profile/registry';
-import { WebViewLlmSession } from './webviewLlmSession';
+import { Session } from './session';
 import { taskHeader } from './prompts/header';
 import { getExecutorSys } from './prompts/executorSys';
 
@@ -40,7 +40,7 @@ export class ExecutionPrompter {
   requestInSession = 0;
   header = taskHeader;
   systemPrompt = getExecutorSys();
-  constructor(private tabManager: WebViewLlmSession) {}
+  constructor(private tabManager: Session) {}
   getRunner() {
     console.info('getRunner', this.runner);
     if (!this.runner) {
@@ -64,7 +64,6 @@ export class ExecutionPrompter {
       extraAttachments = [],
     } = opts;
     const { tabManager } = this;
-    const run = tabManager.getPromptRun();
     let { systemPrompt } = this;
     const tab = tabManager.getFocusedTab()!;
     const { webView: wv } = tab;
@@ -105,7 +104,7 @@ ${tabManager
   .listTabs()
   .map(
     (t) =>
-      `${t.id}:${t.title ? `[${t.title}] ${t.url}` : t.url}${t.focused ? ' [focus]' : ''}${run && t.id !== undefined && run.tabNotes[t.id] ? `: ${run.tabNotes[t.id]}` : ''}`,
+      `${t.id}:${t.title ? `[${t.title}] ${t.url}` : t.url}${t.focused ? ' [focus]' : ''}${t.id !== undefined && tabManager.tabNotes[t.id] ? `: ${tabManager.tabNotes[t.id]}` : ''}`,
   )
   .join('\n')}`
             : ''

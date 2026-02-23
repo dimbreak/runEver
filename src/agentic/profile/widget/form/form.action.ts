@@ -1,18 +1,20 @@
 import { SmartAction } from '../../smartAction';
 import { FillFormAction } from './form.schema';
-import { type ExecutionSession, ExeSessStatus } from '../../../session';
+import { type ExecutionTask, ExeTaskStatus } from '../../../task';
 import { estimatePromptComplexity } from '../../../../utils/llm';
 import { SmartActionSession } from '../../smartAction.class';
 
 class FillFormSmartAction extends SmartActionSession {
   constructor(
+    intent: string,
     private action: SmartAction.IAction<FillFormAction>,
-    parentSession: ExecutionSession,
+    parentSession: ExecutionTask,
   ) {
-    super(parentSession, 'fillForm');
+    super(intent, parentSession, 'fillForm');
+    this.parentCheckPointId = action.cp?.[0];
   }
   initPrompt() {
-    const { action, run } = this;
+    const { action, session } = this;
     const goalPrompt = `Fill the form at ${typeof action.action.q === 'string' ? action.action.q : action.action.q.id}, context: ${action.action.data}
 **ignore submit request, you never submit**
 **ignore if it request you to fill something not exists**
@@ -28,7 +30,7 @@ class FillFormSmartAction extends SmartActionSession {
 - in case of missing data, check all source includes **FILES again if data missing** before botherUser.
 - **REVIEW BLANK INPUTS**, check if it is reasonable to left blank`;
     this.promptQueue.push(
-      run.createPrompt(
+      session.createPrompt(
         goalPrompt,
         undefined,
         this.id,
@@ -39,7 +41,7 @@ class FillFormSmartAction extends SmartActionSession {
     );
     this.updateGoal = () => {
       if (
-        this.checklist.filter((cp) => cp.status === ExeSessStatus.Todo)
+        this.checklist.filter((cp) => cp.status === ExeTaskStatus.Todo)
           .length <= 1
       ) {
         return `${
@@ -51,12 +53,12 @@ class FillFormSmartAction extends SmartActionSession {
   }
 }
 
-SmartAction.register(async (action, parent: ExecutionSession) => {
+SmartAction.register(async (action, parent: ExecutionTask) => {
   if (action.action.k === 'fillForm') {
     const fillFormAction = action as SmartAction.IAction<FillFormAction>;
     if (typeof fillFormAction.action.data === 'string') {
-      const sess = parent.run.wrapSession(
-        new FillFormSmartAction(fillFormAction, parent),
+      const sess = parent.session.wrapSession(
+        new FillFormSmartAction(action.intent, fillFormAction, parent),
       );
       sess.initPrompt();
       if ((fillFormAction.cp ?? null) !== null && fillFormAction.cp!.length) {
@@ -64,11 +66,11 @@ SmartAction.register(async (action, parent: ExecutionSession) => {
           const cp = parent.checklist[fillFormAction.cp![0]];
           if (
             cp &&
-            sess.status !== ExeSessStatus.Todo &&
-            sess.status !== ExeSessStatus.Working
+            sess.status !== ExeTaskStatus.Todo &&
+            sess.status !== ExeTaskStatus.Working
           ) {
             if (typeof sess.status === 'string') {
-              cp.status = ExeSessStatus.Abnormal;
+              cp.status = ExeTaskStatus.Abnormal;
               cp.comment = sess.status;
             } else {
               cp.status = sess.status;

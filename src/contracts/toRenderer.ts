@@ -1,29 +1,38 @@
 import { IcpRendererContract } from './ipc';
+import { TaskSnapshot } from '../schema/taskSnapshot';
+import { type SessionStatus } from '../agentic/session';
 
 export namespace ToRendererIpc {
-  export const toUser = new IcpRendererContract<
-    [
-      | {
-          type: 'info' | 'warning' | 'error' | 'confirm';
-          message: string;
-        }
-      | {
-          responseId: number;
-          type: 'prompt';
-          message: string;
-          questions: Record<
-            string,
-            | {
-                type: 'string';
-              }
-            | {
-                type: 'select';
-                options: string[];
-              }
-          >;
-        },
-    ]
-  >('to-user');
+  export type ToUserMessage =
+    | {
+        type: 'info' | 'warning' | 'error' | 'confirm';
+        message: string;
+        sessionId: number;
+      }
+    | {
+        responseId: number;
+        sessionId: number;
+        type: 'prompt';
+        title?: string;
+        message: string;
+        questions: Record<
+          string,
+          | {
+              type: 'string';
+            }
+          | {
+              type: 'select';
+              options: string[];
+            }
+        >;
+      }
+    | {
+        responseId: number;
+        sessionId: number;
+        type: 'snapshot';
+        snapshot: TaskSnapshot;
+      };
+  export const toUser = new IcpRendererContract<[ToUserMessage]>('to-user');
   export const promptResponse = new IcpRendererContract<
     [
       {
@@ -57,4 +66,7 @@ export namespace ToRendererIpc {
       },
     ]
   >('tab');
+  export const sessionsUpdate = new IcpRendererContract<
+    [Record<number, SessionStatus>]
+  >('sessions-update');
 }

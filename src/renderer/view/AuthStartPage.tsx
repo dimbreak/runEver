@@ -146,6 +146,7 @@ export const AuthStartPage = () => {
                 >
                   <option value="openai">OpenAI</option>
                   <option value="google">Google</option>
+                  <option value="zai">ZAi</option>
                 </select>
               </label>
               <label className="block text-sm font-medium text-slate-700">

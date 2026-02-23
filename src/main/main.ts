@@ -18,7 +18,7 @@ import fs from 'fs';
 // @ts-ignore
 import electronDl from './download';
 import { setupIpcHandlers } from './ipcHandlers';
-import { WebViewLlmSession } from '../agentic/webviewLlmSession';
+import { Session } from '../agentic/session';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { ToRendererIpc } from '../contracts/toRenderer';
@@ -26,6 +26,7 @@ import {
   peekPendingAuthDeepLink,
   setPendingAuthDeepLink,
 } from './authDeepLink';
+import { RunEverWindow } from './window';
 
 const output = configDotEnv({
   debug: true,
@@ -41,7 +42,7 @@ class AppUpdater {
   }
 }
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: RunEverWindow | null = null;
 
 const protocolName = 'runever';
 
@@ -127,7 +128,7 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
-const setTabManagerForDl = electronDl();
+electronDl();
 
 const createWindow = async () => {
   if (isDebug) {
@@ -151,7 +152,7 @@ const createWindow = async () => {
     console.error('Failed to load extension:', e);
   }
 
-  mainWindow = new BrowserWindow({
+  mainWindow = new RunEverWindow({
     show: false,
     width: 2700,
     height: 1020,
@@ -189,11 +190,14 @@ const createWindow = async () => {
     : resolveHtmlPath('index.html');
   mainWindow.loadURL(appUrl);
 
+  setupIpcHandlers(mainWindow);
+
   mainWindow.webContents.on('did-finish-load', () => {
     const pending = peekPendingAuthDeepLink();
     if (pending) {
       sendDeepLinkToRenderer(pending);
     }
+    mainWindow!.pushSessionUpdate();
   });
 
   mainWindow.on('ready-to-show', () => {
@@ -239,10 +243,6 @@ const createWindow = async () => {
       sendDeepLinkToRenderer(url);
     }
   });
-
-  const llmSession = new WebViewLlmSession(mainWindow);
-  setupIpcHandlers(mainWindow, llmSession);
-  setTabManagerForDl(llmSession);
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line

@@ -1,8 +1,19 @@
+import { RunEverConfig } from '../main/runeverConfigStore';
+
 export namespace CommonUtil {
   export const replaceJsTpl = (
     tpl: string,
     args: Record<string, string>,
   ): string => {
+    const secretReplace =
+      (global as any as Window)?.webView?.getSecretArgs() ?? {};
+    console.log('secretReplace', secretReplace);
+    Object.entries(secretReplace).forEach(([key, val]) => {
+      const v = args[key];
+      if (v === undefined || v === '**SECRET**') {
+        args[key] = val;
+      }
+    });
     if (tpl.includes('${')) {
       let js = tpl;
       if (tpl[0] !== '`') {
@@ -71,4 +82,27 @@ export namespace CommonUtil {
     }
     return res;
   };
+
+  export function filterArgDomain(
+    args: Record<string, RunEverConfig['arguments'][number]>,
+    url: string,
+  ) {
+    let domain = '';
+    try {
+      domain = new URL(url).hostname;
+    } catch (e) {
+      return {};
+    }
+    return Object.entries(args)
+      .filter(([k, v]) => {
+        return !v.domain || v.domain === '*' || domain.includes(v.domain);
+      })
+      .reduce(
+        (acc, a) => {
+          acc[a[0]] = a[1];
+          return acc;
+        },
+        {} as Record<string, RunEverConfig['arguments'][number]>,
+      );
+  }
 }

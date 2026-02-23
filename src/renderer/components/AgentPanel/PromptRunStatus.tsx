@@ -1,10 +1,16 @@
 import * as React from 'react';
-import { useAgentStore } from '../../state/agentStore';
+import { useAgentStoreV2 } from '../../state/agentStoreV2';
+import type { PromptRunningStatus } from '../../state/agentStoreV2';
 
 export const statusStyleMap: Record<
-  'planning' | 'thinking' | 'running' | 'completed' | 'error',
+  PromptRunningStatus,
   { label: string; className: string; hint: string }
 > = {
+  idle: {
+    label: 'Ready',
+    className: 'bg-slate-100 text-slate-600',
+    hint: 'Ready for input.',
+  },
   planning: {
     label: 'Planning',
     className: 'bg-blue-100 text-blue-700',
@@ -33,9 +39,17 @@ export const statusStyleMap: Record<
 };
 
 export const PromptRunStatusLabel = () => {
-  const promptRunningStatus = useAgentStore(
-    (state) => state.promptRunningStatus,
+  const { activeSessionId, promptRunningStatusBySessionId } = useAgentStoreV2(
+    (state) => ({
+      activeSessionId: state.activeSessionId,
+      promptRunningStatusBySessionId: state.promptRunningStatusBySessionId,
+    }),
   );
+
+  const promptRunningStatus: PromptRunningStatus = activeSessionId
+    ? (promptRunningStatusBySessionId[activeSessionId] ?? 'idle')
+    : 'idle';
+
   const style = statusStyleMap[promptRunningStatus];
   return (
     <div className="flex items-center gap-2 text-[12px] text-slate-600">

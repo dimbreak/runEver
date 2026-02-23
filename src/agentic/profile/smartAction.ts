@@ -1,4 +1,4 @@
-import { type ExecutionSession } from '../session';
+import { type ExecutionTask } from '../task';
 import { RiskOrComplexityLevel } from '../execution.schema';
 
 export namespace SmartAction {
@@ -10,8 +10,8 @@ export namespace SmartAction {
   };
   type Handler = (
     action: IAction,
-    parent: ExecutionSession,
-  ) => Promise<ExecutionSession | null>;
+    parent: ExecutionTask,
+  ) => Promise<ExecutionTask | null>;
 
   const handlers: Handler[] = [];
   export const register = (handler: Handler) => {
@@ -19,9 +19,9 @@ export namespace SmartAction {
   };
   export const buildSubtask = async (
     action: IAction,
-    parent: ExecutionSession,
+    parent: ExecutionTask,
   ) => {
-    let sess: ExecutionSession | null = null;
+    let sess: ExecutionTask | null = null;
     for (const handler of handlers) {
       sess = await handler(action, parent);
       if (sess) {
