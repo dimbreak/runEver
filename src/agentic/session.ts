@@ -2,7 +2,7 @@ import { app, DownloadItem, Rectangle } from 'electron';
 import fs from 'fs';
 import { TabWebView } from '../main/webView/tab';
 import { LlmApi } from './api';
-import { WireActionWithWaitAndRec, Prompt, WireActionStatus } from './types';
+import { WireActionWithWaitAndRec, Prompt } from './types';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import { Util } from '../webView/util';
 import { PromptAttachment } from '../schema/attachments';
@@ -19,7 +19,7 @@ import {
   PlanAfterRerender,
 } from './constants';
 import type { RunEverWindow } from '../main/window';
-import { TaskSnapshot } from '../schema/taskSnapshot';
+import { TaskSnapshot, WireActionStatus } from '../schema/taskSnapshot';
 
 const testPrompt: { user: string; system: string } | null = null;
 
@@ -48,7 +48,7 @@ export class Session {
   private focusedTab: TabWebView | null = null;
   private userInputResolvers = new Map<
     number,
-    (answer: Record<string, string>) => void
+    (answer: Record<string, string> | null) => void
   >();
 
   // ── Merged PromptRun state (single run) ──────────────────────────
@@ -243,7 +243,7 @@ export class Session {
     }));
   }
 
-  resolveUserInput(responseId: number, answer: Record<string, string>) {
+  resolveUserInput(responseId: number, answer: Record<string, string> | null) {
     const resolver = this.userInputResolvers.get(responseId);
     if (!resolver) return;
     this.userInputResolvers.delete(responseId);
@@ -264,13 +264,14 @@ export class Session {
   >(
     message: string,
     questions: Q,
-  ): Promise<Record<Extract<keyof Q, string>, string>> {
+  ): Promise<Record<Extract<keyof Q, string>, string> | null> {
     const responseId = Date.now() * 100 + Math.floor(Math.random() * 100);
-    const promise = new Promise<Record<Extract<keyof Q, string>, string>>(
-      (resolve) => {
-        this.userInputResolvers.set(responseId, resolve as any);
-      },
-    );
+    const promise = new Promise<Record<
+      Extract<keyof Q, string>,
+      string
+    > | null>((resolve) => {
+      this.userInputResolvers.set(responseId, resolve as any);
+    });
     ToRendererIpc.toUser.send(this.mainWindow.webContents, {
       type: 'prompt',
       message,
@@ -369,7 +370,6 @@ export class Session {
       console.info('stream:', stream);
       while ((response = await stream.next())) {
         if (!response.done) {
-          console.info('pushPromptResponse:', response.value);
           this.pushPromptResponse(requestId, response.value);
         } else {
           break;
@@ -796,11 +796,11 @@ ${JSON.stringify(actionToFix)}`,
     this.pushSnapshot();
   }
 
-  setRunningStatus(session: ExecutionTask) {
-    this.runningTasks.unshift(session);
+  setRunningStatus(task: ExecutionTask) {
+    this.runningTasks.unshift(task);
     this.pushSnapshot();
     return () => {
-      this.runningTasks = this.runningTasks.filter((s) => s !== session);
+      this.runningTasks = this.runningTasks.filter((s) => s !== task);
       this.pushSnapshot();
     };
   }
@@ -860,15 +860,11 @@ ${JSON.stringify(actionToFix)}`,
       `Need input to continue:\n${missing.join('\n')}`,
       questions,
     );
-    const values = answer ?? {};
-    const allEmpty = Object.values(values).every(
-      (v) => !String(v ?? '').trim(),
-    );
-    if (allEmpty) {
+    if (answer === null) {
       this.stopPrompt();
       return false;
     }
-    this.args = { ...this.args, ...values };
+    this.args = { ...this.args, ...answer };
     return true;
   }
 
@@ -893,16 +889,18 @@ ${JSON.stringify(actionToFix)}`,
           : 'Input required to continue';
 
       const answer = await this.askUserInput(message, questions as any);
-      const values = answer ?? {};
-      const allEmpty = Object.values(values).every(
-        (v) => !String(v ?? '').trim(),
-      );
-      if (allEmpty) {
+      if (answer === null) {
         this.stopPrompt();
         return;
       }
-      this.args = { ...this.args, ...values };
-      this.actionDone(nextAction.id, values);
+      this.runningTasks[0].notices.push(
+        `[User response to previous questions]\nprevious executor: ${action.warn}\n${Object.entries(
+          answer,
+        )
+          .map(([k, v]) => `- ${k}: ${v}`)
+          .join(`\n`)}`,
+      );
+      this.actionDone(nextAction.id);
     } catch (err) {
       console.error('User input failed:', err);
       this.stopPrompt();

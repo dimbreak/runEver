@@ -8,10 +8,13 @@ class FillFormSmartAction extends SmartActionSession {
   constructor(
     intent: string,
     private action: SmartAction.IAction<FillFormAction>,
-    parentSession: ExecutionTask,
+    parentTask: ExecutionTask,
   ) {
-    super(intent, parentSession, 'fillForm');
+    super(intent, parentTask, 'fillForm');
     this.parentCheckPointId = action.cp?.[0];
+    if (action.action.fs?.length) {
+      this.attachmentInNextPrompt = action.action.fs;
+    }
   }
   initPrompt() {
     const { action, session } = this;
@@ -20,7 +23,7 @@ class FillFormSmartAction extends SmartActionSession {
 **ignore if it request you to fill something not exists**
 
 [filling guide]
-- forms may have dynamic fields added from button or search field. Pay special attention to keyword **add line / add item / add product** etc, **PREPARE SUFFICIENT FIELDS FOR DATA BEFORE FILLING**.
+- forms may have dynamic fields added from button or search field. Pay special attention to keyword **add line / add item / add product** etc, **PREPARE SUFFICIENT FIELDS FOR DATA AND ASK NEXT EXECUTOR TO OBSERVE AND FILL WITH next.tip**.
 - **MUST review filled form HTML** is the value match expectation. you are giving higher reasoning effort, try to consider all info like [GOAL], [arguments] and page status.
 - avoid using enter key when filling form
 - the submit/next-stage button must be clicked by parent executor, your duty is only filling the form.
@@ -39,14 +42,20 @@ class FillFormSmartAction extends SmartActionSession {
         action.action.fs ?? undefined,
       ),
     );
+
     this.updateGoal = () => {
-      if (
-        this.checklist.filter((cp) => cp.status === ExeTaskStatus.Todo)
-          .length <= 1
-      ) {
-        return `${
-          goalPrompt
-        }\n\n**make sure you filled all possible fields, and checked the values**`;
+      if (this.checklist.length !== 0) {
+        this.handleChecklist(
+          {
+            k: 'checklist',
+            a: 'add',
+            add: [
+              `CHECK IF YOU FIELD EVERY FIELDS and they looks good, IF YOU HAVE TO LEAVE SOME FIELD BLANK, EXPLAIN WHY IN next.tip`,
+            ],
+          },
+          true,
+        );
+        this.updateGoal = undefined;
       }
       return goalPrompt;
     };

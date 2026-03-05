@@ -34,7 +34,7 @@ Profile.register({
 - if calendar is in a form, do fillForm and see if it works first.`
         }
 - the calendar executor is way more professional on calendar, do not give date & how-to & argument unless **the [GOAL] explicitly mentioned**.
-- Give only what [GOAL] said and full related context in i, like rules & preferences from [GOAL] or argument.
+- Give only what [GOAL] said and full related context in i, like rules & preferences from [GOAL] or [argument], pay more attention to those mentioned date/weekday.
 - let calendar executor do the job! your calculation, infer, guess in action.i will block executor, just put context & words from [GOAL]. no arguments having date value.
 `,
         system: promptParts.system?.replace(
@@ -44,9 +44,9 @@ Profile.register({
   k:'calendar'; **you have no knowledge to pick date, no date & argument with date**
   q:'${ids.join("'|'")}'|Selector;//calendar id
   ctx:{//give only full context, **you have no knowledge to pick date, no date & argument with date**
-  fromGoal:string|null;//guide from goal
-  fromArg:string|null;//give argument values related to this date picking, not only the key
-  fromPage:string|null;//any content on the page related?
+  goalHint:string|null;//guide from [GOAL], original word only
+  argValHint:string|null;//give argument values that may related to this date picking, not only the key
+  pageHint:string|null;//any content on the page related?
 };
 }|`,
         ),

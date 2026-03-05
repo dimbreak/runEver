@@ -164,6 +164,7 @@ const configuration: webpack.Configuration = {
     compress: true,
     hot: false,
     liveReload: false,
+    setupExitSignals: false,
     headers: { 'Access-Control-Allow-Origin': '*' },
     static: {
       publicPath: '/',

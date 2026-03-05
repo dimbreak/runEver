@@ -36,8 +36,9 @@ ${
 - provide any [GOAL] and context if any other task in [GOAL] related to widget within the form${
         longForm &&
         `
-- fillForm **MUST BE IN ISOLATED CHECK POINT**, cancel the original one and add seperated check points with pos to replace if it mix with other tasks before calling fillForm.
-- assign check point id to cp, the check point status will be handled.`
+- fillForm **MUST BE IN ISOLATED CHECK POINT**, cancel the original one and add separated check points with pos to replace if it mix with other tasks before calling fillForm.
+- assign check point id to cp, the check point status will be handled.
+- review before submit`
       }`
     : ''
 }`;
@@ -49,7 +50,7 @@ ${
   q:'${formIds.join("'|'")}'|Selector;//form id
   ${
     longForm && !inSmartAction
-      ? `data:string;//give data context and instruction from [GOAL] only, no how-to and field names
+      ? `data:string;//short, give data context and instruction from [GOAL] only, no how-to and telling field names
   fs:string[];//files as datasource or to upload`
       : 'data:{f:string|Selector;v:string|string[]}[];//field name or selector and value to fill, string or js argument tpl'
   }

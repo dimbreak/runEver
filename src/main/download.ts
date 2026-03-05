@@ -9,6 +9,7 @@ import {
   type DownloadItem,
   type WebContents,
   type Event,
+  type SaveDialogOptions,
 } from 'electron';
 // @ts-ignore
 import { unusedFilenameSync } from 'unused-filename';
@@ -29,7 +30,7 @@ export interface DownloadOptions {
   overwrite?: boolean;
   errorMessage?: string;
   saveAs?: boolean;
-  dialogOptions?: Electron.SaveDialogOptions;
+  dialogOptions?: SaveDialogOptions;
   unregisterWhenDone?: boolean;
   manualDownload?: boolean;
   openFolderWhenDone?: boolean;
@@ -220,7 +221,7 @@ function registerListener(
           });
         }
 
-        const win = Electron.BrowserWindow.fromWebContents(webContents);
+        const win = BrowserWindow.fromWebContents(webContents);
         const rWin = RunEverWindow.windowById.get(win?.id ?? -1);
         console.log('downloaded', options.manualDownload, rWin);
         if (!options.manualDownload && rWin) {

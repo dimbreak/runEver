@@ -17,6 +17,18 @@ import { CommonUtil } from '../../utils/common';
 const webViewHandler = {
   frameId: '',
   htmlParser: undefined as MiniHtml.Parser | undefined,
+  normalizeFullHtmlOptions(
+    maybeOptions: number | MiniHtml.FullHtmlOptions | string | null | undefined,
+    maybeExtra: MiniHtml.FullHtmlOptions | string | null | undefined,
+  ): MiniHtml.FullHtmlOptions {
+    if (maybeOptions && typeof maybeOptions === 'object') {
+      return maybeOptions;
+    }
+    if (maybeExtra && typeof maybeExtra === 'object') {
+      return maybeExtra;
+    }
+    return {};
+  },
   getHtmlParser() {
     if (!this.htmlParser || this.htmlParser.idPrefix !== `${this.frameId}:`)
       this.htmlParser = new MiniHtml.Parser(`${this.frameId}:`);
@@ -29,17 +41,22 @@ const webViewHandler = {
   },
   getHtml(
     select: MiniHtml.Selector | null = null,
-    outerLevel = 0,
-    idPrefix: string = '®',
+    outerLevel: number | MiniHtml.FullHtmlOptions = 0,
+    idPrefix: string | MiniHtml.FullHtmlOptions = '®',
   ) {
-    if (!this.htmlParser || this.htmlParser.idPrefix !== idPrefix)
-      this.htmlParser = new MiniHtml.Parser(idPrefix);
+    const prefix = typeof idPrefix === 'string' ? idPrefix : '®';
+    if (!this.htmlParser || this.htmlParser.idPrefix !== prefix)
+      this.htmlParser = new MiniHtml.Parser(prefix);
     if (select) {
       return dummyCursor.hide(() =>
-        this.htmlParser!.genHtmlFormId(select, outerLevel),
+        this.htmlParser!.genHtmlFormId(
+          select,
+          typeof outerLevel === 'number' ? outerLevel : 0,
+        ),
       );
     }
-    return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
+    const options = this.normalizeFullHtmlOptions(outerLevel, idPrefix);
+    return dummyCursor.hide(() => this.htmlParser!.genFullHtml(false, options));
   },
   getDeltaHtml(idPrefix: string) {
     if (!this.htmlParser || this.htmlParser.idPrefix !== idPrefix)

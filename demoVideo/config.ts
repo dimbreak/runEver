@@ -1,0 +1,454 @@
+import { VideoConfig } from './types.js';
+
+export function longTask(): VideoConfig {
+  return {
+    videoSrc: 'demo.mp4',
+    startPoint: 0,
+    timeline: [
+      {
+        time: 1,
+        action: 'text',
+        text: 'Natural language prompt\n Zero config\n No tech terms\n No prompt technique',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '20%',
+          left: '5%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 3,
+      },
+      {
+        time: 1,
+        action: 'zoom',
+        x: 100,
+        y: 0,
+        scale: 2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 6,
+        action: 'speed',
+        rate: 8.0,
+      },
+      {
+        time: 11.5,
+        action: 'zoom',
+        x: 100,
+        y: 70,
+        scale: 1.8,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 11.5,
+        action: 'text',
+        text: 'Long chain tasks to check points',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '20%',
+          left: '15%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 2,
+      },
+      {
+        time: 11.5,
+        action: 'pause',
+        duration: 4.0,
+      },
+      {
+        time: 12,
+        action: 'speed',
+        rate: 1.0,
+      },
+      {
+        time: 12.5,
+        action: 'zoom',
+        x: 0,
+        y: 70,
+        scale: 1.2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 15.5,
+        action: 'speed',
+        rate: 16.0,
+      },
+      {
+        time: 25.0,
+        action: 'speed',
+        rate: 1.0,
+      },
+      {
+        time: 26.5,
+        action: 'speed',
+        rate: 16.0,
+      },
+      {
+        time: 62,
+        action: 'text',
+        text: 'Cross tab session',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '20%',
+          left: '15%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 2,
+      },
+      {
+        time: 72,
+        action: 'speed',
+        rate: 1.0,
+      },
+      {
+        time: 75,
+        action: 'skip',
+        to: 85,
+      },
+      {
+        time: 85,
+        action: 'speed',
+        rate: 8.0,
+      },
+      {
+        time: 108,
+        action: 'text',
+        text: 'Long complex form',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '55%',
+          left: '20%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 3,
+      },
+      {
+        time: 108,
+        action: 'skip',
+        to: 174.0,
+      },
+      {
+        time: 174,
+        action: 'speed',
+        rate: 2.0,
+      },
+      {
+        time: 183.2,
+        action: 'skip',
+        to: 256.0,
+      },
+      {
+        time: 256,
+        action: 'zoom',
+        x: 60,
+        y: 40,
+        scale: 2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 257.3,
+        action: 'speed',
+        rate: 1.0,
+      },
+      {
+        time: 257.3,
+        action: 'text',
+        text: 'Error correction',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '75%',
+          left: '5%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 2,
+      },
+      {
+        time: 262,
+        action: 'skip',
+        to: 288.0,
+      },
+      {
+        time: 288,
+        action: 'text',
+        text: 'Correct AGAIN!',
+        style: {
+          color: '#f00',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '75%',
+          left: '5%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 2,
+      },
+      {
+        time: 292,
+        action: 'zoom',
+        x: 0,
+        y: 85,
+        scale: 1.2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 292,
+        action: 'skip',
+        to: 331.0,
+      },
+      {
+        time: 331,
+        action: 'text',
+        text: 'Complex UI\n Combobox\n Calendar',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '40%',
+          left: '20%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 5,
+      },
+      {
+        time: 333,
+        action: 'skip',
+        to: 344.0,
+      },
+      {
+        time: 345.5,
+        action: 'skip',
+        to: 375.5,
+      },
+      {
+        time: 377,
+        action: 'skip',
+        to: 390,
+      },
+      {
+        time: 392,
+        action: 'skip',
+        to: 424.9,
+      },
+      {
+        time: 426,
+        action: 'skip',
+        to: 440,
+      },
+      {
+        time: 442,
+        action: 'skip',
+        to: 571,
+      },
+      {
+        time: 442,
+        action: 'skip',
+        to: 571,
+      },
+      {
+        time: 573,
+        action: 'skip',
+        to: 599,
+      },
+      {
+        time: 600,
+        action: 'text',
+        text: 'Reasoning Calendar \nwith 3 Constraints\n on prompt: earliest\n on page: 11 months to product\n on remark: no Monday delivery',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '30%',
+          left: '20%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 5,
+      },
+      {
+        time: 601,
+        action: 'skip',
+        to: 615,
+      },
+      {
+        time: 616,
+        action: 'skip',
+        to: 638,
+      },
+      {
+        time: 639,
+        action: 'skip',
+        to: 653.4,
+      },
+      {
+        time: 654.3,
+        action: 'skip',
+        to: 671.7,
+      },
+      {
+        time: 673,
+        action: 'skip',
+        to: 720,
+      },
+      {
+        time: 722,
+        action: 'zoom',
+        x: 0,
+        y: 70,
+        scale: 1.2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 722,
+        action: 'speed',
+        rate: 16,
+      },
+      {
+        time: 737,
+        action: 'text',
+        text: 'Human in the loop',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '60%',
+          left: '35%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 4,
+      },
+      {
+        time: 753,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 755,
+        action: 'skip',
+        to: 771,
+      },
+      {
+        time: 775,
+        action: 'skip',
+        to: 782.5,
+      },
+      {
+        time: 782,
+        action: 'zoom',
+        x: 40,
+        y: 80,
+        scale: 2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 783,
+        action: 'text',
+        text: 'Adhoc task',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '40%',
+          left: '15%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 3,
+      },
+      {
+        time: 788,
+        action: 'zoom',
+        x: 0,
+        y: 70,
+        scale: 1.2,
+        duration: 0.5,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 788,
+        action: 'speed',
+        rate: 8,
+      },
+      {
+        time: 890,
+        action: 'zoom',
+        x: 50,
+        y: 50,
+        scale: 1,
+        duration: 3,
+        ease: 'ease-in-out',
+      },
+      {
+        time: 900,
+        action: 'text',
+        text: 'Reply client & finish',
+        style: {
+          color: '#333',
+          fontSize: '26px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '30%',
+          left: '55%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 14,
+      },
+    ],
+  };
+}
+
+export function amazon(): VideoConfig {
+  return {
+    videoSrc: 'amazon.mp4',
+    startPoint: 0,
+    timeline: [],
+  };
+}
+
+// ---- Select which config to use ----
+export const config: VideoConfig = longTask();

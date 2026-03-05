@@ -14,10 +14,10 @@ export const WireWaitNetworkSchema = z.object({
 });
 
 export const WireWaitMsgSchema = z.object({
-  t: z.literal('blockHereAndWaitForNewIncomingMsg'),
+  t: z.literal('blockHereAndWaitForNewIncomingMsg').optional().nullable(),
   q: WireSelectorSchema.nullable().optional(),
-  id1st: z.string(),
-  idLast: z.string(),
+  id1st: z.string().optional().nullable(),
+  idLast: z.string().optional().nullable(),
 });
 export const WireWaitDomSchemaV2 = z.object({
   t: z.literal('domLongTime'),
@@ -85,6 +85,7 @@ export const ChecklistActionSchema = z.object({
   pos: z.number().optional().nullable(),
   add: z.string().array().optional().nullable(),
   cancelReason: z.string().optional().nullable(),
+  force: z.literal('I SWEAR IT IS CORRECT').optional().nullable(),
   verifiedProve: z
     .object({
       domId: z.string(),

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Presenter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="player-longTask" class="player-container">
+        <video class="video-player" preload="auto"></video>
+        <div class="text-overlay-container"></div>
+    </div>
+
+    <div id="player-amazon" class="player-container" style="display:none;">
+        <video class="video-player" preload="auto"></video>
+        <div class="text-overlay-container"></div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

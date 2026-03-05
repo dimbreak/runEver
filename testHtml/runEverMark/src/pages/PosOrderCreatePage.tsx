@@ -62,7 +62,6 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
   }, [currentProduct, to]);
 
   const handleSelect = (itemValue: string) => {
-    console.log(itemValue);
     const name = itemValue.split(' - ')[0];
     const product = productCatalog.find(p => p.name === name);
     if (product) {
@@ -105,7 +104,6 @@ const ProductCombobox = ({ value, onChange }: { value: string, onChange: (id: st
         onChange={handleInputChange}
         onBlur={() =>  {
           setTo(setTimeout(()=>setTerm(t=>{
-            console.log(333, currentProduct, t)
             if(currentProduct?.name===t) {
               return t;
             } else {

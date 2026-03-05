@@ -68,11 +68,11 @@ export class ExecutionPrompter {
     const tab = tabManager.getFocusedTab()!;
     const { webView: wv } = tab;
     const rect = wv.getBounds();
-    console.log('Executor execPrompt', wv.webContents.id);
     const fullHtml = (await wv.webContents.executeJavaScript(
       'window.webView.getHtml()',
     )) as string;
     const runner = await this.getRunner();
+    console.log('Executor execPrompt', wv.webContents.id, fullHtml.length);
     const readableFiles = Array.from(tabManager.readableFiles.keys());
     const modelCfg = ComplexityToModelConfig[complexity];
     if (subPrompt?.includes('[checklist.add]')) {

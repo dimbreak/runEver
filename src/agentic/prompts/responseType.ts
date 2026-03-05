@@ -2,10 +2,10 @@ export const responseType = `
 type ID=string;//from id attr of html element, no wrap/prefix/suffix
 type Selector=ID |{ id:ID, argKeys:(string|null)[]};
 
-type WireWait={ to?:number } & ( // wait timeout in ms
+type WireWait=(
  |{ t:'net';a:'idle0'|'idle2' }
  |{ t:'time';ms:number }
-)
+) & { to?:number } // wait timeout in ms, must use with one of the t
 
 type WireAction=
  |{
@@ -30,17 +30,18 @@ type WireAction=
   }
  |{
    k:'checklist';
-   a:'verified';//check it seriously, only apply to working check point
+   a:'verified';//check it seriously, apply to working check point
    pos:number;
+   force?:'I SWEAR IT IS CORRECT';//send this if it is not in working status
    verifiedProve?:{
      domId:string;
-     proveOfWork:string;//short desc on what have you done, and did you get info to continue?;
+     proveOfWork:string;//short desc on what have you done, and did you get info to continue?
    }
   }
  |{
    k:'mouse';
    a:'click'|'dblclick'|'mouseover'|'mouseDown'|'mouseUp'|'mouseenter'|'mousemove';
-   q:Selector;//always on leaf el
+   q:Selector;//always on leaf el, must end session if you are click submit/save/search button to wait and observe
    repeat?:number;
   }
  |{
@@ -112,23 +113,24 @@ type WireAction=
    filename:string;//png
   };
 
+type WireWaitNewMsg =
+
 type WireStep={
  intent:string;//short, < 8 words
  risk:'h'|'m'|'l';
  action:WireAction;
  pre?:WireWait // wait BEFORE this action, most of the time engine can handle it automatically
  post?:WireWait|// wait AFTER this action, most of the time engine can handle it automatically
-  {
-   didGoalAskYouToWaitInNoCondition:string;//explain shortly, will be no if it requires anything before
-   didYouSendMsgBeforeWaitReply:string;//explain shortly, not yet/planned means no! stay away!
-    // only use to **wait** for new msg/reply in messager dialog / new email in email inbox, **MUST NOT ADD ACTION AFTER THIS**, only use with mouse/key/focus action
-   t:'blockHereAndWaitForNewIncomingMsg';//only block for 1 of 2 reasons, answer above, you may stop here if no solid yes! just leave q: null
-   q:Selector;// only apply to dialog container, email list etc, must seen the list before apply
-   id1st:string;// first msg/email dom id in list
-   idLast:string;// last msg/email dom id in list
+   { //only use with click (send or refresh) button or enter key action to send
+     didGoalAskYouToWaitInNoCondition:string;//explain shortly, will be no if it requires anything before
+     didYouSendMsgBeforeWaitReply:string;//explain shortly, not yet/planned means no! stay away!
+     t:'blockHereAndWaitForNewIncomingMsg';//use for 1 of 2 reasons, answer above, you may stop here if no solid yes! just leave q: null
+     q:Selector;// only apply to dialog container, email list etc, must seen the list before apply
+     id1st:string;// first msg/email dom id in list
+     idLast:string;// last msg/email dom id in list
   }
-  cp?:number[];//bind to check point and set to working
-  unverify?:boolean;//need true if the check point in verify status
+ cp?:number[];//bind to check point and set to working
+ unverify?:boolean;//need true if the check point in verify status
 }
 
 type AttachementDesc={

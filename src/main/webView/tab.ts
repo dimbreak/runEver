@@ -34,7 +34,7 @@ export class TabWebView {
 
   session: Session;
 
-  pageLoadedLock = Util.newLock();
+  pageLoadedLock = Util.newLock('pageLoadedLock');
 
   networkIdle0: Util.Lock | undefined;
   networkIdle2: Util.Lock | undefined;
@@ -96,9 +96,7 @@ export class TabWebView {
         this.focus();
       }
     }
-    console.log('operate bounds:', detail.bounds);
     if (detail.bounds) {
-      console.log('operate bounds:', detail.bounds);
       this.webView.setBounds(detail.bounds);
       this.bounds = detail.bounds;
     } else if (!detail.url && !detail.exeScript) {

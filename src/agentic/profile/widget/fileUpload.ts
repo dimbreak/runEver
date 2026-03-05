@@ -17,7 +17,8 @@ Profile.register({
         userHeader: `${promptParts.userHeader ?? ''}
 
 [file upload guide]
-- using input action to upload, you can only put filename for **[readable file]** in the value
+- using input action to upload, you can only put filename of **[readable file]** in the value
+- filename other than those in [readable file] will cause error.
 - allow operate hidden input type=file
 - if user said attach/upload in goal, do not botherUser
 - multiple files must in multiple string / args

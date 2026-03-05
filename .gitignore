@@ -32,3 +32,5 @@ npm-debug.log.*
 .env
 testHtml/runEverMark/dist/
 assets
+/prompt-lab/
+/prompt-record/

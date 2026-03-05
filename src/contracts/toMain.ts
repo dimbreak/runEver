@@ -144,7 +144,7 @@ export namespace ToMainIpc {
     | { error: string }
   >('open-prompt-input-dialog');
   export const responsePromptInput = new IpcMainContract<
-    [{ sessionId?: number; answer: Record<string, string>; id: number }],
+    [{ sessionId?: number; answer: Record<string, string> | null; id: number }],
     undefined
   >('response-prompt-input');
   export const dispatchEvents = new IpcMainContract<

@@ -14,6 +14,26 @@ export namespace MiniHtml {
   export const iframeById: Record<string, IFrameHelper> = {};
   const PRINT_ATTRS = ['name', 'method', 'placeholder'];
   const PRINT_EMPTY_ATTRS = ['disabled', 'readonly', 'required', 'hidden'];
+  const INTERACTIVE_SELECTOR = [
+    'input:not([type="hidden"])',
+    'select',
+    'textarea',
+    'button',
+    'a',
+    '[role="button"]',
+    '[role="link"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    '[role="switch"]',
+    '[role="tab"]',
+    '[contenteditable="true"]',
+  ].join(',');
+  const MEDIA_SELECTOR = 'img,picture,svg,canvas,video';
+  const SUBMIT_HINT_RX = /submit|continue|next|pay|checkout|sign in/i;
+  const ERROR_HINT_RX = /\b(required|invalid)\b/i;
+  const BLOCK_HINT_RX =
+    /\b(ad|ads|sponsor|promo|recommend|related|cookie|newsletter|footer|nav)\b/i;
+  const DIALOG_HINT_RX = /\b(modal|dialog|popup|drawer|sheet)\b/i;
   export type Selector =
     | string
     | {
@@ -37,7 +57,7 @@ export namespace MiniHtml {
     XYWH: string;
     needDim?: boolean;
   };
-  const spaceRx = /[\s\t\r\n\u200c\u0020\u034f]{2,}/g;
+  const spaceRx = /[\s\t\n\u200c\u0020\u034f]{2,}/g;
   const elementContains = (parent: Element, child: Element | null): boolean => {
     let currentChild = child;
     while (currentChild && currentChild !== document.body) {
@@ -70,7 +90,9 @@ export namespace MiniHtml {
             (style.left !== 'auto' && style.left !== '0px') ||
             (style.right !== 'auto' && style.right !== '0px') ||
             (style.bottom !== 'auto' && style.bottom !== '0px'))) ||
-        style.direction === 'rtl',
+        style.direction === 'rtl' ||
+        style.display === 'flex' ||
+        style.flexBasis !== 'auto',
     };
     if (
       style.visibility === 'hidden' ||
@@ -107,7 +129,12 @@ export namespace MiniHtml {
       rect.top + rect.height / 2,
     );
 
-    if (elAtXY && elAtXY !== el && !elementContains(el, elAtXY)) {
+    if (
+      el.tagName !== 'INPUT' &&
+      elAtXY &&
+      elAtXY !== el &&
+      !elementContains(el, elAtXY)
+    ) {
       visible.visible = 'covered';
       return visible;
     }
@@ -213,6 +240,45 @@ export namespace MiniHtml {
     font: Record<string, number>;
     highlight: Record<string, number>;
   };
+  type HtmlDetailLevel = 'FULL' | 'LITE' | 'MIN';
+  type SnapshotCompression = {
+    viewportWidth: number;
+    viewportHeight: number;
+    viewportArea: number;
+  };
+  export type FullHtmlOptions = {
+    disableSlim?: boolean;
+  };
+  type BlockCompressionAnalysis = {
+    level: HtmlDetailLevel;
+    score: number;
+    areaRatio: number;
+    summary: string;
+    interactables: string[];
+    keepReason?: string;
+  };
+
+  function needDim(
+    visible:
+      | (DOMRect & {
+          visible: boolean | 'outOfDoc' | 'covered' | 'hide' | 'size0' | '';
+          style: CSSStyleDeclaration;
+          XYWH: string;
+          needDim?: boolean;
+        })
+      | null,
+  ) {
+    if (
+      visible?.needDim &&
+      visible.x + visible.width > 0 &&
+      visible.y + visible.height > 0 &&
+      visible.x < window.innerWidth + window.scrollX &&
+      visible.y < window.innerHeight + window.scrollY
+    ) {
+      return true;
+    }
+  }
+
   export class Parser {
     added = 0;
     meaningFulElements: (MeaningfulElement | string)[] = [];
@@ -223,6 +289,7 @@ export namespace MiniHtml {
     observer: MutationObserver | undefined;
     mutatedElements = new Map<Element, MeaningfulElement | null>();
     lastFullHtml: string | undefined;
+    compressionCache = new WeakMap<HTMLElement, BlockCompressionAnalysis>();
     constructor(public idPrefix = '®') {
       this.reset();
     }
@@ -234,6 +301,7 @@ export namespace MiniHtml {
       renderedHtml: null | Map<MeaningfulElement, string> = null,
       rerendered = false,
       forceDim = false,
+      compression: SnapshotCompression | null = null,
     ): Promise<string> {
       if (meaningfulEl.element.isConnected === false) return '';
       let thisRendered = rerendered;
@@ -251,6 +319,22 @@ export namespace MiniHtml {
       const { visible, element } = meaningfulEl;
       const tagName = element.tagName.toLowerCase();
       const { style } = visible;
+      const blockAnalysis =
+        compression && this.canCompressBlock(meaningfulEl)
+          ? this.analyzeBlock(meaningfulEl, compression)
+          : null;
+      if (blockAnalysis && blockAnalysis.level !== 'FULL') {
+        return this.renderCompressedBlock(
+          meaningfulEl,
+          blockAnalysis,
+          forceDim,
+        );
+      }
+      const childCompression =
+        blockAnalysis?.keepReason ||
+        (blockAnalysis?.level === 'FULL' && this.isRepeatedCard(element))
+          ? null
+          : compression;
       let fontIndex = this.styles.font[style.fontFamily];
       if (fontIndex === undefined) {
         fontIndex = Object.keys(this.styles.font).length;
@@ -283,6 +367,7 @@ export namespace MiniHtml {
                 renderedHtml,
                 thisRendered,
                 forceDim,
+                childCompression,
               );
             }),
           )
@@ -361,7 +446,7 @@ export namespace MiniHtml {
           : isVisible
             ? ''
             : `${visible.visible === false ? 'hide' : visible.visible}`,
-        isVisible && (forceDim || visible.needDim)
+        isVisible && (forceDim || needDim(visible))
           ? `xywh=${visible.XYWH}`
           : '',
         isVisible &&
@@ -444,7 +529,7 @@ export namespace MiniHtml {
     }
     handleMutations = async (mutations: MutationRecord[]) => {
       let meaningfulEl: MeaningfulElement | null = null;
-      console.info('mutations', mutations);
+      // console.info('mutations', mutations);
       mutations.forEach((record) => {
         if (record.target === dummyCursor.dom) {
           return;
@@ -733,6 +818,10 @@ export namespace MiniHtml {
       this.idToEl.clear();
       this.meaningFulElementByEl.clear();
       this.meaningFulElements = [];
+      this.compressionCache = new WeakMap<
+        HTMLElement,
+        BlockCompressionAnalysis
+      >();
       this.styles = { highlight: {}, font: {} };
       this.parseElement(document.body);
       this.initStyles = {
@@ -741,9 +830,16 @@ export namespace MiniHtml {
       };
       this.initObserve();
     }
-    genFullHtml = async (forceDim = false) => {
+    genFullHtml = async (forceDim = false, options: FullHtmlOptions = {}) => {
       const style = window.getComputedStyle(document.body);
       const { styles } = this;
+      const compression = options.disableSlim
+        ? null
+        : this.buildCompressionContext();
+      this.compressionCache = new WeakMap<
+        HTMLElement,
+        BlockCompressionAnalysis
+      >();
       this.styles.font[style.fontFamily] = 0;
       const highlightStyle = `${style.font.replace(style.fontFamily, `ff0`)} ${rgbToHex(style.color)}`;
       const html = (
@@ -759,11 +855,13 @@ export namespace MiniHtml {
                   undefined,
                   undefined,
                   forceDim,
+                  compression ?? null,
                 ),
           ),
         )
       ).join('');
       this.lastFullHtml = html;
+      const searchContext = this.getSearchContext();
       return `<script>const font = ${JSON.stringify(
         Object.entries(styles.font).reduce(
           (acc, s) => {
@@ -781,7 +879,7 @@ export namespace MiniHtml {
       },
       {} as Record<string, string>,
     ),
-  )};</script>${html} //${this.mutatedElements.size}`;
+  )};</script>${searchContext ? `<search-context q=${quoteAttrVal(searchContext)} />` : ''}${html} //${this.mutatedElements.size}`;
     };
     genId(id: string | undefined) {
       // eslint-disable-next-line no-nested-ternary
@@ -856,11 +954,11 @@ export namespace MiniHtml {
       }
       let meaningfulEl: MeaningfulElement | undefined = parentMeaningfulEl;
       let label = getReadableAttr(element);
-      if (label.length > 32) {
+      if (!label.endsWith(')') && label.length > 32) {
         label = `${label.slice(0, 32)}...`;
       }
       const placeholder: MeaningfulElement = {
-        id: element.id,
+        id: '',
         element,
         visible: checkVisible(element),
         label,
@@ -1003,6 +1101,610 @@ export namespace MiniHtml {
       meaningfulEl.nodes?.forEach(
         (node) => typeof node === 'object' && this.updateElement(node),
       );
+    }
+
+    private buildCompressionContext(): SnapshotCompression {
+      // getBoundingClientRect() is viewport-relative, so these scores
+      // automatically track the current scroll position.
+      const viewportWidth = Math.max(window.innerWidth, 1);
+      const viewportHeight = Math.max(window.innerHeight, 1);
+      return {
+        viewportWidth,
+        viewportHeight,
+        viewportArea: viewportWidth * viewportHeight,
+      };
+    }
+
+    private normalizeSnippet(
+      value: string | null | undefined,
+      maxLen = 48,
+    ): string {
+      if (!value) return '';
+      return value
+        .replace(spaceRx, ' ')
+        .replace(/["<>]/g, '')
+        .trim()
+        .slice(0, maxLen);
+    }
+
+    private getNodeSnippet(
+      nodes: (string | MeaningfulElement)[] | undefined,
+      maxLen = 120,
+    ): string {
+      if (!nodes?.length) return '';
+      let snippet = '';
+      const walk = (items: (string | MeaningfulElement)[]) => {
+        for (const node of items) {
+          if (snippet.length >= maxLen) {
+            return;
+          }
+          if (typeof node === 'string') {
+            snippet += ` ${node}`;
+            continue;
+          }
+          if (node.label) {
+            snippet += ` ${node.label}`;
+          }
+          if (node.nodes?.length) {
+            walk(node.nodes);
+          }
+        }
+      };
+      walk(nodes);
+      return this.normalizeSnippet(snippet, maxLen);
+    }
+
+    private getSearchContext(): string {
+      const values: string[] = [];
+      const url = new URL(window.location.href);
+      ['q', 'query', 'k', 'search', 'keyword'].forEach((key) => {
+        const value = url.searchParams.get(key);
+        if (value) {
+          values.push(this.normalizeSnippet(value, 160));
+        }
+      });
+      Array.from(
+        document.querySelectorAll(
+          'input[type="search"],input[name="q"],input[name="query"],input[name="k"],input[aria-label*="search" i]',
+        ),
+      )
+        .filter(
+          (el): el is HTMLInputElement =>
+            el instanceof HTMLInputElement &&
+            this.isProbablyVisibleElement(el) &&
+            !!el.value.trim(),
+        )
+        .forEach((el) => values.push(this.normalizeSnippet(el.value, 160)));
+      return values
+        .filter((value, index) => values.indexOf(value) === index)
+        .join('|');
+    }
+
+    private isProbablyVisibleElement(element: HTMLElement) {
+      if (element.hidden || element.getAttribute('aria-hidden') === 'true') {
+        return false;
+      }
+      const style = window.getComputedStyle(element);
+      return (
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        Number(style.opacity) !== 0
+      );
+    }
+
+    private describeInteractable(element: HTMLElement): string {
+      const tagName = element.tagName.toLowerCase();
+      const type = (element.getAttribute('type') || '').toLowerCase();
+      const meaningfulId = this.meaningFulElementByEl.get(element)?.id;
+      const isSearchInput =
+        tagName === 'input' &&
+        (type === 'search' ||
+          ['q', 'query', 'k'].includes(
+            (element.getAttribute('name') || '').toLowerCase(),
+          ) ||
+          /search/i.test(element.getAttribute('aria-label') || ''));
+      const text = this.normalizeSnippet(
+        [
+          element.getAttribute('aria-label'),
+          element.getAttribute('title'),
+          element.getAttribute('placeholder'),
+          element.getAttribute('name'),
+          (element as HTMLInputElement).value,
+          element.textContent,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        isSearchInput ? 120 : 28,
+      );
+      const basePrefix =
+        tagName === 'input' && type ? `${tagName}:${type}` : tagName;
+      const prefix = meaningfulId
+        ? `${basePrefix}#${meaningfulId}`
+        : basePrefix;
+      return text ? `${prefix}(${text})` : prefix;
+    }
+
+    private getBlockInteractables(
+      element: HTMLElement,
+      maxItems = 6,
+    ): string[] {
+      const interactables = Array.from(
+        element.querySelectorAll(INTERACTIVE_SELECTOR),
+      )
+        .filter(
+          (child): child is HTMLElement =>
+            child instanceof HTMLElement &&
+            this.isProbablyVisibleElement(child),
+        )
+        .map((child) => this.describeInteractable(child))
+        .filter((item, index, items) => item && items.indexOf(item) === index);
+      return interactables.slice(0, maxItems);
+    }
+
+    private getKeywordHint(element: HTMLElement): string | undefined {
+      const componentType = (
+        element.getAttribute('data-component-type') || ''
+      ).toLowerCase();
+      if (componentType.includes('search-result')) {
+        return 'search result';
+      }
+      const raw = this.normalizeSnippet(
+        [
+          element.tagName.toLowerCase(),
+          element.id,
+          element.className,
+          element.getAttribute('role'),
+          element.getAttribute('aria-label'),
+          element.getAttribute('aria-labelledby'),
+        ]
+          .filter(Boolean)
+          .join(' '),
+        160,
+      ).toLowerCase();
+      if (!raw || !BLOCK_HINT_RX.test(raw)) {
+        return undefined;
+      }
+      if (raw.includes('footer')) return 'footer links';
+      if (raw.includes('nav')) return 'navigation';
+      if (raw.includes('related') || raw.includes('recommend')) {
+        return 'related links';
+      }
+      if (raw.includes('cookie')) return 'cookie banner';
+      if (raw.includes('newsletter')) return 'newsletter';
+      return 'promo block';
+    }
+
+    private isImageGrid(element: HTMLElement): boolean {
+      const imgCount = element.querySelectorAll(MEDIA_SELECTOR).length;
+      if (imgCount < 4) return false;
+      const childKeys = Array.from(element.children)
+        .map((child) => {
+          const el = child as HTMLElement;
+          const classHead = Array.from(el.classList).slice(0, 2).join('.');
+          return `${el.tagName.toLowerCase()}.${classHead}`;
+        })
+        .filter(Boolean);
+      if (!childKeys.length) return true;
+      const counts = childKeys.reduce(
+        (acc, key) => {
+          acc[key] = (acc[key] ?? 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+      return Math.max(...Object.values(counts)) >= 3;
+    }
+
+    private hasDirectKeepMatch(
+      element: HTMLElement,
+      selector: string,
+    ): boolean {
+      if (element.matches(selector)) {
+        return true;
+      }
+      return Array.from(element.children).some(
+        (child) => child instanceof HTMLElement && child.matches(selector),
+      );
+    }
+
+    private getDirectTextSnippet(element: HTMLElement, maxLen = 120): string {
+      return this.normalizeSnippet(
+        Array.from(element.childNodes)
+          .filter((node) => node.nodeType === Node.TEXT_NODE)
+          .map((node) => node.textContent ?? '')
+          .join(' '),
+        maxLen,
+      );
+    }
+
+    private getMeaningfulChildCount(meaningfulEl: MeaningfulElement): number {
+      return (
+        meaningfulEl.nodes?.filter((node) => typeof node === 'object').length ??
+        0
+      );
+    }
+
+    private isRepeatedCard(element: HTMLElement): boolean {
+      const componentType = (
+        element.getAttribute('data-component-type') || ''
+      ).toLowerCase();
+      if (componentType.includes('search-result')) {
+        return true;
+      }
+      const role = (element.getAttribute('role') || '').toLowerCase();
+      const tagName = element.tagName.toLowerCase();
+      if (
+        !['listitem', 'article'].includes(role) &&
+        !['li', 'article'].includes(tagName)
+      ) {
+        return false;
+      }
+      const parent = element.parentElement;
+      if (!parent) return false;
+      const siblings = Array.from(parent.children).filter(
+        (child) => child.tagName === element.tagName,
+      ) as HTMLElement[];
+      if (siblings.length < 4) return false;
+      const ownKey = [
+        tagName,
+        role,
+        Array.from(element.classList).slice(0, 2).join('.'),
+        element.childElementCount,
+      ].join('|');
+      const similarCount = siblings.filter((child) => {
+        const childRole = (child.getAttribute('role') || '').toLowerCase();
+        const childKey = [
+          child.tagName.toLowerCase(),
+          childRole,
+          Array.from(child.classList).slice(0, 2).join('.'),
+          child.childElementCount,
+        ].join('|');
+        return childKey === ownKey;
+      }).length;
+      return similarCount >= 4;
+    }
+
+    private hasSearchResultDescendants(element: HTMLElement): boolean {
+      return (
+        element.querySelectorAll('[data-component-type*="search-result"]')
+          .length >= 3
+      );
+    }
+
+    private getKeepReason(element: HTMLElement): string | undefined {
+      if (
+        this.hasDirectKeepMatch(
+          element,
+          'form,input:not([type="hidden"]),select,textarea',
+        )
+      ) {
+        return 'form';
+      }
+      if (
+        this.hasDirectKeepMatch(
+          element,
+          'button[type="submit"],input[type="submit"]',
+        ) ||
+        Array.from(element.children).some(
+          (child) =>
+            child instanceof HTMLElement &&
+            (child.matches('button,input,[aria-label]') ||
+              child.getAttribute('role') === 'button') &&
+            SUBMIT_HINT_RX.test(
+              (
+                child.getAttribute('aria-label') ||
+                child.textContent ||
+                ''
+              ).trim(),
+            ),
+        )
+      ) {
+        return 'submit';
+      }
+      if (
+        element.hasAttribute('aria-live') ||
+        this.hasDirectKeepMatch(
+          element,
+          '[aria-live],.error,.validation,[aria-invalid="true"]',
+        ) ||
+        ERROR_HINT_RX.test(this.getDirectTextSnippet(element, 160))
+      ) {
+        return 'validation';
+      }
+      const semanticText = this.normalizeSnippet(
+        [
+          element.tagName.toLowerCase(),
+          element.id,
+          element.className,
+          element.getAttribute('role'),
+          element.getAttribute('aria-label'),
+          element.getAttribute('aria-modal'),
+        ]
+          .filter(Boolean)
+          .join(' '),
+        160,
+      );
+      if (
+        element.tagName.toLowerCase() === 'dialog' ||
+        element.getAttribute('role') === 'dialog' ||
+        element.getAttribute('role') === 'alertdialog' ||
+        element.getAttribute('aria-modal') === 'true' ||
+        DIALOG_HINT_RX.test(semanticText)
+      ) {
+        return 'dialog';
+      }
+      return undefined;
+    }
+
+    private canCompressBlock(meaningfulEl: MeaningfulElement): boolean {
+      const { element } = meaningfulEl;
+      const tagName = element.tagName.toLowerCase();
+      if (tagName === 'body' || tagName === 'iframe') {
+        return false;
+      }
+      if (
+        !(element.getAttribute('data-component-type') || '').includes(
+          'search-result',
+        ) &&
+        this.hasSearchResultDescendants(element)
+      ) {
+        return false;
+      }
+      return this.getMeaningfulChildCount(meaningfulEl) < 4;
+    }
+
+    private buildBlockSummary(
+      meaningfulEl: MeaningfulElement,
+      textSnippet: string,
+      interactables: string[],
+      keywordHint: string | undefined,
+      linkCount: number,
+      imgCount: number,
+    ): string {
+      const summary =
+        [
+          keywordHint,
+          textSnippet,
+          interactables.length ? interactables.join('|') : '',
+          linkCount >= 4 ? `${linkCount} links` : '',
+          imgCount >= 4 ? `${imgCount} media` : '',
+          meaningfulEl.label,
+          meaningfulEl.element.tagName.toLowerCase(),
+        ].find((item) => !!item) ?? meaningfulEl.element.tagName.toLowerCase();
+      return this.normalizeSnippet(summary, 42);
+    }
+
+    private analyzeBlock(
+      meaningfulEl: MeaningfulElement,
+      compression: SnapshotCompression,
+    ): BlockCompressionAnalysis {
+      const cached = this.compressionCache.get(meaningfulEl.element);
+      if (cached) {
+        return cached;
+      }
+      const { element } = meaningfulEl;
+      const visible = meaningfulEl.visible ?? checkVisible(element);
+      const keepReason = this.getKeepReason(element);
+      const interactables = this.getBlockInteractables(element);
+      const textSnippet =
+        this.getNodeSnippet(meaningfulEl.nodes, 120) ||
+        this.normalizeSnippet(element.textContent, 120);
+      const wordCount = Math.max(
+        textSnippet.split(/\s+/).filter(Boolean).length,
+        1,
+      );
+      const linkCount = element.querySelectorAll('a,[role="link"]').length;
+      const imgCount = element.querySelectorAll(MEDIA_SELECTOR).length;
+      const keywordHint = this.getKeywordHint(element);
+      const repeatedCard = this.isRepeatedCard(element);
+      const imageGrid = this.isImageGrid(element);
+      const clippedWidth = Math.max(
+        0,
+        Math.min(visible.right, compression.viewportWidth) -
+          Math.max(visible.left, 0),
+      );
+      const clippedHeight = Math.max(
+        0,
+        Math.min(visible.bottom, compression.viewportHeight) -
+          Math.max(visible.top, 0),
+      );
+      const viewportPaddingX = compression.viewportWidth * 0.5;
+      const viewportPaddingY = compression.viewportHeight * 0.5;
+      const expandedClippedWidth = Math.max(
+        0,
+        Math.min(visible.right, compression.viewportWidth + viewportPaddingX) -
+          Math.max(visible.left, -viewportPaddingX),
+      );
+      const expandedClippedHeight = Math.max(
+        0,
+        Math.min(
+          visible.bottom,
+          compression.viewportHeight + viewportPaddingY,
+        ) - Math.max(visible.top, -viewportPaddingY),
+      );
+      const areaRatio =
+        (clippedWidth * clippedHeight) / compression.viewportArea;
+      const expandedVisibleRatio =
+        (expandedClippedWidth * expandedClippedHeight) /
+        Math.max(visible.width * visible.height, 1);
+      const centerX = visible.left + visible.width / 2;
+      const centerY = visible.top + visible.height / 2;
+      const dx = centerX - compression.viewportWidth / 2;
+      const dy = centerY - compression.viewportHeight / 2;
+      const maxDistance =
+        Math.sqrt(
+          (compression.viewportWidth / 2) ** 2 +
+            (compression.viewportHeight / 2) ** 2,
+        ) || 1;
+      const centerDistance = Math.sqrt(dx ** 2 + dy ** 2) / maxDistance;
+      const inFold = expandedClippedWidth > 0 && expandedClippedHeight > 0;
+      const mostlyInViewport =
+        inFold &&
+        expandedVisibleRatio >= 0.45 &&
+        areaRatio >= 0.012 &&
+        centerDistance <= 0.8;
+      const linkDensity = linkCount / wordCount;
+      let score = 0;
+      if (areaRatio >= 0.18) score += 4;
+      else if (areaRatio >= 0.08) score += 3;
+      else if (areaRatio >= 0.03) score += 2;
+      else if (areaRatio < 0.01) score -= 2;
+      if (inFold) {
+        if (expandedVisibleRatio >= 0.75) score += 5;
+        else if (expandedVisibleRatio >= 0.45) score += 4;
+        else if (expandedVisibleRatio >= 0.25) score += 2;
+      } else {
+        score -= 1;
+      }
+      if (inFold) {
+        if (centerDistance <= 0.35) score += 3;
+        else if (centerDistance <= 0.7) score += 2;
+      } else if (centerDistance > 0.85) {
+        score -= 1;
+      }
+      if (visible.visible === true && visible.style.pointerEvents !== 'none') {
+        score += 1;
+      } else {
+        score -= 3;
+      }
+      if (interactables.length >= 2) score += 1;
+      if (textSnippet.length >= 48) score += 1;
+      if (linkDensity > 0.6) score -= 3;
+      else if (linkDensity > 0.3) score -= 2;
+      if (imageGrid) score -= 2;
+      if (keywordHint) {
+        if (keywordHint === 'cookie banner') {
+          score -= 1;
+        } else if (keywordHint !== 'search result') {
+          score -= 2;
+        }
+      }
+      if (['fixed', 'sticky'].includes(visible.style.position)) {
+        score -= 1;
+      }
+      if (!inFold && areaRatio < 0.03) {
+        score -= 1;
+      }
+      if (repeatedCard) {
+        if (
+          inFold &&
+          centerDistance <= 0.95 &&
+          expandedVisibleRatio >= 0.12 &&
+          areaRatio >= 0.004 &&
+          visible.visible === true
+        ) {
+          score += 6;
+        } else {
+          score -= 1;
+        }
+      }
+
+      let level: HtmlDetailLevel = 'FULL';
+      if (!keepReason) {
+        if (
+          mostlyInViewport &&
+          visible.visible === true &&
+          !imageGrid &&
+          linkDensity <= 0.9 &&
+          keywordHint !== 'navigation' &&
+          keywordHint !== 'footer links'
+        ) {
+          level = 'FULL';
+        } else if (
+          score >= 6 &&
+          areaRatio >= 0.03 &&
+          visible.visible === true &&
+          !imageGrid
+        ) {
+          level = 'FULL';
+        } else if (
+          score >= 0 ||
+          keywordHint === 'search result' ||
+          interactables.length > 0 ||
+          textSnippet.length >= 24
+        ) {
+          level = 'LITE';
+        } else {
+          level = 'MIN';
+        }
+        if (areaRatio < 0.01 && interactables.length === 0) {
+          level = 'MIN';
+        }
+        if (
+          !inFold &&
+          (linkDensity > 0.9 ||
+            (keywordHint &&
+              keywordHint !== 'search result' &&
+              areaRatio < 0.03))
+        ) {
+          level = 'MIN';
+        }
+        if (
+          keywordHint === 'search result' &&
+          visible.visible === true &&
+          areaRatio >= 0.008
+        ) {
+          level = 'LITE';
+        }
+        if (
+          repeatedCard &&
+          inFold &&
+          expandedVisibleRatio >= 0.12 &&
+          areaRatio >= 0.004 &&
+          visible.visible === true &&
+          linkDensity <= 0.95
+        ) {
+          level = 'FULL';
+        } else if (keywordHint === 'search result' && level === 'FULL') {
+          level = 'LITE';
+        }
+      }
+      const analysis: BlockCompressionAnalysis = {
+        level,
+        score,
+        areaRatio,
+        summary: this.buildBlockSummary(
+          meaningfulEl,
+          textSnippet,
+          interactables,
+          keywordHint,
+          linkCount,
+          imgCount,
+        ),
+        interactables,
+        keepReason,
+      };
+      this.compressionCache.set(element, analysis);
+      return analysis;
+    }
+
+    private renderCompressedBlock(
+      meaningfulEl: MeaningfulElement,
+      analysis: BlockCompressionAnalysis,
+      forceDim: boolean,
+    ): string {
+      const visible = meaningfulEl.visible!;
+      const tagName = meaningfulEl.element.tagName.toLowerCase();
+      const attrs = [
+        tagName,
+        `id=${meaningfulEl.id}`,
+        analysis.level === 'LITE' ? 'lite' : 'min',
+        meaningfulEl.label
+          ? `label=${quoteAttrVal(this.normalizeSnippet(meaningfulEl.label, 32))}`
+          : '',
+        analysis.level === 'LITE'
+          ? `liteBody=${quoteAttrVal(analysis.summary)}`
+          : `minMeta=${quoteAttrVal(analysis.summary)}`,
+        analysis.level === 'LITE' && analysis.interactables.length
+          ? `interact=${quoteAttrVal(analysis.interactables.join('|'))}`
+          : '',
+        visible.visible === true && (forceDim || needDim(visible))
+          ? `xywh=${visible.XYWH}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+      return `<${attrs} />`;
     }
   }
   let htmlParser: Parser | undefined;

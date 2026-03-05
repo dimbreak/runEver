@@ -143,7 +143,7 @@ export const useTabStore = create<TabState>((set, get) => ({
         new WebTab({
           id: -1,
           title: 'New tab',
-          url: 'https://google.com',
+          url: 'https://www.amazon.co.uk/s?k=house+blend+coffee+beans%2C+medium+roast&crid=2J6PIQXOIB3OW&qid=1772580096&rnid=355251031&sprefix=%2Caps%2C256&ref=sr_nr_p_36_0_0&low-price=&high-price=',
           isRunning: false,
         }),
         bounds,

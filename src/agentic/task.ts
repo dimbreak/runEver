@@ -52,6 +52,7 @@ export class ExecutionTask {
   forceComplexity: RiskOrComplexityLevel | undefined;
   prompter: ExecutionPrompter;
   subTaskQueue: ExecutionTask[];
+  allSubTasks: ExecutionTask[] = [];
   actions: WireActionWithWaitAndRec[] = [];
   breakPromptForExeErr = false;
   eventsLogs: string[] = [];
@@ -59,6 +60,7 @@ export class ExecutionTask {
   checklist: ExeTaskCheckPoint[] = [];
   attachmentInNextPrompt: string[] = [];
   response: string | undefined = undefined;
+  onBeforeChecked: undefined | ((session: ExecutionTask) => Promise<void>);
   onCompleted: undefined | ((session: ExecutionTask) => void);
   updateGoal: (() => string) | undefined;
   status: ExeTaskStatus | string = ExeTaskStatus.Todo;
@@ -122,7 +124,7 @@ export class ExecutionTask {
       return res;
     }
     let tip = '';
-    let toAttach: string[] = [];
+    let toAttach: string[] = this.attachmentInNextPrompt ?? [];
     const promptItem = promptQueue.shift()!;
     this.status = ExeTaskStatus.Working;
     // eslint-disable-next-line no-labels
@@ -349,6 +351,18 @@ ${res.value.next.tip}
                   td.status === ExeTaskStatus.Working,
               ).length === 0
             ) {
+              if (this.onBeforeChecked) {
+                await this.onBeforeChecked(this);
+                if (
+                  checklist.filter(
+                    (td) =>
+                      td.status === ExeTaskStatus.Todo ||
+                      td.status === ExeTaskStatus.Working,
+                  ).length !== 0
+                ) {
+                  continue;
+                }
+              }
               // eslint-disable-next-line no-labels
               break promptQueueLoop;
             }
@@ -444,8 +458,10 @@ ${runSubPrompt}`,
   }
   async *waitPageReady(url: string, start = Date.now()) {
     const { tab } = this.session;
-    console.log('Waiting for potential page load');
-    await Promise.race([Util.sleep(2000), tab.pageLoadedLock.wait]);
+    if (tab.url === url) {
+      console.log('Waiting for potential page load');
+      await Util.sleep(2000);
+    }
     if (tab.url === url) {
       yield PlanAfterRerender;
       console.log(Date.now() - start, 'Waiting for page re-render');
@@ -481,7 +497,9 @@ ${runSubPrompt}`,
     }
   }
   addNewSubSession(queue: Prompt[]) {
-    this.subTaskQueue.push(this.session.createSession(queue, this));
+    const st = this.session.createSession(queue, this);
+    this.subTaskQueue.push(st);
+    this.allSubTasks.push(st);
   }
   async *addAction(action: WireActionWithWaitAndRec) {
     const subtask = await SmartAction.buildSubtask(action, this);
@@ -515,6 +533,7 @@ ${runSubPrompt}`,
     console.log('addAction', action.intent, action.action.k);
     if (subtask) {
       if (!makeWorking()) return;
+      this.allSubTasks.push(subtask);
       yield* subtask.exec();
       this.addLog(`${action.intent}:${subtask.response ?? ''}`);
     } else if (action.action.k === 'addNewTask') {
@@ -547,7 +566,7 @@ ${runSubPrompt}`,
     this.eventsLogs.push(log);
   }
 
-  private handleChecklist(
+  handleChecklist(
     action: Extract<WireAction, { k: 'checklist' }>,
     hasError: boolean,
     fromAddNewTask = false,
@@ -559,7 +578,7 @@ ${runSubPrompt}`,
           if (checklist.length === 0 || fromAddNewTask) {
             checklist.splice(
               action.pos === undefined || action.pos === null
-                ? 0
+                ? checklist.length
                 : action.pos + 1,
               0,
               ...action.add.map((checkPoint) => ({
@@ -608,7 +627,10 @@ ${runSubPrompt}`,
           action.pos !== null &&
           checklist[action.pos]
         ) {
-          if (checklist[action.pos].status === ExeTaskStatus.Working) {
+          if (
+            checklist[action.pos].status === ExeTaskStatus.Working ||
+            action.force
+          ) {
             checklist[action.pos].status = ExeTaskStatus.Verified;
           } else {
             this.needFix.push(
@@ -639,17 +661,27 @@ new messages since last wait, **MUST CHECK HTML ID: ${waitMsgResult}**, if you f
   }
 
   getSnapshot(): Omit<TaskSnapshot, 'actions'> {
+    const subTasksByCheckPointId = this.allSubTasks.reduce(
+      (acc, ss) => {
+        acc[ss.parentCheckPointId ?? -1] = ss.getSnapshot();
+        return acc;
+      },
+      {} as Record<number, Omit<TaskSnapshot, 'actions'>>,
+    );
+    let status = this.runningStatus;
+    if (
+      status === 'Executing' &&
+      Object.values(subTasksByCheckPointId).find(
+        (st) => st.status === 'Thinking',
+      )
+    ) {
+      status = 'Thinking';
+    }
     return {
       intent: this.intent,
-      status: this.runningStatus,
-      checklist: this.checklist.map((cp) => ({ ...cp })),
-      subTasksByCheckPointId: this.subTaskQueue.reduce(
-        (acc, ss) => {
-          acc[ss.parentCheckPointId ?? -1] = ss.getSnapshot();
-          return acc;
-        },
-        {} as Record<number, Omit<TaskSnapshot, 'actions'>>,
-      ),
+      status,
+      checklist: this.checklist.slice(),
+      subTasksByCheckPointId,
     };
   }
 }

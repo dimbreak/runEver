@@ -10,6 +10,7 @@ import { type WireActionWithWaitAndRec } from '../agentic/types';
 import { takeScreenshot } from './screenshot';
 import type { RunEverConfig } from '../main/runeverConfigStore';
 import { CommonUtil } from '../utils/common';
+import { SliderProfile } from '../agentic/profile/widget/slider.webView';
 
 Network.initListener();
 
@@ -49,6 +50,18 @@ const electronHandler = {
 
 const webViewHandler = {
   htmlParser: undefined as MiniHtml.Parser | undefined,
+  normalizeFullHtmlOptions(
+    maybeOptions: number | MiniHtml.FullHtmlOptions | string | null | undefined,
+    maybeExtra: MiniHtml.FullHtmlOptions | string | null | undefined,
+  ): MiniHtml.FullHtmlOptions {
+    if (maybeOptions && typeof maybeOptions === 'object') {
+      return maybeOptions;
+    }
+    if (maybeExtra && typeof maybeExtra === 'object') {
+      return maybeExtra;
+    }
+    return {};
+  },
   getHtmlParser() {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return this.htmlParser;
@@ -59,16 +72,20 @@ const webViewHandler = {
   },
   getHtml(
     select: MiniHtml.Selector | null = null,
-    outerLevel = 0,
-    placeholdDummy = '®',
+    outerLevel: number | MiniHtml.FullHtmlOptions = 0,
+    placeholdDummy: string | MiniHtml.FullHtmlOptions = '®',
   ) {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     if (select) {
       return dummyCursor.hide(() =>
-        this.htmlParser!.genHtmlFormId(select, outerLevel),
+        this.htmlParser!.genHtmlFormId(
+          select,
+          typeof outerLevel === 'number' ? outerLevel : 0,
+        ),
       );
     }
-    return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
+    const options = this.normalizeFullHtmlOptions(outerLevel, placeholdDummy);
+    return dummyCursor.hide(() => this.htmlParser!.genFullHtml(false, options));
   },
   getDeltaHtml(placeholdDummy = '®') {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
@@ -187,12 +204,29 @@ const handleFrameId = async (event: MessageEvent) => {
   window.removeEventListener('message', handleFrameId);
   console.log('Setting in preload:', event.data);
   // Object.keys(window).forEach((key) => {
-  //   if (/^on/.test(key)) {
+  //   if (/^on/.test(key) && key !== 'onmessage') {
   //     window.addEventListener(key.slice(2), (event) => {
   //       console.log(key, event);
   //     });
   //   }
   // });
+
+  await Util.sleep(1000);
+  //
+  // const html = await webViewHandler.getHtml();
+  //
+  // console.log(html.length, html);
+  //
+  SliderProfile.slideToVal(
+    {
+      k: 'slideToVal',
+      el: document.querySelectorAll('input[type="range"]').item(1)!,
+      q: '123',
+      num: 15,
+    },
+    'l',
+    {},
+  );
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

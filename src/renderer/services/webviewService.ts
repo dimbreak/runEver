@@ -52,10 +52,12 @@ export const webviewService = {
           }
         }
         if (actionId !== undefined) {
-          ToMainIpc.actionDone.invoke({
-            frameId: triggerFrameId!,
-            actionId,
-          });
+          setTimeout(() => {
+            ToMainIpc.actionDone.invoke({
+              frameId: triggerFrameId!,
+              actionId,
+            });
+          }, 100);
         }
       },
     );

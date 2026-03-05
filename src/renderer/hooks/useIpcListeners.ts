@@ -83,13 +83,9 @@ export const useIpcListeners = () => {
           } catch {
             answer = null;
           }
-          const fallbackAnswer = Object.keys(questions).reduce(
-            (acc, key) => ({ ...acc, [key]: '' }),
-            {} as Record<string, string>,
-          );
           await ToMainIpc.responsePromptInput.invoke({
             id: payload.responseId,
-            answer: answer ?? fallbackAnswer,
+            answer,
           });
         } else if (payload.type === 'snapshot') {
           // Upsert: if a message with this responseId exists, update its

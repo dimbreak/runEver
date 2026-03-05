@@ -1,3 +1,4 @@
+import { Rectangle } from 'electron';
 import { getUniqueSelector } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import type { EventWithDelay, ToMainIpc } from '../contracts/toMain';
@@ -12,7 +13,6 @@ import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
 import { takeScreenshot } from './screenshot';
 import { fillFormExec } from '../agentic/profile/widget/form/form.html';
-import { RunEverConfig } from '../main/runeverConfigStore';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -67,7 +67,7 @@ export type ActionApiCallingReq<K extends keyof ActionApi> = {
 
 export type WireActionToExec = WireAction & { el?: Element };
 
-const TypingDelayMsHalf = 30;
+const TypingDelayMsHalf = 20;
 
 const SAFE_KEYPRESS_RE = /^[a-zA-Z0-9 `~!@#$%^&*()\-_=+[\]{};:'",.<>/?]*$/;
 
@@ -252,8 +252,8 @@ export namespace BrowserActions {
       case 'blockHereAndWaitForNewIncomingMsg':
         if (isPost && wait.q) {
           argDelta.push(
-            ['waitMsg1stId', wait.id1st],
-            ['waitMsgLastId', wait.idLast],
+            ['waitMsg1stId', wait.id1st ?? ''],
+            ['waitMsgLastId', wait.idLast ?? ''],
             ['waitMsgId', typeof wait.q === 'string' ? wait.q : wait.q.id],
           );
           onTimeout = () => {
@@ -550,7 +550,7 @@ export namespace BrowserActions {
         }
         window.onbeforeunload = onbeforeunload(rec.id);
         await execFn(action, rec.risk, args);
-        if (rec.post) {
+        if (rec.post?.t) {
           await waitAction(rec.post, args, argsDelta, true);
         }
         window.onbeforeunload = null;
@@ -666,13 +666,15 @@ export namespace BrowserActions {
     }
   };
   export const dndByPx = async (
-    el: Element,
+    el: Element | DOMRect,
     x: number,
     y: number,
     exact = false,
   ) => {
     await dummyCursor.mouseEvent('mouseDown', el);
+    await Util.sleep(500);
     await dummyCursor.moveToRect(new DOMRect(x, y, 0, 0), exact);
+    await Util.sleep(100);
     await dummyCursor.mouseEvent('mouseUp');
   };
   export const scroll = async (
@@ -721,6 +723,17 @@ export namespace BrowserActions {
         .value === values[0]
     ) {
       return;
+    }
+    if (typeAttr === 'range') {
+      await SliderProfile.slideToVal(
+        {
+          k: 'slideToVal',
+          q: action.q,
+          num: parseFloat(values[0]),
+        },
+        risk,
+        args,
+      );
     }
     if (
       document.activeElement !== el &&
@@ -815,12 +828,15 @@ export namespace BrowserActions {
       ).dispatchNativeKeypress({
         keyAndDelays: [['Esc', 0]], // cancel file picker
       });
-      await (
+      const res = await (
         await actionApi
       ).setInputFile({
         selector,
         filePaths: values,
       });
+      if (res.error) {
+        throw new Error(res.error);
+      }
     } else {
       if (
         (el as HTMLInputElement).value !== '' &&
@@ -869,6 +885,8 @@ export namespace BrowserActions {
             },
           ].filter((a) => !!a),
         });
+
+        await Util.sleep(150);
       }
 
       if (values[0].length < 32 && SAFE_KEYPRESS_RE.test(values[0])) {

@@ -15,7 +15,13 @@ export namespace SliderProfile {
     }
     const role = element.getAttribute('role');
     if (role === 'slider') {
-      let v = element.getAttribute('aria-valuenow');
+      const valueText = element.getAttribute('aria-valuetext');
+      const textNum = valueText
+        ? parseFloat(valueText.replace(/[^0-9.\-]/g, ''))
+        : NaN;
+      let v = !Number.isNaN(textNum)
+        ? String(textNum)
+        : element.getAttribute('aria-valuenow');
       if (v) {
         roles.push(`now:${v}`);
       }
