@@ -211,22 +211,22 @@ const handleFrameId = async (event: MessageEvent) => {
   //   }
   // });
 
-  await Util.sleep(1000);
+  // await Util.sleep(1000);
   //
   // const html = await webViewHandler.getHtml();
   //
   // console.log(html.length, html);
   //
-  SliderProfile.slideToVal(
-    {
-      k: 'slideToVal',
-      el: document.querySelectorAll('input[type="range"]').item(1)!,
-      q: '123',
-      num: 15,
-    },
-    'l',
-    {},
-  );
+  // SliderProfile.slideToVal(
+  //   {
+  //     k: 'slideToVal',
+  //     el: document.querySelectorAll('input[type="range"]').item(1)!,
+  //     q: '123',
+  //     num: 15,
+  //   },
+  //   'l',
+  //   {},
+  // );
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

@@ -48,6 +48,10 @@ class DummyCursor {
     document.body.appendChild(this.dom);
     window.electronDummyCursor = this.dom;
   }
+  isTopElementOrChild(target: Element, x: number, y: number) {
+    const elementFromPoint = this.hide(() => document.elementFromPoint(x, y));
+    return !!elementFromPoint && (elementFromPoint === target || target.contains(elementFromPoint));
+  }
   findScrollableElToAvoid(target: Element | Window) {
     const { body } = document;
     let el: Element | null = document.elementFromPoint(this.x, this.y);
@@ -334,6 +338,11 @@ class DummyCursor {
         clientX = this.x;
         clientY = this.y;
       }
+      if (elOrRect instanceof Element) {
+        if (!this.isTopElementOrChild(elOrRect, clientX, clientY)) {
+          throw new Error('mouseEvent target is covered');
+        }
+      }
     }
     let events: MouseInputEventWithDelay[] = [];
     switch (action) {
@@ -517,17 +526,10 @@ class DummyCursor {
           await this.moveToRect(thisRect, exact, retry + 1);
         }
       } else if (
-        document.elementFromPoint(lastPoint.x, lastPoint.y) !== rectOrEl
+        !this.isTopElementOrChild(rectOrEl as Element, lastPoint.x, lastPoint.y)
       ) {
-        if (
-          retry === 0 ||
-          !document
-            .elementsFromPoint(lastPoint.x, lastPoint.y)
-            .includes(rectOrEl as Element)
-        ) {
-          console.log('rect move el', rectOrEl);
-          await this.moveToRect(rectOrEl, exact, retry + 1);
-        }
+        console.log('rect move el', rectOrEl);
+        await this.moveToRect(rectOrEl, exact, retry + 1);
       }
     }
 

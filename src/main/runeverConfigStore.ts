@@ -17,10 +17,13 @@ const { Entry } = runtimeRequire(
   '@napi-rs/keyring',
 ) as typeof import('@napi-rs/keyring');
 
+const codexAuthModeSchema = z.enum(['apiKey', 'login']);
+
 const storedApiKeySchema = z.object({
-  provider: z.enum(['openai', 'google', 'zai']),
+  provider: z.enum(['openai', 'google', 'zai', 'codex']),
   apiKey: z.string(),
   baseUrl: z.string().optional(),
+  authMode: codexAuthModeSchema.optional(),
 });
 
 const storedArgumentSchema = z.object({

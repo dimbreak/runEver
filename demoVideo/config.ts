@@ -341,7 +341,7 @@ export function longTask(): VideoConfig {
         rate: 16,
       },
       {
-        time: 737,
+        time: 744,
         action: 'text',
         text: 'Human in the loop',
         style: {
@@ -446,7 +446,98 @@ export function amazon(): VideoConfig {
   return {
     videoSrc: 'amazon.mp4',
     startPoint: 0,
-    timeline: [],
+    timeline: [
+      {
+        time: 0.001,
+        action: 'mask',
+        stay: 21,
+        top: 9,
+        left: 8,
+        width: 7,
+        height: 7,
+        fadeDuration: 0.01,
+      },
+      {
+        time: 0.1,
+        action: 'skip',
+        to: 495.5,
+      },
+      {
+        time: 495.5,
+        action: 'speed',
+        rate: 8,
+      },
+      {
+        time: 508.5,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 510,
+        action: 'speed',
+        rate: 8,
+      },
+      {
+        time: 514,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 516,
+        action: 'skip',
+        to: 546,
+      },
+      {
+        time: 546,
+        action: 'speed',
+        rate: 2,
+      },
+      {
+        time: 555,
+        action: 'speed',
+        rate: 16,
+      },
+      {
+        time: 582,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 587,
+        action: 'speed',
+        rate: 16,
+      },
+      {
+        time: 618,
+        action: 'mask',
+        stay: 91,
+        top: 17,
+        left: 2,
+        width: 20,
+        height: 25,
+        fadeDuration: 0.01,
+      },
+      {
+        time: 616,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 620,
+        action: 'speed',
+        rate: 16,
+      },
+      {
+        time: 642,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 648,
+        action: 'skip',
+        to: 685,
+      },
+    ],
   };
 }
 

@@ -210,7 +210,9 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
     try {
       const config = await userApiKeyStore.getConfig('apiKey');
       return {
-        hasApiKey: Boolean(config?.apiKey),
+        hasApiKey:
+          Boolean(config?.apiKey) ||
+          Boolean(config?.provider === 'codex' && config?.authMode === 'login'),
         provider: config?.provider ?? null,
         authMode: getAuthMode(),
       };
@@ -230,6 +232,7 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
         provider: payload.provider,
         apiKey: payload.apiKey,
         baseUrl: payload.baseUrl,
+        authMode: payload.authMode,
       });
     } catch (error) {
       console.error('Failed to store user API key', error);

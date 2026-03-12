@@ -10,14 +10,49 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="player-longTask" class="player-container">
-        <video class="video-player" preload="auto"></video>
+
+    <div class="player-container slide" start-out="4">
+      <h3 out="move-by(0, -500%).easeOut(0.3)">Electron Open-source</h3>
+      <h1 style="color: #666" out="delay(.6).fade-out().easeOut(0.3)">Agentic browser</h1>
+      <h2 style="color: #999" out="delay(.4).move-by(0, 500%).easeOut(0.3)">High Capability</h2>
+      <h2 style="color: #999" out="delay(.2).move-by(0, 500%).easeOut(0.3)">Low cost</h2>
+    </div>
+    <div class="player-container slide" start-in="5" start-out="11">
+      <h3 in="move-from(-100%, 0).easeOut(0.3)" out="fade-out().easeOut(0.3)">Demo</h3>
+      <p in="move-from(-100%, 0).easeOut(0.3)" out="fade-out().easeOut(0.3)">Out of box, In close env:</p>
+      <ul out="fade-out().easeOut(0.3)">
+        <li in="move-from(0, 500%).easeOut(0.3)">login</li>
+        <li in="delay(.2).move-from(0, 500%).easeOut(0.3)">read email</li>
+        <li in="delay(.4).move-from(0, 500%).easeOut(0.3)">fill order form</li>
+        <li in="delay(.6).move-from(0, 500%).easeOut(0.3)">confirm with human</li>
+        <li in="delay(.8).move-from(0, 500%).easeOut(0.3)">update as per human advice</li>
+        <li in="delay(1).move-from(0, 500%).easeOut(0.3)">download invoice and reply client</li>
+      </ul>
+      <p in="delay(1.2).move-from(-100%, 0).easeOut(0.3)" out="fade-out().easeOut(0.3)">
+        In one prompt for 15mins, with GPT-5-<span style="color: #cc0000;font-weight: 800">mini</span></p>
+    </div>
+    <div id="player-longTask" class="player-container" start-in="12" start-out="123">
+        <video in="fade-in().easeOut(0.3)" out="fade-out().easeOut(0.3)" class="video-player" preload="auto"></video>
         <div class="text-overlay-container"></div>
     </div>
 
-    <div id="player-amazon" class="player-container" style="display:none;">
-        <video class="video-player" preload="auto"></video>
+    <div class="player-container slide" start-in="123.5" start-out="128">
+      <h3>Total cost <span style="color: #cc0000">$0.25</span></h3>
+      <img src="cost.png" alt="" style="width: 100%; margin: 1em 0" />
+    </div>
+
+    <div class="player-container slide" start-in="128.5" start-out="133">
+      <h3 in="fade-in().easeOut(0.3)" out="move-by(0, -850%).easeOut(0.3)">Not just mock ENV, work wherever</h3>
+      <p in="fade-in().easeOut(0.3)" out="move-by(0, 850%).easeOut(0.3)">After the hard work, why not treat myself a coffee from Amazon?</p>
+    </div>
+    <div id="player-amazon" class="player-container" start-in="134" start-out="163">
+        <video in="fade-in().easeOut(0.3)" out="fade-out().easeOut(0.3)" class="video-player" preload="auto"></video>
         <div class="text-overlay-container"></div>
+    </div>
+    <div class="player-container slide" start-in="164">
+      <h3 style="color: #333; text-align: center"><span in="move-from(-300%,0).easeOut(0.3)">Do <span style="color: #cc0000">Whatever</span></span> <span in="move-from(300%,0).easeOut(0.3)">For <span style="color: #cc0000">Whoever</span></span></h3>
+      <h1 style="color: #666; text-align: center" in="delay(.2).fade-in().easeOut(0.3)">RunEver</h1>
+      <h3 style=" text-align: center" in="delay(.4).move-from(0, 500%).easeOut(0.3)">Release soon</h3>
     </div>
 
     <script type="module" src="script.js"></script>

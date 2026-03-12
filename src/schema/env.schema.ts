@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
+export const codexAuthModeSchema = z.enum(['apiKey', 'login']);
+
 export const envSchema = z.object({
-  provider: z.enum(['openai', 'google', 'zai']),
+  provider: z.enum(['openai', 'google', 'zai', 'codex']),
   apiKey: z.string(),
   baseUrl: z.string().optional(),
+  authMode: codexAuthModeSchema.optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

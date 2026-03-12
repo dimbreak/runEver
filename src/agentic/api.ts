@@ -19,6 +19,7 @@ import { RuneverConfigStore } from '../main/runeverConfigStore';
 import { getAuthMode } from '../main/authModeStore';
 import { getApiTrustStream } from '../shared/aiGateway';
 import { AsyncQueue } from '../utils/asyncQueue';
+import { createCodexWrapper } from './providers/codex';
 
 const getApiTrustErrorMessage = (error: unknown) => {
   if (error instanceof Error) {
@@ -58,6 +59,7 @@ export namespace LlmApi {
     key: envSchema.shape.apiKey,
     error: z.string().optional(),
     baseUrl: z.string().optional(),
+    authMode: envSchema.shape.authMode,
   });
   export type LlmConfig = z.infer<typeof llmConfigSchema>;
   export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
@@ -65,14 +67,25 @@ export namespace LlmApi {
   export type Attachment = ImagePart | FilePart;
   export type LlmApiModels = {
     provider: Env['provider'];
-    hi: LanguageModelV2 | LanguageModelV3;
-    mid: LanguageModelV2 | LanguageModelV3;
-    low: LanguageModelV2 | LanguageModelV3;
+    hi?: LanguageModelV2 | LanguageModelV3;
+    mid?: LanguageModelV2 | LanguageModelV3;
+    low?: LanguageModelV2 | LanguageModelV3;
     streaming: boolean;
     makeProviderOptions: (
       reason: ReasoningEffort,
       cacheKey: undefined | string,
     ) => Record<string, any>;
+    queryStream?: (options: {
+      prompt: string;
+      systemPrompt?: string;
+      attachments?: Attachment[] | null;
+      cacheKey?: string;
+      model: LlmModelType;
+      reasoningEffort: ReasoningEffort;
+    }) => Promise<{
+      textStream: AsyncIterable<string>;
+      response?: PromiseLike<any>;
+    }>;
   };
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
@@ -98,6 +111,7 @@ export namespace LlmApi {
       api: storedConfig.provider,
       key: storedConfig.apiKey,
       baseUrl: storedConfig.baseUrl,
+      authMode: storedConfig.authMode,
     };
   };
 
@@ -187,6 +201,38 @@ export namespace LlmApi {
                 cacheKey: string | undefined,
               ) => {
                 return {};
+              },
+            });
+            break;
+          }
+          case 'codex': {
+            console.info('createCodexWrapper', apiConfig);
+            const codex = createCodexWrapper({
+              apiKey: apiConfig.key,
+              baseUrl: apiConfig.baseUrl,
+              authMode: apiConfig.authMode,
+            });
+            resolve({
+              provider: 'codex',
+              streaming: true,
+              makeProviderOptions: () => {
+                return {};
+              },
+              queryStream: async ({
+                prompt,
+                systemPrompt,
+                attachments,
+                model,
+                reasoningEffort,
+              }) => {
+                const result = await codex.stream({
+                  prompt,
+                  systemPrompt,
+                  attachments,
+                  model: codex.models[model],
+                  reasoningEffort,
+                });
+                return result;
               },
             });
             break;
@@ -355,19 +401,28 @@ export namespace LlmApi {
         for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
           const monitor = new FirstTokenMonitor(cacheKey);
           let yielded = false;
-          let success = false;
+          let shouldRetry = false;
           let response: PromiseLike<any> | null = null;
 
           try {
-            const streamResult = streamer({
-              model: llmApi[model],
-              providerOptions: llmApi.makeProviderOptions(
-                reasoningEffort,
-                cacheKey,
-              ),
-              prompt: promptObj,
-            });
-            response = streamResult.response;
+            const streamResult = llmApi.queryStream
+              ? await llmApi.queryStream({
+                  prompt,
+                  systemPrompt,
+                  attachments,
+                  cacheKey,
+                  model,
+                  reasoningEffort,
+                })
+              : streamer({
+                  model: llmApi[model]!,
+                  providerOptions: llmApi.makeProviderOptions(
+                    reasoningEffort,
+                    cacheKey,
+                  ),
+                  prompt: promptObj,
+                });
+            response = streamResult.response ?? null;
             monitor.start();
 
             for await (const part of streamResult.textStream) {
@@ -377,22 +432,10 @@ export namespace LlmApi {
               yielded = true;
               q.push(part);
             }
-            success = true;
-          } catch (err) {
-            lastError = err;
-            monitor.stop();
-            if (isNoOutputGeneratedError(err) && !yielded) {
-              if (attempt < maxStreamRetries) {
-                console.warn('No output generated; retrying stream.', err);
-                continue;
-              }
+            if (!yielded) {
+              throw new Error('No output generated.');
             }
-            console.error('Error during LLM streaming:', err);
-            q.fail(err as Error);
-          } finally {
-            monitor.stop();
-            q.close();
-            if (success && response) {
+            if (response) {
               console.log(`api call ok ${cacheKey}`);
               try {
                 const res = await response;
@@ -409,13 +452,33 @@ export namespace LlmApi {
                 console.warn('Failed to write LLM log', logError);
               }
             }
+            q.close();
+            return;
+          } catch (err) {
+            lastError = err;
+            if (isNoOutputGeneratedError(err) && !yielded) {
+              if (attempt < maxStreamRetries) {
+                console.warn('No output generated; retrying stream.', err);
+                shouldRetry = true;
+              } else {
+                lastError = new Error('No output generated.');
+              }
+            }
+          } finally {
+            monitor.stop();
           }
-
-          if (success) return;
+          if (shouldRetry) {
+            continue;
+          }
+          console.error('Error during LLM streaming:', lastError);
+          q.fail(lastError as Error);
+          q.close();
+          return;
         }
         if (lastError) {
-          q.fail(new Error('No output generated.'));
+          q.fail(lastError as Error);
         }
+        q.close();
       })();
       return q;
     }

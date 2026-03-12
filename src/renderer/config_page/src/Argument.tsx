@@ -3,8 +3,6 @@ import { DataGrid, Column, RenderEditCellProps } from 'react-data-grid';
 import 'react-data-grid/lib/styles.css';
 import { Plus, Search, Filter } from 'lucide-react';
 
-// --- Types ---
-
 interface ArgumentValue {
   value: string;
   isSecret: boolean;
@@ -29,8 +27,6 @@ interface Row {
   domain: string;
 }
 
-// --- Editors ---
-
 function TextEditor({
   row,
   column,
@@ -47,53 +43,6 @@ function TextEditor({
     />
   );
 }
-//
-// function BooleanEditor({
-//   row,
-//   column,
-//   onRowChange,
-//   onClose,
-// }: RenderEditCellProps<Row>) {
-//   return (
-//     <div className="flex h-full items-center justify-center bg-white">
-//       <input
-//         type="checkbox"
-//         className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-//         checked={!!row[column.key as keyof Row]}
-//         onChange={(e) => {
-//           onRowChange({ ...row, [column.key]: e.target.checked });
-//           onClose(true);
-//         }}
-//         onBlur={() => onClose(true)}
-//         // eslint-disable-next-line jsx-a11y/no-autofocus
-//         autoFocus
-//       />
-//     </div>
-//   );
-// }
-
-// function RiskEditor({ row, onRowChange, onClose }: RenderEditCellProps<Row>) {
-//   return (
-//     <select
-//       className="h-full w-full bg-white px-2 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-//       value={row.riskLevel}
-//       onChange={(e) => {
-//         console.log(e.target.value);
-//         onRowChange({ ...row, riskLevel: e.target.value });
-//         onClose(true);
-//       }}
-//       onBlur={() => onClose(true)}
-//       // eslint-disable-next-line jsx-a11y/no-autofocus
-//       autoFocus
-//     >
-//       <option value="low">Low</option>
-//       <option value="medium">Medium</option>
-//       <option value="high">High</option>
-//     </select>
-//   );
-// }
-
-// --- Utils ---
 
 function getRowsFromConfig(config: Record<string, ArgumentValue>): Row[] {
   return Object.entries(config).map(([key, val]) => ({
@@ -104,8 +53,6 @@ function getRowsFromConfig(config: Record<string, ArgumentValue>): Row[] {
     domain: val.domain || '',
   }));
 }
-
-// --- Components ---
 
 function ArgumentsPage() {
   const [data, setData] = useState<Record<string, ArgumentValue>>({});
@@ -143,7 +90,10 @@ function ArgumentsPage() {
   }, []);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      return undefined;
+    }
+
     const saveConfig = async () => {
       const argsArray = Object.entries(data).map(([name, val]) => ({
         name,
@@ -207,9 +157,9 @@ function ArgumentsPage() {
       key: 'isSecret',
       name: 'Is Secret',
       renderCell: (props) => (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events,jsx-a11y/no-static-element-interactions
-        <div
-          className="flex h-full items-center justify-center"
+        <button
+          type="button"
+          className="flex h-full w-full items-center justify-center bg-transparent"
           onClick={() => {
             const newRows = rows.slice();
             newRows[props.rowIdx].isSecret = !newRows[props.rowIdx].isSecret;
@@ -217,13 +167,15 @@ function ArgumentsPage() {
               indexes: [props.rowIdx],
             });
           }}
+          aria-label={`Toggle secret for ${props.row.key}`}
         >
           <input
             type="checkbox"
             checked={props.row.isSecret}
+            readOnly
             className="pointer-events-none h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
           />
-        </div>
+        </button>
       ),
     },
     {
@@ -311,13 +263,27 @@ function ArgumentsPage() {
       </div>
 
       <div className="flex-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <DataGrid
-          columns={columns}
-          rows={filteredRows}
-          className="rdg-light h-full"
-          onRowsChange={onRowsChange}
-          rowClass={() => 'text-sm'}
-        />
+        <div className="flex h-full flex-col">
+          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm text-slate-600">
+              Need provider credentials first?{' '}
+              <a
+                href="/apikey"
+                className="font-medium text-blue-600 underline-offset-2 hover:underline"
+              >
+                Open API Key Configuration
+              </a>
+              .
+            </p>
+          </div>
+          <DataGrid
+            columns={columns}
+            rows={filteredRows}
+            className="rdg-light h-full"
+            onRowsChange={onRowsChange}
+            rowClass={() => 'text-sm'}
+          />
+        </div>
       </div>
     </div>
   );

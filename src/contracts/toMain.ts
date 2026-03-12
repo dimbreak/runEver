@@ -81,6 +81,7 @@ export namespace ToMainIpc {
         provider: Env['provider'];
         apiKey: string;
         baseUrl?: string;
+        authMode?: 'apiKey' | 'login';
       },
     ],
     void

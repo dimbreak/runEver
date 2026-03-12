@@ -1013,6 +1013,7 @@ export namespace BrowserActions {
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
+    // todo check if el is not covered, throw error if so
     console.log('mouse', action, el);
     switch (action.a) {
       case 'click':

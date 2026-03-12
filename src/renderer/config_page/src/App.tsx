@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AuthProvider } from '@apitrust/react';
 import { Box, Key } from 'lucide-react';
 import clsx from 'clsx';
@@ -6,6 +6,36 @@ import Argument from './Argument';
 import ApiKey from './ApiKey';
 
 type TabId = 'apikey' | 'arguments';
+
+const DEFAULT_TAB: TabId = 'apikey';
+
+const isTabId = (value: string | null | undefined): value is TabId =>
+  value === 'apikey' || value === 'arguments';
+
+const getTabFromLocation = (): TabId => {
+  if (typeof window === 'undefined') {
+    return DEFAULT_TAB;
+  }
+
+  const pathTab = window.location.pathname.replace(/^\/+/, '').split('/')[0];
+  if (isTabId(pathTab)) {
+    return pathTab;
+  }
+
+  const hashTab = window.location.hash.replace(/^#\/?/, '').split('/')[0];
+  if (isTabId(hashTab)) {
+    return hashTab;
+  }
+
+  const queryTab = new URLSearchParams(window.location.search).get('tab');
+  if (isTabId(queryTab)) {
+    return queryTab;
+  }
+
+  return DEFAULT_TAB;
+};
+
+const getTabHref = (tab: TabId) => `/${tab}`;
 
 function Sidebar({
   activeTab,
@@ -25,10 +55,13 @@ function Sidebar({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <a
               key={tab.id}
-              type="button"
-              onClick={() => onTabChange(tab.id)}
+              href={getTabHref(tab.id)}
+              onClick={(event) => {
+                event.preventDefault();
+                onTabChange(tab.id);
+              }}
               className={clsx(
                 'group relative flex items-center gap-3 rounded-xl p-3 text-sm font-medium transition-all duration-200',
                 isActive
@@ -42,7 +75,7 @@ function Sidebar({
               {isActive && (
                 <div className="absolute top-1/2 -right-3 h-8 w-1 -translate-y-1/2 rounded-l-full bg-blue-600" />
               )}
-            </button>
+            </a>
           );
         })}
       </div>
@@ -51,8 +84,13 @@ function Sidebar({
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('apikey');
+  const [activeTab, setActiveTab] = useState<TabId>(() => getTabFromLocation());
   const [env, setEnv] = useState<any>(null);
+
+  const handleTabChange = useCallback((tab: TabId) => {
+    setActiveTab(tab);
+    window.history.pushState({}, '', getTabHref(tab));
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -69,6 +107,20 @@ export default function App() {
       }
     }
     load();
+  }, []);
+
+  useEffect(() => {
+    const handleNavigation = () => {
+      setActiveTab(getTabFromLocation());
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    window.addEventListener('hashchange', handleNavigation);
+
+    return () => {
+      window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('hashchange', handleNavigation);
+    };
   }, []);
 
   if (!env) {
@@ -91,7 +143,6 @@ export default function App() {
       }}
     >
       <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
-        {/* Main Content Area */}
         <div className="flex-1 overflow-hidden p-6">
           <div className="mx-auto flex h-full max-w-6xl flex-col">
             {activeTab === 'apikey' && <ApiKey />}
@@ -99,8 +150,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
     </AuthProvider>
   );
