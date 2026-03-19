@@ -1,4 +1,4 @@
-import { longTask, amazon } from './config.js';
+import { longTask, amazon, spark } from './config.js';
 import {
   TimelineEvent,
   ZoomEvent,
@@ -145,12 +145,16 @@ function buildAnimation(
 
 interface SlideInfo {
   el: HTMLElement;
-  startIn: number; // seconds – when to show (0 means immediately visible)
-  startOut: number; // seconds – when to hide (Infinity means stays forever)
+  delayIn: number;
+  stay: number;
+  afterOut: number;
+  startIn: number; // calculated seconds – when to show
+  startOut: number; // calculated seconds – when to hide
   childAnimations: {
     el: HTMLElement;
     inCmds: AnimCommand[];
     outCmds: AnimCommand[];
+    removeCmds: AnimCommand[];
   }[];
   state: 'hidden' | 'entering' | 'visible' | 'exiting' | 'exited';
   isVideoSlide: boolean;
@@ -172,12 +176,15 @@ function initPresentation() {
 
   containers.forEach((container) => {
     const el = container as HTMLElement;
-    const startIn = el.hasAttribute('start-in')
-      ? parseFloat(el.getAttribute('start-in')!)
+    const delayIn = el.hasAttribute('delayIn')
+      ? parseFloat(el.getAttribute('delayIn')!)
       : 0;
-    const startOut = el.hasAttribute('start-out')
-      ? parseFloat(el.getAttribute('start-out')!)
+    const stay = el.hasAttribute('stay')
+      ? parseFloat(el.getAttribute('stay')!)
       : Infinity;
+    const afterOut = el.hasAttribute('afterOut')
+      ? parseFloat(el.getAttribute('afterOut')!)
+      : 0;
 
     const isVideoSlide = !!el.querySelector('.video-player');
 
@@ -190,6 +197,7 @@ function initPresentation() {
         el: childEl,
         inCmds: parseAnimString(childEl.getAttribute('in')),
         outCmds: parseAnimString(childEl.getAttribute('out')),
+        removeCmds: parseAnimString(childEl.getAttribute('remove')),
       });
     });
 
@@ -200,7 +208,11 @@ function initPresentation() {
       const child = allDirectChildren[i] as HTMLElement;
       if (child.classList.contains('text-overlay-container')) continue;
       if (child.classList.contains('video-player')) continue;
-      if (!child.hasAttribute('in') && !child.hasAttribute('out')) {
+      if (
+        !child.hasAttribute('in') &&
+        !child.hasAttribute('out') &&
+        !child.hasAttribute('remove')
+      ) {
         // Wrap implicitly – they fade in/out with the slide
         childAnimations.push({
           el: child,
@@ -220,6 +232,7 @@ function initPresentation() {
               easeDuration: 0.3,
             },
           ],
+          removeCmds: [],
         });
       }
     }
@@ -244,12 +257,16 @@ function initPresentation() {
       const { id } = el;
       if (id === 'player-longTask') videoPlayerInstance = players.longTask;
       else if (id === 'player-amazon') videoPlayerInstance = players.amazon;
+      else if (id === 'player-spark') videoPlayerInstance = players.spark;
     }
 
     slides.push({
       el,
-      startIn,
-      startOut,
+      delayIn,
+      stay,
+      afterOut,
+      startIn: 0,
+      startOut: Infinity,
       childAnimations,
       state: 'hidden',
       isVideoSlide,
@@ -257,7 +274,32 @@ function initPresentation() {
     });
   });
 
-  // Sort slides by startIn
+  let currentTime = 0;
+  for (const slide of slides) {
+    slide.startIn = currentTime + slide.delayIn;
+    slide.startOut = slide.startIn + slide.stay;
+
+    // calculate maxOutDuration
+    let maxOutDuration = 0;
+    if (slide.childAnimations.length > 0) {
+      maxOutDuration = slide.childAnimations.reduce((max, { outCmds }) => {
+        let d = 0;
+        let dur = 0.3; // default easeDuration
+        if (outCmds.length === 0) return Math.max(max, 0.3); // default fade-out takes 0.3s
+        for (const cmd of outCmds) {
+          if (cmd.name === 'delay') d = cmd.args[0] || 0;
+          if (cmd.easeDuration) dur = cmd.easeDuration;
+        }
+        return Math.max(max, d + dur);
+      }, 0);
+    }
+
+    if (slide.stay !== Infinity) {
+      currentTime = slide.startOut + maxOutDuration;
+    }
+  }
+
+  // Sort slides by startIn just in case
   slides.sort((a, b) => a.startIn - b.startIn);
 }
 
@@ -290,7 +332,11 @@ function enterSlide(slide: SlideInfo) {
 
     for (const cmd of inCmds) {
       if (cmd.name === 'move-from') {
-        startTransform = `translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+        startTransform += ` translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+      }
+      if (cmd.name === 'zoomTo') {
+        startTransform += ` translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+        startTransform += ` scale(${(cmd.args[2] !== undefined ? cmd.args[2] : 100) / 100})`;
       }
       if (cmd.name === 'fade-in') {
         startOpacity = '0';
@@ -305,6 +351,10 @@ function enterSlide(slide: SlideInfo) {
     el.style.opacity = startOpacity;
     el.style.transform = startTransform;
 
+    // Force reflow so the browser registers the initial state before transition
+    // eslint-disable-next-line no-void
+    void el.offsetWidth;
+
     // Now apply the transition to END state
     Object.assign(el.style, css);
     el.style.opacity = '1';
@@ -314,7 +364,11 @@ function enterSlide(slide: SlideInfo) {
   // Start video if this is a video slide
   if (slide.isVideoSlide && slide.videoPlayerInstance) {
     const player = slide.videoPlayerInstance;
-    const configFn = player === players.longTask ? longTask : amazon;
+    let configFn = amazon;
+    if (player === players.longTask) configFn = longTask;
+    else if (player === players.amazon) configFn = amazon;
+    else if (player === players.spark) configFn = spark;
+
     startVideoPlayer(player, configFn);
   }
 
@@ -359,7 +413,11 @@ function exitSlide(slide: SlideInfo) {
 
     for (const cmd of outCmds) {
       if (cmd.name === 'move-by') {
-        endTransform = `translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+        endTransform += ` translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+      }
+      if (cmd.name === 'zoomTo') {
+        endTransform += ` translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+        endTransform += ` scale(${(cmd.args[2] !== undefined ? cmd.args[2] : 100) / 100})`;
       }
       if (cmd.name === 'fade-out') {
         endOpacity = '0';
@@ -384,8 +442,7 @@ function exitSlide(slide: SlideInfo) {
     player.video.pause();
   }
 
-  // After animations complete, fully hide the slide
-  const maxDelay = slide.childAnimations.reduce((max, { outCmds }) => {
+  const maxOutDelay = slide.childAnimations.reduce((max, { outCmds }) => {
     let d = 0;
     let dur = 0.3;
     for (const cmd of outCmds) {
@@ -395,16 +452,62 @@ function exitSlide(slide: SlideInfo) {
     return Math.max(max, d + dur);
   }, 0.3);
 
+  const maxRemoveDelay = slide.childAnimations.reduce((max, { removeCmds }) => {
+    let d = 0;
+    let dur = 0.3;
+    if (!removeCmds || removeCmds.length === 0) return max;
+    for (const cmd of removeCmds) {
+      if (cmd.name === 'delay') d = cmd.args[0] || 0;
+      if (cmd.easeDuration) dur = cmd.easeDuration;
+    }
+    return Math.max(max, d + dur);
+  }, 0.0);
+
   setTimeout(
     () => {
-      if (slide.state === 'exiting') {
-        slide.state = 'exited';
-        slide.el.style.opacity = '0';
-        slide.el.style.visibility = 'hidden';
-        slide.el.style.pointerEvents = 'none';
-      }
+      if (slide.state !== 'exiting') return;
+
+      slide.childAnimations.forEach(({ el, removeCmds }) => {
+        if (!removeCmds || removeCmds.length === 0) return;
+
+        const { css } = buildAnimation(removeCmds, 'out');
+        let endTransform = el.style.transform;
+        let endOpacity = el.style.opacity;
+
+        for (const cmd of removeCmds) {
+          if (cmd.name === 'move-by') {
+            endTransform += ` translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+          }
+          if (cmd.name === 'zoomTo') {
+            endTransform += ` translate(${cmd.args[0] || 0}%, ${cmd.args[1] || 0}%)`;
+            endTransform += ` scale(${(cmd.args[2] !== undefined ? cmd.args[2] : 100) / 100})`;
+          }
+          if (cmd.name === 'fade-out') endOpacity = '0';
+        }
+
+        Object.assign(el.style, css);
+        el.style.opacity = endOpacity;
+        if (endTransform) {
+          if (getComputedStyle(el).display === 'inline') {
+            el.style.display = 'inline-block';
+          }
+          el.style.transform = endTransform;
+        }
+      });
+
+      setTimeout(
+        () => {
+          if (slide.state === 'exiting') {
+            slide.state = 'exited';
+            slide.el.style.opacity = '0';
+            slide.el.style.visibility = 'hidden';
+            slide.el.style.pointerEvents = 'none';
+          }
+        },
+        maxRemoveDelay * 1000 + 100,
+      );
     },
-    maxDelay * 1000 + 100,
+    maxOutDelay * 1000 + slide.afterOut * 1000,
   );
 }
 
@@ -534,6 +637,7 @@ function createPlayer(containerId: string): PlayerInstance {
 const players = {
   longTask: createPlayer('player-longTask'),
   amazon: createPlayer('player-amazon'),
+  spark: createPlayer('player-spark'),
 };
 
 // Preload video sources (but keep paused — only play when slide enters)
@@ -541,6 +645,8 @@ players.longTask.video.src = longTask().videoSrc;
 players.longTask.video.pause();
 players.amazon.video.src = amazon().videoSrc;
 players.amazon.video.pause();
+players.spark.video.src = spark().videoSrc;
+players.spark.video.pause();
 
 // ---- Start a video player with its config ----
 
@@ -601,6 +707,7 @@ function reset() {
   stopPresentation();
   resetPlayer(players.longTask);
   resetPlayer(players.amazon);
+  resetPlayer(players.spark);
 }
 
 // Expose to window
@@ -608,6 +715,7 @@ function reset() {
   start: startPresentation,
   longTask,
   amazon,
+  spark,
   reset,
   players,
 };

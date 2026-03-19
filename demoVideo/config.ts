@@ -76,8 +76,8 @@ export function longTask(): VideoConfig {
         time: 12.5,
         action: 'zoom',
         x: 0,
-        y: 70,
-        scale: 1.2,
+        y: 0,
+        scale: 1,
         duration: 0.5,
         ease: 'ease-in-out',
       },
@@ -112,6 +112,15 @@ export function longTask(): VideoConfig {
         animation: 'typing',
         typingSpeed: 1,
         stay: 2,
+      },
+      {
+        time: 64,
+        action: 'zoom',
+        x: 0,
+        y: 70,
+        scale: 1.2,
+        duration: 0.5,
+        ease: 'ease-in-out',
       },
       {
         time: 72,
@@ -503,6 +512,16 @@ export function amazon(): VideoConfig {
         rate: 1,
       },
       {
+        time: 586,
+        action: 'mask',
+        stay: 33,
+        top: 45,
+        left: 65,
+        width: 10,
+        height: 5,
+        fadeDuration: 0.01,
+      },
+      {
         time: 587,
         action: 'speed',
         rate: 16,
@@ -536,6 +555,37 @@ export function amazon(): VideoConfig {
         time: 648,
         action: 'skip',
         to: 685,
+      },
+    ],
+  };
+}
+
+export function spark(): VideoConfig {
+  return {
+    videoSrc: 'spark.mp4',
+    startPoint: 0,
+    timeline: [
+      {
+        time: 0,
+        action: 'speed',
+        rate: 1,
+      },
+      {
+        time: 1,
+        action: 'text',
+        text: '1x speed, no skipping',
+        style: {
+          color: '#fff',
+          fontSize: '40px',
+          textShadow: 'none',
+        },
+        position: {
+          top: '20%',
+          left: '5%',
+        },
+        animation: 'typing',
+        typingSpeed: 1,
+        stay: 10,
       },
     ],
   };
