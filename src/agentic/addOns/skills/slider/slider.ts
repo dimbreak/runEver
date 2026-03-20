@@ -1,10 +1,10 @@
-import { Profile } from '../profile';
+import { AddOns } from '../../addons';
 
-Profile.register({
+AddOns.register({
   name: 'slider',
   workWithSession: ['execution'],
-  promptPreprocess: async <T extends Partial<Profile.ExePromptParts>>(
-    sessionType: Profile.SessionType,
+  promptPreprocess: async <T extends Partial<AddOns.ExePromptParts>>(
+    sessionType: AddOns.SessionType,
     promptParts: T,
   ) => {
     if (promptParts.userHeader && promptParts.html) {

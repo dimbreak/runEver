@@ -1,9 +1,9 @@
-import { BrowserActionRisk } from '../../../main/llm/roles/system/planner.schema';
-import { dummyCursor } from '../../../webView/cursor/cursor';
-import { BrowserActions, WireActionToExec } from '../../../webView/actions';
-import { Util } from '../../../webView/util';
+import { BrowserActionRisk } from '../../../../main/llm/roles/system/planner.schema';
+import { dummyCursor } from '../../../../webView/cursor/cursor';
+import { BrowserActions, WireActionToExec } from '../../../../webView/actions';
+import { Util } from '../../../../webView/util';
 
-export namespace SliderProfile {
+export namespace SliderSkill {
   export const slideToVal = async (
     action: Extract<WireActionToExec, { k: 'slideToVal' }>,
     risk: BrowserActionRisk,

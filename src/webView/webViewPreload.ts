@@ -10,7 +10,7 @@ import { type WireActionWithWaitAndRec } from '../agentic/types';
 import { takeScreenshot } from './screenshot';
 import type { RunEverConfig } from '../main/runeverConfigStore';
 import { CommonUtil } from '../utils/common';
-import { SliderProfile } from '../agentic/profile/widget/slider.webView';
+import { SliderSkill } from '../agentic/addOns/skills/slider/slider.webView';
 
 Network.initListener();
 
@@ -214,19 +214,6 @@ const handleFrameId = async (event: MessageEvent) => {
   //     });
   //   }
   // });
-
-  await Util.sleep(1000);
-
-  SliderProfile.slideToVal(
-    {
-      k: 'slideToVal',
-      el: document.querySelectorAll('input[type="range"]').item(1)!,
-      q: '123',
-      num: 15,
-    },
-    'l',
-    {},
-  );
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

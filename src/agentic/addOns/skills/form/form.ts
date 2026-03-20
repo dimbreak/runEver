@@ -1,14 +1,14 @@
 import { WebContents } from 'electron';
-import { Profile } from '../../profile';
+import { AddOns } from '../../addons';
 
 const rteRx = / contenteditable[ >]/i;
 const formRx = /<form[^>]+id=([^> ]+)[^>]+label=[^> ]*fields:([0-9]+)/g;
 
-Profile.register({
+AddOns.register({
   name: 'form',
   workWithSession: ['execution'],
-  promptPreprocess: async <T extends Partial<Profile.ExePromptParts>>(
-    sessionType: Profile.SessionType,
+  promptPreprocess: async <T extends Partial<AddOns.ExePromptParts>>(
+    sessionType: AddOns.SessionType,
     promptParts: T,
   ) => {
     if (promptParts.userHeader && promptParts.html) {

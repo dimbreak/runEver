@@ -110,6 +110,11 @@ export const ChecklistActionSchema = z.object({
     .nullable(),
 });
 
+export const UseSkillsActionSchema = z.object({
+  k: z.literal('useSkills'),
+  s: z.array(z.string()),
+});
+
 export const AddNewTaskActionSchema = z.object({
   k: z.literal('addNewTask'),
   afterCpId: z.number().optional().nullable(),

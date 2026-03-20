@@ -1,11 +1,11 @@
-import { SliderProfile } from '../agentic/profile/widget/slider.html';
+import { SliderSkill } from '../agentic/addOns/skills/slider/slider.html';
 import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
 import {
   checkCalendar,
   cleanCalendarHtml,
-} from '../agentic/profile/widget/calendar/calendar.html';
-import { checkFormAndFieldCount } from '../agentic/profile/widget/form/form.html';
+} from '../agentic/addOns/skills/calendar/calendar.html';
+import { checkFormAndFieldCount } from '../agentic/addOns/skills/form/form.html';
 
 const tagMatchRx = /<([a-z0-9]+)([\w\W]*?)<\/\1>/g;
 export namespace MiniHtml {
@@ -144,7 +144,6 @@ export namespace MiniHtml {
     const tagName = element.tagName.toLowerCase();
     const role = (element.getAttribute('role') || '').toLowerCase();
     if (tagName === 'div') {
-      // move to profile
       if (element.classList.contains('rc-select')) {
         const roles = ['rcSelect'];
         if (element.classList.contains('rc-select-show-search')) {
@@ -161,7 +160,7 @@ export namespace MiniHtml {
     }
     const extra = '';
     const res =
-      SliderProfile.checkSlider(tagName, element) ??
+      SliderSkill.checkSlider(tagName, element) ??
       checkCalendar(tagName, element) ??
       (tagName === 'form'
         ? checkFormAndFieldCount(element as HTMLFormElement)

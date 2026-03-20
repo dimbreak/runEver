@@ -9,7 +9,7 @@ import { Util } from '../webView/util';
 import { PromptAttachment } from '../schema/attachments';
 import { WireTabAction, RiskOrComplexityLevel } from './execution.schema';
 import { CommonUtil } from '../utils/common';
-import './profile/smartAction.registry';
+import './addOns/smartAction.registry';
 import { RunEverConfig, RuneverConfigStore } from '../main/runeverConfigStore';
 import { isMac } from '../main/util';
 import { estimatePromptComplexity } from '../utils/llm';
@@ -21,6 +21,7 @@ import {
 } from './constants';
 import type { RunEverWindow } from '../main/window';
 import { TaskSnapshot, WireActionStatus } from '../schema/taskSnapshot';
+import { AddOns } from './addOns/addons';
 
 const testPrompt: { user: string; system: string } | null = {
   user: `[every request]
@@ -660,9 +661,7 @@ export class Session {
 
   private syncOverlayVisibility() {
     this.overlayWebView.setVisible(
-      this.overlayMaskActive ||
-        this.overlayCursorVisible ||
-        this.overlayDropdownVisible,
+      this.overlayMaskActive || this.overlayDropdownVisible,
     );
   }
 
@@ -887,7 +886,7 @@ export class Session {
   }
 
   async updateOverlayCursor(x: number, y: number) {
-    if (x < 0 || y < 0 || !this.focusedTab) {
+    if (!this.overlayMaskActive || x < 0 || y < 0 || !this.focusedTab) {
       await this.setOverlayCursorVisible(false);
       return;
     }
@@ -902,7 +901,7 @@ export class Session {
     }
     this.focusedTab = tab;
     this.syncOverlayBounds(tab.bounds);
-    if (tab.mouseX >= 0 && tab.mouseY >= 0) {
+    if (this.overlayMaskActive && tab.mouseX >= 0 && tab.mouseY >= 0) {
       this.updateOverlayCursor(tab.mouseX, tab.mouseY).catch(() => undefined);
     } else {
       this.setOverlayCursorVisible(false).catch(() => undefined);
@@ -943,7 +942,7 @@ export class Session {
     this.syncOverlayBounds(detail.bounds);
     const response = await wvTab.operate(detail);
     this.syncOverlayBounds(wvTab.bounds);
-    if (wvTab.mouseX >= 0 && wvTab.mouseY >= 0) {
+    if (this.overlayMaskActive && wvTab.mouseX >= 0 && wvTab.mouseY >= 0) {
       await this.updateOverlayCursor(wvTab.mouseX, wvTab.mouseY);
     } else {
       await this.setOverlayCursorVisible(false);
@@ -1729,11 +1728,11 @@ ${JSON.stringify(actionToFix)}`,
 
   private dispatchAction(nextAction: WireActionWithWaitAndRec) {
     this.browserActionLock.tryLock();
-    if ((nextAction.action as any)?.k === 'tab') {
+    if (nextAction.action?.k === 'tab') {
       this.handleTabAction(nextAction.id, nextAction.action as WireTabAction);
       return;
     }
-    if ((nextAction.action as any)?.k === 'botherUser') {
+    if (nextAction.action?.k === 'botherUser') {
       this.handleBotherUserAction(nextAction);
       return;
     }

@@ -12,8 +12,8 @@ import {
   JsonStreamingEventType,
   JsonStreamingParser,
 } from '../main/llm/jsonStreamer';
-import { Profile } from './profile/profile';
-import './profile/registry';
+import { AddOns } from './addOns/addons';
+import './addOns/registry';
 import { Session } from './session';
 import { taskHeader } from './prompts/header';
 import { getExecutorSys } from './prompts/executorSys';
@@ -87,7 +87,7 @@ export class ExecutionPrompter {
   }`,
       );
     }
-    const promptParts = await Profile.process(
+    const promptParts = await AddOns.process(
       'execution',
       {
         goal: goalPrompt,

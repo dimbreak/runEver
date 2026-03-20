@@ -8,7 +8,7 @@ import { estimatePromptComplexity } from '../../../../utils/llm';
 import { SmartActionSession } from '../../smartAction.class';
 import { LlmApi } from '../../../api';
 import queryLLMApi = LlmApi.queryLLMApi;
-import { Profile } from '../../profile';
+import { AddOns } from '../../addons';
 import wrapStream = LlmApi.wrapStream;
 
 class CalendarSmartAction extends SmartActionSession {
@@ -76,7 +76,7 @@ ${Object.values(action.action.ctx)
     )) as string;
     const html =
       (
-        await Profile.process(
+        await AddOns.process(
           'execution',
           {
             goal: 'dummy',

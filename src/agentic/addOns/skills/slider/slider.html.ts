@@ -1,4 +1,4 @@
-export namespace SliderProfile {
+export namespace SliderSkill {
   export const checkSlider = (tagName: string, element: Element) => {
     const roles = [];
     if (tagName === 'input') {

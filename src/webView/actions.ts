@@ -8,11 +8,11 @@ import { Network } from './network';
 import { WireAction, WireWait } from '../agentic/execution.schema';
 import { WireActionWithWaitAndRec } from '../agentic/types';
 import { MiniHtml } from './miniHtml';
-import { SliderProfile } from '../agentic/profile/widget/slider.webView';
+import { SliderSkill } from '../agentic/addOns/skills/slider/slider.webView';
 import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
 import { takeScreenshot } from './screenshot';
-import { fillFormExec } from '../agentic/profile/widget/form/form.html';
+import { fillFormExec } from '../agentic/addOns/skills/form/form.html';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -240,8 +240,7 @@ export namespace BrowserActions {
     return {
       t: 'blockHereAndWaitForNewIncomingMsg',
       q: action.dialog,
-      id1st:
-        window.webView.getIdFromEl(id1stEl) ?? getUniqueSelector(id1stEl),
+      id1st: window.webView.getIdFromEl(id1stEl) ?? getUniqueSelector(id1stEl),
       idLast:
         window.webView.getIdFromEl(idLastEl) ?? getUniqueSelector(idLastEl),
     };
@@ -451,7 +450,7 @@ export namespace BrowserActions {
             if (await execInIframeOrEl(rec, action.q, args)) {
               continue;
             }
-            execFn = SliderProfile.slideToVal;
+            execFn = SliderSkill.slideToVal;
             break;
           case 'setArg': {
             const kvs = Object.entries(action.kv);
@@ -588,6 +587,7 @@ export namespace BrowserActions {
             execFn = selectTxt;
             break;
           case 'checklist':
+          case 'useSkills':
             // should not come here
             break;
         }
@@ -771,7 +771,7 @@ export namespace BrowserActions {
       return;
     }
     if (typeAttr === 'range') {
-      await SliderProfile.slideToVal(
+      await SliderSkill.slideToVal(
         {
           k: 'slideToVal',
           q: action.q,

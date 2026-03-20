@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FillFormActionSchema } from './profile/widget/form/form.schema';
+import { FillFormActionSchema } from './addOns/skills/form/form.schema';
 import {
   DndActionSchema,
   DownloadActionSchema,
@@ -25,9 +25,10 @@ import {
   WireWaitDomSchema,
   WireWaitSchema,
   AddNewTaskActionSchema,
+  UseSkillsActionSchema,
 } from './base.schema';
-import { CalendarActionSchema } from './profile/widget/calendar/calendar.schema';
-import { ComboboxActionSchema } from './profile/widget/combobox/combobox.schema';
+import { CalendarActionSchema } from './addOns/skills/calendar/calendar.schema';
+import { ComboboxActionSchema } from './addOns/skills/combobox/combobox.schema';
 
 /** Discriminated union by `k` */
 export const WireActionSchema = z.discriminatedUnion('k', [
@@ -53,6 +54,7 @@ export const WireActionSchema = z.discriminatedUnion('k', [
   ComboboxActionSchema,
   ChecklistActionSchema,
   AddNewTaskActionSchema,
+  UseSkillsActionSchema,
 ]);
 
 /** WireAction & { w?: WireWait; to?: number } */

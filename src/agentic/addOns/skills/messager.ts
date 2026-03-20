@@ -1,20 +1,24 @@
-import { Profile } from '../profile';
+import { WebContents } from 'electron';
+import { AddOns, Skill } from '../addons';
 
 const rx =
   /(?:role:(?:dia)?log|telegram\.org\/|whatsapp\.com\/|discord\.com\/)/i;
 
-Profile.register({
+AddOns.register({
   name: 'messager',
   workWithSession: ['execution'],
-  promptPreprocess: async <T extends Partial<Profile.ExePromptParts>>(
-    sessionType: Profile.SessionType,
+  promptPreprocess: async <T extends Partial<AddOns.ExePromptParts>>(
+    sessionType: AddOns.SessionType,
     promptParts: T,
+    webContent: WebContents,
+    skills: Record<string, Skill>,
   ) => {
     if (
       promptParts.userHeader &&
       promptParts.html &&
       rx.test(promptParts.userHeader + promptParts.html)
     ) {
+      delete skills.messager;
       return {
         ...promptParts,
         userHeader: `${promptParts.userHeader}
@@ -53,6 +57,13 @@ Profile.register({
           ),
       };
     }
+    if (!skills.messager) {
+      skills.messager = {
+        name: 'messager',
+        desc: 'operate web base messager & wait messages',
+      };
+    }
+
     return promptParts;
   },
 });

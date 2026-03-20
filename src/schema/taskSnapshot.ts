@@ -23,6 +23,7 @@ export interface ExeTaskCheckPoint {
   checkPoint: string;
   status: ExeTaskStatus;
   comment?: string;
+  skills?: string[];
 }
 
 export type TaskActionSnapshot = {

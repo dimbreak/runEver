@@ -1,0 +1,9 @@
+import './skills/calendar/calendar';
+import './skills/combobox/combobox';
+import './skills/email';
+import './skills/fileUpload';
+import './skills/form/form';
+import './skills/list';
+import './skills/iframe';
+import './skills/messager';
+import './skills/slider/slider';

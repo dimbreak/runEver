@@ -1,12 +1,12 @@
-import { Profile } from '../profile';
+import { AddOns } from '../addons';
 
 const rx = /(?:inbox|bcc)/i;
 
-Profile.register({
+AddOns.register({
   name: 'email',
   workWithSession: ['execution'],
-  promptPreprocess: async <T extends Partial<Profile.ExePromptParts>>(
-    sessionType: Profile.SessionType,
+  promptPreprocess: async <T extends Partial<AddOns.ExePromptParts>>(
+    sessionType: AddOns.SessionType,
     promptParts: T,
   ) => {
     if (

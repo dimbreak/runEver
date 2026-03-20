@@ -10,7 +10,7 @@ import {
 } from './execution.schema';
 import { Session } from './session';
 import { Prompt, WireActionWithWaitAndRec } from './types';
-import { SmartAction } from './profile/smartAction';
+import { SmartAction } from './addOns/smartAction';
 import { ExecutionPrompter } from './execution';
 import {
   TaskSnapshot,
@@ -19,6 +19,7 @@ import {
   ExeTaskCheckPoint,
   WireActionStatus,
 } from '../schema/taskSnapshot';
+import { AddOns } from './addOns/addons';
 
 export { ExeTaskStatus } from '../schema/taskSnapshot';
 
@@ -504,10 +505,20 @@ ${runSubPrompt}`,
   async *addAction(action: WireActionWithWaitAndRec) {
     const subtask = await SmartAction.buildSubtask(action, this);
     const makeWorking = (): boolean => {
+      const useSkillNames =
+        action.action?.k === 'useSkills' ? action.action.s : null;
+      if (useSkillNames) {
+        AddOns.activateSkills(useSkillNames);
+      }
       if (action.cp && action.cp.length) {
         for (const p of action.cp) {
           const cp = this.checklist[p];
           if (cp) {
+            if (useSkillNames) {
+              cp.skills = cp.skills
+                ? useSkillNames.concat(cp.skills)
+                : useSkillNames;
+            }
             if (cp.status === ExeTaskStatus.Verified) {
               if (!action.unverify) {
                 this.needFix.push(
@@ -528,7 +539,7 @@ ${runSubPrompt}`,
           }
         }
       }
-      return true;
+      return !useSkillNames;
     };
     console.log('addAction', action.intent, action.action.k);
     if (subtask) {
@@ -618,6 +629,9 @@ ${runSubPrompt}`,
           checklist[action.pos]
         ) {
           checklist[action.pos].status = ExeTaskStatus.Cancel;
+          if (checklist[action.pos].skills) {
+            AddOns.deactivateSkill(checklist[action.pos].skills!);
+          }
         }
         break;
       case 'verified':
@@ -632,6 +646,9 @@ ${runSubPrompt}`,
             action.force
           ) {
             checklist[action.pos].status = ExeTaskStatus.Verified;
+            if (checklist[action.pos].skills) {
+              AddOns.deactivateSkill(checklist[action.pos].skills!);
+            }
           } else {
             this.needFix.push(
               `Cannot mark checkpoint#${action.pos} as done as it's not working status${checklist[action.pos].status === ExeTaskStatus.Todo ? ', mark working first' : ''}`,
