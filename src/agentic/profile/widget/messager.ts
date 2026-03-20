@@ -22,17 +22,35 @@ Profile.register({
 [messager guide]
 - in session container, if not indicated per message, left side is the session targets message, right side is users. **latest messages are at the bottom**,
 - if not specified in prompt, get message / reply means last one from desire sender.
-- blockHereAndWaitForNewIncomingMsg can ONLY USE IN 2 CASES: 1. [GOAL] ask you to wait somewhere, 2. you send message and wait for response, control timeout to max 60s to avoid blocking too long.
-- **Wait reply/repsonse MEANS click send message button with blockHereAndWaitForNewIncomingMsg in post wait IMMEDIATELY, SEND AND WAIT**. add later could miss reply
-- NO ONE WILL **REPLY/RESPONSE** WITHOUT YOUR REQUEST.
-- **no other action should add after blockHereAndWaitForNewIncomingMsg**
+- use clickSendBtnAndWaitReply to send message if you need a reply.
 - if the last preformed action say waited, that means wait finished and you should check messages in HTML
 - pay attention to sender & identify current & perivous session, **MAKE SURE the message is valid to your checklist/task**.
 - **read + understand messages and attachment**, they maybe important to the workflow like adding arguments or even new task if [GOAL] permit.
 - [GOAL] could ask you to accept task from specific sender, **YOU MUST ADD BY addNewTask**
 - these are the typical wording in [GOAL] allows adding new task, must pay attention: (accept/take)+(new task/their advise/instruction/prompt), do what they asked/requested
 
-**CONSIDER IF YOU NEED WAIT REPLY/RESPONSE WHEN SENDING MSG, blockHereAndWaitForNewIncomingMsg**`,
+`,
+        system: promptParts.system
+          ?.replace(
+            'type WireAction=',
+            `type WireAction=
+{
+  k:'clickSendBtnAndWaitReply';
+  btn:Selector;//send button dom
+  dialog:Selector;// only apply to dialog container must seen the list before apply
+  id1st:Selector;// first msg dom id in list
+  idLast:Selector;// last msg dom id in list
+}|{
+  k:'waitForNewMsg';//only if the goal ask you to wait unconditionally or previous wait timeout and wish to extend
+  dialog:Selector;
+  id1st:Selector;// first msg dom id in list
+  idLast:Selector;// last msg dom id in list
+}|`,
+          )
+          .replace(
+            "a:'click'|'dblclick'|'mouseover'|'mouseDown'|'mouseUp'|'mouseenter'|'mousemove';",
+            "a:'click'|'dblclick'|'mouseover'|'mouseDown'|'mouseUp'|'mouseenter'|'mousemove';//if you need reply, **use clickSendBtnAndWaitReply**",
+          ),
       };
     }
     return promptParts;

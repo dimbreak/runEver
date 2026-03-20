@@ -11,7 +11,7 @@ export const useWebviewManagerHook = () => {
     onLayoutChange,
     bounds,
   } = useLayoutStore();
-  const { switchSession, layoutTabs, closeAllTabs } = useTabStore();
+  const { switchSession, onResize, closeAllTabs } = useTabStore();
 
   useEffect(() => {
     const cleanup = () => {
@@ -32,7 +32,7 @@ export const useWebviewManagerHook = () => {
   }, [onLayoutChange]);
 
   useEffect(() => {
-    layoutTabs({
+    onResize({
       sidebarWidth: isSidebarOpen ? sidebarWidth : collapsedWidth,
       tabbarHeight,
       viewportWidth: window.innerWidth,
@@ -42,7 +42,7 @@ export const useWebviewManagerHook = () => {
     bounds,
     collapsedWidth,
     isSidebarOpen,
-    layoutTabs,
+    onResize,
     sidebarWidth,
     tabbarHeight,
   ]);

@@ -6,7 +6,7 @@ import {
 } from '@ai-sdk/google';
 import { LanguageModelV2, LanguageModelV3 } from '@ai-sdk/provider';
 import type { FilePart, ImagePart, ModelMessage } from '@ai-sdk/provider-utils';
-import { streamText, generateText, createGateway } from 'ai';
+import { streamText, generateText } from 'ai';
 import z from 'zod';
 import fs from 'fs';
 import { app } from 'electron';
@@ -17,8 +17,8 @@ import { FirstTokenMonitor } from '../utils/llm';
 import { ApiTrustTokenStore } from '../main/apiTrustTokenStore';
 import { RuneverConfigStore } from '../main/runeverConfigStore';
 import { getAuthMode } from '../main/authModeStore';
-import { getApiTrustStream } from '../shared/aiGateway';
 import { AsyncQueue } from '../utils/asyncQueue';
+import { getApiTrustStream } from './providers/apiTrust';
 import { createCodexWrapper } from './providers/codex';
 
 const getApiTrustErrorMessage = (error: unknown) => {
@@ -87,6 +87,7 @@ export namespace LlmApi {
       response?: PromiseLike<any>;
     }>;
   };
+  type ProviderFactory = (apiConfig: LlmConfig) => LlmApiModels;
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
@@ -94,9 +95,116 @@ export namespace LlmApi {
   const apiTrustTokenStore = new ApiTrustTokenStore();
   const userApiKeyStore = RuneverConfigStore.getInstance();
 
-  try {
-    fs.mkdirSync(recordPath);
-  } catch (e) {}
+  fs.mkdirSync(recordPath, { recursive: true });
+
+  const PROVIDERS = {
+    openai: (apiConfig) => {
+      console.info('createOpenAI', apiConfig);
+      const openai = createOpenAI({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'openai',
+        hi: openai('gpt-5.4'),
+        mid: openai('gpt-5-mini'),
+        low: openai('gpt-5.4-nano'),
+        streaming: true,
+        makeProviderOptions: (
+          reasoningEffort: ReasoningEffort,
+          cacheKey: string | undefined,
+        ) => {
+          const providerOptions: Record<string, any> = {};
+          providerOptions.openai = {
+            reasoningEffort,
+          };
+          // if (cacheKey) {
+          //   providerOptions.openai.promptCacheKey = cacheKey;
+          // }
+          return providerOptions;
+        },
+      };
+    },
+    google: (apiConfig) => {
+      console.info('createGoogleGenerativeAI', apiConfig);
+      const google = createGoogleGenerativeAI({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'google',
+        hi: google('gemini-3-pro-preview'),
+        mid: google('gemini-3-flash-preview'),
+        low: google('gemini-3-flash-preview'),
+        streaming: true,
+        makeProviderOptions: (
+          reasoningEffort: ReasoningEffort,
+          cacheKey: string | undefined,
+        ) => {
+          const providerOptions: Record<string, any> = {};
+          providerOptions.google = {
+            thinkingConfig: {
+              includeThoughts: true,
+              thinkingLevel: reasoningEffort,
+            },
+          } satisfies GoogleGenerativeAIProviderOptions;
+          return providerOptions;
+        },
+      };
+    },
+    zai: (apiConfig) => {
+      console.info('createOpenAI(glm)', apiConfig);
+      const zai = createOpenAICompatible({
+        name: 'zai',
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl || 'https://open.bigmodel.cn/api/paas/v4',
+      });
+      return {
+        provider: 'zai',
+        hi: zai('glm-5'),
+        mid: zai('glm-4.7-flash'),
+        low: zai('glm-4.7-flash'),
+        streaming: true,
+        makeProviderOptions: (
+          reasoningEffort: ReasoningEffort,
+          cacheKey: string | undefined,
+        ) => {
+          return {};
+        },
+      };
+    },
+    codex: (apiConfig) => {
+      console.info('createCodexWrapper', apiConfig);
+      const codex = createCodexWrapper({
+        apiKey: apiConfig.key,
+        baseUrl: apiConfig.baseUrl,
+        authMode: apiConfig.authMode,
+      });
+      return {
+        provider: 'codex',
+        streaming: true,
+        makeProviderOptions: () => {
+          return {};
+        },
+        queryStream: async ({
+          prompt,
+          systemPrompt,
+          attachments,
+          model,
+          reasoningEffort,
+        }) => {
+          const result = await codex.stream({
+            prompt,
+            systemPrompt,
+            attachments,
+            model: codex.models[model],
+            reasoningEffort,
+          });
+          return result;
+        },
+      };
+    },
+  } satisfies Record<Env['provider'], ProviderFactory>;
 
   const getLlmConfig = async () => {
     const storedConfig = await userApiKeyStore.getConfig('apiKey');
@@ -118,131 +226,97 @@ export namespace LlmApi {
   let llmApiPromise: Promise<LlmApiModels | null>;
   const getLlmApi = async (): Promise<LlmApiModels | null> => {
     if (!llmApiPromise) {
-      llmApiPromise = new Promise(async (resolve) => {
+      llmApiPromise = (async () => {
         const apiConfig = await getLlmConfig();
         console.log('apiConfig', apiConfig);
         if (apiConfig.error) {
           console.error('Failed to get LLM config', apiConfig.error);
           return null;
         }
-        switch (apiConfig.api) {
-          case 'openai': {
-            console.info('createOpenAI', apiConfig);
-            const openai = createOpenAI({
-              apiKey: apiConfig.key,
-              baseURL: apiConfig.baseUrl,
-            });
-            resolve({
-              provider: 'openai',
-              hi: openai('gpt-5.2'),
-              mid: openai('gpt-5-mini'),
-              low: openai('gpt-5-nano'),
-              streaming: true,
-              makeProviderOptions: (
-                reasoningEffort: ReasoningEffort,
-                cacheKey: string | undefined,
-              ) => {
-                const providerOptions: Record<string, any> = {};
-                providerOptions.openai = {
-                  reasoningEffort,
-                };
-                // if (cacheKey) {
-                //   providerOptions.openai.promptCacheKey = cacheKey;
-                // }
-                return providerOptions;
-              },
-            });
-            break;
-          }
-          case 'google': {
-            console.info('createGoogleGenerativeAI', apiConfig);
-            const google = createGoogleGenerativeAI({
-              apiKey: apiConfig.key,
-              baseURL: apiConfig.baseUrl,
-            });
-            resolve({
-              provider: 'google',
-              hi: google('gemini-3-pro-preview'),
-              mid: google('gemini-3-flash-preview'),
-              low: google('gemini-3-flash-preview'),
-              streaming: true,
-              makeProviderOptions: (
-                reasoningEffort: ReasoningEffort,
-                cacheKey: string | undefined,
-              ) => {
-                const providerOptions: Record<string, any> = {};
-                providerOptions.google = {
-                  thinkingConfig: {
-                    includeThoughts: true,
-                    thinkingLevel: reasoningEffort,
-                  },
-                } satisfies GoogleGenerativeAIProviderOptions;
-                return providerOptions;
-              },
-            });
-            break;
-          }
-          case 'zai': {
-            console.info('createOpenAI(glm)', apiConfig);
-            const zai = createOpenAICompatible({
-              name: 'zai',
-              apiKey: apiConfig.key,
-              baseURL:
-                apiConfig.baseUrl || 'https://open.bigmodel.cn/api/paas/v4',
-            });
-            resolve({
-              provider: 'zai',
-              hi: zai('glm-5'),
-              mid: zai('glm-4.7-flash'),
-              low: zai('glm-4.7-flash'),
-              streaming: true,
-              makeProviderOptions: (
-                reasoningEffort: ReasoningEffort,
-                cacheKey: string | undefined,
-              ) => {
-                return {};
-              },
-            });
-            break;
-          }
-          case 'codex': {
-            console.info('createCodexWrapper', apiConfig);
-            const codex = createCodexWrapper({
-              apiKey: apiConfig.key,
-              baseUrl: apiConfig.baseUrl,
-              authMode: apiConfig.authMode,
-            });
-            resolve({
-              provider: 'codex',
-              streaming: true,
-              makeProviderOptions: () => {
-                return {};
-              },
-              queryStream: async ({
-                prompt,
-                systemPrompt,
-                attachments,
-                model,
-                reasoningEffort,
-              }) => {
-                const result = await codex.stream({
-                  prompt,
-                  systemPrompt,
-                  attachments,
-                  model: codex.models[model],
-                  reasoningEffort,
-                });
-                return result;
-              },
-            });
-            break;
-          }
-          default:
-            throw new Error(`Unsupported LLM API: ${apiConfig.api}`);
+        const providerFactory = PROVIDERS[apiConfig.api];
+        if (!providerFactory) {
+          throw new Error(`Unsupported LLM API: ${apiConfig.api}`);
         }
-      });
+        return providerFactory(apiConfig);
+      })();
     }
     return llmApiPromise;
+  };
+
+  const tryQueryApiTrust = async (options: {
+    prompt: string;
+    systemPrompt?: string;
+    attachments?: Attachment[] | null;
+    cacheKey?: string;
+  }) => {
+    if (getAuthMode() === 'apikey') {
+      return null;
+    }
+
+    try {
+      const apiTrustToken = await apiTrustTokenStore.getToken();
+      let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
+      if (apiTrustToken) {
+        apiTrustStream = await getApiTrustStream({
+          config: {
+            clientId: apiTrustEnvVars.clientId,
+            redirectUri: apiTrustEnvVars.redirectUri,
+            apiUrl: apiTrustEnvVars.apiUrl,
+          },
+          tokenProvider: apiTrustToken,
+          prompt: options.prompt,
+          systemPrompt: options.systemPrompt,
+          attachments: options.attachments,
+        });
+        if (!apiTrustStream) {
+          throw new Error(
+            'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
+          );
+        }
+      }
+      if (!apiTrustStream) {
+        return null;
+      }
+
+      const q = new AsyncQueue<string>();
+      const monitor = new FirstTokenMonitor(options.cacheKey);
+      monitor.start();
+
+      (async () => {
+        try {
+          for await (const part of apiTrustStream) {
+            if (!monitor.hasReceived()) {
+              monitor.onFirstToken(part);
+            }
+            q.push(part);
+          }
+        } catch (err) {
+          monitor.stop();
+          console.error('ApiTrust streaming error:', err);
+          q.fail(err as Error);
+        } finally {
+          monitor.stop();
+          q.close();
+        }
+      })();
+
+      return q;
+    } catch (error) {
+      console.error('ApiTrust request failed', error);
+      if (isApiTrustAuthError(error)) {
+        try {
+          // Token rejected; clear it so the UI can re-auth.
+          await apiTrustTokenStore.setToken(null);
+          console.warn(
+            'ApiTrust token rejected; falling back to configured LLM provider.',
+          );
+        } catch (clearError) {
+          console.warn('Failed to clear ApiTrust token', clearError);
+        }
+        return null;
+      }
+      throw error;
+    }
   };
 
   const dummyReturns: string[] = [];
@@ -304,72 +378,20 @@ export namespace LlmApi {
     model: LlmModelType = 'mid',
     reasoningEffort: ReasoningEffort = 'low',
   ): Promise<AsyncQueue<string>> {
-    const q = new AsyncQueue<string>();
-    if (getAuthMode() !== 'apikey') {
-      try {
-        const apiTrustToken = await apiTrustTokenStore.getToken();
-        let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
-        if (apiTrustToken) {
-          apiTrustStream = await getApiTrustStream({
-            config: {
-              clientId: apiTrustEnvVars.clientId,
-              redirectUri: apiTrustEnvVars.redirectUri,
-              apiUrl: apiTrustEnvVars.apiUrl,
-            },
-            tokenProvider: apiTrustToken,
-            prompt,
-            systemPrompt,
-            attachments,
-          });
-          if (!apiTrustStream) {
-            throw new Error(
-              'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
-            );
-          }
-        }
-        if (apiTrustStream) {
-          const monitor = new FirstTokenMonitor(cacheKey);
-          monitor.start();
-          (async () => {
-            try {
-              for await (const part of apiTrustStream) {
-                if (!monitor.hasReceived()) {
-                  monitor.onFirstToken(part);
-                }
-                q.push(part);
-              }
-            } catch (err) {
-              monitor.stop();
-              console.error('ApiTrust streaming error:', err);
-              q.fail(err as Error);
-            } finally {
-              monitor.stop();
-              q.close();
-            }
-          })();
-          return q;
-        }
-      } catch (error) {
-        console.error('ApiTrust request failed', error);
-        if (isApiTrustAuthError(error)) {
-          try {
-            // Token rejected; clear it so the UI can re-auth.
-            await apiTrustTokenStore.setToken(null);
-            console.warn(
-              'ApiTrust token rejected; falling back to configured LLM provider.',
-            );
-          } catch (clearError) {
-            console.warn('Failed to clear ApiTrust token', clearError);
-          }
-        } else {
-          throw error;
-        }
-      }
+    const apiTrustResult = await tryQueryApiTrust({
+      prompt,
+      systemPrompt,
+      attachments,
+      cacheKey,
+    });
+    if (apiTrustResult) {
+      return apiTrustResult;
     }
 
     const llmApi = await getLlmApi();
 
     if (llmApi) {
+      const q = new AsyncQueue<string>();
       const promptObj: string | Array<ModelMessage> = [
         {
           role: 'user',

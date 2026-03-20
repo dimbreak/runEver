@@ -63,7 +63,7 @@ describe('dummyCursor.mouseEvent', () => {
     jest.spyOn(console, 'log').mockImplementation(() => {});
     dummyCursor.x = 25;
     dummyCursor.y = 25;
-    dummyCursor.dom = null;
+    dummyCursor.inIframe = false;
     (BrowserActions.callActionApi as jest.Mock).mockClear();
   });
 

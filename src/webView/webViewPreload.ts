@@ -173,7 +173,11 @@ let pendingCursorInit: { x: number; y: number } | null = null;
 const tryInitCursor = () => {
   if (!pendingCursorInit) return;
   if (!document.body) return;
-  dummyCursor.init(pendingCursorInit.x, pendingCursorInit.y);
+  dummyCursor.init(
+    pendingCursorInit.x,
+    pendingCursorInit.y,
+    window.parent !== window,
+  );
   pendingCursorInit = null;
 };
 
@@ -211,22 +215,18 @@ const handleFrameId = async (event: MessageEvent) => {
   //   }
   // });
 
-  // await Util.sleep(1000);
-  //
-  // const html = await webViewHandler.getHtml();
-  //
-  // console.log(html.length, html);
-  //
-  // SliderProfile.slideToVal(
-  //   {
-  //     k: 'slideToVal',
-  //     el: document.querySelectorAll('input[type="range"]').item(1)!,
-  //     q: '123',
-  //     num: 15,
-  //   },
-  //   'l',
-  //   {},
-  // );
+  await Util.sleep(1000);
+
+  SliderProfile.slideToVal(
+    {
+      k: 'slideToVal',
+      el: document.querySelectorAll('input[type="range"]').item(1)!,
+      q: '123',
+      num: 15,
+    },
+    'l',
+    {},
+  );
 };
 
 // Register immediately to avoid missing early postMessage during navigation.

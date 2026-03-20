@@ -227,6 +227,25 @@ export namespace BrowserActions {
       }
     }
   };
+  const buildWaitForNewIncomingMsg = (
+    action: Extract<
+      WireActionToExec,
+      { k: 'clickSendBtnAndWaitReply' | 'waitForNewMsg' }
+    >,
+    risk: BrowserActionRisk,
+    args: Record<string, string> = {},
+  ): WireWait => {
+    const id1stEl = getElementById(action.id1st, risk, args);
+    const idLastEl = getElementById(action.idLast, risk, args);
+    return {
+      t: 'blockHereAndWaitForNewIncomingMsg',
+      q: action.dialog,
+      id1st:
+        window.webView.getIdFromEl(id1stEl) ?? getUniqueSelector(id1stEl),
+      idLast:
+        window.webView.getIdFromEl(idLastEl) ?? getUniqueSelector(idLastEl),
+    };
+  };
   const waitAction = async (
     wait: WireWait,
     args: Record<string, string>,
@@ -337,6 +356,7 @@ export namespace BrowserActions {
     let rec: WireActionWithWaitAndRec;
     let action: WireActionToExec;
     let argsDelta: [string, string][];
+    let postWait: WireWait | null | undefined;
     let execFn: (
       action: any,
       risk: BrowserActionRisk,
@@ -350,6 +370,7 @@ export namespace BrowserActions {
       rec = actions[i];
       action = rec.action;
       argsDelta = [];
+      postWait = rec.post;
       console.log('actions continue', action);
       try {
         switch (action.k) {
@@ -394,6 +415,31 @@ export namespace BrowserActions {
               continue;
             }
             execFn = mouse;
+            break;
+          case 'clickSendBtnAndWaitReply':
+            if (await execInIframeOrEl(rec, action.btn, args)) {
+              continue;
+            }
+            postWait = buildWaitForNewIncomingMsg(action, rec.risk, args);
+            // eslint-disable-next-line no-loop-func
+            execFn = async (thisAction, risk, thisArgs = {}) =>
+              mouse(
+                {
+                  k: 'mouse',
+                  a: 'click',
+                  q: thisAction.btn,
+                  el: thisAction.el,
+                },
+                risk,
+                thisArgs,
+              );
+            break;
+          case 'waitForNewMsg':
+            if (await execInIframeOrEl(rec, action.dialog, args)) {
+              continue;
+            }
+            postWait = buildWaitForNewIncomingMsg(action, rec.risk, args);
+            execFn = async () => {};
             break;
           case 'fillForm':
             if (await execInIframeOrEl(rec, action.q, args)) {
@@ -550,8 +596,8 @@ export namespace BrowserActions {
         }
         window.onbeforeunload = onbeforeunload(rec.id);
         await execFn(action, rec.risk, args);
-        if (rec.post?.t) {
-          await waitAction(rec.post, args, argsDelta, true);
+        if (postWait?.t) {
+          await waitAction(postWait, args, argsDelta, true);
         }
         window.onbeforeunload = null;
         await popAction(rec.id, argsDelta);

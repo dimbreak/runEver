@@ -17,6 +17,7 @@ import { IframeProgressType } from '../../extensions/iframe/types';
 import { Network } from '../../webView/network';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
+import { ProfileStore } from '../profileStore';
 import { isMac } from '../util';
 import { RunEverWindow } from '../window';
 
@@ -90,23 +91,23 @@ export class TabWebView {
     tabbarHeight?: number;
   }) {
     let response;
+    if (detail.bounds) {
+      this.webView.setBounds(detail.bounds);
+      this.bounds = detail.bounds;
+    } else if (!detail.url && !detail.exeScript) {
+      const nextBounds = this.session.getSafeBounds({
+        sidebarWidth: detail.sidebarWidth ?? Session.DEFAULT_SIDEBAR_WIDTH,
+        tabbarHeight: detail.tabbarHeight ?? Session.DEFAULT_TABBAR_HEIGHT,
+        viewportWidth: detail.viewportWidth,
+      });
+      this.webView.setBounds(nextBounds);
+      this.bounds = nextBounds;
+    }
     if (detail.visible !== undefined) {
       this.webView.setVisible(detail.visible);
       if (detail.visible) {
         this.focus();
       }
-    }
-    if (detail.bounds) {
-      this.webView.setBounds(detail.bounds);
-      this.bounds = detail.bounds;
-    } else if (!detail.url && !detail.exeScript) {
-      this.webView.setBounds(
-        this.session.getSafeBounds({
-          sidebarWidth: detail.sidebarWidth ?? Session.DEFAULT_SIDEBAR_WIDTH,
-          tabbarHeight: detail.tabbarHeight ?? Session.DEFAULT_TABBAR_HEIGHT,
-          viewportWidth: detail.viewportWidth,
-        }),
-      );
     }
     if (detail.url) {
       this.webView.webContents.loadURL(detail.url);
@@ -354,6 +355,13 @@ export class TabWebView {
     webContents.on('did-finish-load', unlockLoaded);
     webContents.on('did-stop-loading', unlockLoaded);
     webContents.on('did-start-navigation', (details) => {
+      if (details.isMainFrame) {
+        ProfileStore.getInstance()
+          .refreshUrlHistory(details.url)
+          .catch((error) => {
+            console.warn('Failed to refresh url history:', details.url, error);
+          });
+      }
       if (details.isMainFrame && this.url !== details.url) {
         this.mainWindow?.webContents.send('tab-title-updated', {
           frameId,
@@ -384,12 +392,31 @@ export class TabWebView {
     );
     webContents.on('page-title-updated', (_event, title) => {
       const currentUrl = webContents.getURL();
+      ProfileStore.getInstance()
+        .updateUrlHistoryMetadata(currentUrl, { title })
+        .catch((error) => {
+          console.warn(
+            'Failed to update url history title:',
+            currentUrl,
+            error,
+          );
+        });
       this.mainWindow?.webContents.send('tab-title-updated', {
         frameId,
         title,
         url: currentUrl,
       });
       this.url = currentUrl;
+    });
+    webContents.on('page-favicon-updated', (_event, favicons) => {
+      const currentUrl = webContents.getURL();
+      const icon = favicons[0];
+      if (!icon) return;
+      ProfileStore.getInstance()
+        .updateUrlHistoryMetadata(currentUrl, { icon })
+        .catch((error) => {
+          console.warn('Failed to update url history icon:', currentUrl, error);
+        });
     });
     webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {

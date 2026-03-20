@@ -69,4 +69,13 @@ export namespace ToRendererIpc {
   export const sessionsUpdate = new IcpRendererContract<
     [Record<number, SessionStatus>]
   >('sessions-update');
+  export const urlSuggestionAction = new IcpRendererContract<
+    [
+      {
+        sessionId: number;
+        type: 'navigate';
+        url: string;
+      },
+    ]
+  >('url-suggestion-action');
 }

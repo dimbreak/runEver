@@ -119,16 +119,8 @@ type WireStep={
  intent:string;//short, < 8 words
  risk:'h'|'m'|'l';
  action:WireAction;
- pre?:WireWait // wait BEFORE this action, most of the time engine can handle it automatically
- post?:WireWait|// wait AFTER this action, most of the time engine can handle it automatically
-   { //only use with click (send or refresh) button or enter key action to send
-     didGoalAskYouToWaitInNoCondition:string;//explain shortly, will be no if it requires anything before
-     didYouSendMsgBeforeWaitReply:string;//explain shortly, not yet/planned means no! stay away!
-     t:'blockHereAndWaitForNewIncomingMsg';//use for 1 of 2 reasons, answer above, you may stop here if no solid yes! just leave q: null
-     q:Selector;// only apply to dialog container, email list etc, must seen the list before apply
-     id1st:string;// first msg/email dom id in list
-     idLast:string;// last msg/email dom id in list
-  }
+ pre?:WireWait; // wait BEFORE this action, most of the time engine can handle it automatically
+ post?:WireWait;// wait AFTER this action, most of the time engine can handle it automatically
  cp?:number[];//bind to check point and set to working
  unverify?:boolean;//need true if the check point in verify status
 }

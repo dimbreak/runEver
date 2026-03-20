@@ -7,7 +7,6 @@ export const checkFormAndFieldCount = (element: HTMLFormElement) => {
   const fields = element.querySelectorAll(
     'input:not([type="hidden"],[type="submit"]), select, textarea',
   );
-  console.log('fields', fields);
   if (fields.length > 0) {
     return `fields:${Array.from(fields).filter((f) => f.clientWidth !== 0 && f.clientHeight !== 0).length}`;
   }

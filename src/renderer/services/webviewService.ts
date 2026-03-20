@@ -11,8 +11,15 @@ type LayoutParams = {
   bounds?: Rectangle;
   sidebarWidth?: number;
   tabbarHeight?: number;
+  viewportWidth?: number;
   visible?: boolean;
   url?: string;
+};
+
+type ResizeParams = {
+  bounds?: Rectangle;
+  sidebarWidth?: number;
+  tabbarHeight?: number;
   viewportWidth?: number;
 };
 
@@ -107,6 +114,17 @@ export const webviewService = {
       tabbarHeight: params.tabbarHeight,
       visible: params.visible,
       url: params.url,
+      viewportWidth: params.viewportWidth,
+    });
+  },
+
+  async onResize(params: { sessionId: number } & ResizeParams) {
+    if (!hasIpc()) return;
+    await ToMainIpc.onResize.invoke({
+      sessionId: params.sessionId,
+      bounds: params.bounds,
+      sidebarWidth: params.sidebarWidth,
+      tabbarHeight: params.tabbarHeight,
       viewportWidth: params.viewportWidth,
     });
   },

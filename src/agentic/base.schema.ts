@@ -73,6 +73,21 @@ export const MouseActionSchema = z.object({
   repeat: z.number().optional().nullable(),
 });
 
+export const ClickSendBtnAndWaitReplyActionSchema = z.object({
+  k: z.literal('clickSendBtnAndWaitReply'),
+  btn: WireSelectorSchema,
+  dialog: WireSelectorSchema,
+  id1st: WireSelectorSchema,
+  idLast: WireSelectorSchema,
+});
+
+export const WaitForNewMsgActionSchema = z.object({
+  k: z.literal('waitForNewMsg'),
+  dialog: WireSelectorSchema,
+  id1st: WireSelectorSchema,
+  idLast: WireSelectorSchema,
+});
+
 export const ChecklistActionSchema = z.object({
   k: z.literal('checklist'),
   a: z.union([

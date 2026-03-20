@@ -69,24 +69,27 @@ export class WebTab {
   }
 }
 
+type WindowResizeParams = {
+  viewportWidth: number;
+  bounds?: Rectangle;
+  sidebarWidth?: number;
+  tabbarHeight?: number;
+};
+
 type TabState = {
   tabs: WebTab[];
   activeTabId: number | null;
   sessionId: number;
+  windowResizeParams: WindowResizeParams | null;
   switchSession: (tabs: TabStatus[], sessionId: number) => Promise<void>;
-  setActiveTab: (id: number | null) => void;
+  setActiveTab: (id: number | null) => Promise<void>;
   addTab: (tab: WebTab, bounds: Rectangle) => Promise<void>;
   closeTab: (id: number) => Promise<void>;
   closeAllTabs: () => Promise<void>;
   clearTabs: () => void;
   updateTabUrl: (tabId: number, url: string) => void;
   navigateTab: (tabId: number, url: string) => Promise<void>;
-  layoutTabs: (params: {
-    viewportWidth: number;
-    bounds?: Rectangle;
-    sidebarWidth?: number;
-    tabbarHeight?: number;
-  }) => Promise<void>;
+  onResize: (params: WindowResizeParams) => Promise<void>;
   reorderTabs: (sourceId: number, targetId: number) => void;
   updateTabTitle: (tabId: number, title: string) => void;
 };
@@ -109,197 +112,272 @@ const removeTabFromState = (
   };
 };
 
-export const useTabStore = create<TabState>((set, get) => ({
-  tabs: [],
-  activeTabId: null,
-  sessionId: -1,
-  switchSession: async (tabs: TabStatus[], sessionId: number) => {
-    console.log('initialTabs', tabs);
-    if (get().sessionId !== -1) {
-      const currentTabs = get().tabs;
-      const statuses: TabStatus[] = currentTabs.map((t) => ({
-        id: t.id,
-        url: t.url,
-        title: t.title,
-        active: get().activeTabId === t.id,
-      }));
-      useAgentStoreV2.getState().syncTabsToSession(get().sessionId, statuses);
-      Promise.all(
-        currentTabs.map(async (tab) => {
-          if (tab.id !== undefined && tab.id !== -1) {
-            await webviewService.layoutTab({
-              sessionId: get().sessionId,
-              frameId: tab.id,
-              visible: false,
-            });
-          }
-        }),
-      ).catch(console.error);
-    }
-    if (tabs.length === 0) {
-      set({ sessionId, tabs: [], activeTabId: null });
-      const { bounds } = useLayoutStore.getState();
-      await get().addTab(
-        new WebTab({
-          id: -1,
-          title: 'New tab',
-          url: 'https://www.amazon.co.uk/s?k=house+blend+coffee+beans%2C+medium+roast&crid=2J6PIQXOIB3OW&qid=1772580096&rnid=355251031&sprefix=%2Caps%2C256&ref=sr_nr_p_36_0_0&low-price=&high-price=',
-          isRunning: false,
-        }),
-        bounds,
-      );
-      return;
-    }
-
-    set(() => {
-      let activeTabId: number | null = null;
-      return {
-        tabs: tabs.map((ts) => {
-          if (ts.active) {
-            activeTabId = ts.id;
-          }
-          return new WebTab({
-            id: ts.id,
-            title: ts.title,
-            url: ts.url,
-          });
-        }),
-        activeTabId: activeTabId ?? tabs[0]?.id ?? null,
-        sessionId,
-      };
-    });
-    get().layoutTabs({
-      viewportWidth: window.innerWidth,
-      ...useLayoutStore.getState(),
-    });
-  },
-  setActiveTab: (id) => {
-    set((s) => ({ activeTabId: id }));
-  },
-  addTab: async (tab, bounds: Rectangle) => {
-    if (!webviewService.hasBridge()) return;
-
-    const frameId = await webviewService.createTab({
-      sessionId: get().sessionId,
-      url: resolveInitialUrl(tab.url),
-      bounds,
-      parentFrameId: tab.parentFrameId,
-    });
-    if (!frameId) return;
-    tab.id = frameId;
-    set((state) => {
-      const nextTabs = [...state.tabs, new WebTab(tab)];
-      return { tabs: nextTabs, activeTabId: tab.id };
-    });
-  },
-  closeTab: async (id) => {
-    const wasActive = get().activeTabId === id;
-    await webviewService.closeTab({
-      frameId: id,
-      sessionId: get().sessionId,
-    });
-    set((state) => removeTabFromState(state, id));
-
-    if (wasActive) {
-      get().layoutTabs({
-        viewportWidth: window.innerWidth,
-        ...useLayoutStore.getState(),
-      });
-    }
-  },
-  closeAllTabs: async () => {
-    if (!webviewService.hasBridge()) return;
-
-    const { tabs } = get();
-
-    const closePromises = tabs.map(async (tab) => {
-      if (tab.id !== undefined && tab.id !== -1) {
-        console.log('closing tab', tab.id);
-        await webviewService.closeTab({ frameId: tab.id });
-      }
-    });
-
-    await Promise.all(closePromises);
-
-    set(() => ({ activeTabId: null }));
-  },
-  clearTabs: () => {
-    set(() => ({ tabs: [], activeTabId: null }));
-  },
-  updateTabUrl: (tabId, url) =>
-    set((state) => ({
-      tabs: state.tabs.map((tab) =>
-        tab.id === tabId
-          ? new WebTab({
-              id: tab.id,
-              title: tab.title,
-              url,
-              isRunning: tab.isRunning,
-              lastPromptRequestId: tab.lastPromptRequestId,
-              parentFrameId: tab.parentFrameId,
-            })
-          : tab,
-      ),
-    })),
-  navigateTab: async (tabId, url) => {
-    const nextUrl = url.trim();
-    if (!nextUrl) return;
-
-    get().updateTabUrl(tabId, nextUrl);
-
-    const frameId = tabId;
-    if (frameId === undefined || frameId === -1) return;
-
+export const useTabStore = create<TabState>((set, get) => {
+  const hideTab = async (sessionId: number, frameId: number | null) => {
+    if (frameId === null || frameId === undefined || frameId === -1) return;
     await webviewService.layoutTab({
-      sessionId: get().sessionId,
+      sessionId,
       frameId,
-      url: nextUrl,
+      visible: false,
     });
-  },
-  layoutTabs: async (params) => {
-    const { tabs, activeTabId } = get();
+  };
 
+  const showTab = async (
+    sessionId: number,
+    frameId: number | null,
+    resizeParams: WindowResizeParams | null,
+  ) => {
+    if (frameId === null || frameId === undefined || frameId === -1) return;
+    await webviewService.layoutTab({
+      sessionId,
+      frameId,
+      visible: true,
+      bounds: resizeParams?.bounds,
+      sidebarWidth: resizeParams?.sidebarWidth,
+      tabbarHeight: resizeParams?.tabbarHeight,
+      viewportWidth: resizeParams?.viewportWidth,
+    });
+  };
+
+  const syncTabVisibility = async (
+    sessionId: number,
+    tabs: WebTab[],
+    activeTabId: number | null,
+    resizeParams: WindowResizeParams | null,
+  ) => {
     await Promise.all(
       tabs.map(async (tab) => {
         const frameId = tab.id;
         if (frameId === undefined || frameId === -1) return;
-
         await webviewService.layoutTab({
-          sessionId: get().sessionId,
+          sessionId,
           frameId,
-          visible: activeTabId === tab.id,
-          sidebarWidth: params.sidebarWidth,
-          tabbarHeight: params.tabbarHeight,
-          viewportWidth: params.viewportWidth,
-          bounds: params.bounds,
+          visible: activeTabId === frameId,
+          bounds: activeTabId === frameId ? resizeParams?.bounds : undefined,
+          sidebarWidth:
+            activeTabId === frameId ? resizeParams?.sidebarWidth : undefined,
+          tabbarHeight:
+            activeTabId === frameId ? resizeParams?.tabbarHeight : undefined,
+          viewportWidth:
+            activeTabId === frameId ? resizeParams?.viewportWidth : undefined,
         });
       }),
     );
-  },
-  reorderTabs: (sourceId, targetId) =>
-    set((state) => {
-      if (sourceId === targetId) return state;
-      const tabs = [...state.tabs];
-      const fromIndex = tabs.findIndex((t) => t.id === sourceId);
-      const toIndex = tabs.findIndex((t) => t.id === targetId);
-      if (fromIndex === -1 || toIndex === -1) return state;
-      const [moved] = tabs.splice(fromIndex, 1);
-      tabs.splice(toIndex, 0, moved);
-      return { tabs };
-    }),
-  updateTabTitle: (tabId, title) =>
-    set((state) => ({
-      tabs: state.tabs.map((tab) =>
-        tab.id === tabId
-          ? new WebTab({
-              id: tab.id,
-              title,
-              url: tab.url,
-              isRunning: tab.isRunning,
-              lastPromptRequestId: tab.lastPromptRequestId,
-              parentFrameId: tab.parentFrameId,
-            })
-          : tab,
-      ),
-    })),
-}));
+  };
+
+  return {
+    tabs: [],
+    activeTabId: null,
+    sessionId: -1,
+    windowResizeParams: null,
+    switchSession: async (tabs: TabStatus[], sessionId: number) => {
+      console.log('initialTabs', tabs);
+      if (get().sessionId !== -1) {
+        const currentTabs = get().tabs;
+        const statuses: TabStatus[] = currentTabs.map((t) => ({
+          id: t.id,
+          url: t.url,
+          title: t.title,
+          active: get().activeTabId === t.id,
+        }));
+        useAgentStoreV2.getState().syncTabsToSession(get().sessionId, statuses);
+        Promise.all(
+          currentTabs.map(async (tab) => {
+            if (tab.id !== undefined && tab.id !== -1) {
+              await hideTab(get().sessionId, tab.id);
+            }
+          }),
+        ).catch(console.error);
+      }
+      if (tabs.length === 0) {
+        set({ sessionId, tabs: [], activeTabId: null });
+        const { bounds } = useLayoutStore.getState();
+        await get().addTab(
+          new WebTab({
+            id: -1,
+            title: 'New tab',
+            url: 'https://www.amazon.co.uk/s?k=house+blend+coffee+beans%2C+medium+roast&crid=2J6PIQXOIB3OW&qid=1772580096&rnid=355251031&sprefix=%2Caps%2C256&ref=sr_nr_p_36_0_0&low-price=&high-price=',
+            isRunning: false,
+          }),
+          bounds,
+        );
+        return;
+      }
+
+      set(() => {
+        let activeTabId: number | null = null;
+        return {
+          tabs: tabs.map((ts) => {
+            if (ts.active) {
+              activeTabId = ts.id;
+            }
+            return new WebTab({
+              id: ts.id,
+              title: ts.title,
+              url: ts.url,
+            });
+          }),
+          activeTabId: activeTabId ?? tabs[0]?.id ?? null,
+          sessionId,
+        };
+      });
+      const resizeParams = {
+        viewportWidth: window.innerWidth,
+        ...useLayoutStore.getState(),
+      };
+      set({ windowResizeParams: resizeParams });
+      await syncTabVisibility(
+        sessionId,
+        get().tabs,
+        get().activeTabId,
+        resizeParams,
+      );
+    },
+    setActiveTab: async (id) => {
+      const { activeTabId, sessionId, windowResizeParams } = get();
+      if (activeTabId === id) return;
+      set(() => ({ activeTabId: id }));
+      if (typeof id === 'number') {
+        useAgentStoreV2.getState().switchTab(sessionId, id);
+      }
+      await hideTab(sessionId, activeTabId);
+      await showTab(sessionId, id, windowResizeParams);
+    },
+    addTab: async (tab, bounds: Rectangle) => {
+      if (!webviewService.hasBridge()) return;
+
+      const previousActiveTabId = get().activeTabId;
+      const frameId = await webviewService.createTab({
+        sessionId: get().sessionId,
+        url: resolveInitialUrl(tab.url),
+        bounds,
+        parentFrameId: tab.parentFrameId,
+      });
+      if (!frameId) return;
+      tab.id = frameId;
+      set((state) => {
+        const nextTabs = [...state.tabs, new WebTab(tab)];
+        return { tabs: nextTabs, activeTabId: tab.id };
+      });
+      if (typeof tab.id === 'number') {
+        useAgentStoreV2.getState().switchTab(get().sessionId, tab.id);
+      }
+      await hideTab(get().sessionId, previousActiveTabId);
+      await showTab(get().sessionId, tab.id, get().windowResizeParams);
+    },
+    closeTab: async (id) => {
+      const wasActive = get().activeTabId === id;
+      await webviewService.closeTab({
+        frameId: id,
+        sessionId: get().sessionId,
+      });
+      let nextActiveTabId: number | null = null;
+      set((state) => {
+        const nextState = removeTabFromState(state, id);
+        nextActiveTabId = nextState.activeTabId;
+        return nextState;
+      });
+
+      if (wasActive && nextActiveTabId !== null) {
+        if (typeof nextActiveTabId === 'number') {
+          useAgentStoreV2
+            .getState()
+            .switchTab(get().sessionId, nextActiveTabId);
+        }
+        await showTab(
+          get().sessionId,
+          nextActiveTabId,
+          get().windowResizeParams,
+        );
+      }
+    },
+    closeAllTabs: async () => {
+      if (!webviewService.hasBridge()) return;
+
+      const { tabs } = get();
+
+      const closePromises = tabs.map(async (tab) => {
+        if (tab.id !== undefined && tab.id !== -1) {
+          console.log('closing tab', tab.id);
+          await webviewService.closeTab({ frameId: tab.id });
+        }
+      });
+
+      await Promise.all(closePromises);
+
+      set(() => ({ activeTabId: null }));
+    },
+    clearTabs: () => {
+      set(() => ({ tabs: [], activeTabId: null }));
+    },
+    updateTabUrl: (tabId, url) =>
+      set((state) => ({
+        tabs: state.tabs.map((tab) =>
+          tab.id === tabId
+            ? new WebTab({
+                id: tab.id,
+                title: tab.title,
+                url,
+                isRunning: tab.isRunning,
+                lastPromptRequestId: tab.lastPromptRequestId,
+                parentFrameId: tab.parentFrameId,
+              })
+            : tab,
+        ),
+      })),
+    navigateTab: async (tabId, url) => {
+      const nextUrl = url.trim();
+      if (!nextUrl) return;
+
+      await ToMainIpc.recordUrlVisit.invoke({
+        url: nextUrl,
+      });
+      get().updateTabUrl(tabId, nextUrl);
+
+      const frameId = tabId;
+      if (frameId === undefined || frameId === -1) return;
+
+      await webviewService.layoutTab({
+        sessionId: get().sessionId,
+        frameId,
+        url: nextUrl,
+      });
+    },
+    onResize: async (params) => {
+      set({ windowResizeParams: params });
+      await webviewService.onResize({
+        sessionId: get().sessionId,
+        bounds: params.bounds,
+        sidebarWidth: params.sidebarWidth,
+        tabbarHeight: params.tabbarHeight,
+        viewportWidth: params.viewportWidth,
+      });
+    },
+    reorderTabs: (sourceId, targetId) =>
+      set((state) => {
+        if (sourceId === targetId) return state;
+        const tabs = [...state.tabs];
+        const fromIndex = tabs.findIndex((t) => t.id === sourceId);
+        const toIndex = tabs.findIndex((t) => t.id === targetId);
+        if (fromIndex === -1 || toIndex === -1) return state;
+        const [moved] = tabs.splice(fromIndex, 1);
+        tabs.splice(toIndex, 0, moved);
+        return { tabs };
+      }),
+    updateTabTitle: (tabId, title) =>
+      set((state) => ({
+        tabs: state.tabs.map((tab) =>
+          tab.id === tabId
+            ? new WebTab({
+                id: tab.id,
+                title,
+                url: tab.url,
+                isRunning: tab.isRunning,
+                lastPromptRequestId: tab.lastPromptRequestId,
+                parentFrameId: tab.parentFrameId,
+              })
+            : tab,
+        ),
+      })),
+  };
+});

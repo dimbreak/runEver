@@ -26,6 +26,7 @@ import {
   peekPendingAuthDeepLink,
   setPendingAuthDeepLink,
 } from './authDeepLink';
+import { ProfileStore } from './profileStore';
 import { RunEverWindow } from './window';
 
 const output = configDotEnv({
@@ -134,6 +135,8 @@ const createWindow = async () => {
   if (isDebug) {
     await installExtensions();
   }
+
+  await ProfileStore.getInstance().initialize();
 
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')

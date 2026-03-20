@@ -1,5 +1,5 @@
 import { exec } from 'child_process';
-import { BrowserWindow, ipcMain, MouseInputEvent } from 'electron';
+import { BrowserWindow, ipcMain } from 'electron';
 import type { Session } from '../agentic/session';
 import { initIpcMain } from '../contracts/ipc';
 import { ToMainIpc } from '../contracts/toMain';
@@ -19,6 +19,7 @@ import {
   setPendingAuthDeepLink,
 } from './authDeepLink';
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
+import { ProfileStore } from './profileStore';
 import { RunEverConfig, RuneverConfigStore } from './runeverConfigStore';
 import { getAuthMode, setAuthMode } from './authModeStore';
 import { RunEverWindow } from './window';
@@ -142,9 +143,6 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
     console.log('bindFrameId in main process:', event.frameId, arg);
     if (wvTab) {
       wvTab.pageLoaded(event.frameId, arg.scrollAdjustment);
-      wvTab.webView.webContents.executeJavaScript(
-        'window.electronDummyCursor = document.getElementById("runEver-dummy-cursor");',
-      );
     }
     return { error: 'Tab not found' };
   });
@@ -204,6 +202,32 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
 
   ToMainIpc.operateTab.handle(async (event, detail) => {
     return getSession(detail.sessionId)?.operateTab(detail);
+  });
+
+  ToMainIpc.onResize.handle(async (_event, detail) => {
+    return getSession(detail.sessionId)?.onWindowResize(detail);
+  });
+
+  ToMainIpc.updateUrlSuggestionsOverlay.handle(async (_event, detail) => {
+    await getSession(detail.sessionId)?.showUrlSuggestionsOverlay(
+      detail.suggestions,
+      detail.selectedIndex ?? -1,
+    );
+  });
+
+  ToMainIpc.getUrlSuggestions.handle(async (_event, detail) => {
+    return ProfileStore.getInstance().getUrlSuggestions(
+      detail.query ?? '',
+      detail.limit ?? 10,
+    );
+  });
+
+  ToMainIpc.recordUrlVisit.handle(async (_event, detail) => {
+    await ProfileStore.getInstance().recordUrlVisit(detail.url);
+  });
+
+  ToMainIpc.hideUrlSuggestionsOverlay.handle(async (_event, detail) => {
+    await getSession(detail.sessionId)?.hideUrlSuggestionsOverlay();
   });
 
   ToMainIpc.getUserAuthState.handle(async () => {
@@ -376,26 +400,45 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
     const { sessionId, frameId, events } = arg;
     const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
+      const session = getSession(sessionId);
       const wc = wvTab.webView.webContents;
+      const isMouseBatch =
+        events.length > 0 &&
+        typeof events[0].type === 'string' &&
+        events[0].type.startsWith('mouse');
       wc.focus();
-      let mv: MouseInputEvent | undefined;
+      let lastPoint: { x: number; y: number } | undefined;
       console.log('Dispatch events in main process:', arg.events);
-      for (const ev of events) {
-        if (ev.delayMs) {
-          await Util.sleep(ev.delayMs);
+      try {
+        if (isMouseBatch && wvTab.isFocused) {
+          session?.showInputOverlay(wvTab.bounds);
+          if (wvTab.mouseX >= 0 && wvTab.mouseY >= 0) {
+            await session?.updateOverlayCursor(wvTab.mouseX, wvTab.mouseY);
+          }
         }
-        wc.sendInputEvent(ev);
-        if (ev.type === 'mouseMove') {
-          await wc.executeJavaScript(
-            `window.electronDummyCursor.style.left = ${ev.x} + 'px';
-window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
-          );
-          mv = ev as MouseInputEvent;
+
+        for (const ev of events) {
+          if (ev.delayMs) {
+            await Util.sleep(ev.delayMs);
+          }
+          wc.sendInputEvent(ev);
+          if (wvTab.isFocused && 'x' in ev && 'y' in ev) {
+            lastPoint = { x: ev.x, y: ev.y };
+            try {
+              await session?.updateOverlayCursor(ev.x, ev.y);
+            } catch (error) {
+              console.warn('Failed to sync overlay cursor:', error);
+            }
+          }
+        }
+      } finally {
+        if (isMouseBatch) {
+          session?.hideInputOverlay();
         }
       }
-      if (mv) {
-        wvTab.mouseX = mv.x;
-        wvTab.mouseY = mv.y;
+      if (lastPoint) {
+        wvTab.mouseX = lastPoint.x;
+        wvTab.mouseY = lastPoint.y;
       }
       return true;
     }

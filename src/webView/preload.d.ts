@@ -9,7 +9,6 @@ declare global {
     runever: RuneverHandler;
     frameId?: number;
     sessionId?: number;
-    electronDummyCursor?: HTMLDivElement;
     isPreloadContext?: boolean;
   }
 }

@@ -1,5 +1,4 @@
 import { SliderProfile } from '../agentic/profile/widget/slider.html';
-import { dummyCursor } from './cursor/cursor';
 import { IFrameHelper } from './iframe';
 import { CommonUtil } from '../utils/common';
 import {
@@ -531,9 +530,6 @@ export namespace MiniHtml {
       let meaningfulEl: MeaningfulElement | null = null;
       // console.info('mutations', mutations);
       mutations.forEach((record) => {
-        if (record.target === dummyCursor.dom) {
-          return;
-        }
         switch (record.target.nodeType) {
           case Node.TEXT_NODE:
             if (record.target.parentElement) {

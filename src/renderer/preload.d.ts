@@ -6,7 +6,6 @@ declare global {
     electron: ElectronHandler;
     frameId?: number;
     sessionId?: number;
-    electronDummyCursor?: HTMLDivElement;
   }
 }
 

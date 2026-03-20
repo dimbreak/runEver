@@ -5,18 +5,24 @@ import type {
   Rectangle,
 } from 'electron';
 import { IframeProgressType } from '../extensions/iframe/types';
-import { LlmApi } from '../main/llm/api';
 import type { PromptAttachment } from '../schema/attachments';
 import type { AuthMode } from '../schema/auth.schema';
 import type { Env } from '../schema/env.schema';
 import { IpcMainContract } from './ipc';
-import { type SessionStatus } from '../agentic/session';
+import { LlmApi as AgenticLlmApi } from '../agentic/api';
 
 export type EventWithDelay = (
   | MouseInputEvent
   | MouseWheelInputEvent
   | KeyboardInputEvent
 ) & { delayMs?: number };
+
+export type UrlSuggestionItem = {
+  url: string;
+  title?: string;
+  icon?: string;
+  visitCount: number;
+};
 
 export namespace ToMainIpc {
   export const createTab = new IpcMainContract<
@@ -47,6 +53,53 @@ export namespace ToMainIpc {
     ],
     { error: string } | { response: any }
   >('operate-tab');
+  export const onResize = new IpcMainContract<
+    [
+      {
+        sessionId: number;
+        bounds?: Rectangle;
+        viewportWidth?: number;
+        sidebarWidth?: number;
+        tabbarHeight?: number;
+      },
+    ],
+    { error: string } | { response: any }
+  >('on-resize');
+  export const updateUrlSuggestionsOverlay = new IpcMainContract<
+    [
+      {
+        sessionId: number;
+        suggestions: UrlSuggestionItem[];
+        selectedIndex?: number;
+      },
+    ],
+    void
+  >('update-url-suggestions-overlay');
+  export const getUrlSuggestions = new IpcMainContract<
+    [
+      {
+        query?: string;
+        limit?: number;
+      },
+    ],
+    UrlSuggestionItem[]
+  >('get-url-suggestions');
+  export const recordUrlVisit = new IpcMainContract<
+    [
+      {
+        url: string;
+      },
+    ],
+    void
+  >('record-url-visit');
+  export const hideUrlSuggestionsOverlay = new IpcMainContract<
+    [
+      {
+        sessionId: number;
+      },
+    ],
+    void
+  >('hide-url-suggestions-overlay');
   export const bindFrameId = new IpcMainContract<
     [{ sessionId?: number; frameId: number; scrollAdjustment?: number }],
     { error?: string } | void
@@ -215,8 +268,8 @@ export namespace ToMainIpc {
       {
         sessionId: number;
         prompt: string;
-        reasoningEffort?: LlmApi.ReasoningEffort;
-        modelType?: LlmApi.LlmModelType;
+        reasoningEffort?: AgenticLlmApi.ReasoningEffort;
+        modelType?: AgenticLlmApi.LlmModelType;
         requestId: number;
         streamReturn?: boolean;
         args?: Record<string, string>;

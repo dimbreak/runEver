@@ -1,3 +1,13 @@
+const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);
+
+const domainLikePattern =
+  /^(localhost|(\d{1,3}\.){3}\d{1,3}|[a-z0-9-]+(\.[a-z0-9-]+)+)(:\d+)?([/?#].*)?$/i;
+
+const toGoogleSearchUrl = (value: string) =>
+  `https://www.google.com/search?q=${encodeURIComponent(value)}`;
+
+const isDomainLike = (value: string) => domainLikePattern.test(value);
+
 /**
  * Normalises a URL value by adding https:// protocol if missing
  * @param value - The URL string to normalise
@@ -6,8 +16,26 @@
 export const normalizeUrlValue = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return '';
-  const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed);
-  return hasProtocol ? trimmed : `https://${trimmed}`;
+  if (hasProtocol(trimmed)) return trimmed;
+  if (/\s/.test(trimmed) || !isDomainLike(trimmed)) {
+    return toGoogleSearchUrl(trimmed);
+  }
+  return `https://${trimmed}`;
+};
+
+export const applyCtrlEnterUrlValue = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (hasProtocol(trimmed) || /\s/.test(trimmed)) {
+    return normalizeUrlValue(trimmed);
+  }
+  const slashIndex = trimmed.search(/[/?#]/);
+  const host = slashIndex === -1 ? trimmed : trimmed.slice(0, slashIndex);
+  const rest = slashIndex === -1 ? '' : trimmed.slice(slashIndex);
+  if (host.includes('.') || host.toLowerCase() === 'localhost') {
+    return normalizeUrlValue(trimmed);
+  }
+  return `https://www.${host}.com${rest}`;
 };
 
 /**

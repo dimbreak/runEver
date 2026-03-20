@@ -22,35 +22,26 @@ const ifScrollable = (el: Element) => {
 class DummyCursor {
   x: number;
   y: number;
-  dom: HTMLDivElement | null = null;
+  inIframe = false;
   constructor() {
     this.x = randomPos() * window.innerWidth;
     this.y = randomPos() * window.innerHeight;
   }
-  init(x: number, y: number, noDom = false) {
+  init(x: number, y: number, inIframe = true) {
     if (x !== -1) {
       this.x = x;
     }
     if (y !== -1) {
       this.y = y;
     }
-    if (noDom) return;
-    this.dom = document.createElement('div');
-    this.dom.id = 'runEver-dummy-cursor';
-    this.dom.style.position = 'fixed';
-    this.dom.style.zIndex = '9999999';
-    this.dom.style.top = `${this.y + 1}px`;
-    this.dom.style.left = `${this.x + 1}px`;
-    this.dom.style.width = '20px';
-    this.dom.style.height = '20px';
-    // svg by puppylinux https://github.com/puppylinux-woof-CE/puppy_icon_theme
-    this.dom.innerHTML = `<svg width="20px" height="20px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" version="1.1"><path style="stroke:#111;stroke-width:4;fill:#ddd;" d="M 5,5 90,30 65,50 95,80 80,95 50,65 30,90 z"/></svg>`;
-    document.body.appendChild(this.dom);
-    window.electronDummyCursor = this.dom;
+    this.inIframe = inIframe;
   }
   isTopElementOrChild(target: Element, x: number, y: number) {
     const elementFromPoint = this.hide(() => document.elementFromPoint(x, y));
-    return !!elementFromPoint && (elementFromPoint === target || target.contains(elementFromPoint));
+    return (
+      !!elementFromPoint &&
+      (elementFromPoint === target || target.contains(elementFromPoint))
+    );
   }
   findScrollableElToAvoid(target: Element | Window) {
     const { body } = document;
@@ -466,8 +457,7 @@ class DummyCursor {
       x -= scrolled.x;
       y -= scrolled.y;
     }
-    if (!this.dom) {
-      // iframe
+    if (this.inIframe) {
       const event: MouseInputEventWithDelay = {
         type: 'mouseMove',
         x: x + width * randomPos(),
@@ -539,19 +529,9 @@ class DummyCursor {
     console.log('moveToXY', x, y, this.x, this.y);
     this.x = x;
     this.y = y;
-    if (this.dom) {
-      this.dom.style.top = `${y + 1}px`;
-      this.dom.style.left = `${x + 1}px`;
-    }
   }
   hide<T>(fn: () => T): T {
-    // During early navigation or fast execPrompt, the preload may not have
-    // initialized the dummy cursor DOM yet. In that case, just run without hiding.
-    if (!this.dom) return fn();
-    this.dom.style.display = 'none';
-    const ret = fn();
-    this.dom.style.display = '';
-    return ret;
+    return fn();
   }
 
   async selectTxt(srcEl: Element, txt: string) {

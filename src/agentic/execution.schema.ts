@@ -3,6 +3,7 @@ import { FillFormActionSchema } from './profile/widget/form/form.schema';
 import {
   DndActionSchema,
   DownloadActionSchema,
+  ClickSendBtnAndWaitReplyActionSchema,
   FocusActionSchema,
   FollowupActionSchema,
   InputActionSchema,
@@ -19,6 +20,7 @@ import {
   TabActionSchema,
   ChecklistActionSchema,
   UrlActionSchema,
+  WaitForNewMsgActionSchema,
   WireSelectorSchema,
   WireWaitDomSchema,
   WireWaitSchema,
@@ -30,6 +32,8 @@ import { ComboboxActionSchema } from './profile/widget/combobox/combobox.schema'
 /** Discriminated union by `k` */
 export const WireActionSchema = z.discriminatedUnion('k', [
   MouseActionSchema,
+  ClickSendBtnAndWaitReplyActionSchema,
+  WaitForNewMsgActionSchema,
   ScrollActionSchema,
   FocusActionSchema,
   DndActionSchema,
