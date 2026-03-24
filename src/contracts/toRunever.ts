@@ -1,6 +1,6 @@
 import type { Rectangle } from 'electron';
 import { IpcMainContract } from './ipc';
-import { RunEverConfig } from '../main/runeverConfigStore';
+import type { RunEverConfig } from '../schema/runeverConfig';
 
 type setConfigReq<K extends keyof RunEverConfig = keyof RunEverConfig> = {
   frameId: number;

@@ -147,9 +147,8 @@ Before running RunEver locally, make sure you have:
 npm install
 ```
 
-Current development setup still expects a local checkout of the ApiTrust React
-SDK at `../apitrust/react-sdk`. Public dependency packaging for that integration
-is not finalized yet.
+The ApiTrust OAuth flow is implemented directly inside the repository, so the
+app can be installed and built without any extra sibling package checkout.
 
 ---
 

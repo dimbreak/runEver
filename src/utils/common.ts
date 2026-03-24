@@ -1,4 +1,4 @@
-import { RunEverConfig } from '../main/runeverConfigStore';
+import type { RunEverConfig } from '../schema/runeverConfig';
 
 export namespace CommonUtil {
   export const replaceJsTpl = (

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import type { Message } from '../../state/agentStore';
+import type { Message } from '../../state/agentStoreV2';
 import { copyText } from '../../utils/clipboard';
 import { buildDataUrl, downloadFile } from '../../utils/dataUtils';
 import { formatBytes } from '../../utils/formatter';

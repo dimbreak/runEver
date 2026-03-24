@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AuthProvider } from '@apitrust/react';
 import { Box, Key } from 'lucide-react';
 import clsx from 'clsx';
 import Argument from './Argument';
@@ -85,28 +84,10 @@ function Sidebar({
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>(() => getTabFromLocation());
-  const [env, setEnv] = useState<any>(null);
 
   const handleTabChange = useCallback((tab: TabId) => {
     setActiveTab(tab);
     window.history.pushState({}, '', getTabHref(tab));
-  }, []);
-
-  useEffect(() => {
-    async function load() {
-      if ((window as any).electron?.apiTrust) {
-        try {
-          const loadedEnv = await (window as any).electron.apiTrust.getEnv();
-          setEnv(loadedEnv);
-        } catch (e) {
-          console.error('Failed to load apitrust env:', e);
-          setEnv({});
-        }
-      } else {
-        setEnv({});
-      }
-    }
-    load();
   }, []);
 
   useEffect(() => {
@@ -123,35 +104,16 @@ export default function App() {
     };
   }, []);
 
-  if (!env) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50 font-sans text-slate-600">
-        Loading...
-      </div>
-    );
-  }
-
   return (
-    <AuthProvider
-      config={{
-        clientId: env.clientId || 'dummy',
-        apiUrl: env.apiUrl || 'http://localhost',
-        secret: env.clientSecret || 'dummy',
-        redirectUri: env.redirectUri || 'http://localhost/callback',
-        authUrl: `${env.authBaseUrl || 'http://localhost'}/oauth/authorize`,
-        tokenUrl: 'http://localhost:8081/api/oauth/token',
-      }}
-    >
-      <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
-        <div className="flex-1 overflow-hidden p-6">
-          <div className="mx-auto flex h-full max-w-6xl flex-col">
-            {activeTab === 'apikey' && <ApiKey />}
-            {activeTab === 'arguments' && <Argument />}
-          </div>
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-900">
+      <div className="flex-1 overflow-hidden p-6">
+        <div className="mx-auto flex h-full max-w-6xl flex-col">
+          {activeTab === 'apikey' && <ApiKey />}
+          {activeTab === 'arguments' && <Argument />}
         </div>
-
-        <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
-    </AuthProvider>
+
+      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+    </div>
   );
 }

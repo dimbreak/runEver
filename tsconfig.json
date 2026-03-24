@@ -15,5 +15,20 @@
     "outDir": ".erb/dll",
     "skipLibCheck": true
   },
-  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
+  "exclude": [
+    "test",
+    "release/build",
+    "release/app/dist",
+    ".erb/dll",
+    "src/renderer/config_page",
+    "runEverMark/mockSite",
+    "src/renderer/components/AgentPanel/ActionDetails.tsx",
+    "src/renderer/components/AgentPanel/ActionItemRow.tsx",
+    "src/renderer/components/AgentPanel/ActionList.tsx",
+    "src/renderer/components/AgentPanel/actionListHelpers.ts",
+    "src/renderer/components/AgentPanel/PromptRunCard.tsx",
+    "src/renderer/components/AgentPanel/SessionSnapshotPanel.tsx",
+    "src/renderer/components/AgentPanel/ThinkingDetails.tsx",
+    "src/renderer/components/AgentPanel/ThinkingItemRow.tsx"
+  ]
 }

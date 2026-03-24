@@ -11,7 +11,7 @@ import { type EventWithDelay, ToMainIpc } from '../../contracts/toMain';
 import '../../webView/preload.d.ts';
 import { Util } from '../../webView/util';
 import { takeScreenshot } from '../../webView/screenshot';
-import type { RunEverConfig } from '../../main/runeverConfigStore';
+import type { RunEverConfig } from '../../schema/runeverConfig';
 import { CommonUtil } from '../../utils/common';
 
 const webViewHandler = {

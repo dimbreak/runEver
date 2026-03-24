@@ -1,4 +1,13 @@
 import { createOpenAI } from '@ai-sdk/openai';
+import {
+  createMoonshotAI,
+  MoonshotAILanguageModelOptions,
+} from '@ai-sdk/moonshotai';
+import { AlibabaLanguageModelOptions, createAlibaba } from '@ai-sdk/alibaba';
+import {
+  AnthropicLanguageModelOptions,
+  createAnthropic,
+} from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   createGoogleGenerativeAI,
@@ -10,34 +19,15 @@ import { streamText, generateText } from 'ai';
 import z from 'zod';
 import fs from 'fs';
 import { app } from 'electron';
-import { envSchema, type Env } from '../schema/env.schema';
-import { apiTrustEnvVars } from '../schema/env.node';
+import { createXai, XaiLanguageModelChatOptions } from '@ai-sdk/xai';
+import { createDeepSeek, DeepSeekLanguageModelOptions } from '@ai-sdk/deepseek';
+import { createMinimax } from 'vercel-minimax-ai-provider';
 import { Util } from '../webView/util';
 import { FirstTokenMonitor } from '../utils/llm';
-import { ApiTrustTokenStore } from '../main/apiTrustTokenStore';
-import { RuneverConfigStore } from '../main/runeverConfigStore';
-import { getAuthMode } from '../main/authModeStore';
+import { type StoredApiKey, StoredApiKeySchema } from '../schema/runeverConfig';
 import { AsyncQueue } from '../utils/asyncQueue';
-import { getApiTrustStream } from './providers/apiTrust';
+import { RuneverConfigStore } from '../main/runeverConfigStore';
 import { createCodexWrapper } from './providers/codex';
-
-const getApiTrustErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return typeof error === 'string' ? error : '';
-};
-
-const isApiTrustAuthError = (error: unknown) => {
-  const message = getApiTrustErrorMessage(error).toLowerCase();
-  return (
-    message.includes('unauthorized') ||
-    message.includes('invalid access token') ||
-    message.includes('access token expired') ||
-    message.includes('not authenticated') ||
-    message.includes('missing authorization header')
-  );
-};
 
 const isNoOutputGeneratedError = (error: unknown) => {
   if (!error || typeof error !== 'object') return false;
@@ -55,18 +45,19 @@ const isNoOutputGeneratedError = (error: unknown) => {
 
 export namespace LlmApi {
   export const llmConfigSchema = z.object({
-    api: envSchema.shape.provider,
-    key: envSchema.shape.apiKey,
+    api: StoredApiKeySchema.shape.provider,
+    key: StoredApiKeySchema.shape.apiKey,
     error: z.string().optional(),
     baseUrl: z.string().optional(),
-    authMode: envSchema.shape.authMode,
+    authMode: StoredApiKeySchema.shape.authMode,
   });
+
   export type LlmConfig = z.infer<typeof llmConfigSchema>;
   export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
   export type LlmModelType = 'hi' | 'mid' | 'low';
   export type Attachment = ImagePart | FilePart;
   export type LlmApiModels = {
-    provider: Env['provider'];
+    provider: StoredApiKey['provider'];
     hi?: LanguageModelV2 | LanguageModelV3;
     mid?: LanguageModelV2 | LanguageModelV3;
     low?: LanguageModelV2 | LanguageModelV3;
@@ -87,15 +78,56 @@ export namespace LlmApi {
       response?: PromiseLike<any>;
     }>;
   };
+
+  export type CollectedStream = {
+    text: string;
+    firstTokenMs: number | null;
+    totalTimeMs: number;
+  };
+
+  export type LlmApiClient = {
+    getLlmApi: () => Promise<LlmApiModels | null>;
+    queryLLMApi: (
+      prompt: string,
+      systemPrompt?: string,
+      attachments?: Attachment[] | null,
+      cacheKey?: string,
+      model?: LlmModelType,
+      reasoningEffort?: ReasoningEffort,
+    ) => Promise<AsyncQueue<string>>;
+    queryLLMSession: (
+      systemPrompt: string,
+      cacheKeyPrefix?: string,
+    ) => (
+      prompt: string,
+      attachments?: Attachment[] | null,
+      model?: LlmModelType,
+      reasoning?: ReasoningEffort,
+      overrideSystemPrompt?: string,
+    ) => Promise<AsyncQueue<string>>;
+  };
+
   type ProviderFactory = (apiConfig: LlmConfig) => LlmApiModels;
+  type LlmConfigLoader = () => Promise<LlmConfig | null>;
 
   export const ErrNoConfig = { error: 'No LLM config' } as const;
 
-  const recordPath = `${app.getPath('userData')}/prompt-record`;
-  const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = RuneverConfigStore.getInstance();
+  let defaultRecordPath: string | null = null;
+  const getDefaultRecordPath = () => {
+    if (defaultRecordPath === null) {
+      defaultRecordPath = `${app.getPath('userData')}/prompt-record`;
+      fs.mkdirSync(defaultRecordPath, { recursive: true });
+    }
+    return defaultRecordPath;
+  };
 
-  fs.mkdirSync(recordPath, { recursive: true });
+  let userApiKeyStore: RuneverConfigStore | null = null;
+  const getUserApiKeyStore = () => {
+    if (!userApiKeyStore) {
+      userApiKeyStore = RuneverConfigStore.getInstance();
+    }
+    return userApiKeyStore;
+  };
 
   const PROVIDERS = {
     openai: (apiConfig) => {
@@ -108,20 +140,17 @@ export namespace LlmApi {
         provider: 'openai',
         hi: openai('gpt-5.4'),
         mid: openai('gpt-5-mini'),
-        low: openai('gpt-5.4-nano'),
+        low: openai('gpt-5.4-mini'),
         streaming: true,
         makeProviderOptions: (
           reasoningEffort: ReasoningEffort,
-          cacheKey: string | undefined,
+          _cacheKey: string | undefined,
         ) => {
-          const providerOptions: Record<string, any> = {};
-          providerOptions.openai = {
-            reasoningEffort,
+          return {
+            openai: {
+              reasoningEffort,
+            },
           };
-          // if (cacheKey) {
-          //   providerOptions.openai.promptCacheKey = cacheKey;
-          // }
-          return providerOptions;
         },
       };
     },
@@ -133,22 +162,22 @@ export namespace LlmApi {
       });
       return {
         provider: 'google',
-        hi: google('gemini-3-pro-preview'),
+        hi: google('gemini-3.1-pro-preview'),
         mid: google('gemini-3-flash-preview'),
-        low: google('gemini-3-flash-preview'),
+        low: google('gemini-3.1-flash-lite-preview'),
         streaming: true,
         makeProviderOptions: (
           reasoningEffort: ReasoningEffort,
-          cacheKey: string | undefined,
+          _cacheKey: string | undefined,
         ) => {
-          const providerOptions: Record<string, any> = {};
-          providerOptions.google = {
-            thinkingConfig: {
-              includeThoughts: true,
-              thinkingLevel: reasoningEffort,
-            },
-          } satisfies GoogleGenerativeAIProviderOptions;
-          return providerOptions;
+          return {
+            google: {
+              thinkingConfig: {
+                includeThoughts: !!reasoningEffort,
+                thinkingLevel: reasoningEffort,
+              },
+            } satisfies GoogleGenerativeAIProviderOptions,
+          };
         },
       };
     },
@@ -162,14 +191,146 @@ export namespace LlmApi {
       return {
         provider: 'zai',
         hi: zai('glm-5'),
-        mid: zai('glm-4.7-flash'),
-        low: zai('glm-4.7-flash'),
+        mid: zai('glm-5'),
+        low: zai('glm-5'),
         streaming: true,
-        makeProviderOptions: (
-          reasoningEffort: ReasoningEffort,
-          cacheKey: string | undefined,
-        ) => {
+        makeProviderOptions: () => {
           return {};
+        },
+      };
+    },
+    anthropic: (apiConfig) => {
+      const anthropic = createAnthropic({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'anthropic',
+        hi: anthropic('claude-opus-4-6'),
+        mid: anthropic('claude-sonnet-4-6'),
+        low: anthropic('claude-sonnet-4-6'),
+        streaming: true,
+        makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
+          return {
+            anthropic: {
+              effort: reasoningEffort === 'minimal' ? 'low' : reasoningEffort,
+            } satisfies AnthropicLanguageModelOptions,
+          };
+        },
+      };
+    },
+    xai: (apiConfig) => {
+      const zai = createXai({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'xai',
+        hi: zai('grok-4.20-reasoning'),
+        mid: zai('grok-4.20-reasoning'),
+        low: zai('grok-4-1-fast-reasoning'),
+        streaming: true,
+        makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
+          return {
+            xai: {
+              reasoningEffort: {
+                minimal: 'low',
+                low: 'low',
+                medium: 'high',
+                high: 'high',
+              }[reasoningEffort || 'low'] as 'high' | 'low',
+            } satisfies XaiLanguageModelChatOptions,
+          };
+        },
+      };
+    },
+    alibaba: (apiConfig) => {
+      const alibaba = createAlibaba({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'alibaba',
+        hi: alibaba('qwen3.5-397b-a17b'),
+        mid: alibaba('qwen3.5-122b-a10b'),
+        low: alibaba('qwen3.5-122b-a10b'),
+        streaming: true,
+        makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
+          return {
+            alibaba: {
+              enableThinking: !!reasoningEffort,
+              thinkingBudget: {
+                minimal: 128,
+                low: 512,
+                medium: 2048,
+                high: 5120,
+              }[reasoningEffort || 'low'],
+            } satisfies AlibabaLanguageModelOptions,
+          };
+        },
+      };
+    },
+    deepseek: (apiConfig) => {
+      const deepseek = createDeepSeek({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'deepseek',
+        hi: deepseek('deepseek-v3.2'),
+        mid: deepseek('deepseek-v3.2'),
+        low: deepseek('deepseek-v3.2'),
+        streaming: true,
+        makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
+          return {
+            deepseek: {
+              thinking: { type: reasoningEffort ? 'enabled' : 'disabled' },
+            } satisfies DeepSeekLanguageModelOptions,
+          };
+        },
+      };
+    },
+    minimax: (apiConfig) => {
+      const minimax = createMinimax({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'minimax',
+        hi: minimax('MiniMax-M2.7'),
+        mid: minimax('MiniMax-M2.7'),
+        low: minimax('MiniMax-M2.7'),
+        streaming: true,
+        makeProviderOptions: () => {
+          return {};
+        },
+      };
+    },
+    moonshot: (apiConfig) => {
+      const moonshot = createMoonshotAI({
+        apiKey: apiConfig.key,
+        baseURL: apiConfig.baseUrl,
+      });
+      return {
+        provider: 'moonshot',
+        hi: moonshot('kimi-k2.5'),
+        mid: moonshot('kimi-k2.5'),
+        low: moonshot('kimi-k2.5'),
+        streaming: true,
+        makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
+          return {
+            moonshotai: {
+              thinking: {
+                type: reasoningEffort ? 'enabled' : 'disabled',
+                budgetTokens: {
+                  minimal: 128,
+                  low: 512,
+                  medium: 2048,
+                  high: 5120,
+                }[reasoningEffort || 'low'],
+              },
+            } satisfies MoonshotAILanguageModelOptions,
+          };
         },
       };
     },
@@ -204,10 +365,10 @@ export namespace LlmApi {
         },
       };
     },
-  } satisfies Record<Env['provider'], ProviderFactory>;
+  } satisfies Record<StoredApiKey['provider'], ProviderFactory>;
 
   const getLlmConfig = async () => {
-    const storedConfig = await userApiKeyStore.getConfig('apiKey');
+    const storedConfig = await getUserApiKeyStore().getConfig('apiKey');
     if (!storedConfig) {
       return {
         api: 'openai',
@@ -215,6 +376,7 @@ export namespace LlmApi {
         error: 'Missing API key.',
       } as LlmConfig;
     }
+
     return {
       api: storedConfig.provider,
       key: storedConfig.apiKey,
@@ -223,100 +385,43 @@ export namespace LlmApi {
     };
   };
 
-  let llmApiPromise: Promise<LlmApiModels | null>;
-  const getLlmApi = async (): Promise<LlmApiModels | null> => {
-    if (!llmApiPromise) {
-      llmApiPromise = (async () => {
-        const apiConfig = await getLlmConfig();
-        console.log('apiConfig', apiConfig);
-        if (apiConfig.error) {
-          console.error('Failed to get LLM config', apiConfig.error);
-          return null;
-        }
-        const providerFactory = PROVIDERS[apiConfig.api];
-        if (!providerFactory) {
-          throw new Error(`Unsupported LLM API: ${apiConfig.api}`);
-        }
-        return providerFactory(apiConfig);
-      })();
+  const createPromptObject = (
+    prompt: string,
+    systemPrompt = '',
+    attachments: Attachment[] | null = null,
+  ): Array<ModelMessage> => {
+    const promptObj: Array<ModelMessage> = [
+      {
+        role: 'user',
+        content: attachments
+          ? [
+              {
+                type: 'text',
+                text: prompt,
+              },
+              ...attachments,
+            ]
+          : prompt,
+      },
+    ];
+
+    if (systemPrompt) {
+      promptObj.push({
+        role: 'system',
+        content: systemPrompt,
+      });
     }
-    return llmApiPromise;
+
+    return promptObj;
   };
 
-  const tryQueryApiTrust = async (options: {
+  const tryQueryApiTrust = async (_options: {
     prompt: string;
     systemPrompt?: string;
     attachments?: Attachment[] | null;
     cacheKey?: string;
   }) => {
-    if (getAuthMode() === 'apikey') {
-      return null;
-    }
-
-    try {
-      const apiTrustToken = await apiTrustTokenStore.getToken();
-      let apiTrustStream: AsyncGenerator<string, void, void> | null = null;
-      if (apiTrustToken) {
-        apiTrustStream = await getApiTrustStream({
-          config: {
-            clientId: apiTrustEnvVars.clientId,
-            redirectUri: apiTrustEnvVars.redirectUri,
-            apiUrl: apiTrustEnvVars.apiUrl,
-          },
-          tokenProvider: apiTrustToken,
-          prompt: options.prompt,
-          systemPrompt: options.systemPrompt,
-          attachments: options.attachments,
-        });
-        if (!apiTrustStream) {
-          throw new Error(
-            'ApiTrust login is active, but the request cannot be sent via ApiTrust.',
-          );
-        }
-      }
-      if (!apiTrustStream) {
-        return null;
-      }
-
-      const q = new AsyncQueue<string>();
-      const monitor = new FirstTokenMonitor(options.cacheKey);
-      monitor.start();
-
-      (async () => {
-        try {
-          for await (const part of apiTrustStream) {
-            if (!monitor.hasReceived()) {
-              monitor.onFirstToken(part);
-            }
-            q.push(part);
-          }
-        } catch (err) {
-          monitor.stop();
-          console.error('ApiTrust streaming error:', err);
-          q.fail(err as Error);
-        } finally {
-          monitor.stop();
-          q.close();
-        }
-      })();
-
-      return q;
-    } catch (error) {
-      console.error('ApiTrust request failed', error);
-      if (isApiTrustAuthError(error)) {
-        try {
-          // Token rejected; clear it so the UI can re-auth.
-          await apiTrustTokenStore.setToken(null);
-          console.warn(
-            'ApiTrust token rejected; falling back to configured LLM provider.',
-          );
-        } catch (clearError) {
-          console.warn('Failed to clear ApiTrust token', clearError);
-        }
-        return null;
-      }
-      throw error;
-    }
+    return null;
   };
 
   const dummyReturns: string[] = [];
@@ -347,18 +452,17 @@ export namespace LlmApi {
     if (Array.isArray(text)) {
       text.forEach((item) => {
         if (item.startsWith('prompt-record/')) {
-          // fs.readFile()
           const jsonStr = fs.readFileSync(`${__dirname}/../../${item}`, 'utf8');
           try {
-            const j = JSON.parse(jsonStr);
-            const res = (j.messages as any[][])[0].find(
-              (m: any) => m.type === 'text',
+            const record = JSON.parse(jsonStr);
+            const res = (record.messages as any[][])[0].find(
+              (message: any) => message.type === 'text',
             ).text;
             dummyReturns.push(res);
             console.log('addDummyReturn', item, res.slice(0, 32));
-          } catch (e) {
+          } catch (error) {
             console.log('addDummyReturn', item);
-            console.error('addDummyReturn', item, e);
+            console.error('addDummyReturn', item, error);
           }
         } else {
           dummyReturns.push(item);
@@ -370,48 +474,72 @@ export namespace LlmApi {
     streamQueryer = streamDummy;
   };
 
-  export async function queryLLMApi(
-    prompt: string,
-    systemPrompt = '',
-    attachments: Attachment[] | null = null,
-    cacheKey = '',
-    model: LlmModelType = 'mid',
-    reasoningEffort: ReasoningEffort = 'low',
-  ): Promise<AsyncQueue<string>> {
-    const apiTrustResult = await tryQueryApiTrust({
-      prompt,
-      systemPrompt,
-      attachments,
-      cacheKey,
-    });
-    if (apiTrustResult) {
-      return apiTrustResult;
-    }
+  const createClientInternal = (
+    configLoader: LlmConfigLoader,
+    options: {
+      recordPath?: string | null;
+    } = {},
+  ): LlmApiClient => {
+    let llmApiPromise: Promise<LlmApiModels | null> | undefined;
 
-    const llmApi = await getLlmApi();
-
-    if (llmApi) {
-      const q = new AsyncQueue<string>();
-      const promptObj: string | Array<ModelMessage> = [
-        {
-          role: 'user',
-          content: attachments
-            ? [
-                {
-                  type: 'text',
-                  text: prompt,
-                },
-                ...attachments,
-              ]
-            : prompt,
-        },
-      ];
-      if (systemPrompt) {
-        promptObj.push({
-          role: 'system',
-          content: systemPrompt,
-        });
+    const getClientRecordPath = () => {
+      if (options.recordPath === undefined) {
+        return getDefaultRecordPath();
       }
+      if (options.recordPath) {
+        fs.mkdirSync(options.recordPath, { recursive: true });
+      }
+      return options.recordPath ?? null;
+    };
+
+    const getLlmApi = async (): Promise<LlmApiModels | null> => {
+      if (!llmApiPromise) {
+        llmApiPromise = (async () => {
+          const apiConfig = await configLoader();
+          console.log('apiConfig', apiConfig);
+          if (!apiConfig || apiConfig.error) {
+            console.error(
+              'Failed to get LLM config',
+              apiConfig?.error || 'Missing config',
+            );
+            return null;
+          }
+          const providerFactory = PROVIDERS[apiConfig.api];
+          if (!providerFactory) {
+            throw new Error(`Unsupported LLM API: ${apiConfig.api}`);
+          }
+          return providerFactory(apiConfig);
+        })();
+      }
+      return llmApiPromise;
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    const queryLLMApi = async (
+      prompt: string,
+      systemPrompt = '',
+      attachments: Attachment[] | null = null,
+      cacheKey = '',
+      model: LlmModelType = 'mid',
+      reasoningEffort: ReasoningEffort = 'low',
+    ): Promise<AsyncQueue<string>> => {
+      const apiTrustResult = await tryQueryApiTrust({
+        prompt,
+        systemPrompt,
+        attachments,
+        cacheKey,
+      });
+      if (apiTrustResult) {
+        return apiTrustResult;
+      }
+
+      const llmApi = await getLlmApi();
+      if (!llmApi) {
+        throw ErrNoConfig;
+      }
+
+      const q = new AsyncQueue<string>();
+      const promptObj = createPromptObject(prompt, systemPrompt, attachments);
       const maxStreamRetries = 1;
       let lastError: unknown;
 
@@ -420,6 +548,7 @@ export namespace LlmApi {
         if (!llmApi.streaming) {
           streamer = fakeStreamer;
         }
+
         for (let attempt = 0; attempt <= maxStreamRetries; attempt += 1) {
           const monitor = new FirstTokenMonitor(cacheKey);
           let yielded = false;
@@ -444,6 +573,7 @@ export namespace LlmApi {
                   ),
                   prompt: promptObj,
                 });
+
             response = streamResult.response ?? null;
             monitor.start();
 
@@ -454,33 +584,42 @@ export namespace LlmApi {
               yielded = true;
               q.push(part);
             }
+
             if (!yielded) {
               throw new Error('No output generated.');
             }
+
             if (response) {
               console.log(`api call ok ${cacheKey}`);
               try {
                 const res = await response;
                 let messages: ModelMessage[] = [];
                 if (res) {
-                  messages = res.messages?.map((m: ModelMessage) => m?.content);
+                  messages = res.messages?.map(
+                    (message: ModelMessage) => message?.content,
+                  );
                 }
-                fs.writeFile(
-                  `${recordPath}/log-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`,
-                  JSON.stringify({ ...res, prompt: promptObj, messages }),
-                  () => {},
-                );
+
+                const recordPath = getClientRecordPath();
+                if (recordPath) {
+                  fs.writeFile(
+                    `${recordPath}/log-${new Date().toISOString().replace(/[^0-9]/g, '')}.json`,
+                    JSON.stringify({ ...res, prompt: promptObj, messages }),
+                    () => {},
+                  );
+                }
               } catch (logError) {
                 console.warn('Failed to write LLM log', logError);
               }
             }
+
             q.close();
             return;
-          } catch (err) {
-            lastError = err;
-            if (isNoOutputGeneratedError(err) && !yielded) {
+          } catch (error) {
+            lastError = error;
+            if (isNoOutputGeneratedError(error) && !yielded) {
               if (attempt < maxStreamRetries) {
-                console.warn('No output generated; retrying stream.', err);
+                console.warn('No output generated; retrying stream.', error);
                 shouldRetry = true;
               } else {
                 lastError = new Error('No output generated.');
@@ -489,62 +628,124 @@ export namespace LlmApi {
           } finally {
             monitor.stop();
           }
+
           if (shouldRetry) {
             continue;
           }
+
           console.error('Error during LLM streaming:', lastError);
           q.fail(lastError as Error);
           q.close();
           return;
         }
+
         if (lastError) {
           q.fail(lastError as Error);
         }
         q.close();
       })();
+
       return q;
+    };
+
+    const queryLLMSession = (systemPrompt: string, cacheKeyPrefix = '') => {
+      const cacheKey = `${cacheKeyPrefix}${Math.round(Math.random() * 1000000)}`;
+      return (
+        prompt: string,
+        attachments: Attachment[] | null = null,
+        model: LlmModelType = 'mid',
+        reasoning: ReasoningEffort = 'low',
+        overrideSystemPrompt: string | undefined = undefined,
+      ) => {
+        return queryLLMApi(
+          prompt,
+          overrideSystemPrompt ?? systemPrompt,
+          attachments,
+          cacheKey,
+          model,
+          reasoning,
+        );
+      };
+    };
+
+    return {
+      getLlmApi,
+      queryLLMApi,
+      queryLLMSession,
+    };
+  };
+
+  let defaultClient: LlmApiClient | undefined;
+  const getDefaultClient = () => {
+    if (!defaultClient) {
+      defaultClient = createClientInternal(async () => getLlmConfig());
     }
-    throw ErrNoConfig;
+    return defaultClient;
+  };
+
+  export const createClient = (
+    config: LlmConfig | LlmConfigLoader,
+    options: {
+      recordPath?: string | null;
+    } = {},
+  ) => {
+    const loader: LlmConfigLoader =
+      typeof config === 'function' ? config : async () => config;
+    return createClientInternal(loader, options);
+  };
+
+  export async function queryLLMApi(
+    prompt: string,
+    systemPrompt = '',
+    attachments: Attachment[] | null = null,
+    cacheKey = '',
+    model: LlmModelType = 'mid',
+    reasoningEffort: ReasoningEffort = 'low',
+  ): Promise<AsyncQueue<string>> {
+    return getDefaultClient().queryLLMApi(
+      prompt,
+      systemPrompt,
+      attachments,
+      cacheKey,
+      model,
+      reasoningEffort,
+    );
   }
 
   export const queryLLMSession = (
     systemPrompt: string,
     cacheKeyPrefix = '',
   ) => {
-    const cacheKey = `${cacheKeyPrefix}${Math.round(Math.random() * 1000000)}`;
-    return (
-      prompt: string,
-      attachments: Attachment[] | null = null,
-      model: LlmModelType = 'mid',
-      reasoning: ReasoningEffort = 'low',
-      overrideSystemPrompt: string | undefined = undefined,
-    ) => {
-      return queryLLMApi(
-        prompt,
-        overrideSystemPrompt ?? systemPrompt,
-        attachments,
-        cacheKey,
-        model,
-        reasoning,
-      );
+    return getDefaultClient().queryLLMSession(systemPrompt, cacheKeyPrefix);
+  };
+
+  export const collectStream = async (
+    stream: AsyncIterable<string | null | undefined>,
+  ): Promise<CollectedStream> => {
+    const result: string[] = [];
+    const start = Date.now();
+    let firstTokenMs: number | null = null;
+
+    for await (const part of stream) {
+      if (firstTokenMs === null) {
+        firstTokenMs = Date.now() - start;
+      }
+      result.push(part ?? '');
+    }
+
+    return {
+      text: result.join(''),
+      firstTokenMs,
+      totalTimeMs: Date.now() - start,
     };
   };
 
   export const wrapStream = async (stream: AsyncQueue<string>) => {
-    const result: string[] = [];
-    const start = Date.now();
-    let firstToken = -1;
-    for await (const part of stream) {
-      if (firstToken === -1) {
-        firstToken = Date.now() - start;
-      }
-      result.push(part ?? '');
+    const result = await collectStream(stream);
+    if (result.text[0] === '{') {
+      return `{ "firstToken": ${result.firstTokenMs ?? -1}, "done": ${result.totalTimeMs}, ${result.text.slice(1)}`;
     }
-    const done = Date.now() - start;
-    if (result[0][0] === '{') {
-      result[0] = `{ "firstToken": ${firstToken}, "done": ${done}, ${result[0].slice(1)}`;
-    }
-    return result.join('');
+    return result.text;
   };
 
   const fakeStreamer: any = (
@@ -571,7 +772,7 @@ export namespace LlmApi {
           await Util.sleep(Math.random() * 20 + 10);
         }
       })(),
-      response: res.then((r) => r.response),
+      response: res.then((response) => response.response),
     } as any as ReturnType<typeof streamText>;
   };
 }

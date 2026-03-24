@@ -11,25 +11,86 @@ import { TabList } from './TabList';
 import { Button } from './ui/button';
 import { UrlBar } from './UrlBar';
 
-export const TabBar: React.FC = () => {
+const CONFIG_ROOT_URL = 'runever://config';
+const CONFIG_APIKEY_URL = 'runever://config/apikey';
+
+const isConfigUrl = (url?: string | null) => url?.startsWith(CONFIG_ROOT_URL);
+
+type TabBarProps = {
+  hasApiConfig: boolean;
+  onAgentButtonClick: () => Promise<boolean>;
+};
+
+export const TabBar: React.FC<TabBarProps> = ({
+  hasApiConfig,
+  onAgentButtonClick,
+}) => {
   const { toggleSidebar, isSidebarOpen, bounds, toggleUrlBar } =
     useLayoutStore();
-  const { tabs, activeTabId, addTab } = useTabStore();
+  const { tabs, activeTabId, addTab, setActiveTab, navigateTab } = useTabStore();
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
     [activeTabId, tabs],
   );
   const orderedTabs = useMemo(() => tabs, [tabs]);
 
-  const handleOpenConfig = useCallback(() => {
-    const newTab = new WebTab({
-      id: -1,
-      title: 'Config',
-      url: 'runever://config',
-    });
-    addTab(newTab, bounds);
-    toggleUrlBar(true);
-  }, [addTab, bounds, toggleUrlBar]);
+  const focusOrCreateConfigTab = useCallback(
+    async (targetUrl: string, navigateWhenActive: boolean) => {
+      if (activeTab && isConfigUrl(activeTab.url)) {
+        if (navigateWhenActive && activeTab.url !== targetUrl) {
+          await navigateTab(activeTab.id, targetUrl);
+        }
+        toggleUrlBar(true);
+        return;
+      }
+
+      const existingConfigTab = tabs.find((tab) => isConfigUrl(tab.url));
+      if (existingConfigTab) {
+        await setActiveTab(existingConfigTab.id);
+        if (existingConfigTab.url !== targetUrl) {
+          await navigateTab(existingConfigTab.id, targetUrl);
+        }
+        toggleUrlBar(true);
+        return;
+      }
+
+      const newTab = new WebTab({
+        id: -1,
+        title: 'Config',
+        url: targetUrl,
+      });
+      await addTab(newTab, bounds);
+      toggleUrlBar(true);
+    },
+    [activeTab, addTab, bounds, navigateTab, setActiveTab, tabs, toggleUrlBar],
+  );
+
+  const handleOpenConfig = useCallback(async () => {
+    if (activeTab?.url === CONFIG_ROOT_URL) {
+      return;
+    }
+
+    await focusOrCreateConfigTab(CONFIG_ROOT_URL, false);
+  }, [activeTab?.url, focusOrCreateConfigTab]);
+
+  const handleOpenAgent = useCallback(async () => {
+    if (!hasApiConfig) {
+      await focusOrCreateConfigTab(CONFIG_APIKEY_URL, true);
+      return;
+    }
+
+    const configured = await onAgentButtonClick();
+    if (configured) {
+      toggleSidebar();
+    } else {
+      await focusOrCreateConfigTab(CONFIG_APIKEY_URL, true);
+    }
+  }, [
+    focusOrCreateConfigTab,
+    hasApiConfig,
+    onAgentButtonClick,
+    toggleSidebar,
+  ]);
 
   useIpcListeners();
 
@@ -63,8 +124,8 @@ export const TabBar: React.FC = () => {
           >
             <Settings size={16} />
           </Button>
-          {!isSidebarOpen && (
-            <Button type="button" onClick={toggleSidebar} size="sm">
+          {(!isSidebarOpen || !hasApiConfig) && (
+            <Button type="button" onClick={handleOpenAgent} size="sm">
               <Bot size={16} />
             </Button>
           )}

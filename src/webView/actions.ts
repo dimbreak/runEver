@@ -787,7 +787,7 @@ export namespace BrowserActions {
       typeAttr !== 'file'
     ) {
       console.log('focus', action, el);
-      await dummyCursor.mouseEvent('click', el);
+      await dummyCursor.mouseEvent('click', el, 0, undefined, true);
     }
     if (el.tagName === 'SELECT') {
       const select = el as HTMLSelectElement;

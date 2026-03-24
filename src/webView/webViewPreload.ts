@@ -8,7 +8,7 @@ import { Network } from './network';
 import { MiniHtml } from './miniHtml';
 import { type WireActionWithWaitAndRec } from '../agentic/types';
 import { takeScreenshot } from './screenshot';
-import type { RunEverConfig } from '../main/runeverConfigStore';
+import type { RunEverConfig } from '../schema/runeverConfig';
 import { CommonUtil } from '../utils/common';
 import { SliderSkill } from '../agentic/addOns/skills/slider/slider.webView';
 

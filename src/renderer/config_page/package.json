@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@apitrust/react": "file:../../../../apitrust/react-sdk",
     "clsx": "^2.1.1",
     "lucide-react": "^0.562.0",
     "react": "^19.2.1",

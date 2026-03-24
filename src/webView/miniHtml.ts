@@ -107,17 +107,35 @@ export namespace MiniHtml {
         visible.visible = '';
         return visible;
       }
+      // display:contents removes the element's box but renders children
+      // normally — not truly size0.
+      if (style.display === 'contents') {
+        visible.visible = '';
+        return visible;
+      }
+      // If overflow is not clipped, children can overflow a 0-dimension
+      // parent and still be visible (common on Amazon buy-panel wrappers).
+      if (
+        style.overflow !== 'hidden' &&
+        style.overflowX !== 'hidden' &&
+        style.overflowY !== 'hidden' &&
+        el.children.length > 0
+      ) {
+        return visible; // stays visible:true
+      }
       visible.visible = 'size0';
       return visible;
     }
 
-    const { scrollX, scrollY, innerWidth, innerHeight } = window;
+    const { scrollX, scrollY } = window;
 
+    // outOfDoc = element at negative document coordinates, unreachable by
+    // scrolling (e.g. left:-9999px off-screen tricks).  Elements merely
+    // outside the current viewport but scroll-reachable stay visible:true;
+    // the compressor will demote them to LITE/MIN via area-ratio scoring.
     if (
-      rect.x < -scrollX ||
-      rect.y < -scrollY ||
-      (style.position === 'fixed' &&
-        (rect.bottom > innerHeight || rect.right > innerWidth))
+      rect.right + scrollX < 0 ||
+      rect.bottom + scrollY < 0
     ) {
       visible.visible = 'outOfDoc';
       return visible;
@@ -270,8 +288,8 @@ export namespace MiniHtml {
       visible?.needDim &&
       visible.x + visible.width > 0 &&
       visible.y + visible.height > 0 &&
-      visible.x < window.innerWidth + window.scrollX &&
-      visible.y < window.innerHeight + window.scrollY
+      visible.x < window.innerWidth &&
+      visible.y < window.innerHeight
     ) {
       return true;
     }
@@ -317,6 +335,23 @@ export namespace MiniHtml {
       const { visible, element } = meaningfulEl;
       const tagName = element.tagName.toLowerCase();
       const { style } = visible;
+
+      // Early exit: skip full subtree for truly non-visible elements.
+      // Only 'hide' (display:none / visibility:hidden / opacity:0) and
+      // 'outOfDoc' (negative document coords) guarantee children are also
+      // invisible.  'size0' parents can have overflowing visible children,
+      // and 'covered' parents can have children positioned outside the
+      // covered area — so those must recurse normally.
+      if (
+        (visible.visible === 'hide' || visible.visible === 'outOfDoc') &&
+        !ifInteractive(tagName, element)
+      ) {
+        const labelAttr = meaningfulEl.label?.length
+          ? ` label=${quoteAttrVal(meaningfulEl.label)}`
+          : '';
+        return `<${tagName} ${visible.visible}${labelAttr} />`;
+      }
+
       const blockAnalysis =
         compression && this.canCompressBlock(meaningfulEl)
           ? this.analyzeBlock(meaningfulEl, compression)
@@ -328,9 +363,13 @@ export namespace MiniHtml {
           forceDim,
         );
       }
+      const preserveActionPanelChildren =
+        compression && this.isPriorityActionPanel(meaningfulEl, compression);
       const childCompression =
         blockAnalysis?.keepReason ||
-        (blockAnalysis?.level === 'FULL' && this.isRepeatedCard(element))
+        preserveActionPanelChildren ||
+        (blockAnalysis?.level === 'FULL' &&
+          (this.isRepeatedCard(element) || this.hasDenseActions(element)))
           ? null
           : compression;
       let fontIndex = this.styles.font[style.fontFamily];
@@ -433,7 +472,12 @@ export namespace MiniHtml {
       }
       let tagHtmls = [
         tagName,
-        isVisible ? `id=${meaningfulEl.id ? meaningfulEl.id : ''}` : '',
+        isVisible ||
+        tagName === 'input' ||
+        tagName === 'select' ||
+        tagName === 'textarea'
+          ? `id=${meaningfulEl.id ? meaningfulEl.id : ''}`
+          : '',
         href,
         meaningfulEl.label?.length
           ? `label=${quoteAttrVal(meaningfulEl.label)}`
@@ -874,7 +918,7 @@ export namespace MiniHtml {
       },
       {} as Record<string, string>,
     ),
-  )};</script>${searchContext ? `<search-context q=${quoteAttrVal(searchContext)} />` : ''}${html} //${this.mutatedElements.size}`;
+  )};</script>${searchContext ? `<search-context q=${quoteAttrVal(searchContext)} />` : ''}${html}`;
     };
     genId(id: string | undefined) {
       // eslint-disable-next-line no-nested-ternary
@@ -1187,6 +1231,33 @@ export namespace MiniHtml {
       );
     }
 
+    private getHorizontalScrollVisibility(element: HTMLElement) {
+      let parent = element.parentElement;
+      while (parent && parent !== document.body) {
+        const style = window.getComputedStyle(parent);
+        const overflowX = style.overflowX.toLowerCase();
+        const isHorizontalScroller =
+          ['auto', 'scroll'].includes(overflowX) &&
+          parent.scrollWidth - parent.clientWidth > 24;
+        if (isHorizontalScroller) {
+          const parentRect = parent.getBoundingClientRect();
+          const rect = element.getBoundingClientRect();
+          const clippedWidth = Math.max(
+            0,
+            Math.min(rect.right, parentRect.right) -
+              Math.max(rect.left, parentRect.left),
+          );
+          const visibleRatio = clippedWidth / Math.max(rect.width, 1);
+          return {
+            visibleRatio,
+            mostlyVisible: visibleRatio >= 0.55,
+          };
+        }
+        parent = parent.parentElement;
+      }
+      return null;
+    }
+
     private describeInteractable(element: HTMLElement): string {
       const tagName = element.tagName.toLowerCase();
       const type = (element.getAttribute('type') || '').toLowerCase();
@@ -1234,6 +1305,57 @@ export namespace MiniHtml {
         .map((child) => this.describeInteractable(child))
         .filter((item, index, items) => item && items.indexOf(item) === index);
       return interactables.slice(0, maxItems);
+    }
+
+    private hasDenseActions(element: HTMLElement): boolean {
+      const buttonCount = element.querySelectorAll(
+        'button,[role="button"],input[type="submit"],input[type="button"]',
+      ).length;
+      const interactiveCount =
+        element.querySelectorAll(INTERACTIVE_SELECTOR).length;
+      return buttonCount >= 1 && interactiveCount >= 2;
+    }
+
+    private isPriorityActionPanel(
+      meaningfulEl: MeaningfulElement,
+      compression: SnapshotCompression,
+    ): boolean {
+      const { element } = meaningfulEl;
+      const visible = meaningfulEl.visible ?? checkVisible(element);
+      const submitControlCount = element.querySelectorAll(
+        'button[type="submit"],input[type="submit"]',
+      ).length;
+      const hasForm = element.querySelectorAll('form').length > 0;
+      if (
+        visible.visible !== true ||
+        !this.hasDenseActions(element) ||
+        (!hasForm && submitControlCount < 1)
+      ) {
+        return false;
+      }
+      const clippedWidth = Math.max(
+        0,
+        Math.min(visible.right, compression.viewportWidth) -
+          Math.max(visible.left, 0),
+      );
+      const clippedHeight = Math.max(
+        0,
+        Math.min(visible.bottom, compression.viewportHeight) -
+          Math.max(visible.top, 0),
+      );
+      const clippedAreaRatio =
+        (clippedWidth * clippedHeight) / compression.viewportArea;
+      const visibleRatio =
+        (clippedWidth * clippedHeight) /
+        Math.max(visible.width * visible.height, 1);
+      return (
+        clippedWidth > 0 &&
+        clippedHeight > 0 &&
+        visibleRatio >= 0.45 &&
+        clippedWidth <= compression.viewportWidth * 0.42 &&
+        clippedHeight >= compression.viewportHeight * 0.25 &&
+        clippedAreaRatio >= 0.015
+      );
     }
 
     private getKeywordHint(element: HTMLElement): string | undefined {
@@ -1317,6 +1439,25 @@ export namespace MiniHtml {
         meaningfulEl.nodes?.filter((node) => typeof node === 'object').length ??
         0
       );
+    }
+
+    private getMeaningfulDescendantCount(
+      meaningfulEl: MeaningfulElement,
+      limit = 12,
+    ): number {
+      let count = 0;
+      const visit = (node: MeaningfulElement) => {
+        if (!node.nodes || count >= limit) return;
+        node.nodes.forEach((child) => {
+          if (typeof child !== 'object' || count >= limit) return;
+          count += 1;
+          if (count < limit) {
+            visit(child);
+          }
+        });
+      };
+      visit(meaningfulEl);
+      return count;
     }
 
     private isRepeatedCard(element: HTMLElement): boolean {
@@ -1434,7 +1575,35 @@ export namespace MiniHtml {
     private canCompressBlock(meaningfulEl: MeaningfulElement): boolean {
       const { element } = meaningfulEl;
       const tagName = element.tagName.toLowerCase();
+      const visible = meaningfulEl.visible ?? checkVisible(element);
+      const directChildCount = this.getMeaningfulChildCount(meaningfulEl);
+      const descendantCount = this.getMeaningfulDescendantCount(meaningfulEl);
+      const viewportWidth = Math.max(window.innerWidth, 1);
+      const viewportHeight = Math.max(window.innerHeight, 1);
+      const clippedWidth = Math.max(
+        0,
+        Math.min(visible.right, viewportWidth) - Math.max(visible.left, 0),
+      );
+      const clippedHeight = Math.max(
+        0,
+        Math.min(visible.bottom, viewportHeight) - Math.max(visible.top, 0),
+      );
+      const clippedAreaRatio =
+        (clippedWidth * clippedHeight) / (viewportWidth * viewportHeight);
+      const isLargeViewportContainer =
+        clippedAreaRatio >= 0.18 &&
+        clippedWidth >= viewportWidth * 0.45 &&
+        clippedHeight >= viewportHeight * 0.35;
+      const isScrollableViewportSection =
+        clippedHeight >= viewportHeight * 0.35 &&
+        element.scrollHeight - visible.height > viewportHeight * 0.3;
       if (tagName === 'body' || tagName === 'iframe') {
+        return false;
+      }
+      if (visible.visible !== true) {
+        return true;
+      }
+      if (isLargeViewportContainer || isScrollableViewportSection) {
         return false;
       }
       if (
@@ -1445,7 +1614,10 @@ export namespace MiniHtml {
       ) {
         return false;
       }
-      return this.getMeaningfulChildCount(meaningfulEl) < 4;
+      if (descendantCount >= 8) {
+        return false;
+      }
+      return directChildCount < 4;
     }
 
     private buildBlockSummary(
@@ -1478,8 +1650,10 @@ export namespace MiniHtml {
         return cached;
       }
       const { element } = meaningfulEl;
+      const tagName = element.tagName.toLowerCase();
       const visible = meaningfulEl.visible ?? checkVisible(element);
-      const keepReason = this.getKeepReason(element);
+      const keepReason =
+        visible.visible === true ? this.getKeepReason(element) : undefined;
       const interactables = this.getBlockInteractables(element);
       const textSnippet =
         this.getNodeSnippet(meaningfulEl.nodes, 120) ||
@@ -1493,6 +1667,21 @@ export namespace MiniHtml {
       const keywordHint = this.getKeywordHint(element);
       const repeatedCard = this.isRepeatedCard(element);
       const imageGrid = this.isImageGrid(element);
+      const buttonCount = element.querySelectorAll(
+        'button,[role="button"],input[type="submit"],input[type="button"]',
+      ).length;
+      const isHeading = /^h[1-4]$/.test(tagName);
+      const isTitleLike =
+        isHeading ||
+        ((tagName === 'a' || tagName === 'button') &&
+          !!element.querySelector('h1,h2,h3,h4'));
+      const horizontalScrollVisibility =
+        this.getHorizontalScrollVisibility(element);
+      const horizontalVisibleRatio =
+        horizontalScrollVisibility?.visibleRatio ?? 1;
+      const inHorizontalViewport = horizontalVisibleRatio > 0.1;
+      const mostlyInHorizontalViewport =
+        horizontalScrollVisibility?.mostlyVisible ?? true;
       const clippedWidth = Math.max(
         0,
         Math.min(visible.right, compression.viewportWidth) -
@@ -1532,12 +1721,24 @@ export namespace MiniHtml {
             (compression.viewportHeight / 2) ** 2,
         ) || 1;
       const centerDistance = Math.sqrt(dx ** 2 + dy ** 2) / maxDistance;
-      const inFold = expandedClippedWidth > 0 && expandedClippedHeight > 0;
+      const inFold =
+        expandedClippedWidth > 0 &&
+        expandedClippedHeight > 0 &&
+        inHorizontalViewport;
       const mostlyInViewport =
         inFold &&
+        mostlyInHorizontalViewport &&
         expandedVisibleRatio >= 0.45 &&
         areaRatio >= 0.012 &&
         centerDistance <= 0.8;
+      const isActionPanel =
+        visible.visible === true &&
+        inFold &&
+        buttonCount >= 1 &&
+        interactables.length >= 2 &&
+        (areaRatio >= 0.012 ||
+          clippedHeight >= compression.viewportHeight * 0.18) &&
+        !imageGrid;
       const linkDensity = linkCount / wordCount;
       let score = 0;
       if (areaRatio >= 0.18) score += 4;
@@ -1562,6 +1763,18 @@ export namespace MiniHtml {
       } else {
         score -= 3;
       }
+      if (horizontalScrollVisibility) {
+        if (horizontalVisibleRatio >= 0.6) score += 2;
+        else if (horizontalVisibleRatio >= 0.3) score -= 1;
+        else score -= 5;
+      }
+      if (isTitleLike) {
+        if (textSnippet.length >= 12) score += 4;
+        if (inFold) score += 3;
+      }
+      if (isActionPanel) {
+        score += 5;
+      }
       if (interactables.length >= 2) score += 1;
       if (textSnippet.length >= 48) score += 1;
       if (linkDensity > 0.6) score -= 3;
@@ -1574,7 +1787,10 @@ export namespace MiniHtml {
           score -= 2;
         }
       }
-      if (['fixed', 'sticky'].includes(visible.style.position)) {
+      if (
+        ['fixed', 'sticky'].includes(visible.style.position) &&
+        !isActionPanel
+      ) {
         score -= 1;
       }
       if (!inFold && areaRatio < 0.03) {
@@ -1605,6 +1821,8 @@ export namespace MiniHtml {
           keywordHint !== 'footer links'
         ) {
           level = 'FULL';
+        } else if (isActionPanel) {
+          level = expandedVisibleRatio >= 0.18 ? 'FULL' : 'LITE';
         } else if (
           score >= 6 &&
           areaRatio >= 0.03 &&
@@ -1612,6 +1830,12 @@ export namespace MiniHtml {
           !imageGrid
         ) {
           level = 'FULL';
+        } else if (
+          isTitleLike &&
+          visible.visible === true &&
+          textSnippet.length >= 8
+        ) {
+          level = inFold || expandedVisibleRatio >= 0.18 ? 'FULL' : 'LITE';
         } else if (
           score >= 0 ||
           keywordHint === 'search result' ||
@@ -1622,7 +1846,7 @@ export namespace MiniHtml {
         } else {
           level = 'MIN';
         }
-        if (areaRatio < 0.01 && interactables.length === 0) {
+        if (areaRatio < 0.01 && interactables.length === 0 && !isTitleLike) {
           level = 'MIN';
         }
         if (
@@ -1644,6 +1868,7 @@ export namespace MiniHtml {
         if (
           repeatedCard &&
           inFold &&
+          mostlyInHorizontalViewport &&
           expandedVisibleRatio >= 0.12 &&
           areaRatio >= 0.004 &&
           visible.visible === true &&
@@ -1651,6 +1876,29 @@ export namespace MiniHtml {
         ) {
           level = 'FULL';
         } else if (keywordHint === 'search result' && level === 'FULL') {
+          level = 'LITE';
+        }
+        if (horizontalScrollVisibility && horizontalVisibleRatio < 0.12) {
+          level = 'MIN';
+        } else if (
+          horizontalScrollVisibility &&
+          horizontalVisibleRatio < 0.55 &&
+          level === 'FULL'
+        ) {
+          level = 'LITE';
+        }
+        if (visible.visible === 'hide' || visible.visible === 'size0') {
+          level =
+            interactables.length > 0 || textSnippet.length >= 24
+              ? 'LITE'
+              : 'MIN';
+        } else if (
+          (visible.visible === 'covered' || visible.visible === 'outOfDoc') &&
+          level === 'FULL'
+        ) {
+          level = 'LITE';
+        }
+        if (isTitleLike && visible.visible === true && level === 'MIN') {
           level = 'LITE';
         }
       }

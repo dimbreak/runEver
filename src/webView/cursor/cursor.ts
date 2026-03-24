@@ -294,6 +294,7 @@ class DummyCursor {
     elOrRect?: Element | DOMRect,
     repeat: number = 0,
     modifiers: MouseInputEvent['modifiers'] = undefined,
+    allowCovered = false,
   ) {
     let { x: clientX, y: clientY } = this;
     if (elOrRect) {
@@ -330,7 +331,10 @@ class DummyCursor {
         clientY = this.y;
       }
       if (elOrRect instanceof Element) {
-        if (!this.isTopElementOrChild(elOrRect, clientX, clientY)) {
+        if (
+          !allowCovered &&
+          !this.isTopElementOrChild(elOrRect, clientX, clientY)
+        ) {
           throw new Error('mouseEvent target is covered');
         }
       }

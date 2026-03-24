@@ -10,11 +10,12 @@
   "license": "AGPL-3.0-or-later",
   "main": "./.erb/dll/main.bundle.dev.js",
   "scripts": {
+    "benchmark:runevermark": "cross-env TS_NODE_TRANSPILE_ONLY=true ts-node ./runEverMark/benchmark/index.ts",
     "build": "concurrently \"npm run build:main\" \"npm run build:renderer\" \"npm run build:extensions\" \"npm run build:extensions:iframeLazy\" \"npm run build:runEverMark\" \"npm run build:configPage\"",
     "build:dll": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "build:extensions": "tsc -p src/extensions/iframe/tsconfig.json && npm run build:extensions:iframeLazy && node ./.erb/scripts/copy-extensions.js",
     "build:extensions:iframeLazy": "esbuild src/extensions/iframe/iframeLazy.ts --bundle --format=esm --platform=browser --target=es2020 --outfile=src/extensions/iframe/iframeLazy.js --resolve-extensions=.html.ts,.ts,.tsx,.js",
-    "build:runEverMark": "cd testHtml/runEverMark && npm install --legacy-peer-deps && npm run build && node ../../.erb/scripts/copy-runevermark.js",
+    "build:runEverMark": "cd runEverMark/mockSite && npm install --legacy-peer-deps && npm run build && node ../../.erb/scripts/copy-runevermark.js",
     "build:configPage": "cd src/renderer/config_page && npm install && npm run build && node ../../../.erb/scripts/copy-configpage.js",
     "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.main.prod.ts",
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
@@ -88,14 +89,18 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --cache"
+    "*.{js,jsx,ts,tsx}": "eslint --cache --ignore-pattern \"runEverMark/mockSite/**\""
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.29",
     "@ai-sdk/openai": "^3.0.29",
+    "@ai-sdk/anthropic": "^3.0.29",
+    "@ai-sdk/moonshotai": "^2.0.12",
+    "@ai-sdk/xai": "^3.0.29",
+    "@ai-sdk/alibaba": "^1.0.13",
     "@ai-sdk/openai-compatible": "^2.0.30",
+    "@ai-sdk/deepseek": "^2.0.26",
     "@ai-sdk/provider": "^3.0.8",
-    "@apitrust/react": "file:../apitrust/react-sdk",
     "@electron/notarize": "^3.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
@@ -125,6 +130,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
     "unused-filename": "^4.0.1",
+    "vercel-minimax-ai-provider": "^0.0.2",
     "zod": "^4.1.13",
     "zustand": "^4.5.5"
   },

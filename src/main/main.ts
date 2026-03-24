@@ -157,9 +157,10 @@ const createWindow = async () => {
 
   mainWindow = new RunEverWindow({
     show: false,
-    width: 2700,
+    width: 1440,
     height: 1020,
     icon: getAssetPath('icon.png'),
+    autoHideMenuBar: process.platform !== 'darwin',
     webPreferences: {
       devTools: true,
       preload: app.isPackaged
@@ -220,6 +221,9 @@ const createWindow = async () => {
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
+  if (process.platform !== 'darwin') {
+    mainWindow.setMenuBarVisibility(false);
+  }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith(`${protocolName}://`)) {
@@ -233,7 +237,7 @@ const createWindow = async () => {
         fullscreenable: false,
         backgroundColor: 'black',
         webPreferences: {
-          devTools: false,
+          devTools: true,
           // preload: 'my-child-window-preload-script.js'
         },
       },

@@ -19,7 +19,6 @@ const dllExcludes = [
   '@tailwindcss/postcss',
   '@esbuild/win32-x64',
   '@napi-rs/keyring',
-  '@apitrust/react',
   '@tailwindcss/node',
   '@tailwindcss/oxide',
   'lightningcss',

@@ -1,6 +1,9 @@
 import { app } from 'electron';
 import type { Entry as KeyringEntry } from '@napi-rs/keyring';
-import { z } from 'zod';
+import {
+  RunEverConfigSchema,
+  type RunEverConfig,
+} from '../schema/runeverConfig';
 
 // eslint-disable-next-line camelcase, no-underscore-dangle, no-undef
 declare const __non_webpack_require__: typeof require | undefined;
@@ -16,31 +19,6 @@ const runtimeRequire =
 const { Entry } = runtimeRequire(
   '@napi-rs/keyring',
 ) as typeof import('@napi-rs/keyring');
-
-const codexAuthModeSchema = z.enum(['apiKey', 'login']);
-
-const storedApiKeySchema = z.object({
-  provider: z.enum(['openai', 'google', 'zai', 'codex']),
-  apiKey: z.string(),
-  baseUrl: z.string().optional(),
-  authMode: codexAuthModeSchema.optional(),
-});
-
-const storedArgumentSchema = z.object({
-  name: z.string(),
-  value: z.string(),
-  isSecret: z.boolean().optional(),
-  domain: z.string().optional(),
-  risk: z.enum(['low', 'medium', 'high']).optional(),
-});
-
-const storedConfigSchema = z.object({
-  apiKey: storedApiKeySchema.optional(),
-  arguments: storedArgumentSchema.array().default([]),
-});
-
-export type UserApiKeyConfig = z.infer<typeof storedApiKeySchema>;
-export type RunEverConfig = z.infer<typeof storedConfigSchema>;
 
 interface UserApiKeyStoreOptions {
   service?: string;
@@ -73,7 +51,7 @@ export class RuneverConfigStore {
     }
     try {
       const parsed = JSON.parse(raw);
-      const result = storedConfigSchema.safeParse(parsed);
+      const result = RunEverConfigSchema.safeParse(parsed);
       if (result.success) {
         this.cachedConfig = result.data;
       }

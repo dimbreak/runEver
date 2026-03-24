@@ -20,8 +20,8 @@ import {
 } from './authDeepLink';
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
 import { ProfileStore } from './profileStore';
-import { RunEverConfig, RuneverConfigStore } from './runeverConfigStore';
-import { getAuthMode, setAuthMode } from './authModeStore';
+import { RuneverConfigStore } from './runeverConfigStore';
+import type { RunEverConfig } from '../schema/runeverConfig';
 import { RunEverWindow } from './window';
 
 const getSession = (sessionId?: number): Session =>
@@ -238,14 +238,14 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
           Boolean(config?.apiKey) ||
           Boolean(config?.provider === 'codex' && config?.authMode === 'login'),
         provider: config?.provider ?? null,
-        authMode: getAuthMode(),
+        authMode: config?.authMode,
       };
     } catch (error) {
       console.error('Failed to read user API key config', error);
       return {
         hasApiKey: false,
         provider: null,
-        authMode: getAuthMode(),
+        authMode: null,
       };
     }
   });
@@ -268,14 +268,6 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
       await userApiKeyStore.setConfig('apiKey', undefined);
     } catch (error) {
       console.error('Failed to clear user API key', error);
-    }
-  });
-
-  ToMainIpc.setAuthMode.handle(async (_event, payload) => {
-    try {
-      setAuthMode(payload.mode ?? null);
-    } catch (error) {
-      console.error('Failed to store auth mode', error);
     }
   });
 

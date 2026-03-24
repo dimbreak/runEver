@@ -6,10 +6,9 @@ import type {
 } from 'electron';
 import { IframeProgressType } from '../extensions/iframe/types';
 import type { PromptAttachment } from '../schema/attachments';
-import type { AuthMode } from '../schema/auth.schema';
-import type { Env } from '../schema/env.schema';
 import { IpcMainContract } from './ipc';
 import { LlmApi as AgenticLlmApi } from '../agentic/api';
+import type { StoredApiKey } from '../schema/runeverConfig';
 
 export type EventWithDelay = (
   | MouseInputEvent
@@ -124,17 +123,17 @@ export namespace ToMainIpc {
     [],
     {
       hasApiKey: boolean;
-      provider: Env['provider'] | null;
-      authMode: AuthMode | null;
+      provider: StoredApiKey['provider'] | null;
+      authMode: StoredApiKey['authMode'] | null;
     }
   >('get-user-auth-state');
   export const setUserApiKey = new IpcMainContract<
     [
       {
-        provider: Env['provider'];
+        provider: StoredApiKey['provider'];
         apiKey: string;
         baseUrl?: string;
-        authMode?: 'apiKey' | 'login';
+        authMode?: StoredApiKey['authMode'];
       },
     ],
     void
@@ -142,14 +141,6 @@ export namespace ToMainIpc {
   export const clearUserApiKey = new IpcMainContract<[], void>(
     'clear-user-api-key',
   );
-  export const setAuthMode = new IpcMainContract<
-    [
-      {
-        mode: AuthMode | null;
-      },
-    ],
-    void
-  >('set-auth-mode');
   export const showSystemMessageBox = new IpcMainContract<
     [
       {

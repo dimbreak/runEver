@@ -30,7 +30,7 @@ npm-debug.log.*
 *.scss.d.ts
 
 .env
-testHtml/runEverMark/dist/
+runEverMark/mockSite/dist/
 assets
 /prompt-lab/
 /prompt-record/
