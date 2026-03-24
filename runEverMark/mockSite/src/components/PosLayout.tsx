@@ -2,9 +2,15 @@ import { ReactNode } from 'react';
 
 // However, original used simple <a> tags. I'll stick to <a> tags with hash.
 
-export default function PosLayout({ title, children }: { title: string; children: ReactNode }) {
+export default function PosLayout({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   // Simple check for active path if possible, or just render links
-  const hash = window.location.hash;
+  const { hash } = window.location;
 
   return (
     <div className="sf-layout">
@@ -31,12 +37,50 @@ export default function PosLayout({ title, children }: { title: string; children
         {/* Sidebar */}
         <aside className="sf-sidebar">
           <nav>
-            <a href="#/pos/dashboard" className={`sf-nav-item ${hash.includes('dashboard') ? 'active' : ''}`}>Dashboard</a>
-            <a href="#/pos/orders" className={`sf-nav-item ${hash.includes('orders') ? 'active' : ''}`}>Orders</a>
-            <a href="#" className="sf-nav-item" onClick={(e) => e.preventDefault()} style={{ opacity: 0.5, cursor: 'not-allowed' }}>Customers</a>
-            <a href="#" className="sf-nav-item" onClick={(e) => e.preventDefault()} style={{ opacity: 0.5, cursor: 'not-allowed' }}>Inventory</a>
-            <a href="#" className="sf-nav-item" onClick={(e) => e.preventDefault()} style={{ opacity: 0.5, cursor: 'not-allowed' }}>Reports</a>
-            <a href="#" className="sf-nav-item" onClick={(e) => e.preventDefault()} style={{ opacity: 0.5, cursor: 'not-allowed' }}>Settings</a>
+            <a
+              href="#/pos/dashboard"
+              className={`sf-nav-item ${hash.includes('dashboard') ? 'active' : ''}`}
+            >
+              Dashboard
+            </a>
+            <a
+              href="#/pos/orders"
+              className={`sf-nav-item ${hash.includes('orders') ? 'active' : ''}`}
+            >
+              Orders
+            </a>
+            <a
+              href="#"
+              className="sf-nav-item"
+              onClick={(e) => e.preventDefault()}
+              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+            >
+              Customers
+            </a>
+            <a
+              href="#"
+              className="sf-nav-item"
+              onClick={(e) => e.preventDefault()}
+              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+            >
+              Inventory
+            </a>
+            <a
+              href="#"
+              className="sf-nav-item"
+              onClick={(e) => e.preventDefault()}
+              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+            >
+              Reports
+            </a>
+            <a
+              href="#"
+              className="sf-nav-item"
+              onClick={(e) => e.preventDefault()}
+              style={{ opacity: 0.5, cursor: 'not-allowed' }}
+            >
+              Settings
+            </a>
           </nav>
         </aside>
 
@@ -51,8 +95,10 @@ export default function PosLayout({ title, children }: { title: string; children
               <span>{title}</span>
             </div>
             <div className="sf-actions">
-               {/* Placeholders for page-level actions */}
-               <button className="sf-button">Refresh</button>
+              {/* Placeholders for page-level actions */}
+              <button type="button" className="sf-button">
+                Refresh
+              </button>
             </div>
           </div>
           {children}
