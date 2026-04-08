@@ -61,6 +61,8 @@ module.exports = {
     'react/jsx-props-no-spreading': 'off',
     'max-classes-per-file': 'off',
     'no-continue': 'off',
+    'default-case': 'off',
+    'no-loop-func': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

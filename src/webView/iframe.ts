@@ -15,7 +15,7 @@ import { WireActionWithWaitAndRec } from '../agentic/types';
 if (window.top === window) {
   window.addEventListener('message', (e) => {
     if ((e.data?.type as string | undefined)?.startsWith('IFRAME_')) {
-      console.log('iframe message', e.data, MiniHtml.iframeById);
+      // console.log('iframe message', e.data, MiniHtml.iframeById);
       const msg = e.data as FromIframeMessages;
       const iframe = MiniHtml.iframeById[msg.frameId];
       if (iframe) {
@@ -38,6 +38,9 @@ export class IFrameHelper {
     public parent?: MiniHtml.MeaningfulElement,
     public nodes?: (string | MiniHtml.MeaningfulElement)[],
   ) {
+    if (label.length > 32) {
+      this.label = `${label.slice(0, 32)}...`;
+    }
     if (idVal) {
       MiniHtml.iframeById[idVal] = this;
     }
@@ -109,7 +112,7 @@ export class IFrameHelper {
           `<iframe src=${this.element.src} id=${this.idVal} label=${MiniHtml.quoteAttrVal(this.label)} ${visible.visible === false ? 'hide' : visible.visible} />`,
         );
       }
-      console.log('getHtml', this.idVal);
+      // console.log('getHtml', this.idVal);
     }
     return this.htmlPromise;
   }

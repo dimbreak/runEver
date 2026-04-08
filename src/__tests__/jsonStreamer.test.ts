@@ -1,7 +1,8 @@
 import {
+  type JsonStreamingEvent,
   JsonStreamingEventType,
   JsonStreamingParser,
-} from '../main/llm/jsonStreamer';
+} from '../agentic/jsonStreamer';
 
 const collectEvents = (input: string) => {
   const parser = new JsonStreamingParser();
@@ -17,14 +18,19 @@ const collectChunkedEvents = (chunks: string[]) => {
   return events;
 };
 
+const isEventType =
+  <T extends JsonStreamingEventType>(type: T) =>
+  (
+    event: JsonStreamingEvent,
+  ): event is Extract<JsonStreamingEvent, { type: T }> =>
+    event.type === type;
+
 describe('JsonStreamingParser string concatenation', () => {
   it('concatenates root string segments with +', () => {
     const events = collectEvents('"foo" + "bar"');
-    const errorEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.Error,
-    );
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
     const stringEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.String,
+      isEventType(JsonStreamingEventType.String),
     );
 
     expect(errorEvents).toHaveLength(0);
@@ -37,11 +43,9 @@ describe('JsonStreamingParser string concatenation', () => {
 
   it('concatenates object string values', () => {
     const events = collectEvents('{"x":"a"+"b"}');
-    const errorEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.Error,
-    );
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
     const stringEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.String,
+      isEventType(JsonStreamingEventType.String),
     );
 
     expect(errorEvents).toHaveLength(0);
@@ -54,11 +58,9 @@ describe('JsonStreamingParser string concatenation', () => {
 
   it('concatenates array string values', () => {
     const events = collectEvents('["a"+"b","c"+"d"]');
-    const errorEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.Error,
-    );
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
     const stringEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.String,
+      isEventType(JsonStreamingEventType.String),
     );
 
     expect(errorEvents).toHaveLength(0);
@@ -75,11 +77,9 @@ describe('JsonStreamingParser string concatenation', () => {
 
   it('concatenates when "+" arrives in a separate chunk', () => {
     const events = collectChunkedEvents(['"foo"', '+', '"bar"']);
-    const errorEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.Error,
-    );
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
     const stringEvents = events.filter(
-      (event) => event.type === JsonStreamingEventType.String,
+      isEventType(JsonStreamingEventType.String),
     );
 
     expect(errorEvents).toHaveLength(0);
@@ -88,5 +88,52 @@ describe('JsonStreamingParser string concatenation', () => {
       key: null,
       endValue: 'foobar',
     });
+  });
+});
+
+describe('LLM markdown code blocks', () => {
+  it('skips markdown code block delimiters', () => {
+    const input = '```json\n{"key": "value"}\n```';
+    const events = collectEvents(input);
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
+    const objectEvents = events.filter(
+      isEventType(JsonStreamingEventType.Object),
+    );
+
+    expect(errorEvents).toHaveLength(0);
+    expect(objectEvents).toHaveLength(2); // Start and end object
+    expect(objectEvents[0]).toMatchObject({
+      key: null,
+    });
+    expect(objectEvents[1]).toMatchObject({
+      key: null,
+    });
+  });
+
+  it('handles split markdown code block delimiters', () => {
+    const chunks = [
+      '`',
+      '`',
+      '`',
+      'json',
+      '\n',
+      '{"key": "value"}',
+      '\n',
+      '`',
+      '`',
+      '`',
+    ];
+    const events = collectChunkedEvents(chunks);
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
+
+    expect(errorEvents).toHaveLength(0);
+  });
+
+  it('ignores trailing content after JSON root is done', () => {
+    const input = '{"key": "value"}\nSome explanation here';
+    const events = collectEvents(input);
+    const errorEvents = events.filter(isEventType(JsonStreamingEventType.Error));
+
+    expect(errorEvents).toHaveLength(0);
   });
 });

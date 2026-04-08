@@ -9,7 +9,7 @@ export const NewTabButton = memo(function NewTabButton() {
   const { bounds, toggleUrlBar } = useLayoutStore();
   const handleAddTab = useCallback(() => {
     const newTab = new WebTab({
-      id: `tab-${Date.now()}`,
+      id: -1,
       title: 'New Tab',
       url: '',
     });
@@ -17,14 +17,17 @@ export const NewTabButton = memo(function NewTabButton() {
     toggleUrlBar(true);
   }, [addTab, bounds, toggleUrlBar]);
   return (
-    <Button
-      type="button"
-      onClick={handleAddTab}
-      variant="outline"
-      className="flex items-center gap-1"
-      size="md"
-    >
-      <Plus className="w-4 h-4" /> New Tab
-    </Button>
+    <div className="flex items-center">
+      <Button
+        type="button"
+        onClick={handleAddTab}
+        variant="ghost"
+        className="flex items-center justify-center px-1 lg:px-2"
+        size="sm"
+        title="New Tab"
+      >
+        <Plus className="h-4 w-4" />
+      </Button>
+    </div>
   );
 });

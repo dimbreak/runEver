@@ -1,14 +1,20 @@
-import { getUniqueSelector, replaceJsTpl } from './selector';
+import { getUniqueSelector } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import type { EventWithDelay, ToMainIpc } from '../contracts/toMain';
-import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
 import { Util } from './util';
 import { Network } from './network';
-import { WireAction, WireWait } from '../agentic/execution.schema';
+import {
+  RiskOrComplexityLevel,
+  WireAction,
+  WireWait,
+} from '../agentic/execution.schema';
 import { WireActionWithWaitAndRec } from '../agentic/types';
 import { MiniHtml } from './miniHtml';
-import { SliderProfile } from '../agentic/profile/widget/slider.webView';
+import { SliderSkill } from '../agentic/addOns/skills/slider/slider.webView';
 import { IFrameHelper } from './iframe';
+import { CommonUtil } from '../utils/common';
+import { takeScreenshot } from './screenshot';
+import { fillFormExec } from '../agentic/addOns/skills/form/form.html';
 
 export const ErrElementNotSelected = new Error('No element found');
 export const ErrMultipleElementsSelectedForHighRisk = new Error(
@@ -18,7 +24,7 @@ export const ErrMultipleElementsSelectedForHighRisk = new Error(
 //
 // const getElement = (
 //   selector: string,
-//   risk: BrowserActionRisk,
+//   risk: RiskOrComplexityLevel,
 //   args: Record<string, string> = {},
 // ) => {
 //   const els = querySelectAll(selector, args);
@@ -50,6 +56,10 @@ export type ActionApi = {
     selector: string;
     filePaths: string[];
   }) => Promise<{ error?: string }>;
+  download: (args: {
+    url: string;
+    filename: string | undefined;
+  }) => Promise<{ error?: string }>;
 };
 
 export type ActionApiCallingReq<K extends keyof ActionApi> = {
@@ -59,7 +69,7 @@ export type ActionApiCallingReq<K extends keyof ActionApi> = {
 
 export type WireActionToExec = WireAction & { el?: Element };
 
-const TypingDelayMsHalf = 40;
+const TypingDelayMsHalf = 20;
 
 const SAFE_KEYPRESS_RE = /^[a-zA-Z0-9 `~!@#$%^&*()\-_=+[\]{};:'",.<>/?]*$/;
 
@@ -79,7 +89,6 @@ export namespace BrowserActions {
     return (await actionApi)[req.action](req.args as any) as any;
   };
   export const ErrWaitTimeout = new Error('Run action wait timeout');
-  let runningActionSet: WireActionWithWaitAndRec[] | null = null;
   export const checkDomDisappear = async (selector: MiniHtml.Selector) => {
     let el = window.webView.getEl(selector);
     if (el instanceof IFrameHelper) {
@@ -99,7 +108,7 @@ export namespace BrowserActions {
   };
   export const getElementById = (
     selector: MiniHtml.Selector,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = window.webView.getEl(selector);
@@ -110,6 +119,96 @@ export namespace BrowserActions {
       throw ErrElementNotSelected;
     }
     return el.element;
+  };
+  export const checkDom = async (
+    t: 'childAdd',
+    toMonitor: MiniHtml.Selector | Element,
+    argDelta: [string, string][],
+  ) => {
+    const el =
+      toMonitor instanceof Element
+        ? toMonitor
+        : window.webView.getEl(toMonitor)?.element;
+    if (el) {
+      const started = Date.now();
+      let to: any = null;
+      const mutationRecs: MutationRecord[] = [];
+      await new Promise<void>((resolve) => {
+        const observer = new MutationObserver((mutations) => {
+          console.log('waitMsg', mutations);
+          for (const mutation of mutations) {
+            switch (t) {
+              // case 'attr':
+              //   if (mutation.type === 'attributes') {
+              //     r();
+              //     return;
+              //   }
+              //   break;
+              // case 'childRm':
+              //   if (mutation.removedNodes.length) {
+              //     r();
+              //     return;
+              //   }
+              //   break;
+              case 'childAdd':
+                if (mutation.addedNodes.length) {
+                  if (to) {
+                    clearTimeout(to);
+                  }
+                  mutationRecs.push(mutation);
+                  if (Date.now() - started < 500) {
+                    console.log('waitMsg suspect self message', toMonitor);
+                    // may comes from user themselves, but shorten timeout avoid false negative
+                    to = setTimeout(() => {
+                      console.log('waitMsg suspect self message to', toMonitor);
+                      r();
+                    }, 30000);
+                    return;
+                  }
+                  console.log('waitMsg complete', toMonitor);
+                  r();
+                  return;
+                }
+                break;
+              // case 'txt':
+              //   if (mutation.type === 'characterData') {
+              //     r();
+              //     return;
+              //   }
+              //   break;
+              // case 'any':
+              //   r();
+              //   return;
+            }
+          }
+        });
+        const r = async () => {
+          observer.disconnect();
+          await Util.sleep(100);
+          console.log('waitMsg end', mutationRecs);
+          argDelta.push([
+            'waitMsgResult',
+            mutationRecs
+              .flatMap((mr) =>
+                Array.from(mr.addedNodes).map((n) => {
+                  console.log(n, window.webView.getIdFromEl(n as Element));
+                  return n.nodeType === Node.ELEMENT_NODE
+                    ? window.webView.getIdFromEl(n as Element)
+                    : '';
+                }),
+              )
+              .filter((id) => !!id)
+              .join(','),
+          ]);
+          resolve();
+        };
+        observer.observe(el, {
+          attributes: true,
+          childList: true,
+          characterData: true,
+        });
+      });
+    }
   };
   export const checkDomAppear = async (selector: MiniHtml.Selector) => {
     let el = window.webView.getEl(selector);
@@ -130,44 +229,85 @@ export namespace BrowserActions {
       }
     }
   };
-  const waitAction = async (wait: WireWait | undefined) => {
-    if (wait) {
-      let waitPromise;
-      switch (wait.t) {
-        case 'time':
-          await Util.sleep(wait.ms);
-          break;
-        case 'network':
-          if (wait.a === 'idle0') {
-            waitPromise = Network.waitForNetworkIdle0();
-          } else if (wait.a === 'idle2') {
-            waitPromise = Network.networkIdle2.wait;
-          }
-          break;
-        case 'appear':
-          waitPromise = checkDomAppear(wait.q);
-          break;
-        case 'disappear':
-          waitPromise = checkDomDisappear(wait.q);
-          break;
-        case 'navigation':
-          if (wait.url === window.location.href) {
-            return; // let it re-push after navigation
-          }
-          break;
-        default:
-          throw new Error('Unknown wait type');
-      }
-      console.log('wait', wait, waitPromise);
-      if (
-        waitPromise &&
-        (await Util.awaitWithTimeout(
-          waitPromise,
-          wait.to ?? DEFAULT_TIMEOUT_MS,
-        )) === Util.WaitTimeout
-      ) {
-        throw ErrWaitTimeout;
-      }
+  const buildWaitForNewIncomingMsg = (
+    action: Extract<
+      WireActionToExec,
+      { k: 'clickSendBtnAndWaitReply' | 'waitForNewMsg' }
+    >,
+    risk: RiskOrComplexityLevel,
+    args: Record<string, string> = {},
+  ): WireWait => {
+    const id1stEl = getElementById(action.id1st, risk, args);
+    const idLastEl = getElementById(action.idLast, risk, args);
+    return {
+      t: 'blockHereAndWaitForNewIncomingMsg',
+      q: action.dialog,
+      id1st: window.webView.getIdFromEl(id1stEl) ?? getUniqueSelector(id1stEl),
+      idLast:
+        window.webView.getIdFromEl(idLastEl) ?? getUniqueSelector(idLastEl),
+    };
+  };
+  const waitAction = async (
+    wait: WireWait,
+    args: Record<string, string>,
+    argDelta: [string, string][],
+    isPost = false,
+  ) => {
+    let waitPromise;
+    let waitTime = DEFAULT_TIMEOUT_MS;
+    let onTimeout: () => void = () => {
+      throw ErrWaitTimeout;
+    };
+    switch (wait.t) {
+      case 'time':
+        await Util.sleep(wait.ms);
+        break;
+      case 'net':
+        if (wait.a === 'idle0') {
+          waitPromise = Network.waitForNetworkIdle0();
+        } else if (wait.a === 'idle2') {
+          waitPromise = Network.networkIdle2.wait;
+        }
+        break;
+      case 'blockHereAndWaitForNewIncomingMsg':
+        if (isPost && wait.q) {
+          argDelta.push(
+            ['waitMsg1stId', wait.id1st ?? ''],
+            ['waitMsgLastId', wait.idLast ?? ''],
+            ['waitMsgId', typeof wait.q === 'string' ? wait.q : wait.q.id],
+          );
+          onTimeout = () => {
+            argDelta.push(['waitMsgResult', 'timeout']);
+          };
+          waitPromise = checkDom('childAdd', wait.q, argDelta);
+          waitTime = 60000; // wait for longer
+        } else {
+          waitPromise = Promise.resolve(); // only wait for post
+        }
+        break;
+      // case 'domLongTime':
+      //   waitPromise = checkDom(wait.a, wait.q);
+      //   waitTime = 300000; // wait for longer
+      //   break;
+      case 'appear':
+        waitPromise = checkDomAppear(wait.q);
+        break;
+      case 'disappear':
+        waitPromise = checkDomDisappear(wait.q);
+        break;
+      case 'navigation':
+        if (wait.url === window.location.href) {
+          return; // let it re-push after navigation
+        }
+        break;
+    }
+    console.log('wait', wait, waitPromise, waitTime);
+    if (
+      waitPromise &&
+      (await Util.awaitWithTimeout(waitPromise, wait.to ?? waitTime)) ===
+        Util.WaitTimeout
+    ) {
+      onTimeout();
     }
   };
   const execInIframeOrEl = async (
@@ -183,28 +323,28 @@ export namespace BrowserActions {
     action.action.el = el.element;
     return false;
   };
+  let htmlParser: MiniHtml.Parser;
   export const execActions = async (
     actions: WireActionWithWaitAndRec[],
     args: Record<string, string>,
   ) => {
-    if (runningActionSet?.length) {
-      const lastId = runningActionSet[runningActionSet.length - 1].id;
-      const toAdd = actions.filter((a) => a.id > lastId);
-      console.log('actions added', actions.length, toAdd);
-      runningActionSet.push(...toAdd);
-      return;
-    }
-    window.webView.getHtmlParser(); // make sure html parser is ready before actions start
-    runningActionSet = actions;
+    htmlParser = window.webView.getHtmlParser(); // make sure html parser is
 
     let canContinue = true;
     let lastPopedActionId = -1;
     const popAction = async (
       actionId: number,
-      argsDelta?: Record<string, string>,
+      argsDeltaEntries?: [string, string][],
     ) => {
       if (lastPopedActionId === actionId) return;
       lastPopedActionId = actionId;
+      const argsDelta = argsDeltaEntries?.reduce(
+        (acc, e) => {
+          acc[e[0]] = e[1];
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
       return (await actionApi).actionDone({
         actionId,
         argsDelta,
@@ -216,10 +356,11 @@ export namespace BrowserActions {
     };
     let rec: WireActionWithWaitAndRec;
     let action: WireActionToExec;
-    let argsDelta: Record<string, string> | undefined;
+    let argsDelta: [string, string][];
+    let postWait: WireWait | null | undefined;
     let execFn: (
       action: any,
-      risk: BrowserActionRisk,
+      risk: RiskOrComplexityLevel,
       args?: Record<string, string>,
     ) => Promise<void> = async () => {};
     for (let i = 0, c = actions.length; i < c; i++) {
@@ -229,7 +370,8 @@ export namespace BrowserActions {
       }
       rec = actions[i];
       action = rec.action;
-      argsDelta = undefined;
+      argsDelta = [];
+      postWait = rec.post;
       console.log('actions continue', action);
       try {
         switch (action.k) {
@@ -275,40 +417,191 @@ export namespace BrowserActions {
             }
             execFn = mouse;
             break;
+          case 'clickSendBtnAndWaitReply':
+            if (await execInIframeOrEl(rec, action.btn, args)) {
+              continue;
+            }
+            postWait = buildWaitForNewIncomingMsg(action, rec.risk, args);
+            // eslint-disable-next-line no-loop-func
+            execFn = async (thisAction, risk, thisArgs = {}) =>
+              mouse(
+                {
+                  k: 'mouse',
+                  a: 'click',
+                  q: thisAction.btn,
+                  el: thisAction.el,
+                },
+                risk,
+                thisArgs,
+              );
+            break;
+          case 'waitForNewMsg':
+            if (await execInIframeOrEl(rec, action.dialog, args)) {
+              continue;
+            }
+            postWait = buildWaitForNewIncomingMsg(action, rec.risk, args);
+            execFn = async () => {};
+            break;
+          case 'fillForm':
+            if (await execInIframeOrEl(rec, action.q, args)) {
+              continue;
+            }
+            execFn = fillFormExec;
+            break;
           case 'slideToVal': // audit
             if (await execInIframeOrEl(rec, action.q, args)) {
               continue;
             }
-            execFn = SliderProfile.slideToVal;
+            execFn = SliderSkill.slideToVal;
             break;
           case 'setArg': {
-            // each setArg will have only 1 kv get from selector
-            const firstV = Object.values(action.kv).find(
-              (v) => typeof v === 'object',
-            );
-            if (firstV && (await execInIframeOrEl(rec, firstV.q, args))) {
+            const kvs = Object.entries(action.kv);
+            const setArgActions: Extract<WireActionToExec, { k: 'setArg' }>[] =
+              [action];
+            if (kvs.length > 1) {
+              // split setArg from selector to different actions make webview easier
+              action.kv = {};
+              let action0HasId = false;
+              for (const [k, v] of kvs) {
+                if (typeof v === 'string') {
+                  action.kv[k] = v;
+                } else if (!action0HasId) {
+                  action0HasId = true;
+                  action.kv[k] = v;
+                } else {
+                  setArgActions.push({
+                    ...action,
+                    kv: { [k]: v },
+                  });
+                }
+              }
+            }
+
+            let iframe: IFrameHelper | null | undefined;
+
+            for (const setArgAction of setArgActions) {
+              // each setArg will have only 1 kv get from selector
+              const firstV = Object.values(setArgAction.kv).find(
+                (v) => typeof v === 'object',
+              );
+              if (firstV) {
+                const el = window.webView.getEl(firstV.q);
+                if (el instanceof IFrameHelper) {
+                  if (iframe === undefined) {
+                    iframe = el;
+                  } else if (iframe !== el) {
+                    throw new Error(
+                      'setArg can only have selectors from same frame',
+                    );
+                  }
+                } else {
+                  setArgAction.el = el.element;
+                  iframe = null;
+                }
+              }
+            }
+            if (iframe) {
+              await iframe.exeAction(rec, args);
               continue;
             }
             // eslint-disable-next-line no-loop-func
             execFn = async (thisAction, risk, thisArgs) => {
-              setArgs(thisAction, risk, thisArgs, argsDelta);
+              setArgActions.forEach((setArgAction) =>
+                setArgs(setArgAction, risk, thisArgs, argsDelta),
+              );
             };
-          }
-          case 'setCtx':
-            // todo
             break;
-          default:
-            console.warn('Unknown action', action);
+          }
+          case 'screenshot': {
+            if (action.a && (await execInIframeOrEl(rec, action.a, args))) {
+              continue;
+            }
+            const { filename } = action;
+            // eslint-disable-next-line no-loop-func
+            execFn = async (thisAction, risk, thisArgs) => {
+              takeScreenshot(filename, action.el);
+            };
+            break;
+          }
+          case 'download':
+            if (await execInIframeOrEl(rec, action.a, args)) {
+              continue;
+            }
+            let url = '';
+            const { filename } = action;
+            if (action.el) {
+              console.log('download', action.el);
+              switch (action.t) {
+                case 'link':
+                  if (action.el.tagName === 'A') {
+                    url = action.el.getAttribute('href') ?? '';
+                    console.log('download link', url);
+                  } else if (action.el.tagName === 'BUTTON') {
+                    throw new Error(
+                      'download failed, MUST USE CLICK FOR BUTTON',
+                    );
+                  }
+                  break;
+                case 'img':
+                  if (action.el.tagName === 'IMG') {
+                    url = action.el.getAttribute('src') ?? '';
+                  }
+                  break;
+                case 'bg-img':
+                  const style = window.getComputedStyle(action.el);
+                  if (style.backgroundImage) {
+                    url =
+                      /url\((['"]?)(.+)\1\)/.exec(style.backgroundImage)?.[2] ??
+                      '';
+                  }
+                  break;
+              }
+              if (url) {
+                try {
+                  url = new URL(url, window.location.href).href;
+                } catch {
+                  // ignore invalid url
+                }
+              } else {
+                throw new Error('not downloadable');
+              }
+            } else {
+              throw new Error('link not found');
+            }
+            // eslint-disable-next-line no-loop-func
+            execFn = async () => {
+              const p = callActionApi({
+                action: 'download',
+                args: {
+                  url,
+                  filename: filename ?? undefined,
+                },
+              });
+              if (filename) {
+                await p; // assume use in downstream prompt
+              }
+            };
+            break;
+          case 'textSelection':
+            if (await execInIframeOrEl(rec, action.q, args)) {
+              continue;
+            }
+            execFn = textSelection;
+            break;
+          case 'checklist':
+          case 'activateInstalledSkills':
+            // should not come here
+            break;
         }
         if (rec.pre) {
-          await waitAction(rec.pre);
+          await waitAction(rec.pre, args, argsDelta);
         }
         window.onbeforeunload = onbeforeunload(rec.id);
         await execFn(action, rec.risk, args);
-        window.onbeforeunload = null;
-        if (rec.post) {
-          await waitAction(rec.post);
+        if (postWait?.t) {
+          await waitAction(postWait, args, argsDelta, true);
         }
+        window.onbeforeunload = null;
         await popAction(rec.id, argsDelta);
       } catch (e) {
         await (
@@ -327,36 +620,55 @@ export namespace BrowserActions {
       c = actions.length;
       console.log('actions continue', action, c);
     }
-    runningActionSet = null;
   };
   export const setArgs = async (
     action: Extract<WireActionToExec, { k: 'setArg' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
-    argsDelta: Record<string, string> = {},
+    argsDelta: [string, string][] = [],
   ) => {
     const { kv } = action;
     // eslint-disable-next-line no-loop-func
     Object.entries(kv).forEach(([k, v]) => {
       if (typeof v === 'string') {
-        args[k] = replaceJsTpl(v, args);
+        const vv = CommonUtil.replaceJsTpl(v, args);
+        if (vv === undefined) {
+          return;
+        }
+        if (vv.startsWith('[') || vv.startsWith('{')) {
+          try {
+            const vvv = CommonUtil.flattenArgs(JSON.parse(vv));
+            Object.assign(args, vvv);
+            argsDelta.push(
+              ...Object.entries(vvv).map(
+                ([kk, vvvv]) => [`${k}.${kk}`, vvvv] as [string, string],
+              ),
+            );
+            return;
+          } catch (e) {
+            console.warn(e);
+            args[k] = vv;
+          }
+        } else {
+          args[k] = vv;
+        }
       } else if (typeof v === 'object') {
         const el = action.el ?? getElementById(v.q, risk, args);
         if (!v.attr) {
           args[k] = el.textContent ?? '';
-        } else if (v.attr === 'textContent') {
+        } else if (v.attr === 'textContent' || v.attr === 'innerText') {
           args[k] = el.textContent ?? '';
         } else {
           args[k] = el.getAttribute(v.attr) ?? '';
         }
       }
-      argsDelta[k] = args[k];
+      argsDelta.push([k, args[k]]);
     });
     console.log('setArgument', action, argsDelta);
   };
   export const navigate = async (
     action: Extract<WireAction, { k: 'url' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     switch (action.u) {
@@ -370,12 +682,20 @@ export namespace BrowserActions {
         window.location.reload();
         break;
       default:
-        window.location.href = replaceJsTpl(action.u, args);
+        window.location.href = CommonUtil.replaceJsTpl(action.u, args);
     }
+  };
+  export const textSelection = async (
+    action: Extract<WireActionToExec, { k: 'textSelection' }>,
+    risk: RiskOrComplexityLevel,
+    args: Record<string, string> = {},
+  ) => {
+    const srcEl = action.el ?? getElementById(action.q, risk, args);
+    await dummyCursor.textSelection(srcEl, action.txt);
   };
   export const dragAndDrop = async (
     action: Extract<WireActionToExec, { k: 'dragAndDrop' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const srcEl = action.el ?? getElementById(action.sq, risk, args);
@@ -394,18 +714,20 @@ export namespace BrowserActions {
     }
   };
   export const dndByPx = async (
-    el: Element,
+    el: Element | DOMRect,
     x: number,
     y: number,
     exact = false,
   ) => {
     await dummyCursor.mouseEvent('mouseDown', el);
+    await Util.sleep(500);
     await dummyCursor.moveToRect(new DOMRect(x, y, 0, 0), exact);
+    await Util.sleep(100);
     await dummyCursor.mouseEvent('mouseUp');
   };
   export const scroll = async (
     action: Extract<WireActionToExec, { k: 'scroll' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const scrollOver = action.over
@@ -425,7 +747,7 @@ export namespace BrowserActions {
   };
   export const focus = async (
     action: Extract<WireActionToExec, { k: 'focus' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
@@ -433,76 +755,100 @@ export namespace BrowserActions {
   };
   export const input = async (
     action: Extract<WireActionToExec, { k: 'input' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
     console.log('input', action, el, document.activeElement);
-    if (document.activeElement !== el && el !== document.body) {
-      console.log('focus', action, el);
-      await dummyCursor.mouseEvent('click', el);
-    }
+    const typeAttr = el.getAttribute('type');
     const values =
       typeof action.v === 'string'
-        ? [replaceJsTpl(action.v, args)]
-        : action.v.map((v) => replaceJsTpl(v, args));
+        ? [CommonUtil.replaceJsTpl(action.v, args) ?? '']
+        : action.v.map((v) => CommonUtil.replaceJsTpl(v, args) ?? '');
+    if (
+      values.length === 1 &&
+      ((el as HTMLSelectElement) || HTMLInputElement || HTMLTextAreaElement)
+        .value === values[0]
+    ) {
+      return;
+    }
+    if (typeAttr === 'range') {
+      await SliderSkill.slideToVal(
+        {
+          k: 'slideToVal',
+          q: action.q,
+          num: parseFloat(values[0]),
+        },
+        risk,
+        args,
+      );
+    }
+    if (
+      document.activeElement !== el &&
+      el !== document.body &&
+      typeAttr !== 'file'
+    ) {
+      console.log('focus', action, el);
+      await dummyCursor.mouseEvent('click', el, 0, undefined, true);
+    }
     if (el.tagName === 'SELECT') {
       const select = el as HTMLSelectElement;
-      let pick = async (updownPress: number, key: ToMainIpc.NativeKeys) => {
-        const keyAndDelays: [ToMainIpc.NativeKeys, number][] = [];
-        for (let i = 0; i < updownPress; i++) {
-          keyAndDelays.push([key, Math.random() * 60 + 60]);
-        }
-        await (
-          await actionApi
-        ).dispatchNativeKeypress({
-          keyAndDelays: [...keyAndDelays, ['Enter', 0]],
-        });
-      };
-      let currentPosition = select.selectedIndex;
-      const modifier = Util.isMac ? 'meta' : 'ctrl';
-      if (select.multiple) {
-        pick = async (updownPress: number, key: ToMainIpc.NativeKeys) => {
-          const events: EventWithDelay[] = [];
-          for (let i = 0; i < updownPress; i++) {
+      const pick = Util.isMac
+        ? async (updownPress: number, key: ToMainIpc.NativeKeys) => {
+            const keyAndDelays: [ToMainIpc.NativeKeys, number][] = [];
+            for (let i = 0; i < updownPress; i++) {
+              keyAndDelays.push([key, Math.random() * 60 + 60]);
+            }
+            await (
+              await actionApi
+            ).dispatchNativeKeypress({
+              keyAndDelays: [...keyAndDelays, ['Enter', 0]],
+            });
+          }
+        : async (updownPress: number, key: ToMainIpc.NativeKeys) => {
+            const events: EventWithDelay[] = [];
+            for (let i = 0; i < updownPress; i++) {
+              events.push(
+                {
+                  type: 'keyDown',
+                  keyCode: key.replace('Arrow', ''),
+                  modifiers: [modifier],
+                  delayMs: Math.random() * 60 + 60,
+                },
+                {
+                  type: 'keyUp',
+                  keyCode: key.replace('Arrow', ''),
+                  modifiers: [modifier],
+                  delayMs: Math.random() * 60 + 60,
+                },
+              );
+            }
             events.push(
               {
                 type: 'keyDown',
-                keyCode: key.replace('Arrow', ''),
-                modifiers: [modifier],
+                keyCode: 'Enter',
+                delayMs: Math.random() * 60 + 60,
+              },
+              {
+                type: 'char',
+                keyCode: 'Enter',
                 delayMs: Math.random() * 60 + 60,
               },
               {
                 type: 'keyUp',
-                keyCode: key.replace('Arrow', ''),
-                modifiers: [modifier],
+                keyCode: 'Enter',
                 delayMs: Math.random() * 60 + 60,
               },
             );
-          }
-          events.push(
-            {
-              type: 'keyDown',
-              keyCode: 'Space',
-              delayMs: Math.random() * 60 + 60,
-            },
-            {
-              type: 'char',
-              keyCode: 'Space',
-              delayMs: Math.random() * 60 + 60,
-            },
-            {
-              type: 'keyUp',
-              keyCode: 'Space',
-              delayMs: Math.random() * 60 + 60,
-            },
-          );
-          await (
-            await actionApi
-          ).dispatchEvents({
-            events,
-          });
-        };
+            await (
+              await actionApi
+            ).dispatchEvents({
+              events,
+            });
+          };
+      let currentPosition = select.selectedIndex;
+      const modifier = Util.isMac ? 'meta' : 'ctrl';
+      if (select.multiple) {
         await dummyCursor.mouseEvent('click', undefined, 1, [modifier]); // cancel the option checked on focus
       }
       for (const value of values) {
@@ -523,52 +869,108 @@ export namespace BrowserActions {
           throw new Error(`Option not found ${values}`);
         }
       }
-    } else if (el.getAttribute('type') === 'file') {
+    } else if (typeAttr === 'file') {
       const selector = getUniqueSelector(el);
       await (
         await actionApi
       ).dispatchNativeKeypress({
         keyAndDelays: [['Esc', 0]], // cancel file picker
       });
-      await (
+      const res = await (
         await actionApi
       ).setInputFile({
         selector,
         filePaths: values,
       });
-    } else if (values[0].length < 64 && SAFE_KEYPRESS_RE.test(values[0])) {
-      await (
-        await actionApi
-      ).dispatchEvents({
-        events: values[0].split('').flatMap((keyCode) => [
-          {
-            type: 'keyDown',
-            keyCode,
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-          {
-            type: 'char',
-            keyCode,
-            delayMs: 0,
-          },
-          {
-            type: 'keyUp',
-            keyCode,
-            delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
-          },
-        ]),
-      });
+      if (res.error) {
+        throw new Error(res.error);
+      }
     } else {
-      await (
-        await actionApi
-      ).pasteInput({
-        input: values[0],
-      });
+      if (
+        (el as HTMLInputElement).value !== '' &&
+        action.c !== 'noClear' &&
+        !el.hasAttribute('contentEditable')
+      ) {
+        const modifierKey = Util.isMac ? 'Meta' : 'Control';
+        const modifier = Util.isMac ? 'meta' : 'control';
+        setTimeout(() => {
+          (el as HTMLInputElement).select();
+        }, 150);
+        await (
+          await actionApi
+        ).dispatchEvents({
+          // @ts-ignore
+          events: [
+            {
+              type: 'keyDown',
+              keyCode: modifierKey,
+              delayMs: 0,
+            },
+            {
+              type: 'keyDown',
+              keyCode: 'a',
+              modifiers: [modifier],
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+            Util.isMac
+              ? null
+              : {
+                  type: 'char',
+                  keyCode: 'a',
+                  modifiers: [modifier],
+                  delayMs: 0,
+                },
+            {
+              type: 'keyUp',
+              keyCode: 'a',
+              modifiers: [modifier],
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+            {
+              type: 'keyUp',
+              keyCode: modifierKey,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+          ].filter((a) => !!a),
+        });
+
+        await Util.sleep(150);
+      }
+
+      if (values[0].length < 32 && SAFE_KEYPRESS_RE.test(values[0])) {
+        await (
+          await actionApi
+        ).dispatchEvents({
+          events: values[0].split('').flatMap((keyCode) => [
+            {
+              type: 'keyDown',
+              keyCode,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+            {
+              type: 'char',
+              keyCode,
+              delayMs: 0,
+            },
+            {
+              type: 'keyUp',
+              keyCode,
+              delayMs: Math.random() * TypingDelayMsHalf + TypingDelayMsHalf,
+            },
+          ]),
+        });
+      } else {
+        await (
+          await actionApi
+        ).pasteInput({
+          input: values[0],
+        });
+      }
     }
   };
   export const key = async (
     action: Extract<WireActionToExec, { k: 'key' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
     repeat = 0,
   ) => {
@@ -655,10 +1057,11 @@ export namespace BrowserActions {
   };
   export const mouse = async (
     action: Extract<WireActionToExec, { k: 'mouse' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
+    // todo check if el is not covered, throw error if so
     console.log('mouse', action, el);
     switch (action.a) {
       case 'click':

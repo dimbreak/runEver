@@ -1,0 +1,15 @@
+/* Update reply styling to accommodate Quill */
+.reply-editor .ql-container.ql-snow {
+    border: none;
+}
+
+.reply-editor .ql-editor {
+    padding: 16px;
+    min-height: 80px;
+    font-size: 14px;
+}
+
+.reply-content {
+    display: flex;
+    flex-direction: column;
+}

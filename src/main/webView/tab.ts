@@ -1,24 +1,25 @@
 import {
   app,
-  BrowserWindow,
   clipboard,
   Menu,
   Rectangle,
   WebContentsView,
+  nativeImage,
 } from 'electron';
 import settings from 'electron-settings';
 import fs from 'fs';
 import path from 'path';
-import { LlmApi } from '../../agentic/api';
+// @ts-ignore
+import { CancelError, download } from '../download';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
-import { WebViewLlmSession } from '../../agentic/webviewLlmSession';
-import { ToRendererIpc } from '../../contracts/toRenderer';
+import { Session } from '../../agentic/session';
 import { IframeProgressType } from '../../extensions/iframe/types';
-import type { PromptAttachment } from '../../schema/attachments';
 import { Network } from '../../webView/network';
 import { Util } from '../../webView/util';
 import { showSystemMessageBox } from '../dialogs';
+import { ProfileStore } from '../profileStore';
 import { isMac } from '../util';
+import { RunEverWindow } from '../window';
 
 export class TabWebView {
   url: string;
@@ -32,9 +33,9 @@ export class TabWebView {
 
   scrollAdjustment: number;
 
-  llmSession: WebViewLlmSession;
+  session: Session;
 
-  pageLoadedLock = Util.newLock();
+  pageLoadedLock = Util.newLock('pageLoadedLock');
 
   networkIdle0: Util.Lock | undefined;
   networkIdle2: Util.Lock | undefined;
@@ -44,11 +45,11 @@ export class TabWebView {
   constructor(
     public initUrl: string,
     public bounds: Rectangle,
-    private mainWindow: BrowserWindow,
-    llmSession: WebViewLlmSession,
+    private mainWindow: RunEverWindow,
+    llmSession: Session,
   ) {
-    this.url = initUrl;
-    this.llmSession = llmSession;
+    this.url = this.initUrl;
+    this.session = llmSession;
     this.webView = new WebContentsView({
       webPreferences: {
         contextIsolation: true,
@@ -63,35 +64,61 @@ export class TabWebView {
   }
 
   get isFocused() {
-    return this.llmSession.isFocused(this);
+    return this.session.isFocused(this);
   }
 
   focus() {
     this.webView.webContents.focus();
-    this.llmSession.focusTab(this);
+    this.session.focusTab(this);
   }
 
   blur() {
     // no-op
   }
 
-  stopPrompt(requestId?: number) {
-    this.llmSession.stopPrompt(requestId);
+  stopPrompt() {
+    this.session.stopPrompt();
     this.pageLoadedLock.unlock();
   }
 
-  emitLlmSessionSnapshot(snapshot: unknown | null) {
-    try {
-      if (this.mainWindow?.isDestroyed()) return;
-      const webContents = this.webView?.webContents;
-      if (!webContents || webContents.isDestroyed()) return;
-      ToRendererIpc.llmSessionSnapshot.send(this.mainWindow.webContents, {
-        frameId: webContents.id,
-        snapshot,
+  async operate(detail: {
+    bounds?: Rectangle;
+    url?: string;
+    viewportWidth?: number;
+    exeScript?: string;
+    visible?: boolean;
+    sidebarWidth?: number;
+    tabbarHeight?: number;
+  }) {
+    let response;
+    if (detail.bounds) {
+      this.webView.setBounds(detail.bounds);
+      this.bounds = detail.bounds;
+    } else if (!detail.url && !detail.exeScript) {
+      const nextBounds = this.session.getSafeBounds({
+        sidebarWidth: detail.sidebarWidth ?? Session.DEFAULT_SIDEBAR_WIDTH,
+        tabbarHeight: detail.tabbarHeight ?? Session.DEFAULT_TABBAR_HEIGHT,
+        viewportWidth: detail.viewportWidth,
       });
-    } catch (err) {
-      console.error('emitLlmSessionSnapshot failed:', err);
+      this.webView.setBounds(nextBounds);
+      this.bounds = nextBounds;
     }
+    if (detail.visible !== undefined) {
+      this.webView.setVisible(detail.visible);
+      if (detail.visible) {
+        this.focus();
+      }
+    }
+    if (detail.url) {
+      this.webView.webContents.loadURL(detail.url);
+      await Util.sleep(1000);
+    }
+    if (detail.exeScript) {
+      response = await this.webView.webContents.executeJavaScript(
+        detail.exeScript,
+      );
+    }
+    return response;
   }
 
   async confirmHighRiskAction(actionIntent: string) {
@@ -125,32 +152,168 @@ export class TabWebView {
     );
   }
 
-  actionDone(
-    actionId: number,
-    argsDelta: Record<string, string> | undefined,
-    iframeId?: string,
+  async screenshot(
+    x = 0,
+    y = 0,
+    capWidth = 0,
+    capHeight = 0,
+    filename: string | undefined = undefined,
   ) {
-    this.llmSession.actionDone(actionId, argsDelta);
-  }
-
-  actionError(error: string, actionId: number, iframeId?: string) {
-    this.llmSession.actionError(actionId, error);
-  }
-
-  async screenshot(x = 0, y = 0, capWidth = 0, capHeight = 0) {
     let width = capWidth;
     let height = capHeight;
+    const rect = this.webView.getBounds();
     if (width === 0 && height === 0) {
-      const rect = this.webView.getBounds();
       width = rect.width;
       height = rect.height;
     }
-    return this.webView.webContents.capturePage({
-      x,
-      y,
-      width,
-      height,
-    });
+    let shot: Promise<Electron.NativeImage>;
+    if (width > rect.width || height > rect.height) {
+      shot = (async () => {
+        try {
+          const { scrollX, scrollY } =
+            await this.webView.webContents.executeJavaScript(
+              '({scrollX: window.scrollX, scrollY: window.scrollY})',
+            );
+
+          const chunks: {
+            buffer: Buffer;
+            x: number;
+            y: number;
+            w: number;
+            h: number;
+          }[] = [];
+          let scaleFactor = 1;
+
+          const docX = scrollX + x;
+          const docY = scrollY + y;
+          const vpW = rect.width;
+          const vpH = rect.height;
+
+          for (let py = 0; py < height; py += vpH) {
+            for (let px = 0; px < width; px += vpW) {
+              const scrollToX = docX + px;
+              const scrollToY = docY + py;
+
+              await this.webView.webContents.executeJavaScript(
+                `window.scrollTo(${scrollToX}, ${scrollToY})`,
+              );
+              await Util.sleep(150);
+
+              const { x: sx, y: sy } =
+                await this.webView.webContents.executeJavaScript(
+                  '({x: window.scrollX, y: window.scrollY})',
+                );
+
+              const interLeft = Math.max(docX, sx);
+              const interTop = Math.max(docY, sy);
+              const interRight = Math.min(docX + width, sx + vpW);
+              const interBottom = Math.min(docY + height, sy + vpH);
+
+              if (interRight > interLeft && interBottom > interTop) {
+                const capX = interLeft - sx;
+                const capY = interTop - sy;
+                const capW = interRight - interLeft;
+                const capH = interBottom - interTop;
+
+                const image = await this.webView.webContents.capturePage({
+                  x: capX,
+                  y: capY,
+                  width: capW,
+                  height: capH,
+                });
+                const buffer = image.toBitmap();
+
+                if (chunks.length === 0) {
+                  const size = image.getSize();
+                  if (size.width > 0 && size.height > 0) {
+                    scaleFactor = Math.sqrt(
+                      buffer.length / (size.width * size.height * 4),
+                    );
+                  }
+                }
+                chunks.push({
+                  buffer,
+                  x: interLeft - docX,
+                  y: interTop - docY,
+                  w: capW,
+                  h: capH,
+                });
+              }
+            }
+          }
+
+          await this.webView.webContents.executeJavaScript(
+            `window.scrollTo(${scrollX}, ${scrollY})`,
+          );
+
+          const finalW = Math.ceil(width * scaleFactor);
+          const finalH = Math.ceil(height * scaleFactor);
+          const totalBuffer = Buffer.alloc(finalW * finalH * 4);
+
+          for (const chunk of chunks) {
+            const cw = Math.round(chunk.w * scaleFactor);
+            const ch = Math.round(chunk.h * scaleFactor);
+            const dx = Math.round(chunk.x * scaleFactor);
+            const dy = Math.round(chunk.y * scaleFactor);
+            const chunkBuffer = chunk.buffer;
+
+            for (let r = 0; r < ch; r++) {
+              const srcStart = r * cw * 4;
+              const targetRow = dy + r;
+              if (targetRow >= finalH) continue;
+              const dstStart = (targetRow * finalW + dx) * 4;
+              if (
+                srcStart + cw * 4 <= chunkBuffer.length &&
+                dstStart + cw * 4 <= totalBuffer.length
+              ) {
+                chunkBuffer.copy(
+                  totalBuffer,
+                  dstStart,
+                  srcStart,
+                  srcStart + cw * 4,
+                );
+              }
+            }
+          }
+
+          return nativeImage.createFromBitmap(totalBuffer, {
+            width,
+            height,
+            scaleFactor,
+          });
+        } catch (e) {
+          console.error('Scroll screenshot failed, falling back', e);
+          return this.webView.webContents.capturePage({
+            x,
+            y,
+            width,
+            height,
+          });
+        }
+      })();
+    } else {
+      console.log('screenshot', width, height, x, y);
+      shot = this.webView.webContents.capturePage({
+        x,
+        y,
+        width,
+        height,
+      });
+    }
+    if (filename) {
+      const data = await shot;
+      const imgPath = `${app.getPath('downloads')}/${filename.includes('.') ? filename : `${filename}.png`}`;
+      fs.writeFileSync(imgPath, (await shot).toPNG());
+      this.session.readableFiles.set(filename, {
+        name: filename,
+        mimeType: 'image/png',
+        data: data.toPNG(),
+        path: imgPath,
+      });
+
+      return data;
+    }
+    return shot;
   }
 
   initView() {
@@ -160,6 +323,28 @@ export class TabWebView {
     const frameId = webContents.id;
     this.frameIds.add(frameId);
     const inflight = new Set<string>();
+
+    webContents.on('render-process-gone', (_e, details) => {
+      console.error('[WCV] render-process-gone', details); // reason / exitCode
+    });
+
+    webContents.on('destroyed', () => {
+      console.error('[WCV] webContents destroyed');
+    });
+
+    webContents.on('did-fail-load', (_e, code, desc, url) => {
+      console.error('[WCV] did-fail-load', { code, desc, url });
+    });
+
+    webContents.on('unresponsive', () => console.error('[WCV] unresponsive'));
+    webContents.on('responsive', () => console.log('[WCV] responsive'));
+
+    // webContents.on('console-message', (_e, level, message, line, sourceId) => {
+    //   if (level > 1) {
+    //     console.log('[WCV console]', { level, message, line, sourceId });
+    //   }
+    // });
+
     webContents.userAgent = `Mozilla/5.0 (${isMac ? 'Macintosh; Intel Mac OS X 10.15; rv:147.0' : 'Windows NT 10.0; Win64; x64'}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36`;
     const unlockLoaded = () => {
       console.log('Page loaded unlockLoaded');
@@ -170,14 +355,23 @@ export class TabWebView {
     webContents.on('did-finish-load', unlockLoaded);
     webContents.on('did-stop-loading', unlockLoaded);
     webContents.on('did-start-navigation', (details) => {
-      if (
-        details.isMainFrame &&
-        !details.isSameDocument &&
-        this.url !== details.url
-      ) {
-        console.log('did-start-navigation:', details.url);
+      if (details.isMainFrame) {
+        ProfileStore.getInstance()
+          .refreshUrlHistory(details.url)
+          .catch((error) => {
+            console.warn('Failed to refresh url history:', details.url, error);
+          });
+      }
+      if (details.isMainFrame && this.url !== details.url) {
+        this.mainWindow?.webContents.send('tab-title-updated', {
+          frameId,
+          url: details.url,
+        });
         this.url = details.url;
-        this.loadFrameStart('MAIN');
+        if (!details.isSameDocument) {
+          console.log('did-start-navigation:', details.url);
+          this.loadFrameStart('MAIN');
+        }
       }
     });
 
@@ -189,20 +383,40 @@ export class TabWebView {
           this.url = url;
           inflight.clear();
           webContents.executeJavaScript(
-            `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
+            `window.postMessage({ scrollAdjustment: ${this.scrollAdjustment}, frameId: ${frameId}, sessionId: ${this.session.id}, mouseX: ${this.mouseX}, mouseY: ${this.mouseY}})`,
           );
-          this.llmSession.resumeAll();
+          this.session.resumeAll();
           this.loadedFrame('MAIN');
         }
       },
     );
     webContents.on('page-title-updated', (_event, title) => {
       const currentUrl = webContents.getURL();
+      ProfileStore.getInstance()
+        .updateUrlHistoryMetadata(currentUrl, { title })
+        .catch((error) => {
+          console.warn(
+            'Failed to update url history title:',
+            currentUrl,
+            error,
+          );
+        });
       this.mainWindow?.webContents.send('tab-title-updated', {
         frameId,
         title,
         url: currentUrl,
       });
+      this.url = currentUrl;
+    });
+    webContents.on('page-favicon-updated', (_event, favicons) => {
+      const currentUrl = webContents.getURL();
+      const icon = favicons[0];
+      if (!icon) return;
+      ProfileStore.getInstance()
+        .updateUrlHistoryMetadata(currentUrl, { icon })
+        .catch((error) => {
+          console.warn('Failed to update url history icon:', currentUrl, error);
+        });
     });
     webContents.setWindowOpenHandler(({ url }) => {
       if (this.mainWindow) {
@@ -213,6 +427,7 @@ export class TabWebView {
       }
       return { action: 'deny' };
     });
+
     this.webView.setBounds(this.bounds);
     webContents.openDevTools();
     [this.networkIdle0, this.networkIdle2] = Network.initMonitor(
@@ -250,78 +465,6 @@ export class TabWebView {
       });
   }
 
-  async runPrompt(
-    requestId: number,
-    prompt: string,
-    args?: Record<string, string>,
-    attachments?: PromptAttachment[],
-    reasoningEffort?: LlmApi.ReasoningEffort,
-    modelType?: LlmApi.LlmModelType,
-  ): Promise<string | undefined> {
-    console.info('====>');
-    if (this.llmSession) {
-      if (prompt === 'run test') {
-        const promises: Promise<string>[] = [];
-        for (let i = 0; i < 3; i++) {
-          const stream = LlmApi.queryLLMApi(
-            'user',
-            'system',
-            null,
-            `test_${Date.now()}_${i}`,
-            'mid',
-            'low',
-          );
-          promises.push(LlmApi.wrapStream(stream).catch((e) => e.message));
-        }
-        const result: string[] = await Promise.all(promises);
-        console.info(
-          'result:',
-          `${app.getPath('userData')}/prompt-lab/test${new Date().toString()}.json`,
-          result,
-        );
-        try {
-          fs.mkdirSync(`${app.getPath('userData')}/prompt-lab`);
-        } catch (e) {
-          console.error('mkdirSync error:', e);
-        }
-        fs.writeFileSync(
-          `${app.getPath('userData')}/prompt-lab/test${new Date().toISOString()}.json`,
-          JSON.stringify(result, null, 2),
-        );
-      } else {
-        try {
-          const stream = this.llmSession.startPrompt(
-            requestId,
-            this,
-            prompt,
-            args,
-            attachments,
-            reasoningEffort,
-            modelType,
-          );
-          let response;
-          console.info('stream:', stream);
-          while ((response = await stream.next())) {
-            if (!response.done) {
-              console.info('pushPromptResponse:', response.value);
-              this.pushPromptResponse(requestId, response.value);
-            } else {
-              break;
-            }
-          }
-        } catch (e) {
-          console.error('runPrompt error:', e);
-          return Util.formatError(e);
-        }
-      }
-    }
-  }
-  pushPromptResponse(requestId: number, chunk: string) {
-    ToRendererIpc.promptResponse.send(this.mainWindow!.webContents, {
-      requestId,
-      chunk,
-    });
-  }
   static clipboardLock: Promise<void> = Promise.resolve();
   async pasteText(input: string) {
     await TabWebView.clipboardLock;
@@ -377,13 +520,6 @@ export class TabWebView {
       settings.setSync('scrollAdjustment', scrollAdjustment);
       this.scrollAdjustment = scrollAdjustment;
     }
-    if (!this.llmSession) {
-      this.llmSession = new WebViewLlmSession(this.mainWindow);
-      this.emitLlmSessionSnapshot(this.llmSession.getSnapshot());
-    } else {
-      // Keep the existing session so in-flight prompts don't lose their state.
-      this.llmSession.resumeAll();
-    }
   }
 
   async setInputFile(
@@ -408,9 +544,37 @@ export class TabWebView {
       nodeId: input.nodeId,
     });
 
+    const filesToUpload: string[] = [];
+
+    for (const f of filePaths) {
+      const attachment = this.session.readableFiles.get(f);
+      if (attachment) {
+        if (attachment.path) {
+          filesToUpload.push(attachment.path);
+        }
+        if (attachment.data) {
+          const tempDir = app.getPath('temp');
+          const safeName = attachment.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const tempPath = path.join(
+            tempDir,
+            `runever_upload_${Date.now()}_${safeName}`,
+          );
+          const content: string | NodeJS.ArrayBufferView =
+            attachment.data instanceof ArrayBuffer
+              ? Buffer.from(attachment.data)
+              : attachment.data;
+          fs.writeFileSync(tempPath, content);
+          attachment.path = tempPath;
+          filesToUpload.push(tempPath);
+        }
+      } else {
+        return `input not found:${f}`;
+      }
+    }
+
     await wc.debugger.sendCommand('DOM.setFileInputFiles', {
       backendNodeId: desc.node.backendNodeId,
-      files: filePaths,
+      files: filesToUpload,
     });
   }
 
@@ -438,5 +602,32 @@ export class TabWebView {
     if (this.loadingFrames.size === 0) {
       this.pageLoadedLock.delayUnlock(500);
     }
+  }
+
+  async download(url: string, filename?: string): Promise<string | undefined> {
+    try {
+      const item = await download(this.mainWindow, url, {
+        filename,
+      });
+      if (item.getState() === 'completed') {
+        this.session.downloaded(item, filename);
+        return undefined;
+      }
+      return item.getState();
+    } catch (error) {
+      if (error instanceof CancelError) {
+        console.info('item.cancel() was called');
+        return 'cancelled';
+      }
+      console.error(error);
+      return (error as Error).message;
+    }
+  }
+
+  pushSecret(secretStr: string) {
+    console.log('pushSecret:', secretStr);
+    this.webView.webContents.executeJavaScript(
+      `window.webView.setSecret(${secretStr})`,
+    );
   }
 }

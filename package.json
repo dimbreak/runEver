@@ -5,15 +5,18 @@
   "homepage": "https://github.com/dimbreak/runEver",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dimbreak/runEver/runEver.git"
+    "url": "git+https://github.com/dimbreak/runEver.git"
   },
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "main": "./.erb/dll/main.bundle.dev.js",
   "scripts": {
-    "build": "concurrently \"npm run build:main\" \"npm run build:renderer\"",
+    "benchmark:runevermark": "cross-env TS_NODE_TRANSPILE_ONLY=true ts-node ./runEverMark/benchmark/index.ts",
+    "build": "concurrently \"npm run build:main\" \"npm run build:renderer\" \"npm run build:extensions\" \"npm run build:extensions:iframeLazy\" \"npm run build:runEverMark\" \"npm run build:configPage\"",
     "build:dll": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "build:extensions": "tsc -p src/extensions/iframe/tsconfig.json && npm run build:extensions:iframeLazy && node ./.erb/scripts/copy-extensions.js",
     "build:extensions:iframeLazy": "esbuild src/extensions/iframe/iframeLazy.ts --bundle --format=esm --platform=browser --target=es2020 --outfile=src/extensions/iframe/iframeLazy.js --resolve-extensions=.html.ts,.ts,.tsx,.js",
+    "build:runEverMark": "cd runEverMark/mockSite && npm install --legacy-peer-deps && npm run build && node ../../.erb/scripts/copy-runevermark.js",
+    "build:configPage": "cd src/renderer/config_page && npm install && npm run build && node ../../../.erb/scripts/copy-configpage.js",
     "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.main.prod.ts",
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
@@ -23,14 +26,14 @@
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "prestart": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.main.dev.ts",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run prestart && npm run start:renderer",
-    "start:main": "concurrently -k -P \"cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --watch --config ./.erb/configs/webpack.config.main.dev.ts\" \"electronmon . -- {@}\" --",
-    "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
-    "start:webViewPreload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.webViewPreload.dev.ts",
-    "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
+    "start:main": "concurrently -k -P \"cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\\\"-r ./.erb/scripts/disable-sigint.js\\\" webpack --watch --config ./.erb/configs/webpack.config.main.dev.ts\" \"electronmon . -- {@}\" --",
+    "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register -r ./.erb/scripts/disable-sigint.js --no-warnings\" webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
+    "start:webViewPreload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register -r ./.erb/scripts/disable-sigint.js --no-warnings\" webpack --config ./.erb/configs/webpack.config.webViewPreload.dev.ts",
+    "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register -r ./.erb/scripts/disable-sigint.js --no-warnings\" webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
     "clean": "npm run clean:modules && npm run clean:dll",
-    "clean:modules": "rm -rf node_modules",
-    "clean:dll": "rm -rf .erb/dll",
+    "clean:modules": "rimraf node_modules",
+    "clean:dll": "rimraf .erb/dll",
     "prepare": "husky"
   },
   "browserslist": [
@@ -79,33 +82,48 @@
     },
     "testPathIgnorePatterns": [
       "release/app/dist",
-      ".erb/dll"
+      ".erb/dll",
+      "vendor/web-skill/tests"
     ],
     "transform": {
       "\\.(ts|tsx|js|jsx)$": "ts-jest"
     }
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --cache --max-warnings=1000"
+    "*.{js,jsx,ts,tsx}": "eslint --cache --ignore-pattern \"runEverMark/mockSite/**\""
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.85",
-    "@apitrust/react": "file:../apitrust/react-sdk",
+    "@ai-sdk/alibaba": "^1.0.13",
+    "@ai-sdk/anthropic": "^3.0.29",
+    "@ai-sdk/deepseek": "^2.0.26",
+    "@ai-sdk/google": "^3.0.29",
+    "@ai-sdk/moonshotai": "^2.0.12",
+    "@ai-sdk/openai": "^3.0.29",
+    "@ai-sdk/openai-compatible": "^2.0.30",
+    "@ai-sdk/provider": "^3.0.8",
+    "@ai-sdk/xai": "^3.0.29",
     "@electron/notarize": "^3.0.0",
     "@hookform/resolvers": "^3.10.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@napi-rs/keyring": "^1.2.0",
+    "@openai/codex-sdk": "^0.114.0",
+    "@openrouter/ai-sdk-provider": "^2.5.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@tiptap/core": "^3.14.0",
     "@tiptap/extension-placeholder": "^3.14.0",
     "@tiptap/react": "^3.14.0",
     "@tiptap/starter-kit": "^3.14.0",
-    "ai": "^5.0.112",
+    "ai": "^6.0.86",
     "clsx": "^2.1.1",
     "electron-debug": "^4.1.0",
+    "electron-dl": "^4.0.0",
     "electron-log": "^5.3.2",
     "electron-settings": "^4.0.4",
     "electron-updater": "^6.3.9",
+    "ext-name": "^5.0.0",
+    "openai": "^6.27.0",
     "postcss": "^8.5.6",
+    "pupa": "^3.3.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hook-form": "^7.54.2",
@@ -113,6 +131,8 @@
     "source-map-support": "^0.5.21",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.17",
+    "unused-filename": "^4.0.1",
+    "vercel-minimax-ai-provider": "^0.0.2",
     "zod": "^4.1.13",
     "zustand": "^4.5.5"
   },
@@ -132,6 +152,7 @@
     "@types/webpack-bundle-analyzer": "^4.7.0",
     "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260218.1",
     "browserslist-config-erb": "^0.0.3",
     "chalk": "^4.1.2",
     "concurrently": "^9.1.2",
@@ -184,7 +205,6 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths-webpack-plugin": "^4.2.0",
-    "typescript": "^5.8.2",
     "typescript-eslint": "^8.48.1",
     "url-loader": "^4.1.1",
     "webpack": "^5.98.0",
@@ -194,8 +214,8 @@
     "webpack-merge": "^6.0.1"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "RunEver",
+    "appId": "io.github.dimbreak.runever",
     "asar": true,
     "afterSign": ".erb/scripts/notarize.js",
     "asarUnpack": "**\\*.{node,dll}",
@@ -254,8 +274,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
+      "owner": "dimbreak",
+      "repo": "runEver"
     }
   },
   "devEngines": {
@@ -273,9 +293,9 @@
   "electronmon": {
     "patterns": [
       "!**/**",
+      "!prompt-record/**",
       "src/main/**",
       ".erb/dll/**"
-    ],
-    "logLevel": "quiet"
+    ]
   }
 }

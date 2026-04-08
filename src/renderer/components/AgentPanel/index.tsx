@@ -1,10 +1,9 @@
 import * as React from 'react';
+import { PanelRightClose, X, Plus, Loader2 } from 'lucide-react';
 import { ToMainIpc } from '../../../contracts/toMain';
-import { useAgentStore } from '../../state/agentStore';
+
+import { useAgentStoreV2 } from '../../state/agentStoreV2';
 import { useLayoutStore } from '../../state/layoutStore';
-import { useTabStore } from '../../state/tabStore';
-import { textToDoc } from '../../utils/contentUtils';
-import { AgentLogoutButton } from './AgentLogoutButton';
 import { MessageList } from './MessageList';
 import { PromptTextArea } from './PromptTextArea';
 
@@ -15,108 +14,24 @@ export const AgentPanel: React.FC = () => {
     sidebarWidth,
     collapsedWidth,
     tabbarHeight,
-    bounds,
   } = useLayoutStore();
-  const { tabs, activeTabId } = useTabStore();
   const panelWidth = isSidebarOpen ? sidebarWidth : collapsedWidth;
-  const { addMessage, ensureTab, setSessionSnapshot } = useAgentStore(
-    (state) => ({
-      addMessage: state.addMessage,
-      ensureTab: state.ensureTab,
-      setSessionSnapshot: state.setSessionSnapshot,
-    }),
-  );
+
+  const {
+    activeSessionId,
+    sessions,
+    switchSession,
+    removeSession,
+    promptRunningStatusBySessionId,
+  } = useAgentStoreV2((state) => ({
+    activeSessionId: state.activeSessionId,
+    sessions: state.sessions,
+    switchSession: state.switchSession,
+    removeSession: state.removeSession,
+    promptRunningStatusBySessionId: state.promptRunningStatusBySessionId,
+  }));
+
   const runningAssistantMessageIdRef = React.useRef<number | null>(null);
-  const sessionRefreshTimerRef = React.useRef<number | null>(null);
-
-  const refreshSessionSnapshot = React.useCallback(
-    async (tabId: string) => {
-      const tab = tabs.find((t) => t.id === tabId);
-      if (!tab || tab.frameId === -1) {
-        setSessionSnapshot(tabId, null);
-        return;
-      }
-      try {
-        const res = await ToMainIpc.getLlmSessionSnapshot.invoke({
-          frameId: tab.frameId,
-        });
-        if (
-          'snapshot' in res &&
-          res.snapshot &&
-          typeof res.snapshot === 'object'
-        ) {
-          setSessionSnapshot(tabId, {
-            frameId: tab.frameId,
-            updatedAt: Date.now(),
-            ...(res.snapshot as any),
-          });
-          return;
-        }
-        setSessionSnapshot(tabId, null);
-      } catch (err) {
-        console.error('session snapshot error:', err);
-      }
-    },
-    [setSessionSnapshot, tabs],
-  );
-
-  const scheduleSessionRefresh = React.useCallback(
-    (tabId: string) => {
-      if (sessionRefreshTimerRef.current !== null) return;
-      sessionRefreshTimerRef.current = window.setTimeout(() => {
-        sessionRefreshTimerRef.current = null;
-        refreshSessionSnapshot(tabId);
-      }, 400);
-    },
-    [refreshSessionSnapshot],
-  );
-
-  // const handleCapture = async () => {
-  //   try {
-  //     // Get the active tab
-  //     const currentTab = tabs.find((t) => t.id === activeTabId);
-  //     if (!currentTab) {
-  //       if (activeTabId) {
-  //         addMessage(activeTabId, {
-  //           id: Date.now(),
-  //           role: 'assistant',
-  //           content: textToDoc('No active tab to capture.'),
-  //           tag: 'Error',
-  //         });
-  //       }
-  //       return;
-  //     }
-
-  //     // Capture screenshot using WebTab method
-  //     const imageDataUri = await currentTab.captureScreenshot(bounds);
-
-  //     if (imageDataUri) {
-  //       addMessage(currentTab.id, {
-  //         id: Date.now(),
-  //         role: 'assistant',
-  //         content: textToDoc('Captured current view.'),
-  //         image: imageDataUri,
-  //         tag: 'Screenshot',
-  //       });
-  //     } else {
-  //       addMessage(currentTab.id, {
-  //         id: Date.now(),
-  //         role: 'assistant',
-  //         content: textToDoc('Failed to capture screenshot.'),
-  //         tag: 'Error',
-  //       });
-  //     }
-  //   } catch (err) {
-  //     if (activeTabId) {
-  //       addMessage(activeTabId, {
-  //         id: Date.now(),
-  //         role: 'assistant',
-  //         content: textToDoc(`Capture error: ${(err as Error).message}`),
-  //         tag: 'Error',
-  //       });
-  //     }
-  //   }
-  // };
 
   const updateWebViewLayout = React.useCallback(
     async (sidebarOpen: boolean) => {
@@ -125,6 +40,7 @@ export const AgentPanel: React.FC = () => {
       const width = sidebarOpen ? sidebarWidth : collapsedWidth;
       try {
         await ToMainIpc.operateTab.invoke({
+          sessionId: activeSessionId ?? 0,
           id: lastFrameId,
           sidebarWidth: width,
           tabbarHeight,
@@ -133,26 +49,12 @@ export const AgentPanel: React.FC = () => {
         // swallow layout errors to avoid blocking UI
       }
     },
-    [collapsedWidth, sidebarWidth, tabbarHeight],
+    [collapsedWidth, sidebarWidth, tabbarHeight, activeSessionId],
   );
 
   React.useEffect(() => {
     updateWebViewLayout(isSidebarOpen);
   }, [isSidebarOpen, updateWebViewLayout]);
-
-  React.useEffect(() => {
-    return () => {
-      if (sessionRefreshTimerRef.current !== null) {
-        window.clearTimeout(sessionRefreshTimerRef.current);
-      }
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (!activeTabId) return;
-    ensureTab(activeTabId);
-    refreshSessionSnapshot(activeTabId);
-  }, [activeTabId, ensureTab, refreshSessionSnapshot]);
 
   return (
     <div
@@ -162,40 +64,93 @@ export const AgentPanel: React.FC = () => {
       <div
         className={`flex h-full flex-col border-l border-slate-200 bg-white transition-all duration-200 ${
           isSidebarOpen
-            ? 'opacity-100 scale-100 translate-x-0'
-            : 'opacity-0 scale-95 translate-x-4 pointer-events-none'
+            ? 'translate-x-0 scale-100 opacity-100'
+            : 'pointer-events-none translate-x-4 scale-95 opacity-0'
         }`}
       >
-        <div className="flex justify-between shrink-0 items-center gap-3 px-4 py-3 border-b border-slate-200 bg-blue-50">
-          <div className="font-semibold text-slate-800 leading-tight">
-            <div className="text-[15px]">RunEver Agent</div>
-          </div>
-          {/* <div className="flex flex-1 items-center gap-2">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 bg-blue-50 px-4 py-3">
+          <div className="flex flex-1 flex-wrap gap-1.5 text-[13px] font-medium">
+            {Object.values(sessions).map((session) => {
+              const isActive = activeSessionId === session.id;
+              return (
+                <div
+                  key={session.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => switchSession(session.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      switchSession(session.id);
+                    }
+                  }}
+                  className={`group relative flex max-w-[150px] cursor-pointer items-center gap-2 rounded-md border px-2 py-1 transition-colors ${
+                    isActive
+                      ? 'border-blue-300 bg-white text-blue-900 shadow-sm'
+                      : 'pointer-events-auto border-slate-300/60 bg-slate-100/50 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-800'
+                  }`}
+                  title={session.label || 'Session'}
+                >
+                  <div className="flex flex-1 items-center gap-1.5 truncate">
+                    {['planning', 'thinking', 'running'].includes(
+                      promptRunningStatusBySessionId[session.id],
+                    ) && (
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                    )}
+                    {session.label || 'Session'}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={Object.keys(sessions).length <= 1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (Object.keys(sessions).length > 1) {
+                        removeSession(session.id);
+                      }
+                    }}
+                    className={`flex shrink-0 items-center justify-center rounded-sm p-0.5 opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-0 ${
+                      isActive ? 'opacity-100' : ''
+                    }`}
+                  >
+                    <X
+                      size={14}
+                      className="rounded-sm transition-colors hover:bg-slate-200 hover:text-red-500"
+                    />
+                  </button>
+                </div>
+              );
+            })}
             <button
+              title="New Session"
               type="button"
-              onClick={handleCapture}
-              className="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-amber-200/60 transition hover:-translate-y-[1px] hover:bg-amber-600"
+              className="pointer-events-auto flex items-center justify-center rounded-md border border-slate-300/60 bg-slate-100/50 px-2 py-1 text-slate-600 transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-800"
+              onClick={async () => {
+                const res = await ToMainIpc.newSession.invoke(
+                  activeSessionId ?? 0,
+                );
+                if (res.id !== undefined) {
+                  switchSession(res.id);
+                }
+              }}
             >
-              Capture View
+              <Plus size={14} />
             </button>
-          </div> */}
-          <div className="flex items-center gap-2">
-            <AgentLogoutButton />
+          </div>
+          <div className="flex items-center gap-2 pt-0.5">
             <button
               type="button"
               onClick={toggleSidebar}
-              className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-200"
+              className="rounded-xl border border-slate-200 bg-slate-100 p-2 text-slate-600 shadow-sm transition hover:bg-slate-200"
+              title={isSidebarOpen ? 'Hide Panel' : 'Open Panel'}
             >
-              {isSidebarOpen ? 'Hide' : 'Open'}
+              <PanelRightClose size={18} />
             </button>
           </div>
         </div>
 
-        <MessageList activeTabId={activeTabId} />
+        <MessageList activeSessionId={activeSessionId} />
 
         <PromptTextArea
-          scheduleSessionRefresh={scheduleSessionRefresh}
-          refreshSessionSnapshot={refreshSessionSnapshot}
           runningAssistantMessageIdRef={runningAssistantMessageIdRef}
           placeholder="Describe what you want to automate..."
         />

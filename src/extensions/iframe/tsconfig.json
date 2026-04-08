@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "ES2020",
     "moduleResolution": "bundler",
-    "lib": ["DOM", "ES2020"],
+    "lib": ["DOM", "ES2020", "ES2022.Intl", "ESNext.Intl"],
     "types": [],
     "strict": true,
     "noEmit": true,
@@ -11,5 +11,5 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["content.ts"],
+  "include": ["content.ts", "node_modules"],
 }

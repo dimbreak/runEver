@@ -29,8 +29,8 @@ export const TabList = memo(function TabList({ children }: TabListProps) {
     <ul
       ref={listRef}
       className={cn(
-        'flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pr-2',
-        '[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]',
+        'flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pr-2',
+        '[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         {
           'scroll-shadows': hasOverflow,
         },

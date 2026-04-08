@@ -1,7 +1,6 @@
 import type { FromIframeMessages, ToIframeMessages } from './types.d.ts';
 import { MiniHtml } from '../../webView/miniHtml';
 import { dummyCursor } from '../../webView/cursor/cursor';
-import { OCRModel } from '../../webView/ocr';
 import { WireActionWithWaitAndRec } from '../../agentic/types';
 import {
   ActionApi,
@@ -11,29 +10,53 @@ import {
 import { type EventWithDelay, ToMainIpc } from '../../contracts/toMain';
 import '../../webView/preload.d.ts';
 import { Util } from '../../webView/util';
+import { takeScreenshot } from '../../webView/screenshot';
+import type { RunEverConfig } from '../../schema/runeverConfig';
+import { CommonUtil } from '../../utils/common';
 
 const webViewHandler = {
   frameId: '',
   htmlParser: undefined as MiniHtml.Parser | undefined,
+  normalizeFullHtmlOptions(
+    maybeOptions: number | MiniHtml.FullHtmlOptions | string | null | undefined,
+    maybeExtra: MiniHtml.FullHtmlOptions | string | null | undefined,
+  ): MiniHtml.FullHtmlOptions {
+    if (maybeOptions && typeof maybeOptions === 'object') {
+      return maybeOptions;
+    }
+    if (maybeExtra && typeof maybeExtra === 'object') {
+      return maybeExtra;
+    }
+    return {};
+  },
   getHtmlParser() {
     if (!this.htmlParser || this.htmlParser.idPrefix !== `${this.frameId}:`)
       this.htmlParser = new MiniHtml.Parser(`${this.frameId}:`);
-    console.log(this.htmlParser);
     return this.htmlParser;
+  },
+  getIdFromEl(el: Element, checkChildIfNotFound = true) {
+    if (!this.htmlParser || this.htmlParser.idPrefix !== `${this.frameId}:`)
+      this.htmlParser = new MiniHtml.Parser(`${this.frameId}:`);
+    return this.htmlParser.getIdByEl(el, checkChildIfNotFound);
   },
   getHtml(
     select: MiniHtml.Selector | null = null,
-    outerLevel = 0,
-    idPrefix: string = '__',
+    outerLevel: number | MiniHtml.FullHtmlOptions = 0,
+    idPrefix: string | MiniHtml.FullHtmlOptions = '®',
   ) {
-    if (!this.htmlParser || this.htmlParser.idPrefix !== idPrefix)
-      this.htmlParser = new MiniHtml.Parser(idPrefix);
+    const prefix = typeof idPrefix === 'string' ? idPrefix : '®';
+    if (!this.htmlParser || this.htmlParser.idPrefix !== prefix)
+      this.htmlParser = new MiniHtml.Parser(prefix);
     if (select) {
       return dummyCursor.hide(() =>
-        this.htmlParser!.genHtmlFormId(select, outerLevel),
+        this.htmlParser!.genHtmlFormId(
+          select,
+          typeof outerLevel === 'number' ? outerLevel : 0,
+        ),
       );
     }
-    return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
+    const options = this.normalizeFullHtmlOptions(outerLevel, idPrefix);
+    return dummyCursor.hide(() => this.htmlParser!.genFullHtml(false, options));
   },
   getDeltaHtml(idPrefix: string) {
     if (!this.htmlParser || this.htmlParser.idPrefix !== idPrefix)
@@ -44,15 +67,34 @@ const webViewHandler = {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return this.htmlParser.getElementFormId(select);
   },
-  getOcr(fullPage = false) {
-    return OCRModel.getFromScreenshot(fullPage);
-  },
   async execActions(
     actions: WireActionWithWaitAndRec[],
     args: Record<string, string>,
   ) {
     if (actions.length) {
       await BrowserActions.execActions(actions, args);
+    }
+  },
+  async screenshot() {
+    await takeScreenshot('test.png');
+  },
+  secrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecretArgs: {} as Record<string, string>,
+  setSecret(secrets: Record<string, RunEverConfig['arguments'][number]>) {
+    this.secrets = secrets;
+  },
+  getSecretArgs(): Record<string, string> {
+    return this.domainSecretArgs;
+  },
+  filterSecret() {
+    console.log('filterSecret', this.secrets);
+    this.domainSecrets = CommonUtil.filterArgDomain(
+      this.secrets,
+      window.location.origin,
+    );
+    for (const [key, value] of Object.entries(this.domainSecrets)) {
+      this.domainSecretArgs[key] = value.value;
     }
   },
 };
@@ -103,12 +145,15 @@ BrowserActions.setActionApi({
   setInputFile: (args: { selector: string; filePaths: string[] }) => {
     return sendAction('setInputFile', args);
   },
+  download: (args: { url: string; filename: string | undefined }) => {
+    return sendAction('download', args);
+  },
 });
 
 window.addEventListener(
   'message',
   async (event: MessageEvent<ToIframeMessages>) => {
-    console.log('got message in iframe', event.data);
+    // console.log('got message in iframe', event.data);
     switch (event.data.type) {
       case 'GET_HTML': {
         const { frameId, select, outerLevel } = event.data;
@@ -224,3 +269,6 @@ window.addEventListener(
     }
   },
 );
+window.addEventListener('load', () => {
+  window.webView.filterSecret();
+});

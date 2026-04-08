@@ -1,4 +1,4 @@
-import { WebViewHandler } from './webViewPreload';
+import { RuneverHandler, WebViewHandler } from './webViewPreload';
 import { ElectronHandler } from '../main/preload';
 
 declare global {
@@ -6,8 +6,9 @@ declare global {
   interface Window {
     electron: ElectronHandler;
     webView: WebViewHandler;
+    runever: RuneverHandler;
     frameId?: number;
-    electronDummyCursor?: HTMLDivElement;
+    sessionId?: number;
     isPreloadContext?: boolean;
   }
 }

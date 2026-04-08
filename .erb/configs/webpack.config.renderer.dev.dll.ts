@@ -17,6 +17,8 @@ const dist = webpackPaths.dllPath;
 const dllExcludes = [
   'tailwindcss',
   '@tailwindcss/postcss',
+  '@esbuild/win32-x64',
+  '@napi-rs/keyring',
   '@tailwindcss/node',
   '@tailwindcss/oxide',
   'lightningcss',
@@ -32,6 +34,7 @@ const dllExcludes = [
   'lightningcss-freebsd-x64',
   'lightningcss-win32-arm64-msvc',
   'lightningcss-win32-x64-msvc',
+  '@modelcontextprotocol/sdk',
 ];
 
 const configuration: webpack.Configuration = {

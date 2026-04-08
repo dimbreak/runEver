@@ -1,0 +1,215 @@
+import { useEffect, useState } from 'react';
+
+type Provider = 'openai' | 'google' | 'zai' | 'codex';
+type CodexAuthMode = 'apiKey' | 'login';
+type ApiKeyConfig = {
+  provider: Provider;
+  apiKey: string;
+  baseUrl?: string;
+  authMode?: CodexAuthMode;
+};
+
+const isApiKeyConfig = (value: unknown): value is ApiKeyConfig => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const config = value as Partial<ApiKeyConfig>;
+  return (
+    typeof config.apiKey === 'string' &&
+    typeof config.provider === 'string' &&
+    ['openai', 'google', 'zai', 'codex'].includes(config.provider) &&
+    (config.authMode === undefined ||
+      config.authMode === 'apiKey' ||
+      config.authMode === 'login')
+  );
+};
+
+export default function ApiKeyPage() {
+  const [provider, setProvider] = useState<Provider>('openai');
+  const [apiKey, setApiKey] = useState('');
+  const [apiUrl, setApiUrl] = useState<string | undefined>(undefined);
+  const [useCustomUrl, setUseCustomUrl] = useState(false);
+  const [codexAuthMode, setCodexAuthMode] = useState<CodexAuthMode>('apiKey');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const isCodex = provider === 'codex';
+  const usesCodexLogin = isCodex && codexAuthMode === 'login';
+
+  useEffect(() => {
+    async function load() {
+      if (window.runever) {
+        try {
+          const res = await window.runever.getConfig('apiKey');
+          console.log('API Key config:', res);
+          if (res && 'config' in res && isApiKeyConfig(res.config)) {
+            const { config } = res;
+            if (config.provider) setProvider(config.provider);
+            if (config.apiKey) setApiKey(config.apiKey);
+            if (config.baseUrl !== undefined) {
+              setApiUrl(config.baseUrl);
+              setUseCustomUrl(true);
+            }
+            if (config.authMode) {
+              setCodexAuthMode(config.authMode);
+            }
+          }
+        } catch (e) {
+          console.error('Error loading config:', e);
+        }
+      }
+      setIsLoaded(true);
+    }
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const saveConfig = async () => {
+      if (window.runever) {
+        console.log('Saving API Key config:', {
+          provider,
+          apiKey,
+          apiUrl,
+          codexAuthMode,
+        });
+        await window.runever.setConfig('apiKey', {
+          provider,
+          apiKey,
+          baseUrl: useCustomUrl && !usesCodexLogin ? apiUrl : undefined,
+          authMode: provider === 'codex' ? codexAuthMode : undefined,
+        });
+      }
+    };
+    const timer = setTimeout(() => {
+      saveConfig();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    provider,
+    apiKey,
+    apiUrl,
+    useCustomUrl,
+    codexAuthMode,
+    usesCodexLogin,
+    isLoaded,
+  ]);
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <header className="mb-6">
+        <h1 className="mb-2 text-2xl font-bold text-slate-900">
+          API Key Configuration
+        </h1>
+        <p className="text-sm text-slate-500">
+          Select a provider. Codex can use either an API key or your local
+          ChatGPT login.
+        </p>
+      </header>
+
+      <div className="flex-1 overflow-auto rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="max-w-xl space-y-6">
+          <section>
+            <h2 className="mb-4 text-base font-semibold text-slate-900">
+              Use my own provider
+            </h2>
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-slate-700">
+                Provider
+                <select
+                  className="mt-2 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none"
+                  value={provider}
+                  onChange={(event) =>
+                    setProvider(event.target.value as Provider)
+                  }
+                >
+                  <option value="openai">OpenAI</option>
+                  <option value="codex">Codex</option>
+                  <option value="google">Google</option>
+                  <option value="zai">ZAi</option>
+                </select>
+              </label>
+
+              {isCodex ? (
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-medium text-slate-800">
+                    Codex authentication
+                  </p>
+                  <div className="mt-3 space-y-2 text-sm text-slate-700">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="codex-auth-mode"
+                        checked={codexAuthMode === 'apiKey'}
+                        onChange={() => setCodexAuthMode('apiKey')}
+                      />
+                      Use API key
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="codex-auth-mode"
+                        checked={codexAuthMode === 'login'}
+                        onChange={() => setCodexAuthMode('login')}
+                      />
+                      Use local Codex login
+                    </label>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500">
+                    Login mode uses the local `codex` CLI credentials already
+                    signed in on this machine.
+                  </p>
+                </div>
+              ) : null}
+
+              <label className="block text-sm font-medium text-slate-700">
+                API key
+                <input
+                  className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  type="password"
+                  autoComplete="off"
+                  value={apiKey}
+                  onChange={(event) => setApiKey(event.target.value)}
+                  disabled={usesCodexLogin}
+                  placeholder={
+                    usesCodexLogin
+                      ? 'Not required for Codex login mode'
+                      : 'Paste your API key'
+                  }
+                />
+              </label>
+
+              {usesCodexLogin ? (
+                <p className="text-xs text-slate-500">
+                  If you have not signed in yet, run `codex` or `codex --login`
+                  once in your terminal first.
+                </p>
+              ) : null}
+
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  checked={useCustomUrl}
+                  onChange={(event) => setUseCustomUrl(event.target.checked)}
+                />
+                Use custom API url
+              </label>
+              <label
+                className={`block text-sm font-medium text-slate-700 ${useCustomUrl ? '' : 'opacity-50'}`}
+              >
+                Custom API url
+                <input
+                  className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none"
+                  autoComplete="off"
+                  value={apiUrl ?? ''}
+                  disabled={!useCustomUrl || usesCodexLogin}
+                  onChange={(event) => setApiUrl(event.target.value)}
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

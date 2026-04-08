@@ -3,23 +3,22 @@ import { useTabStore, WebTab } from '../state/tabStore';
 import { useLayoutStore } from '../state/layoutStore';
 import { dialogService } from '../services/dialogService';
 import { ToMainIpc } from '../../contracts/toMain';
-import { useAgentStore } from '../state/agentStore';
+import { useAgentStoreV2 } from '../state/agentStoreV2';
 import { textToDoc } from '../utils/contentUtils';
+import { ToRendererIpc } from '../../contracts/toRenderer';
 
 export const useIpcListeners = () => {
-  const {
-    addTab,
-    frameMap,
-    updateTabTitle,
-    updateTabUrl,
-    removeTabByFrameId,
-    activeTabId,
-  } = useTabStore();
+  const { addTab, updateTabTitle, updateTabUrl, closeTab, activeTabId } =
+    useTabStore();
   const { bounds } = useLayoutStore();
-  const { setSessionSnapshot, addMessage } = useAgentStore((state) => ({
-    setSessionSnapshot: state.setSessionSnapshot,
-    addMessage: state.addMessage,
-  }));
+  const { addMessage, upsertMessage, activeSessionId, ensureSession } =
+    useAgentStoreV2((state) => ({
+      addMessage: state.addMessage,
+      upsertMessage: state.upsertMessage,
+      activeSessionId: state.activeSessionId,
+      ensureSession: state.ensureSession,
+    }));
+
   useEffect(() => {
     const ipc = window.electron?.ipcRenderer;
     if (!ipc) return;
@@ -30,7 +29,7 @@ export const useIpcListeners = () => {
       payload: { url: string; parentFrameId?: number },
     ) => {
       const newTab = new WebTab({
-        id: `tab-${Date.now()}`,
+        id: -1,
         title: payload.url,
         url: payload.url,
         parentFrameId: payload.parentFrameId,
@@ -42,18 +41,11 @@ export const useIpcListeners = () => {
       _event: any,
       payload: { frameId: number; title?: string; url?: string },
     ) => {
-      // Find the tab ID associated with this frame ID
-      const entry = Array.from(frameMap.entries()).find(
-        ([, frameId]) => frameId === payload.frameId,
-      );
-      if (!entry) return;
-
-      const [tabId] = entry;
       if (payload.title) {
-        updateTabTitle(tabId, payload.title);
+        updateTabTitle(payload.frameId, payload.title);
       }
       if (payload.url) {
-        updateTabUrl(tabId, payload.url);
+        updateTabUrl(payload.frameId, payload.url);
       }
     };
 
@@ -64,14 +56,19 @@ export const useIpcListeners = () => {
     );
     const unsubscribeTabClosed = ipc.on(
       'tab-closed',
-      (_event: any, payload: { frameId: number }) => {
-        removeTabByFrameId(payload.frameId);
+      async (_event: any, payload: { frameId: number }) => {
+        await closeTab(payload.frameId);
       },
     );
     const unsubscribeToUser = ipc.on(
       'to-user',
-      async (_event: any, payload: any) => {
+      async (_event: any, payload: ToRendererIpc.ToUserMessage) => {
         if (!payload) return;
+        const { sessionId } = payload;
+        // Use the sessionId from the wire message, falling back to the
+        // active session or a default.
+        ensureSession(sessionId);
+
         if (payload.type === 'prompt') {
           const questions = payload.questions ?? {};
           let answer: Record<string, string> | null = null;
@@ -86,52 +83,53 @@ export const useIpcListeners = () => {
           } catch {
             answer = null;
           }
-          const fallbackAnswer = Object.keys(questions).reduce(
-            (acc, key) => ({ ...acc, [key]: '' }),
-            {} as Record<string, string>,
-          );
           await ToMainIpc.responsePromptInput.invoke({
             id: payload.responseId,
-            answer: answer ?? fallbackAnswer,
+            answer,
           });
-          return;
+        } else if (payload.type === 'snapshot') {
+          // Upsert: if a message with this responseId exists, update its
+          // taskSnapshot; otherwise push a new snapshot message.
+          upsertMessage(
+            sessionId,
+            {
+              id: payload.responseId,
+              role: 'assistant',
+              content: {},
+              taskSnapshot: payload.snapshot,
+            },
+            payload.snapshot.status === 'Thinking' ||
+              payload.snapshot.status === 'Executing',
+          );
+        } else {
+          let tag = 'Info';
+          if (payload.type === 'error') {
+            tag = 'Error';
+          } else if (payload.type === 'warning') {
+            tag = 'Warning';
+          }
+          const message =
+            typeof payload.message === 'string' && payload.message.length
+              ? payload.message
+              : 'Message received.';
+          addMessage(sessionId, {
+            id: Date.now(),
+            role: 'assistant',
+            content: textToDoc(message),
+            tag,
+          });
         }
-        if (!activeTabId) return;
-        let tag = 'Info'
-        if (payload.type === 'error') {
-          tag = 'Error';
-        } else if (payload.type === 'warning') {
-          tag = 'Warning';
-        }
-        const message =
-          typeof payload.message === 'string' && payload.message.length
-            ? payload.message
-            : 'Message received.';
-        addMessage(activeTabId, {
-          id: Date.now(),
-          role: 'assistant',
-          content: textToDoc(message),
-          tag,
-        });
       },
     );
     const unsubscribeSessionSnapshot = ipc.on(
       'llm-session-snapshot',
-      (_event: any, payload: { frameId: number; snapshot: unknown | null }) => {
-        const entry = Array.from(frameMap.entries()).find(
-          ([, frameId]) => frameId === payload.frameId,
-        );
-        if (!entry) return;
-        const [tabId] = entry;
-        if (payload.snapshot && typeof payload.snapshot === 'object') {
-          setSessionSnapshot(tabId, {
-            frameId: payload.frameId,
-            updatedAt: Date.now(),
-            ...(payload.snapshot as any),
-          });
-        } else {
-          setSessionSnapshot(tabId, null);
-        }
+      (
+        _event: any,
+        _payload: { frameId: number; snapshot: unknown | null },
+      ) => {
+        // V2: llm-session-snapshot from the old system is no longer
+        // processed. The new flow uses 'to-user' type:'snapshot' messages
+        // which are upserted as regular messages with taskSnapshot field.
       },
     );
 
@@ -144,13 +142,14 @@ export const useIpcListeners = () => {
     };
   }, [
     activeTabId,
+    activeSessionId,
     addMessage,
+    upsertMessage,
+    ensureSession,
     addTab,
-    frameMap,
     updateTabTitle,
     updateTabUrl,
-    removeTabByFrameId,
+    closeTab,
     bounds,
-    setSessionSnapshot,
   ]);
 };

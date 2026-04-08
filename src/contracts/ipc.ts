@@ -5,7 +5,7 @@ import type {
   IpcRendererEvent,
   WebContents,
 } from 'electron';
-import type { WebViewLlmSession } from '../agentic/webviewLlmSession';
+import type { Session } from '../agentic/session';
 
 export const isElectron =
   typeof process !== 'undefined' &&
@@ -23,16 +23,11 @@ class IcpContract<REQ extends Array<any>, RES = any> {
 }
 
 let ipcMain: IpcMain;
-let webViewSession: WebViewLlmSession;
 
 const onIpcMainInitialisedHandlers: Array<() => void> = [];
 
-export function initIpcMain(
-  main: IpcMain,
-  session: WebViewLlmSession,
-) {
+export function initIpcMain(main: IpcMain) {
   ipcMain = main;
-  webViewSession = session;
   onIpcMainInitialisedHandlers.forEach((handler) => handler());
   ipcMain.on('ipcToWebViewResponse', (_, handlerId: number, res) => {
     const handler = ipcWebViewHandlers[handlerId];
@@ -84,59 +79,10 @@ export class IcpRendererContract<
   }
 
   on(handler: (event: IpcRendererEvent, ...args: REQ) => void) {
-    if (!isMain) {
+    if (!isMain && window?.electron?.ipcRenderer) {
       window.electron.ipcRenderer.on(this.channel, handler);
-      return;
     }
-    throw new Error('IcpContract.on can only be called from renderer process');
+    // throw new Error('IcpContract.on can only be called from renderer process');
   }
 }
 type Tail<T extends any[]> = T extends [any, ...infer R] ? R : never;
-
-export class IpcWebViewContract<
-  REQ extends [number, ...any],
-  RES = any,
-> extends IpcMainContract<REQ, RES | Error> {
-  constructor(channel: string) {
-    super(channel);
-    if (isMain) {
-      console.log('wait IpcWebViewContract inited');
-      onIpcMainInitialisedHandlers.push(() => {
-        ipcMain.handle(this.channel, async (event, ...args: REQ) =>
-          this.invokeFromMain(...args),
-        );
-      });
-    }
-  }
-  async invokeFromMain(...args: REQ): Promise<Error | RES> {
-    const wv =
-      args[0] === -1
-        ? webViewSession.getAnyTab()
-        : webViewSession.getTab(args[0]);
-    if (wv) {
-      console.log(`ipcInvoke:${this.channel}`, args);
-      const reqId = Date.now() * 100 + Math.floor(Math.random() * 100);
-      const promise = new Promise<RES>((resolve) => {
-        ipcWebViewHandlers[reqId] = resolve;
-        wv.webView.webContents.send(
-          `ipcInvoke:${this.channel}`,
-          reqId,
-          ...args.slice(1),
-        );
-      });
-      console.log('ipcInvoke promise', reqId);
-      return promise;
-    }
-    console.error('No tab found with id invokeFromMain', this.channel, args[0]);
-    return new Error(`No tab found with id ${args[0]}`);
-  }
-  webviewHandle(handler: (...args: Tail<REQ>) => Promise<RES>) {
-    window.electron.ipcRenderer.on(
-      `ipcInvoke:${this.channel}`,
-      async (_event: any, ...args: REQ) => {
-        const res = await handler(...(args.slice(1) as Tail<REQ>));
-        window.electron.ipcRenderer.send(`ipcToWebViewResponse`, args[0], res);
-      },
-    );
-  }
-}

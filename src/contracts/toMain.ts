@@ -5,11 +5,10 @@ import type {
   Rectangle,
 } from 'electron';
 import { IframeProgressType } from '../extensions/iframe/types';
-import { LlmApi } from '../main/llm/api';
 import type { PromptAttachment } from '../schema/attachments';
-import type { AuthMode } from '../schema/auth.schema';
-import type { Env } from '../schema/env.schema';
 import { IpcMainContract } from './ipc';
+import { LlmApi as AgenticLlmApi } from '../agentic/api';
+import type { StoredApiKey } from '../schema/runeverConfig';
 
 export type EventWithDelay = (
   | MouseInputEvent
@@ -17,14 +16,29 @@ export type EventWithDelay = (
   | KeyboardInputEvent
 ) & { delayMs?: number };
 
+export type UrlSuggestionItem = {
+  url: string;
+  title?: string;
+  icon?: string;
+  visitCount: number;
+};
+
 export namespace ToMainIpc {
   export const createTab = new IpcMainContract<
-    [{ url: string; bounds?: Rectangle; parentFrameId?: number }],
+    [
+      {
+        sessionId: number;
+        url: string;
+        bounds?: Rectangle;
+        parentFrameId?: number;
+      },
+    ],
     { id: number } | { error: string }
   >('create-tab');
   export const operateTab = new IpcMainContract<
     [
       {
+        sessionId: number;
         id: number;
         bounds?: Rectangle;
         url?: string;
@@ -38,40 +52,88 @@ export namespace ToMainIpc {
     ],
     { error: string } | { response: any }
   >('operate-tab');
+  export const onResize = new IpcMainContract<
+    [
+      {
+        sessionId: number;
+        bounds?: Rectangle;
+        viewportWidth?: number;
+        sidebarWidth?: number;
+        tabbarHeight?: number;
+      },
+    ],
+    { error: string } | { response: any }
+  >('on-resize');
+  export const updateUrlSuggestionsOverlay = new IpcMainContract<
+    [
+      {
+        sessionId: number;
+        suggestions: UrlSuggestionItem[];
+        selectedIndex?: number;
+      },
+    ],
+    void
+  >('update-url-suggestions-overlay');
+  export const getUrlSuggestions = new IpcMainContract<
+    [
+      {
+        query?: string;
+        limit?: number;
+      },
+    ],
+    UrlSuggestionItem[]
+  >('get-url-suggestions');
+  export const recordUrlVisit = new IpcMainContract<
+    [
+      {
+        url: string;
+      },
+    ],
+    void
+  >('record-url-visit');
+  export const hideUrlSuggestionsOverlay = new IpcMainContract<
+    [
+      {
+        sessionId: number;
+      },
+    ],
+    void
+  >('hide-url-suggestions-overlay');
   export const bindFrameId = new IpcMainContract<
-    [{ id: number; scrollAdjustment?: number }],
+    [{ sessionId?: number; frameId: number; scrollAdjustment?: number }],
     { error?: string } | void
   >('bind-frame-id');
   export const takeScreenshot = new IpcMainContract<
     [
       {
+        sessionId: number;
         frameId: number;
-        ttlHeight: number;
-        ttlWidth: number;
+        x?: number;
+        y?: number;
+        height: number;
+        width: number;
         vpHeight: number;
         vpWidth: number;
-        slices: { x: number; y: number }[];
+        filename?: string;
       },
     ],
-    { error: string } | Buffer[]
+    { error: string } | Buffer
   >('take-screenshot');
-  export const getLlmConfig = new IpcMainContract<
-    [number], // frameId
-    LlmApi.LlmConfig
-  >('get-llm-config');
   export const getUserAuthState = new IpcMainContract<
     [],
     {
       hasApiKey: boolean;
-      provider: Env['provider'] | null;
-      authMode: AuthMode | null;
+      provider: StoredApiKey['provider'] | null;
+      authMode: StoredApiKey['authMode'] | null;
     }
   >('get-user-auth-state');
   export const setUserApiKey = new IpcMainContract<
     [
       {
-        provider: Env['provider'];
+        provider: StoredApiKey['provider'];
         apiKey: string;
+        baseUrl?: string;
+        authMode?: StoredApiKey['authMode'];
       },
     ],
     void
@@ -79,14 +141,6 @@ export namespace ToMainIpc {
   export const clearUserApiKey = new IpcMainContract<[], void>(
     'clear-user-api-key',
   );
-  export const setAuthMode = new IpcMainContract<
-    [
-      {
-        mode: AuthMode | null;
-      },
-    ],
-    void
-  >('set-auth-mode');
   export const showSystemMessageBox = new IpcMainContract<
     [
       {
@@ -111,6 +165,7 @@ export namespace ToMainIpc {
   export const openPromptInputDialog = new IpcMainContract<
     [
       {
+        sessionId?: number;
         title?: string;
         message: string;
         questions: Record<
@@ -134,12 +189,13 @@ export namespace ToMainIpc {
     | { error: string }
   >('open-prompt-input-dialog');
   export const responsePromptInput = new IpcMainContract<
-    [{ answer: Record<string, string>; id: number }],
+    [{ sessionId?: number; answer: Record<string, string> | null; id: number }],
     undefined
   >('response-prompt-input');
   export const dispatchEvents = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         events: EventWithDelay[];
       },
@@ -167,6 +223,7 @@ export namespace ToMainIpc {
   export const pasteInput = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         input: string;
       },
@@ -176,6 +233,7 @@ export namespace ToMainIpc {
   export const actionDone = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         actionId: number;
         argsDelta?: Record<string, string>;
@@ -187,6 +245,7 @@ export namespace ToMainIpc {
   export const actionError = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         actionId: number;
         error: string;
@@ -198,10 +257,10 @@ export namespace ToMainIpc {
   export const runPrompt = new IpcMainContract<
     [
       {
-        frameId: number;
+        sessionId: number;
         prompt: string;
-        reasoningEffort?: LlmApi.ReasoningEffort;
-        modelType?: LlmApi.LlmModelType;
+        reasoningEffort?: AgenticLlmApi.ReasoningEffort;
+        modelType?: AgenticLlmApi.LlmModelType;
         requestId: number;
         streamReturn?: boolean;
         args?: Record<string, string>;
@@ -213,6 +272,7 @@ export namespace ToMainIpc {
   export const setInputFile = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         selector: string;
         filePaths: string[];
@@ -223,7 +283,7 @@ export namespace ToMainIpc {
   export const stopPrompt = new IpcMainContract<
     [
       {
-        frameId: number;
+        sessionId: number;
         requestId?: number;
       },
     ],
@@ -232,26 +292,18 @@ export namespace ToMainIpc {
   export const getTabNavigationState = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('get-tab-navigation-state');
-  export const getLlmSessionSnapshot = new IpcMainContract<
-    [
-      {
-        frameId: number;
-      },
-    ],
-    { snapshot: unknown } | { error: string }
-  >('get-llm-session-snapshot');
-  export const
-  getApiTrustEnv = new IpcMainContract<
+  export const getApiTrustEnv = new IpcMainContract<
     [],
     {
       clientId: string;
@@ -272,10 +324,9 @@ export namespace ToMainIpc {
       url: string | null;
     }
   >('get-pending-auth-deeplink');
-  export const clearPendingAuthDeepLink = new IpcMainContract<
-    [],
-    void
-  >('clear-pending-auth-deeplink');
+  export const clearPendingAuthDeepLink = new IpcMainContract<[], void>(
+    'clear-pending-auth-deeplink',
+  );
   export const setApiTrustToken = new IpcMainContract<
     [
       {
@@ -295,20 +346,22 @@ export namespace ToMainIpc {
   export const navigateTabHistory = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         direction: 'back' | 'forward';
       },
     ],
     | {
-    canGoBack: boolean;
-    canGoForward: boolean;
-    url: string;
-  }
+        canGoBack: boolean;
+        canGoForward: boolean;
+        url: string;
+      }
     | { error: string }
   >('navigate-tab-history');
   export const iframeProgress = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
         iframeId: string;
         type: IframeProgressType;
@@ -316,20 +369,39 @@ export namespace ToMainIpc {
     ],
     { error?: string }
   >('iframe-progress');
-  export const auditAction = new IpcMainContract<
+  export const download = new IpcMainContract<
     [
       {
+        sessionId?: number;
         frameId: number;
-        actionId: number;
-        html: string;
-        selector: string;
-        screenshotRect: Rectangle;
-        extraInfo: Record<string, string>;
+        url: string;
+        filename?: string;
       },
     ],
-    {
-      approved: boolean;
-      error: string | null;
-    }
-  >('audit-action');
+    { error?: string }
+  >('download');
+  export const newSession = new IpcMainContract<
+    [number], // current sessionId to get window
+    { id?: number; error?: string }
+  >('new-session');
+  export const closeSession = new IpcMainContract<
+    [number], // sessionId
+    { error?: string }
+  >('close-session');
+  // export const auditAction = new IpcMainContract<
+  //   [
+  //     {
+  //       frameId: number;
+  //       actionId: number;
+  //       html: string;
+  //       selector: string;
+  //       screenshotRect: Rectangle;
+  //       extraInfo: Record<string, string>;
+  //     },
+  //   ],
+  //   {
+  //     approved: boolean;
+  //     error: string | null;
+  //   }
+  // >('audit-action');
 }

@@ -1,7 +1,7 @@
 import type { JSONContent } from '@tiptap/core';
 import { Paperclip } from 'lucide-react';
 import * as React from 'react';
-import { useAgentStore } from '../../state/agentStore';
+import { useAgentStoreV2 } from '../../state/agentStoreV2';
 import { useTabStore } from '../../state/tabStore';
 import { useAgentPrompt } from '../../hooks/useAgentPrompt';
 import { useFileDropUpload } from '../../hooks/useFileDropUpload';
@@ -11,26 +11,30 @@ import { TiptapEditor } from './TiptapEditor';
 import { cn } from '../../utils/cn';
 
 type PromptTextAreaProps = {
-  scheduleSessionRefresh: (tabId: string) => void;
-  refreshSessionSnapshot: (tabId: string) => Promise<void>;
   runningAssistantMessageIdRef: React.MutableRefObject<number | null>;
   placeholder?: string;
 };
 
 export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
-  scheduleSessionRefresh,
-  refreshSessionSnapshot,
   runningAssistantMessageIdRef,
   placeholder = 'Describe what you want to automate...',
 }) => {
-  const { activeTabId } = useTabStore();
-  const { addMessage, promptRunningStatus, runningRequestId } = useAgentStore(
-    (state) => ({
-      addMessage: state.addMessage,
-      promptRunningStatus: state.promptRunningStatus,
-      runningRequestId: state.runningRequestId,
-    }),
-  );
+  const { addMessage, activeSessionId, promptRunningStatus, runningRequestId } =
+    useAgentStoreV2((state) => {
+      const sessionId = state.activeSessionId;
+      return {
+        addMessage: state.addMessage,
+        activeSessionId: sessionId,
+        promptRunningStatus:
+          sessionId === null
+            ? ('idle' as const)
+            : (state.promptRunningStatusBySessionId[sessionId] ?? 'idle'),
+        runningRequestId:
+          sessionId === null
+            ? null
+            : (state.runningRequestIdBySessionId[sessionId] ?? null),
+      };
+    });
 
   // File upload handling
   const {
@@ -45,8 +49,8 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
   } = useFileDropUpload({
     onError: (err) => {
       console.error('upload failed:', err);
-      if (!activeTabId) return;
-      addMessage(activeTabId, {
+      if (!activeSessionId) return;
+      addMessage(activeSessionId, {
         id: Date.now(),
         role: 'assistant',
         content: textToDoc(`Upload error: ${err.message}`),
@@ -72,8 +76,6 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
     attachments,
     clearAttachments,
     runningAssistantMessageIdRef,
-    scheduleSessionRefresh,
-    refreshSessionSnapshot,
   });
 
   const handleSubmit = React.useCallback(
@@ -86,21 +88,20 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
   const handleStopClick = React.useCallback(() => {
     handleStop(runningRequestId).catch((err) => {
       console.error('Error stopping prompt:', err);
-      if (!activeTabId) return;
-      const rawMessage =
-        err instanceof Error ? err.message : String(err ?? '');
+      if (!activeSessionId) return;
+      const rawMessage = err instanceof Error ? err.message : String(err ?? '');
       const trimmedMessage =
         rawMessage.length > 400
           ? `${rawMessage.slice(0, 400)}...`
           : rawMessage || 'Unknown error.';
-      addMessage(activeTabId, {
+      addMessage(activeSessionId, {
         id: Date.now(),
         role: 'assistant',
         content: textToDoc(`Stop error: ${trimmedMessage}`),
         tag: 'Error',
       });
     });
-  }, [activeTabId, addMessage, handleStop, runningRequestId]);
+  }, [activeSessionId, addMessage, handleStop, runningRequestId]);
 
   const handleUploadClick = React.useCallback(() => {
     fileInputRef.current?.click();
@@ -115,10 +116,15 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
     [addFiles],
   );
 
+  const isRunning =
+    promptRunningStatus === 'planning' ||
+    promptRunningStatus === 'thinking' ||
+    promptRunningStatus === 'running';
+
   return (
     <div className="relative" {...dropzoneProps}>
       {showAttachments && (
-        <div className="border-t border-slate-100 bg-white p-2 space-y-2">
+        <div className="space-y-2 border-t border-slate-100 bg-white p-2">
           <div className="flex items-center gap-3">
             <div className="text-[12px] font-semibold text-slate-600">
               Attachments
@@ -169,11 +175,7 @@ export const PromptTextArea: React.FC<PromptTextAreaProps> = ({
         <TiptapEditor
           onSubmit={handleSubmit}
           onStop={handleStopClick}
-          isRunning={
-            promptRunningStatus === 'planning' ||
-            promptRunningStatus === 'thinking' ||
-            promptRunningStatus === 'running'
-          }
+          isRunning={isRunning}
           placeholder={placeholder}
           className="border-t-0"
         />

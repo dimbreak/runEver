@@ -64,3 +64,26 @@
     background-attachment: local, local, scroll, scroll;
   }
 }
+
+/* Heartbeat (zoom in/out) animation for the thinking Brain icon */
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(1);
+  }
+  75% {
+    transform: scale(1.15);
+  }
+}
+
+@layer utilities {
+  .animate-heartbeat {
+    animation: heartbeat 1s ease-in-out infinite;
+  }
+}

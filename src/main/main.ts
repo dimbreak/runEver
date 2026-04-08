@@ -11,11 +11,14 @@
 import path from 'path';
 /* eslint-disable no-await-in-loop, no-restricted-syntax, no-promise-executor-return */
 import { config as configDotEnv } from 'dotenv';
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, session, protocol, net } from 'electron';
 import log from 'electron-log';
 import { autoUpdater } from 'electron-updater';
+import fs from 'fs';
+// @ts-ignore
+import electronDl from './download';
 import { setupIpcHandlers } from './ipcHandlers';
-import { WebViewLlmSession } from '../agentic/webviewLlmSession';
+import { Session } from '../agentic/session';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import { ToRendererIpc } from '../contracts/toRenderer';
@@ -23,6 +26,8 @@ import {
   peekPendingAuthDeepLink,
   setPendingAuthDeepLink,
 } from './authDeepLink';
+import { ProfileStore } from './profileStore';
+import { RunEverWindow } from './window';
 
 const output = configDotEnv({
   debug: true,
@@ -38,7 +43,7 @@ class AppUpdater {
   }
 }
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: RunEverWindow | null = null;
 
 const protocolName = 'runever';
 
@@ -53,7 +58,9 @@ const isAppUrl = (url: string) => {
 };
 
 const normalizeDeepLinkPath = (url: URL) => {
-  const rawPath = url.host ? `/${url.host}${url.pathname}` : url.pathname || '/';
+  const rawPath = url.host
+    ? `/${url.host}${url.pathname}`
+    : url.pathname || '/';
   const trimmed =
     rawPath.endsWith('/') && rawPath !== '/' ? rawPath.slice(0, -1) : rawPath;
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
@@ -96,6 +103,19 @@ if (isDebug) {
   require('electron-debug').default();
 }
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'runever',
+    privileges: {
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+      allowServiceWorkers: true,
+      corsEnabled: true,
+    },
+  },
+]);
+
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
@@ -109,10 +129,14 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
+electronDl();
+
 const createWindow = async () => {
   if (isDebug) {
     await installExtensions();
   }
+
+  await ProfileStore.getInstance().initialize();
 
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
@@ -131,17 +155,38 @@ const createWindow = async () => {
     console.error('Failed to load extension:', e);
   }
 
-  mainWindow = new BrowserWindow({
+  mainWindow = new RunEverWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 1440,
+    height: 1020,
     icon: getAssetPath('icon.png'),
+    autoHideMenuBar: process.platform !== 'darwin',
     webPreferences: {
+      devTools: true,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+  mainWindow.webContents.on(
+    'did-fail-load',
+    (e, code, desc, url, isMainFrame) => {
+      console.error('[wc] did-fail-load', { code, desc, url, isMainFrame });
+    },
+  );
+
+  mainWindow.webContents.on('render-process-gone', (e, details) => {
+    console.error('[wc] render-process-gone', details);
+  });
+  mainWindow.on('closed', () => console.log('[main] win closed'));
+  mainWindow.on('close', () => console.log('[main] win close'));
+
+  mainWindow.webContents.on('did-start-loading', () =>
+    console.log('[wc] did-start-loading'),
+  );
+  mainWindow.webContents.on('did-stop-loading', () =>
+    console.log('[wc] did-stop-loading'),
+  );
 
   const pendingDeepLink = peekPendingAuthDeepLink();
   const appUrl = pendingDeepLink
@@ -149,11 +194,14 @@ const createWindow = async () => {
     : resolveHtmlPath('index.html');
   mainWindow.loadURL(appUrl);
 
+  setupIpcHandlers(mainWindow);
+
   mainWindow.webContents.on('did-finish-load', () => {
     const pending = peekPendingAuthDeepLink();
     if (pending) {
       sendDeepLinkToRenderer(pending);
     }
+    mainWindow!.pushSessionUpdate();
   });
 
   mainWindow.on('ready-to-show', () => {
@@ -173,6 +221,9 @@ const createWindow = async () => {
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
+  if (process.platform !== 'darwin') {
+    mainWindow.setMenuBarVisibility(false);
+  }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith(`${protocolName}://`)) {
@@ -186,7 +237,7 @@ const createWindow = async () => {
         fullscreenable: false,
         backgroundColor: 'black',
         webPreferences: {
-          devTools: false,
+          devTools: true,
           // preload: 'my-child-window-preload-script.js'
         },
       },
@@ -199,9 +250,6 @@ const createWindow = async () => {
       sendDeepLinkToRenderer(url);
     }
   });
-
-  const llmSession = new WebViewLlmSession(mainWindow);
-  setupIpcHandlers(mainWindow, llmSession);
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
@@ -247,15 +295,54 @@ app
   .then(() => {
     if (process.defaultApp) {
       if (process.argv.length >= 2) {
-        app.setAsDefaultProtocolClient(
-          protocolName,
-          process.execPath,
-          [path.resolve(process.argv[1])],
-        );
+        app.setAsDefaultProtocolClient(protocolName, process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
       }
     } else {
       app.setAsDefaultProtocolClient(protocolName);
     }
+
+    protocol.handle('runever', async (request) => {
+      const url = new URL(request.url);
+
+      let assetName = '';
+      if (url.hostname === 'benchmark') {
+        assetName = 'runEverMark';
+      } else if (url.hostname === 'config') {
+        assetName = 'config_page';
+      } else {
+        return new Response('Not found', { status: 404 });
+      }
+
+      const baseDir = app.isPackaged
+        ? path.join(process.resourcesPath, 'assets', assetName)
+        : path.join(app.getAppPath(), 'assets', assetName);
+
+      // pathname 例如 "/css/app.css"
+      let rel = decodeURIComponent(url.pathname || '/');
+      if (rel === '/') rel = '/index.html';
+
+      // ✅ normalize + 防 ../
+      const abs = path.resolve(baseDir, `.${rel}`);
+      if (
+        !abs.startsWith(path.resolve(baseDir) + path.sep) &&
+        abs !== path.resolve(baseDir)
+      ) {
+        return new Response('Forbidden', { status: 403 });
+      }
+
+      // ✅ 檔案存在就直接 serve
+      try {
+        await fs.accessSync(abs);
+        return net.fetch(`file://${abs}`);
+      } catch {
+        // ✅ SPA fallback：任何未知 route -> index.html
+        const indexPath = path.join(baseDir, 'index.html');
+        return net.fetch(`file://${indexPath}`);
+      }
+    });
+
     createWindow();
     const initialDeepLink = getDeepLinkFromArgs(process.argv);
     if (initialDeepLink) {

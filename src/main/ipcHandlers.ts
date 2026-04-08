@@ -1,17 +1,17 @@
 import { exec } from 'child_process';
-import { BrowserWindow, ipcMain, MouseInputEvent } from 'electron';
-import type { WebViewLlmSession } from '../agentic/webviewLlmSession';
+import { BrowserWindow, ipcMain } from 'electron';
+import type { Session } from '../agentic/session';
 import { initIpcMain } from '../contracts/ipc';
 import { ToMainIpc } from '../contracts/toMain';
 import { ToRendererIpc } from '../contracts/toRenderer';
 import '../contracts/toWebView'; // for initalise bridge handlers
+import { ToRuneverIpc } from '../contracts/toRunever';
 import { Util } from '../webView/util';
 import {
   openBrowserWindowDialog,
   openPromptInputDialog,
   showSystemMessageBox,
 } from './dialogs';
-import { LlmApi } from './llm/api';
 import { apiTrustEnvVars } from '../schema/env.node';
 import {
   clearPendingAuthDeepLink,
@@ -19,34 +19,46 @@ import {
   setPendingAuthDeepLink,
 } from './authDeepLink';
 import { ApiTrustTokenStore } from './apiTrustTokenStore';
-import { UserApiKeyStore } from './userApiKeyStore';
-import { getAuthMode, setAuthMode } from './authModeStore';
+import { ProfileStore } from './profileStore';
+import { RuneverConfigStore } from './runeverConfigStore';
+import type { RunEverConfig } from '../schema/runeverConfig';
+import { RunEverWindow } from './window';
 
-function initPromptIpc(session: WebViewLlmSession) {
-  const getTab = (frameId: number) => session.getTab(frameId);
+const getSession = (sessionId?: number): Session =>
+  RunEverWindow.getAgenticSession(sessionId)!;
+
+const getTabFromAnySession = (frameId: number) => {
+  return Object.values(RunEverWindow.sessions)
+    .map((session) => session.getTab(frameId))
+    .find((tab) => tab !== undefined);
+};
+
+function initPromptIpc() {
+  const getTab = (
+    sessionId: number | undefined,
+    frameId: number | undefined,
+  ) => {
+    const session = RunEverWindow.getAgenticSession(sessionId);
+    if (frameId === undefined) {
+      return session?.getFocusedTab();
+    }
+    return session?.getTab(frameId) ?? getTabFromAnySession(frameId);
+  };
   ToMainIpc.actionDone.handle(async (event, arg) => {
     console.log('Pop actions:', arg);
-    const { frameId, actionId, argsDelta } = arg;
-    const wvTab = getTab(frameId);
-    if (wvTab) {
-      wvTab.actionDone(actionId, argsDelta);
-      return true;
-    }
-    return false;
+    const { sessionId, actionId, argsDelta } = arg;
+    getSession(sessionId).actionDone(actionId, argsDelta);
+    return true;
   });
   ToMainIpc.actionError.handle(async (event, arg) => {
     console.log('Err actions:', arg);
-    const { frameId, actionId, error } = arg;
-    const wvTab = getTab(frameId);
-    if (wvTab) {
-      wvTab.actionError(error, actionId);
-      return true;
-    }
-    return false;
+    const { sessionId, actionId, error } = arg;
+    getSession(sessionId).actionError(actionId, error);
+    return true;
   });
   ToMainIpc.iframeProgress.handle(async (event, arg) => {
-    const { frameId, type, iframeId } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, type, iframeId } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       wvTab.iframeProgress(iframeId, type);
       return {};
@@ -56,7 +68,7 @@ function initPromptIpc(session: WebViewLlmSession) {
   ToMainIpc.runPrompt.handle(async (event, arg) => {
     console.info('Run prompt:', arg);
     const {
-      frameId,
+      sessionId,
       prompt,
       modelType,
       reasoningEffort,
@@ -65,6 +77,7 @@ function initPromptIpc(session: WebViewLlmSession) {
       attachments,
     } = arg;
     console.info('runPrompt in main process:', arg);
+    const session = getSession(sessionId);
     const error = await session.runPrompt(
       requestId,
       prompt,
@@ -72,28 +85,18 @@ function initPromptIpc(session: WebViewLlmSession) {
       attachments,
       reasoningEffort,
       modelType,
-      frameId,
     );
     return { error };
   });
 
   ToMainIpc.stopPrompt.handle(async (_event, arg) => {
-    const { frameId, requestId } = arg;
-    const wvTab = getTab(frameId);
-    if (!wvTab) return { stopped: false, error: 'Tab not found' };
-    wvTab.stopPrompt(requestId);
+    const { sessionId } = arg;
+    getSession(sessionId).stopPrompt();
     return { stopped: true };
   });
 
-  ToMainIpc.getLlmSessionSnapshot.handle(async (_event, arg) => {
-    const wvTab = getTab(arg.frameId);
-    if (!wvTab) return { error: 'Tab not found' };
-    const snapshot = wvTab.llmSession?.getSnapshot() ?? null;
-    return { snapshot };
-  });
-
   ToMainIpc.getTabNavigationState.handle(async (_event, arg) => {
-    const wvTab = getTab(arg.frameId);
+    const wvTab = getTab(arg.sessionId, arg.frameId);
     if (!wvTab) return { error: 'Tab not found' };
     const wc = wvTab.webView.webContents;
     // Use navigationHistory API to check navigation state
@@ -106,7 +109,7 @@ function initPromptIpc(session: WebViewLlmSession) {
   });
 
   ToMainIpc.navigateTabHistory.handle(async (_event, arg) => {
-    const wvTab = getTab(arg.frameId);
+    const wvTab = getTab(arg.sessionId, arg.frameId);
     if (!wvTab) return { error: 'Tab not found' };
     const wc = wvTab.webView.webContents;
     const navHistory = wc.navigationHistory;
@@ -123,14 +126,14 @@ function initPromptIpc(session: WebViewLlmSession) {
   });
 }
 
-export const setupIpcHandlers = (
-  mainWindow: BrowserWindow,
-  llmSession: WebViewLlmSession,
-) => {
+export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
   const apiTrustTokenStore = new ApiTrustTokenStore();
-  const userApiKeyStore = new UserApiKeyStore();
-  const getTab = (frameId?: number) =>
-    typeof frameId === 'number' ? llmSession.getTab(frameId) : undefined;
+  const userApiKeyStore = RuneverConfigStore.getInstance();
+  const getTab = (sessionId?: number, frameId?: number) => {
+    if (typeof frameId !== 'number') return undefined;
+    const session = RunEverWindow.getAgenticSession(sessionId);
+    return session?.getTab(frameId) ?? getTabFromAnySession(frameId);
+  };
 
   // const removeAllWebViews = () => {
   //   webViewTabsById.forEach((tab) => {
@@ -141,48 +144,46 @@ export const setupIpcHandlers = (
   // };
 
   console.log('starting main process ipc-example');
-  initIpcMain(ipcMain, llmSession);
+  initIpcMain(ipcMain);
 
   ToMainIpc.bindFrameId.handle(async (event, arg) => {
-    const wvTab = getTab(arg.id);
+    const wvTab = getTab(arg.sessionId, arg.frameId);
     console.log('bindFrameId in main process:', event.frameId, arg);
     if (wvTab) {
       wvTab.pageLoaded(event.frameId, arg.scrollAdjustment);
-      wvTab.webView.webContents.executeJavaScript(
-        'window.electronDummyCursor = document.getElementById("runEver-dummy-cursor");',
-      );
     }
     return { error: 'Tab not found' };
   });
 
   ToMainIpc.takeScreenshot.handle(async (event, arg) => {
-    const { slices, ttlWidth, vpWidth, ttlHeight, vpHeight, frameId } = arg;
+    const {
+      sessionId,
+      x = 0,
+      y = 0,
+      width,
+      vpWidth,
+      height,
+      vpHeight,
+      frameId,
+      filename,
+    } = arg;
     console.log('takeScreenshot in main process:', frameId);
-    const wvTab = getTab(frameId);
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
-      const imgs = [];
-      for (const slice of slices) {
-        await wvTab.webView.webContents.executeJavaScript(
-          `window.scrollTo(${slice.x}, ${slice.y});`,
-        );
-        await Util.sleep(100);
-        const width =
-          vpWidth + slice.x > ttlWidth ? ttlWidth - slice.x : vpWidth;
-        const height =
-          vpHeight + slice.y > ttlHeight ? ttlHeight - slice.y : vpHeight;
-        imgs.push(
-          await wvTab.screenshot(
-            vpWidth - width,
-            vpHeight - height,
-            width,
-            height,
-          ),
-        );
-      }
+      const w = vpWidth + x > width ? width - x : vpWidth;
+      const h = vpHeight + y > height ? height - y : vpHeight;
 
-      return imgs.map((img) => img.toPNG());
+      return (
+        await wvTab.screenshot(
+          vpWidth - w,
+          vpHeight - h,
+          width,
+          height,
+          filename,
+        )
+      ).toPNG();
     }
-    console.log('takeScreenshot error:', frameId, llmSession.getTabsById());
+    console.log('takeScreenshot error:', frameId);
     return { error: 'Tab not found' };
   });
 
@@ -204,60 +205,66 @@ export const setupIpcHandlers = (
       detail,
       event.frameId,
     );
-    return llmSession.createTab(detail);
+    return getSession(detail.sessionId).createTab(detail);
   });
 
   ToMainIpc.operateTab.handle(async (event, detail) => {
-    return llmSession.operateTab(detail);
+    return getSession(detail.sessionId)?.operateTab(detail);
   });
 
-  ToMainIpc.getLlmConfig.handle(async () => {
-    try {
-      const config = await userApiKeyStore.getConfig();
-      if (!config) {
-        return {
-          api: 'openai',
-          key: '',
-          error: 'Missing API key.',
-        };
-      }
-      return {
-        api: config.provider,
-        key: config.apiKey,
-      };
-    } catch (error) {
-      console.error('Failed to read LLM config', error);
-      return {
-        api: 'openai',
-        key: '',
-        error: error instanceof Error ? error.message : 'Missing API key.',
-      };
-    }
+  ToMainIpc.onResize.handle(async (_event, detail) => {
+    return getSession(detail.sessionId)?.onWindowResize(detail);
+  });
+
+  ToMainIpc.updateUrlSuggestionsOverlay.handle(async (_event, detail) => {
+    await getSession(detail.sessionId)?.showUrlSuggestionsOverlay(
+      detail.suggestions,
+      detail.selectedIndex ?? -1,
+    );
+  });
+
+  ToMainIpc.getUrlSuggestions.handle(async (_event, detail) => {
+    return ProfileStore.getInstance().getUrlSuggestions(
+      detail.query ?? '',
+      detail.limit ?? 10,
+    );
+  });
+
+  ToMainIpc.recordUrlVisit.handle(async (_event, detail) => {
+    await ProfileStore.getInstance().recordUrlVisit(detail.url);
+  });
+
+  ToMainIpc.hideUrlSuggestionsOverlay.handle(async (_event, detail) => {
+    await getSession(detail.sessionId)?.hideUrlSuggestionsOverlay();
   });
 
   ToMainIpc.getUserAuthState.handle(async () => {
     try {
-      const config = await userApiKeyStore.getConfig();
+      const config = await userApiKeyStore.getConfig('apiKey');
       return {
-        hasApiKey: Boolean(config?.apiKey),
+        hasApiKey:
+          Boolean(config?.apiKey) ||
+          Boolean(config?.provider === 'codex' && config?.authMode === 'login'),
         provider: config?.provider ?? null,
-        authMode: getAuthMode(),
+        authMode: config?.authMode,
       };
     } catch (error) {
       console.error('Failed to read user API key config', error);
       return {
         hasApiKey: false,
         provider: null,
-        authMode: getAuthMode(),
+        authMode: null,
       };
     }
   });
 
   ToMainIpc.setUserApiKey.handle(async (_event, payload) => {
     try {
-      await userApiKeyStore.setConfig({
+      await userApiKeyStore.setConfig('apiKey', {
         provider: payload.provider,
         apiKey: payload.apiKey,
+        baseUrl: payload.baseUrl,
+        authMode: payload.authMode,
       });
     } catch (error) {
       console.error('Failed to store user API key', error);
@@ -266,17 +273,9 @@ export const setupIpcHandlers = (
 
   ToMainIpc.clearUserApiKey.handle(async () => {
     try {
-      await userApiKeyStore.setConfig(null);
+      await userApiKeyStore.setConfig('apiKey', undefined);
     } catch (error) {
       console.error('Failed to clear user API key', error);
-    }
-  });
-
-  ToMainIpc.setAuthMode.handle(async (_event, payload) => {
-    try {
-      setAuthMode(payload.mode ?? null);
-    } catch (error) {
-      console.error('Failed to store auth mode', error);
     }
   });
 
@@ -331,7 +330,10 @@ export const setupIpcHandlers = (
   };
 
   const attachApiTrustHandlers = (authWindow: BrowserWindow) => {
-    const intercept = (event: { preventDefault: () => void }, targetUrl: string) => {
+    const intercept = (
+      event: { preventDefault: () => void },
+      targetUrl: string,
+    ) => {
       if (!targetUrl.startsWith('runever://')) {
         return;
       }
@@ -391,33 +393,52 @@ export const setupIpcHandlers = (
   });
 
   ToMainIpc.responsePromptInput.handle(async (_event, arg) => {
-    llmSession.resolveUserInput(arg.id, arg.answer);
+    getSession(arg.sessionId).resolveUserInput(arg.id, arg.answer);
   });
 
   ToMainIpc.dispatchEvents.handle(async (event, arg) => {
-    const { frameId, events } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, events } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
+      const session = getSession(sessionId);
       const wc = wvTab.webView.webContents;
+      const isMouseBatch =
+        events.length > 0 &&
+        typeof events[0].type === 'string' &&
+        events[0].type.startsWith('mouse');
       wc.focus();
-      let mv: MouseInputEvent | undefined;
-      console.log('Dispatch events in main process:', arg);
-      for (const ev of events) {
-        if (ev.delayMs) {
-          await Util.sleep(ev.delayMs);
+      let lastPoint: { x: number; y: number } | undefined;
+      console.log('Dispatch events in main process:', arg.events);
+      try {
+        if (isMouseBatch && wvTab.isFocused) {
+          session?.showInputOverlay(wvTab.bounds);
+          if (wvTab.mouseX >= 0 && wvTab.mouseY >= 0) {
+            await session?.updateOverlayCursor(wvTab.mouseX, wvTab.mouseY);
+          }
         }
-        wc.sendInputEvent(ev);
-        if (ev.type === 'mouseMove') {
-          await wc.executeJavaScript(
-            `window.electronDummyCursor.style.left = ${ev.x} + 'px';
-window.electronDummyCursor.style.top = ${ev.y} + 'px';`,
-          );
-          mv = ev as MouseInputEvent;
+
+        for (const ev of events) {
+          if (ev.delayMs) {
+            await Util.sleep(ev.delayMs);
+          }
+          wc.sendInputEvent(ev);
+          if (wvTab.isFocused && 'x' in ev && 'y' in ev) {
+            lastPoint = { x: ev.x, y: ev.y };
+            try {
+              await session?.updateOverlayCursor(ev.x, ev.y);
+            } catch (error) {
+              console.warn('Failed to sync overlay cursor:', error);
+            }
+          }
+        }
+      } finally {
+        if (isMouseBatch) {
+          session?.hideInputOverlay();
         }
       }
-      if (mv) {
-        wvTab.mouseX = mv.x;
-        wvTab.mouseY = mv.y;
+      if (lastPoint) {
+        wvTab.mouseX = lastPoint.x;
+        wvTab.mouseY = lastPoint.y;
       }
       return true;
     }
@@ -474,8 +495,8 @@ EOF
 
   ToMainIpc.pasteInput.handle(async (event, arg) => {
     console.log('Paste input:', arg);
-    const { frameId, input } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, input } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       await wvTab.pasteText(input);
       return true;
@@ -484,14 +505,92 @@ EOF
   });
   ToMainIpc.setInputFile.handle(async (event, arg) => {
     console.log('setInputFile:', arg);
-    const { frameId, selector, filePaths } = arg;
-    const wvTab = getTab(frameId);
+    const { sessionId, frameId, selector, filePaths } = arg;
+    const wvTab = getTab(sessionId, frameId);
     if (wvTab) {
       return { error: await wvTab.setInputFile(selector, filePaths) };
     }
     return { error: 'Tab not found' };
   });
-  initPromptIpc(llmSession);
+  ToMainIpc.download.handle(async (event, arg) => {
+    console.log('download:', arg);
+    const { sessionId, frameId, filename, url } = arg;
+    const wvTab = getTab(sessionId, frameId);
+    if (wvTab) {
+      return { error: await wvTab.download(url, filename) };
+    }
+    return { error: 'Tab not found' };
+  });
+
+  ToRuneverIpc.setConfig.handle(async (_event, arg) => {
+    const { frameId, key, config } = arg;
+    console.log('setConfig in renderer process:', arg);
+    const wvTab = getTab(undefined, frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+
+    const url = wvTab.webView.webContents.getURL();
+    if (!url.startsWith('runever:')) {
+      return { error: 'Permission denied: Not a runever: origin' };
+    }
+
+    try {
+      await userApiKeyStore.setConfig(key, config);
+      if (key === 'arguments') {
+        getSession().setGlobalArgs(config as RunEverConfig['arguments']);
+      }
+      return {};
+    } catch (e) {
+      return { error: String(e) };
+    }
+  });
+
+  ToRuneverIpc.getConfig.handle(async (_event, arg) => {
+    const { frameId, key } = arg;
+    console.log('getConfig in renderer process:', arg);
+    const wvTab = getTab(undefined, frameId);
+    if (!wvTab) return { error: 'Tab not found' };
+
+    const url = wvTab.webView.webContents.getURL();
+    if (!url.startsWith('runever:')) {
+      return { error: 'Permission denied: Not a runever: origin' };
+    }
+
+    try {
+      const config = await userApiKeyStore.getConfig(key);
+      // Ensure we return the correct type, handling null if necessary
+      // For arguments, if null, we might want to return empty array if that's what the type expects,
+      // but if the store returns null it means it failed to load or key doesn't exist.
+      // However, the contract expects { config: ... } | { error: ... }
+      // If config is null, we might treating it as valid null result or default.
+      // Given RunEverConfig, arguments is default [], so getConfig should theoretically return that.
+      // If store returns null, let's return it as is or handle it.
+      // Assuming mapped types handle nulls or we cast.
+      return { config: config as any };
+    } catch (e) {
+      return { error: String(e) };
+    }
+  });
+
+  ToMainIpc.newSession.handle(async (_event, currentSessionId) => {
+    const currentSession = getSession(currentSessionId);
+    let win = mainWindow;
+    if (currentSession && (currentSession as any).mainWindow) {
+      win = (currentSession as any).mainWindow;
+    }
+    const newSession = win.newAgenticSession();
+    return { id: newSession.id };
+  });
+
+  ToMainIpc.closeSession.handle(async (_event, sessionId) => {
+    const session = getSession(sessionId);
+    if (session) {
+      await session.end();
+      return {};
+    }
+    return { error: 'Session not found' };
+  });
+
+  initPromptIpc();
 
   // User input requests are dispatched by WebViewLlmSession.askUserInput().
 };

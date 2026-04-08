@@ -1,68 +1,54 @@
 import * as React from 'react';
 import type { JSONContent } from '@tiptap/core';
 import { dialogService } from '../services/dialogService';
-import { useAgentStore } from '../state/agentStore';
+import { useAgentStoreV2 } from '../state/agentStoreV2';
 import { useTabStore } from '../state/tabStore';
 import { extractPromptArgKeys } from '../utils/promptArgs';
-import { formatBytes } from '../utils/formatter';
 import type { UploadedAttachment } from '../services/uploadService';
+import { ToMainIpc } from '../../contracts/toMain';
+import type { PromptAttachment } from '../../schema/attachments';
+import { docToText } from '../utils/contentUtils';
 
 type UseAgentPromptParams = {
   attachments: UploadedAttachment[];
   clearAttachments: () => void;
   runningAssistantMessageIdRef: React.MutableRefObject<number | null>;
-  scheduleSessionRefresh: (tabId: string) => void;
-  refreshSessionSnapshot: (tabId: string) => Promise<void>;
 };
 
 export const useAgentPrompt = ({
   attachments,
   clearAttachments,
   runningAssistantMessageIdRef,
-  scheduleSessionRefresh,
-  refreshSessionSnapshot,
 }: UseAgentPromptParams) => {
-  const { tabs, activeTabId, stopPrompt } = useTabStore();
+  const { tabs, activeTabId } = useTabStore();
   const {
     addMessage,
     setPromptRunningStatus,
     setRunningRequestId,
-    startThinking,
-    appendPlanningOutput,
-    finishPlanning,
-    startActionThinking,
-    markThinkingError,
-    addPromptRun,
-    setPromptRunStatus,
-    markPromptFinished,
-  } = useAgentStore((state) => ({
+    activeSessionId,
+  } = useAgentStoreV2((state) => ({
     addMessage: state.addMessage,
     setPromptRunningStatus: state.setPromptRunningStatus,
     setRunningRequestId: state.setRunningRequestId,
-    startThinking: state.startThinking,
-    appendPlanningOutput: state.appendPlanningOutput,
-    finishPlanning: state.finishPlanning,
-    startActionThinking: state.startActionThinking,
-    markThinkingError: state.markThinkingError,
-    addPromptRun: state.addPromptRun,
-    setPromptRunStatus: state.setPromptRunStatus,
-    markPromptFinished: state.markPromptFinished,
+    activeSessionId: state.activeSessionId,
   }));
 
   const handlePrompt = React.useCallback(
     async (content: JSONContent) => {
-      const userText =
-        content.content
-          ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
-          .join('\n\n') ?? '';
+      const userText = docToText(content);
       console.info('send prompt:', userText, tabs);
 
       const currentTab = tabs.find((t) => t.id === activeTabId);
+      console.info('currentTab:', currentTab);
       if (!currentTab) return false;
-      const tabId = currentTab.id;
+
+      const sessionId = activeSessionId;
+      console.info('sessionId:', sessionId);
+      if (sessionId === null || sessionId === -1) return false;
 
       let args: Record<string, string> = {};
       const argKeys = extractPromptArgKeys(userText);
+      console.info('argKeys:', argKeys);
       if (argKeys.length && dialogService.hasBridge()) {
         const questions = argKeys.reduce(
           (acc, key) => ({ ...acc, [key]: { type: 'string' as const } }),
@@ -89,63 +75,53 @@ export const useAgentPrompt = ({
         data: file.data,
       }));
       runningAssistantMessageIdRef.current = null;
-      setPromptRunningStatus('planning');
-      addPromptRun(tabId, requestId, id);
-      startThinking(tabId, requestId);
-      addMessage(tabId, {
+
+      // Set session-level running status
+      setPromptRunningStatus(sessionId, 'planning');
+
+      // Add user message to session
+      addMessage(sessionId, {
         id,
         role: 'user',
         content,
         attachments: attachmentInfos.length ? attachmentInfos : undefined,
       });
-      clearAttachments();
-      const runPromptFlow = async () => {
-        let promptFailed = false;
-        try {
-          const attachedImages = promptAttachments.filter((a) =>
-            a.mimeType.startsWith('image/'),
-          );
-          const attachmentNote = attachedImages.length
-            ? `\n\n[attachments]\n${attachedImages
-                .map(
-                  (f) => `- ${f.name} (${f.mimeType}, ${formatBytes(f.size)})`,
-                )
-                .join(
-                  '\n',
-                )}\n\nUse the attached images for this prompt; do not ask the user to upload images unless absolutely required.`
-            : '';
 
-          const runPromise = currentTab.runPrompt(
-            `${userText}${attachmentNote}`,
+      // Push a snapshot placeholder message – it will be updated via upsert
+      // when snapshot messages arrive from the main process
+      addMessage(sessionId, {
+        id: requestId,
+        role: 'assistant',
+        content: {},
+        taskSnapshot: null, // will be filled in by IPC snapshot messages
+      });
+
+      clearAttachments();
+
+      const runPromptFlow = async () => {
+        try {
+          const runPromise = ToMainIpc.runPrompt.invoke({
+            sessionId,
+            prompt: userText,
+            requestId:
+              requestId ?? Date.now() * 100 + Math.floor(Math.random() * 100),
             args,
-            (chunk) => {
-              console.info('prompt chunk:', chunk);
-              appendPlanningOutput(tabId, requestId, chunk);
-              scheduleSessionRefresh(tabId);
-            },
-            promptAttachments,
-            requestId,
-          );
-          setRunningRequestId(requestId);
+            attachments: promptAttachments.map(
+              (f): PromptAttachment => ({
+                name: f.name,
+                mimeType: f.mimeType,
+                data: f.data,
+              }),
+            ),
+          });
+          setRunningRequestId(sessionId, requestId);
           await runPromise;
-          finishPlanning(tabId, requestId);
-          startActionThinking(tabId, requestId);
-          setPromptRunStatus(tabId, requestId, 'completed');
-          setPromptRunningStatus('completed');
+          setPromptRunningStatus(sessionId, 'completed');
         } catch (err) {
           console.error('prompt error:', err);
-          promptFailed = true;
-          markThinkingError(tabId, requestId);
-          finishPlanning(tabId, requestId);
-          setPromptRunStatus(tabId, requestId, 'error');
-          setPromptRunningStatus('error');
+          setPromptRunningStatus(sessionId, 'error');
         } finally {
-          setRunningRequestId(null);
-          markPromptFinished(tabId, requestId);
-          if (promptFailed) {
-            setPromptRunStatus(tabId, requestId, 'error');
-          }
-          refreshSessionSnapshot(tabId);
+          setRunningRequestId(sessionId, null);
         }
       };
       runPromptFlow();
@@ -153,49 +129,28 @@ export const useAgentPrompt = ({
     },
     [
       activeTabId,
+      activeSessionId,
       addMessage,
       attachments,
-      appendPlanningOutput,
       clearAttachments,
-      finishPlanning,
-      markThinkingError,
-      refreshSessionSnapshot,
       runningAssistantMessageIdRef,
-      scheduleSessionRefresh,
       setPromptRunningStatus,
       setRunningRequestId,
-      addPromptRun,
-      setPromptRunStatus,
-      startActionThinking,
-      startThinking,
-      markPromptFinished,
       tabs,
     ],
   );
 
   const handleStop = React.useCallback(
     async (runningRequestId: number | null) => {
-      if (!activeTabId) return;
-      await stopPrompt(activeTabId, runningRequestId ?? undefined);
-      setPromptRunningStatus('error');
-      setRunningRequestId(null);
-      if (runningRequestId !== null) {
-        markThinkingError(activeTabId, runningRequestId);
-        setPromptRunStatus(activeTabId, runningRequestId, 'error');
-        markPromptFinished(activeTabId, runningRequestId);
-      }
-      refreshSessionSnapshot(activeTabId);
+      const sessionId = activeSessionId!;
+      const { stopped, error } = await ToMainIpc.stopPrompt.invoke({
+        sessionId,
+        requestId: runningRequestId!,
+      });
+      if (error) throw new Error(error);
+      return stopped;
     },
-    [
-      activeTabId,
-      markThinkingError,
-      refreshSessionSnapshot,
-      setPromptRunningStatus,
-      setRunningRequestId,
-      setPromptRunStatus,
-      stopPrompt,
-      markPromptFinished,
-    ],
+    [activeSessionId],
   );
 
   return { handlePrompt, handleStop };

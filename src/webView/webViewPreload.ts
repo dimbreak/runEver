@@ -1,12 +1,16 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import { type EventWithDelay, ToMainIpc } from '../contracts/toMain';
-import { OCRModel } from './ocr';
+import { ToRuneverIpc } from '../contracts/toRunever';
 import { dummyCursor } from './cursor/cursor';
 import { BrowserActions } from './actions';
 import { Util } from './util';
 import { Network } from './network';
 import { MiniHtml } from './miniHtml';
 import { type WireActionWithWaitAndRec } from '../agentic/types';
+import { takeScreenshot } from './screenshot';
+import type { RunEverConfig } from '../schema/runeverConfig';
+import { CommonUtil } from '../utils/common';
+import { SliderSkill } from '../agentic/addOns/skills/slider/slider.webView';
 
 Network.initListener();
 
@@ -46,34 +50,50 @@ const electronHandler = {
 
 const webViewHandler = {
   htmlParser: undefined as MiniHtml.Parser | undefined,
+  normalizeFullHtmlOptions(
+    maybeOptions: number | MiniHtml.FullHtmlOptions | string | null | undefined,
+    maybeExtra: MiniHtml.FullHtmlOptions | string | null | undefined,
+  ): MiniHtml.FullHtmlOptions {
+    if (maybeOptions && typeof maybeOptions === 'object') {
+      return maybeOptions;
+    }
+    if (maybeExtra && typeof maybeExtra === 'object') {
+      return maybeExtra;
+    }
+    return {};
+  },
   getHtmlParser() {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
-    console.log(this.htmlParser);
     return this.htmlParser;
+  },
+  getIdFromEl(el: Element, checkChildIfNotFound = true) {
+    if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
+    return this.htmlParser.getIdByEl(el, checkChildIfNotFound);
   },
   getHtml(
     select: MiniHtml.Selector | null = null,
-    outerLevel = 0,
-    placeholdDummy = '__',
+    outerLevel: number | MiniHtml.FullHtmlOptions = 0,
+    placeholdDummy: string | MiniHtml.FullHtmlOptions = '®',
   ) {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     if (select) {
       return dummyCursor.hide(() =>
-        this.htmlParser!.genHtmlFormId(select, outerLevel),
+        this.htmlParser!.genHtmlFormId(
+          select,
+          typeof outerLevel === 'number' ? outerLevel : 0,
+        ),
       );
     }
-    return dummyCursor.hide(() => this.htmlParser!.genFullHtml());
+    const options = this.normalizeFullHtmlOptions(outerLevel, placeholdDummy);
+    return dummyCursor.hide(() => this.htmlParser!.genFullHtml(false, options));
   },
-  getDeltaHtml(placeholdDummy = '__') {
+  getDeltaHtml(placeholdDummy = '®') {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return dummyCursor.hide(() => this.htmlParser!.genDeltaHtml());
   },
   getEl(select: MiniHtml.Selector) {
     if (!this.htmlParser) this.htmlParser = new MiniHtml.Parser();
     return this.htmlParser.getElementFormId(select);
-  },
-  getOcr(fullPage = false) {
-    return OCRModel.getFromScreenshot(fullPage);
   },
   async execActions(
     actions: WireActionWithWaitAndRec[],
@@ -83,16 +103,69 @@ const webViewHandler = {
       await BrowserActions.execActions(actions, args);
     }
   },
+  async screenshot() {
+    await takeScreenshot('test.png');
+  },
+  secrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecrets: {} as Record<string, RunEverConfig['arguments'][number]>,
+  domainSecretArgs: {} as Record<string, string>,
+  setSecret(secrets: Record<string, RunEverConfig['arguments'][number]>) {
+    console.log('setSecret', secrets);
+    this.secrets = secrets;
+    this.filterSecret();
+  },
+  getSecretArgs(): Record<string, string> {
+    return this.domainSecretArgs;
+  },
+  filterSecret() {
+    console.log('filterSecret', this.secrets);
+    this.domainSecrets = CommonUtil.filterArgDomain(
+      this.secrets,
+      window.location.origin,
+    );
+    for (const [key, value] of Object.entries(this.domainSecrets)) {
+      this.domainSecretArgs[key] = value.value;
+    }
+  },
+};
+
+const runeverHandler = {
+  setConfig: async (key: any, config: any) => {
+    console.log('setConfig', key, config);
+    while (!window.frameId) {
+      await Util.sleep(100);
+    }
+    return ToRuneverIpc.setConfig.invoke({
+      frameId: window.frameId!,
+      key,
+      config,
+    });
+  },
+  getConfig: async (key: any) => {
+    console.log('getConfig', key);
+    while (!window.frameId) {
+      await Util.sleep(100);
+    }
+    return ToRuneverIpc.getConfig.invoke({
+      frameId: window.frameId!,
+      key,
+    });
+  },
 };
 
 contextBridge.exposeInMainWorld('isPreloadContext', false);
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('webView', webViewHandler);
+if (window.location.protocol === 'runever:') {
+  contextBridge.exposeInMainWorld('runever', runeverHandler);
+  window.runever = runeverHandler;
+}
 
 window.electron = electronHandler;
 window.webView = webViewHandler;
 window.isPreloadContext = true;
 
+export type RuneverHandler = typeof runeverHandler;
 export type WebViewHandler = typeof webViewHandler;
 
 let pendingCursorInit: { x: number; y: number } | null = null;
@@ -100,13 +173,18 @@ let pendingCursorInit: { x: number; y: number } | null = null;
 const tryInitCursor = () => {
   if (!pendingCursorInit) return;
   if (!document.body) return;
-  dummyCursor.init(pendingCursorInit.x, pendingCursorInit.y);
+  dummyCursor.init(
+    pendingCursorInit.x,
+    pendingCursorInit.y,
+    window.parent !== window,
+  );
   pendingCursorInit = null;
 };
 
 const handleFrameId = async (event: MessageEvent) => {
   if (!event?.data?.frameId) return;
   window.frameId = event.data.frameId;
+  window.sessionId = event.data.sessionId;
 
   // Cursor needs <body>; if message arrives early, defer.
   pendingCursorInit = {
@@ -123,35 +201,28 @@ const handleFrameId = async (event: MessageEvent) => {
     scrollAdjustment ?? event.data.scrollAdjustment,
   );
   ToMainIpc.bindFrameId.invoke({
-    id: event.data.frameId,
+    sessionId: window.sessionId,
+    frameId: event.data.frameId,
     scrollAdjustment,
   });
-  console.log('Setting in preload:', event.data);
   window.removeEventListener('message', handleFrameId);
-  // const events = [];
-  // for (const property in window) {
-  //   if (property.startsWith('on')) {
-  //     events.push(property);
-  //     window[property] = (ev) => {
-  //       console.log(property, ev);
-  //     };
+  console.log('Setting in preload:', event.data);
+  // Object.keys(window).forEach((key) => {
+  //   if (/^on/.test(key) && key !== 'onmessage') {
+  //     window.addEventListener(key.slice(2), (event) => {
+  //       console.log(key, event);
+  //     });
   //   }
-  // }
-  // console.log(events.join(' '));
-  //
-  // await Util.sleep(2000);
-  //
-  // document.body.querySelector('input')?.focus();
-  // BrowserActions.callActionApi({
-  //   action: 'pasteInput',
-  //   args: { input: '你好，世界' },
   // });
 };
 
 // Register immediately to avoid missing early postMessage during navigation.
 window.addEventListener('message', handleFrameId);
 window.addEventListener('DOMContentLoaded', () => tryInitCursor());
-window.addEventListener('load', () => tryInitCursor());
+window.addEventListener('load', () => {
+  tryInitCursor();
+  window.webView.filterSecret();
+});
 
 // Warm up cache (kept for compatibility with existing behavior).
 try {
@@ -166,7 +237,9 @@ BrowserActions.setActionApi({
     argsDelta?: Record<string, string> | undefined;
     iframeId?: string;
   }) => {
+    console.log('action done', args);
     return ToMainIpc.actionDone.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
@@ -177,6 +250,7 @@ BrowserActions.setActionApi({
     iframeId?: string;
   }) => {
     return ToMainIpc.actionError.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
@@ -188,18 +262,28 @@ BrowserActions.setActionApi({
   },
   dispatchEvents: (args: { events: EventWithDelay[] }) => {
     return ToMainIpc.dispatchEvents.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
   },
   pasteInput: (args: { input: string }) => {
     return ToMainIpc.pasteInput.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });
   },
   setInputFile: (args: { selector: string; filePaths: string[] }) => {
     return ToMainIpc.setInputFile.invoke({
+      sessionId: window.sessionId,
+      frameId: window.frameId!,
+      ...args,
+    });
+  },
+  download: (args: { url: string; filename: string | undefined }) => {
+    return ToMainIpc.download.invoke({
+      sessionId: window.sessionId,
       frameId: window.frameId!,
       ...args,
     });

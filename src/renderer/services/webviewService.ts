@@ -1,15 +1,25 @@
 import type { Rectangle } from 'electron';
 import { ToMainIpc } from '../../contracts/toMain';
 import { ToRendererIpc } from '../../contracts/toRenderer';
+import { useTabStore, WebTab } from '../state/tabStore';
+import { useLayoutStore } from '../state/layoutStore';
 
 type LayoutParams = {
+  sessionId: number;
   frameId?: number;
   tabId?: string;
   bounds?: Rectangle;
   sidebarWidth?: number;
   tabbarHeight?: number;
+  viewportWidth?: number;
   visible?: boolean;
   url?: string;
+};
+
+type ResizeParams = {
+  bounds?: Rectangle;
+  sidebarWidth?: number;
+  tabbarHeight?: number;
   viewportWidth?: number;
 };
 
@@ -21,6 +31,44 @@ let promptResponseHandlers: Record<number, (response: string) => void> | null =
   null;
 export const webviewService = {
   hasBridge: hasIpc,
+
+  registerTabHandler() {
+    ToRendererIpc.tab.on(
+      (_, { tabId: frameId, url, actionId, triggerFrameId }) => {
+        const { tabs, setActiveTab, addTab } = useTabStore.getState();
+        const { bounds, toggleUrlBar } = useLayoutStore.getState();
+        if (frameId === -1) {
+          const newTab = new WebTab({
+            id: -1,
+            title: url ?? 'New Tab',
+            url: url ?? '',
+          });
+          addTab(newTab, bounds);
+        } else {
+          const tab = tabs.find((t) => t.id === frameId);
+          if (tab) {
+            setActiveTab(tab.id);
+            toggleUrlBar(true);
+          } else if (actionId !== undefined) {
+            ToMainIpc.actionError.invoke({
+              frameId: triggerFrameId!,
+              actionId,
+              error: 'tab not found',
+            });
+            return;
+          }
+        }
+        if (actionId !== undefined) {
+          setTimeout(() => {
+            ToMainIpc.actionDone.invoke({
+              frameId: triggerFrameId!,
+              actionId,
+            });
+          }, 100);
+        }
+      },
+    );
+  },
 
   registerPromptResponseHandler(
     thisRequestId: number,
@@ -42,6 +90,7 @@ export const webviewService = {
   },
 
   async createTab(params: {
+    sessionId: number;
     parentFrameId?: number;
     url: string;
     bounds?: Rectangle;
@@ -58,6 +107,7 @@ export const webviewService = {
     const { frameId, tabId } = params;
     if (!frameId && !tabId) return;
     await ToMainIpc.operateTab.invoke({
+      sessionId: params.sessionId,
       id: frameId ?? -1,
       bounds: params.bounds,
       sidebarWidth: params.sidebarWidth,
@@ -68,12 +118,24 @@ export const webviewService = {
     });
   },
 
-  async closeTab(params: { frameId?: number }) {
+  async onResize(params: { sessionId: number } & ResizeParams) {
+    if (!hasIpc()) return;
+    await ToMainIpc.onResize.invoke({
+      sessionId: params.sessionId,
+      bounds: params.bounds,
+      sidebarWidth: params.sidebarWidth,
+      tabbarHeight: params.tabbarHeight,
+      viewportWidth: params.viewportWidth,
+    });
+  },
+
+  async closeTab(params: { frameId?: number; sessionId?: number }) {
     if (!hasIpc()) return;
     const { frameId } = params;
     if (!frameId) return;
-    console.info('closeTab', frameId);
+    console.info('closeTab', frameId, ToMainIpc);
     await ToMainIpc.operateTab.invoke({
+      sessionId: params.sessionId ?? -1,
       id: frameId ?? -1,
       close: true,
     });

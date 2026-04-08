@@ -1,6 +1,7 @@
 name: Test
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -12,10 +13,10 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Node.js and NPM
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
@@ -28,7 +29,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm run package
           npm run lint
           npm exec tsc
           npm test

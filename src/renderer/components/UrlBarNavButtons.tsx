@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Button } from './ui/button';
-import type { WebTab } from '../state/tabStore';
+import { useTabStore, type WebTab } from '../state/tabStore';
 
 type UrlBarNavButtonsProps = {
   tab: WebTab | null;
@@ -11,16 +11,23 @@ export const UrlBarNavButtons: React.FC<UrlBarNavButtonsProps> = ({
   tab,
   url,
 }) => {
+  const sessionId = useTabStore((state) => state.sessionId);
   const [canGoBack, setCanGoBack] = React.useState(false);
   const [canGoForward, setCanGoForward] = React.useState(false);
 
   const refresh = React.useCallback(async () => {
     if (!tab) return;
-    const state = await tab.getNavigationState();
-    if (!state) return;
-    setCanGoBack(state.canGoBack);
-    setCanGoForward(state.canGoForward);
-  }, [tab]);
+    try {
+      const state = await tab.getNavigationStateForSession(sessionId);
+      if (!state) return;
+      setCanGoBack(state.canGoBack);
+      setCanGoForward(state.canGoForward);
+    } catch (error) {
+      console.error(error);
+      setCanGoBack(false);
+      setCanGoForward(false);
+    }
+  }, [sessionId, tab]);
 
   React.useEffect(() => {
     refresh();
@@ -28,25 +35,33 @@ export const UrlBarNavButtons: React.FC<UrlBarNavButtonsProps> = ({
 
   const handleBack = React.useCallback(async () => {
     if (!tab) return;
-    const state = await tab.goBack();
-    if (state) {
-      setCanGoBack(state.canGoBack);
-      setCanGoForward(state.canGoForward);
-      return;
+    try {
+      const state = await tab.goBack(sessionId);
+      if (state) {
+        setCanGoBack(state.canGoBack);
+        setCanGoForward(state.canGoForward);
+        return;
+      }
+    } catch (error) {
+      console.error(error);
     }
     await refresh();
-  }, [refresh, tab]);
+  }, [refresh, sessionId, tab]);
 
   const handleForward = React.useCallback(async () => {
     if (!tab) return;
-    const state = await tab.goForward();
-    if (state) {
-      setCanGoBack(state.canGoBack);
-      setCanGoForward(state.canGoForward);
-      return;
+    try {
+      const state = await tab.goForward(sessionId);
+      if (state) {
+        setCanGoBack(state.canGoBack);
+        setCanGoForward(state.canGoForward);
+        return;
+      }
+    } catch (error) {
+      console.error(error);
     }
     await refresh();
-  }, [refresh, tab]);
+  }, [refresh, sessionId, tab]);
 
   return (
     <>
@@ -75,4 +90,3 @@ export const UrlBarNavButtons: React.FC<UrlBarNavButtonsProps> = ({
     </>
   );
 };
-

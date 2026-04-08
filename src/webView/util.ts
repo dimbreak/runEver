@@ -54,6 +54,11 @@ export namespace Util {
         this.doLock();
         return true;
       }
+      if (this.unlockTo !== null) {
+        clearTimeout(this.unlockTo);
+        this.unlockTo = null;
+        return true;
+      }
       return false;
     }
     private doLock() {

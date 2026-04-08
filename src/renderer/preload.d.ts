@@ -5,7 +5,7 @@ declare global {
   interface Window {
     electron: ElectronHandler;
     frameId?: number;
-    electronDummyCursor?: HTMLDivElement;
+    sessionId?: number;
   }
 }
 

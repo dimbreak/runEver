@@ -30,3 +30,8 @@ npm-debug.log.*
 *.scss.d.ts
 
 .env
+runEverMark/mockSite/dist/
+assets
+/prompt-lab/
+/prompt-record/
+demoVideo/

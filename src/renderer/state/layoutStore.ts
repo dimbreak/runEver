@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
-const collapsedHeight = 54;
-const expandedHeight = 104;
+const collapsedHeight = 44;
+const expandedHeight = 84;
 
 interface Rectangle {
   x: number;
@@ -16,14 +16,10 @@ const computeBounds = (
   collapsedWidth: number,
   tabbarHeight: number,
 ) => {
-  const padding = 12;
   const activeSidebarWidth = isSidebarOpen ? sidebarWidth : collapsedWidth;
-  const width = Math.max(
-    320,
-    window.innerWidth - activeSidebarWidth - padding * 2,
-  );
-  const height = Math.max(320, window.innerHeight - tabbarHeight - padding * 2);
-  return { x: padding, y: tabbarHeight + padding, width, height };
+  const width = Math.max(320, window.innerWidth - activeSidebarWidth);
+  const height = Math.max(320, window.innerHeight - tabbarHeight);
+  return { x: 0, y: tabbarHeight, width, height };
 };
 
 type LayoutState = {
@@ -32,34 +28,40 @@ type LayoutState = {
   collapsedWidth: number;
   tabbarHeight: number;
   bounds: Rectangle;
+  onLayoutChange: () => void;
   toggleSidebar: () => void;
   toggleUrlBar: (showUrlBar: boolean) => void;
+  isConfigOpen: boolean;
+  toggleConfig: () => void;
 };
 
-export const useLayoutStore = create<LayoutState>((set) => ({
+export const useLayoutStore = create<LayoutState>((set, get) => ({
   isSidebarOpen: true,
   sidebarWidth: 430,
   collapsedWidth: 0,
   tabbarHeight: expandedHeight,
   bounds: computeBounds(true, 430, 0, expandedHeight),
-  toggleSidebar: () =>
+  onLayoutChange: () =>
     set((state) => ({
-      isSidebarOpen: !state.isSidebarOpen,
       bounds: computeBounds(
-        !state.isSidebarOpen,
+        state.isSidebarOpen,
         state.sidebarWidth,
         state.collapsedWidth,
         state.tabbarHeight,
       ),
     })),
-  toggleUrlBar: (showUrlBar: boolean) =>
+  toggleSidebar: () => {
     set((state) => ({
+      isSidebarOpen: !state.isSidebarOpen,
+    }));
+    get().onLayoutChange();
+  },
+  toggleUrlBar: (showUrlBar: boolean) => {
+    set(() => ({
       tabbarHeight: showUrlBar ? expandedHeight : collapsedHeight,
-      bounds: computeBounds(
-        state.isSidebarOpen,
-        state.sidebarWidth,
-        state.collapsedWidth,
-        showUrlBar ? expandedHeight : collapsedHeight,
-      ),
-    })),
+    }));
+    get().onLayoutChange();
+  },
+  isConfigOpen: false,
+  toggleConfig: () => set((state) => ({ isConfigOpen: !state.isConfigOpen })),
 }));
