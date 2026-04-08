@@ -1,5 +1,7 @@
 import {useState, type FormEvent, useEffect} from 'react';
 import { writeSession, readSession, setBenchmarkResult } from '../utils/session';
+import { createPosGuestWebSkillGenerator } from '../webSkills/posGuestSkill';
+import { publishWebSkills } from '../webSkills/publish';
 
 export default function PosLoginPage() {
   const [status, setStatus] = useState('');
@@ -9,6 +11,31 @@ export default function PosLoginPage() {
     if(entryPoint) {
       setBenchmarkResult(entryPoint, 'pos_landed', true);
     }
+  }, [entryPoint]);
+
+  useEffect(() => {
+    const cleanup = publishWebSkills(
+      createPosGuestWebSkillGenerator(async (input) => {
+        const form = document.forms.namedItem('posLoginForm');
+        if (!(form instanceof HTMLFormElement)) {
+          throw new Error('Could not find POS login form.');
+        }
+
+        setNamedInputValue(form, 'operator', input.operator);
+        setNamedInputValue(form, 'passcode', input.passcode);
+        form.requestSubmit();
+
+        await waitForHashChange('#/pos/dashboard', 1500);
+
+        return {
+          authenticated: readSession<boolean>('runEverMark_pos_auth', false),
+          operator: input.operator,
+          route: window.location.hash || '#/pos/dashboard',
+        };
+      }),
+    );
+
+    return cleanup;
   }, []);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -44,7 +71,7 @@ export default function PosLoginPage() {
                 <path d="M18.6 7.4C18.1 4.3 15.4 2 12.2 2 9.7 2 7.4 3.5 6.3 5.8 2.8 6.1 0 9 0 12.6 0 16.7 3.3 20 7.4 20h12.2c2.4 0 4.4-2 4.4-4.4 0-2.2-1.6-4-3.6-4.3-.4-1.7-1-3-1.8-3.9z" fillOpacity="0.8"/>
              </svg>
         </div>
-        <form onSubmit={handleSubmit}>
+        <form name="posLoginForm" onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
              <label className="sf-label">Username</label>
              <input className="sf-input" name="operator" required placeholder="user@sellforce-pos.com" />
@@ -61,4 +88,48 @@ export default function PosLoginPage() {
       </div>
     </div>
   );
+}
+
+function setNamedInputValue(
+  form: HTMLFormElement,
+  fieldName: string,
+  value: string,
+) {
+  const field = form.elements.namedItem(fieldName);
+  if (!(field instanceof HTMLInputElement)) {
+    throw new Error(`Could not find login field "${fieldName}".`);
+  }
+
+  const descriptor = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    'value',
+  );
+
+  if (!descriptor?.set) {
+    throw new Error(`Could not update login field "${fieldName}".`);
+  }
+
+  descriptor.set.call(field, value);
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+  field.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function waitForHashChange(expectedHash: string, timeoutMs: number) {
+  return new Promise<void>((resolve) => {
+    if (window.location.hash === expectedHash) {
+      resolve();
+      return;
+    }
+
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      if (
+        window.location.hash === expectedHash ||
+        Date.now() - startedAt >= timeoutMs
+      ) {
+        window.clearInterval(timer);
+        resolve();
+      }
+    }, 50);
+  });
 }

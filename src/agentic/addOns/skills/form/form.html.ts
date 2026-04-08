@@ -1,7 +1,7 @@
-import { BrowserActionRisk } from '../../../../main/llm/roles/system/planner.schema';
 import { BrowserActions } from '../../../../webView/actions';
 import { FillFormAction, FillFormValue } from './form.schema';
 import { CommonUtil } from '../../../../utils/common';
+import { RiskOrComplexityLevel } from '../../../execution.schema';
 
 export const checkFormAndFieldCount = (element: HTMLFormElement) => {
   const fields = element.querySelectorAll(
@@ -15,7 +15,7 @@ export const checkFormAndFieldCount = (element: HTMLFormElement) => {
 
 export const fillFormExec = async (
   action: FillFormAction & { el?: Element },
-  risk: BrowserActionRisk,
+  risk: RiskOrComplexityLevel,
   args: Record<string, string> = {},
 ) => {
   const fillFormAction = action;

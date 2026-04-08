@@ -2,9 +2,24 @@ import type { BenchmarkCase } from '../../../types';
 import { ExecutorLlmResultSchema } from '../../../../../src/agentic/execution.schema';
 import { standardSystemPrompt, standardUserPromptPrefix } from '../prompt';
 
+const quantityInputIds = ['®d4', '®d5'];
+const templatePlaceholder = (path: string) => `\${${path}}`;
+
+const matchesQuantitySelector = (query: string | { id?: string } | undefined) =>
+  (typeof query === 'string' && quantityInputIds.includes(query)) ||
+  (typeof query === 'object' &&
+    query !== null &&
+    quantityInputIds.includes(query.id ?? ''));
+
+const matchesQuantityValue = (value: string | undefined) =>
+  value === '3' ||
+  value === templatePlaceholder('arg.buy_quantity') ||
+  value === templatePlaceholder('args.buy_quantity');
+
 export const amazonLongCtxBuyTest: BenchmarkCase = {
   id: 'amazon-long-ctx-buy',
   name: 'Amazon Long-CTX Buy',
+  maxScore: 5,
   systemPrompt: standardSystemPrompt,
   userPrompt: `${standardUserPromptPrefix}
   [url]
@@ -67,11 +82,12 @@ const hls = {"#0":"15px / 15px ff0 #111","#1":"14px / 1px ff0 #fff","#2":"14px /
           score++;
           const inputPos = parsedResult.data.a.findIndex(
             (a) =>
-              a.action.k === 'input' &&
-              ((typeof a.action.q === 'string' && a.action.q === '®d4') ||
-                (typeof a.action.q === 'object' && a.action.q.id === '®d4')) &&
-              // eslint-disable-next-line no-template-curly-in-string
-              (a.action.v === '3' || a.action.v === '${arg.buy_quantity}'),
+              ((a.action.k === 'input' &&
+                matchesQuantitySelector(a.action.q) &&
+                matchesQuantityValue(a.action.v)) ||
+                (a.action.k === 'textSelection' &&
+                  matchesQuantitySelector(a.action.q) &&
+                  matchesQuantityValue(a.action.txt))),
           );
           if (inputPos !== -1) {
             score++;

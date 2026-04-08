@@ -1,5 +1,10 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-npx lint-staged
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.js' '*.jsx' '*.ts' '*.tsx')
+
+if [ -n "$staged_files" ]; then
+  printf '%s\n' "$staged_files" | xargs npx eslint --cache --ignore-pattern "runEverMark/mockSite/**"
+fi
+
 npm run test

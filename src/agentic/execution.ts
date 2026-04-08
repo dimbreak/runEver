@@ -7,16 +7,16 @@ import {
   WireActionWithWaitSchema,
 } from './execution.schema';
 import { LlmApi } from './api';
-import {
-  JsonStreamingEvent,
-  JsonStreamingEventType,
-  JsonStreamingParser,
-} from '../main/llm/jsonStreamer';
 import { AddOns } from './addOns/addons';
 import './addOns/registry';
 import { Session } from './session';
 import { taskHeader } from './prompts/header';
 import { getExecutorSys } from './prompts/executorSys';
+import {
+  JsonStreamingEvent,
+  JsonStreamingEventType,
+  JsonStreamingParser,
+} from './jsonStreamer';
 
 const ComplexityToModelConfig: Record<
   RiskOrComplexityLevel,

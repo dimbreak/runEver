@@ -2,9 +2,75 @@ import type { BenchmarkCase } from '../../../types';
 import { ExecutorLlmResultSchema } from '../../../../../src/agentic/execution.schema';
 import { standardSystemPrompt, standardUserPromptPrefix } from '../prompt';
 
+const getAddedCheckpointCount = (action: any) => {
+  if (action.k === 'checklist' && action.a === 'add') {
+    return action.add?.length ?? 0;
+  }
+
+  if (action.k === 'addNewTask') {
+    return action.checkPoints?.length ?? 0;
+  }
+
+  return 0;
+};
+
+const matchesActionQueryId = (
+  query: string | { id?: string } | undefined,
+  expectedId: string,
+) =>
+  query === expectedId ||
+  (typeof query === 'object' && query !== null && query.id === expectedId);
+
+const normalizeText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const getAllAddedCheckpoints = (actions: any[]) =>
+  actions.flatMap((item) => {
+    const action = item?.action;
+    if (!action) {
+      return [];
+    }
+    if (action.k === 'checklist' && action.a === 'add') {
+      return Array.isArray(action.add) ? action.add : [];
+    }
+    if (action.k === 'addNewTask') {
+      return Array.isArray(action.checkPoints) ? action.checkPoints : [];
+    }
+    return [];
+  });
+
+const hasFollowManagerAdviceCheckpoint = (checkpoints: string[]) => {
+  const normalized = checkpoints.map(normalizeText);
+  return normalized.some((checkpoint) => {
+    const mentionsFollow =
+      checkpoint.includes('follow') ||
+      checkpoint.includes('do what he advise') ||
+      checkpoint.includes('do what he advises') ||
+      checkpoint.includes('do what manager') ||
+      checkpoint.includes('act on') ||
+      checkpoint.includes('apply');
+    const mentionsAdvice =
+      checkpoint.includes('advice') ||
+      checkpoint.includes('advise') ||
+      checkpoint.includes('reply');
+    const mentionsManager =
+      checkpoint.includes('dillion') ||
+      checkpoint.includes('dillon') ||
+      checkpoint.includes('manager') ||
+      checkpoint.includes('his');
+
+    return mentionsFollow && mentionsAdvice && mentionsManager;
+  });
+};
+
 export const longTaskSplittingTest: BenchmarkCase = {
   id: 'long-task-splitting',
   name: 'Long Task Splitting',
+  maxScore: 8,
+  weight: 1.5,
   systemPrompt: standardSystemPrompt,
   userPrompt: `${standardUserPromptPrefix}
 
@@ -72,36 +138,62 @@ export const longTaskSplittingTest: BenchmarkCase = {
       const parsedResult = ExecutorLlmResultSchema.safeParse(resultJson);
       if (parsedResult.success) {
         if (parsedResult.data.a && parsedResult.data.a.length) {
+          const allCheckpoints = getAllAddedCheckpoints(parsedResult.data.a);
           score++;
           let { action } = parsedResult.data.a[0];
-          if (action.k === 'checklist' && action.a === 'add') {
+          if (
+            (action.k === 'checklist' && action.a === 'add') ||
+            action.k === 'addNewTask'
+          ) {
             score++;
-            if (
-              (action.add?.length ?? 0) > 10 &&
-              (action.add?.length ?? 0) < 13
-            ) {
+            if (getAddedCheckpointCount(action) > 10) {
               score++;
             }
           }
-          action = parsedResult.data.a[1].action;
-          if (
-            action.k === 'fillForm' &&
-            ((typeof action.q === 'string' && action.q === '®e') ||
-              (typeof action.q === 'object' && action.q.id === '®e')) &&
-            Array.isArray(action.data) &&
-            action.data.find(
-              (vv) => vv.f === 'email' && vv.v === 'pikachu@pokemon.com',
-            ) &&
-            action.data.find(
-              (vv) => vv.f === 'password' && vv.v === 'P@ssword321',
-            )
-          ) {
+          if (hasFollowManagerAdviceCheckpoint(allCheckpoints)) {
             score++;
+          }
+          const loginStep = parsedResult.data.a[1];
+          if (loginStep) {
+            action = loginStep.action;
             if (
-              parsedResult.data.a[1].cp &&
-              parsedResult.data.a[1].cp[0] === 0
+              action.k === 'fillForm' &&
+              matchesActionQueryId(action.q, '®e') &&
+              Array.isArray(action.data) &&
+              action.data.find(
+                (vv) => vv.f === 'email' && vv.v === 'pikachu@pokemon.com',
+              ) &&
+              action.data.find(
+                (vv) => vv.f === 'password' && vv.v === 'P@ssword321',
+              )
             ) {
-              score++;
+              score += 2;
+            } else {
+              const loginActions = parsedResult.data.a.slice(1, 5);
+              const emailInput = loginActions.find(
+                (step) =>
+                  step.action.k === 'input' &&
+                  matchesActionQueryId(step.action.q, '®2') &&
+                  step.action.v === 'pikachu@pokemon.com',
+              );
+              const passwordInput = loginActions.find(
+                (step) =>
+                  step.action.k === 'input' &&
+                  matchesActionQueryId(step.action.q, '®5') &&
+                  step.action.v === 'P@ssword321',
+              );
+              const submitClick = loginActions.find(
+                (step) =>
+                  step.action.k === 'mouse' &&
+                  step.action.a === 'click' &&
+                  matchesActionQueryId(step.action.q, '®c'),
+              );
+
+              if (emailInput && passwordInput) {
+                score += 1.5;
+              } else if (emailInput && submitClick) {
+                score += 0.5;
+              }
             }
           }
         }

@@ -1,4 +1,3 @@
-import { WebContents } from 'electron';
 import { AddOns } from '../../addons';
 
 const rteRx = / contenteditable[ >]/i;
@@ -45,7 +44,7 @@ ${
         r.system = r.system?.replace(
           'type WireAction=',
           `type WireAction=
-{
+|{
   k:'fillForm';
   q:'${formIds.join("'|'")}'|Selector;//form id
   ${
@@ -54,7 +53,7 @@ ${
   fs:string[];//files as datasource or to upload`
       : 'data:{f:string|Selector;v:string|string[]}[];//field name or selector and value to fill, string or js argument tpl'
   }
-}|`,
+}`,
         );
       }
       if (rteRx.test(promptParts.html)) {

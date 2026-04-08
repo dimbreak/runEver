@@ -179,6 +179,38 @@ export namespace LlmApi {
             } satisfies GoogleGenerativeAIProviderOptions,
           };
         },
+        queryStream: async ({
+          prompt,
+          systemPrompt,
+          attachments,
+          cacheKey,
+          model,
+          reasoningEffort,
+        }) => {
+          const userMessage = createUserMessage(prompt, attachments);
+
+          return streamText({
+            model: google(
+              {
+                hi: 'gemini-3.1-pro-preview',
+                mid: 'gemini-3-flash-preview',
+                low: 'gemini-3.1-flash-lite-preview',
+              }[model],
+            ),
+            maxRetries: 5,
+            providerOptions: {
+              google: {
+                thinkingConfig: {
+                  includeThoughts: !!reasoningEffort,
+                  thinkingLevel: reasoningEffort,
+                },
+              } satisfies GoogleGenerativeAIProviderOptions,
+            },
+            system: systemPrompt || undefined,
+            messages: [userMessage],
+            experimental_context: cacheKey ? { cacheKey } : undefined,
+          });
+        },
       };
     },
     zai: (apiConfig) => {
@@ -190,12 +222,32 @@ export namespace LlmApi {
       });
       return {
         provider: 'zai',
-        hi: zai('glm-5'),
-        mid: zai('glm-5'),
-        low: zai('glm-5'),
+        hi: zai('z-ai/glm-5'),
+        mid: zai('z-ai/glm-5'),
+        low: zai('z-ai/glm-5'),
         streaming: true,
         makeProviderOptions: () => {
           return {};
+        },
+        queryStream: async ({
+          prompt,
+          systemPrompt,
+          attachments,
+          cacheKey,
+          model,
+        }) => {
+          return streamText({
+            model: zai(
+              {
+                hi: 'glm-5',
+                mid: 'glm-5',
+                low: 'glm-5',
+              }[model],
+            ),
+            system: buildProviderSystemPrompt('zai', systemPrompt) || undefined,
+            messages: [createUserMessage(prompt, attachments)],
+            experimental_context: cacheKey ? { cacheKey } : undefined,
+          });
         },
       };
     },
@@ -217,6 +269,81 @@ export namespace LlmApi {
             } satisfies AnthropicLanguageModelOptions,
           };
         },
+        queryStream: async ({
+          prompt,
+          systemPrompt,
+          attachments,
+          cacheKey,
+          model,
+          reasoningEffort,
+        }) => {
+          const anthropicSystemPrompt = buildProviderSystemPrompt(
+            'anthropic',
+            systemPrompt,
+          );
+          const streamResult = streamText({
+            model: anthropic(
+              {
+                hi: 'claude-opus-4-6',
+                mid: 'claude-sonnet-4-6',
+                low: 'claude-sonnet-4-6',
+              }[model],
+            ),
+            providerOptions: {
+              anthropic: {
+                effort: reasoningEffort === 'minimal' ? 'low' : reasoningEffort,
+              } satisfies AnthropicLanguageModelOptions,
+            },
+            system: anthropicSystemPrompt || undefined,
+            messages: [createUserMessage(prompt, attachments)],
+            experimental_context: cacheKey ? { cacheKey } : undefined,
+          });
+
+          return {
+            response: streamResult.response,
+            textStream: (async function* () {
+              let buffer = '';
+              let shouldBuffer = false;
+              let decided = false;
+
+              for await (const part of streamResult.textStream) {
+                buffer += part;
+
+                if (!decided) {
+                  const trimmed = buffer.trimStart();
+                  if (!trimmed) {
+                    continue;
+                  }
+
+                  decided = true;
+                  shouldBuffer = !(
+                    trimmed.startsWith('{') || trimmed.startsWith('[')
+                  );
+
+                  if (!shouldBuffer) {
+                    yield buffer;
+                    buffer = '';
+                  }
+                  continue;
+                }
+
+                if (!shouldBuffer) {
+                  yield part;
+                }
+              }
+
+              if (shouldBuffer) {
+                const salvaged = salvageClaudeJsonOutput(buffer);
+                if (salvaged !== buffer) {
+                  console.warn(
+                    'Anthropic output salvaged to JSON-only response.',
+                  );
+                }
+                yield* splitIntoChunks(salvaged);
+              }
+            })(),
+          };
+        },
       };
     },
     xai: (apiConfig) => {
@@ -226,9 +353,9 @@ export namespace LlmApi {
       });
       return {
         provider: 'xai',
-        hi: zai('grok-4.20-reasoning'),
-        mid: zai('grok-4.20-reasoning'),
-        low: zai('grok-4-1-fast-reasoning'),
+        hi: zai('x-ai/grok-4.20'),
+        mid: zai('x-ai/grok-4.20'),
+        low: zai('grok-4.1-fast'),
         streaming: true,
         makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
           return {
@@ -251,8 +378,8 @@ export namespace LlmApi {
       });
       return {
         provider: 'alibaba',
-        hi: alibaba('qwen3.5-397b-a17b'),
-        mid: alibaba('qwen3.5-122b-a10b'),
+        hi: alibaba('qwen/qwen3.6-plus'),
+        mid: alibaba('qwen3.5-397b-a17b'),
         low: alibaba('qwen3.5-122b-a10b'),
         streaming: true,
         makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
@@ -297,7 +424,7 @@ export namespace LlmApi {
       });
       return {
         provider: 'minimax',
-        hi: minimax('MiniMax-M2.7'),
+        hi: minimax('minimax/minimax-m2.7'),
         mid: minimax('MiniMax-M2.7'),
         low: minimax('MiniMax-M2.7'),
         streaming: true,
@@ -313,9 +440,9 @@ export namespace LlmApi {
       });
       return {
         provider: 'moonshot',
-        hi: moonshot('kimi-k2.5'),
-        mid: moonshot('kimi-k2.5'),
-        low: moonshot('kimi-k2.5'),
+        hi: moonshot('moonshotai/kimi-k2.5'),
+        mid: moonshot('moonshotai/kimi-k2.5'),
+        low: moonshot('moonshotai/kimi-k2.5'),
         streaming: true,
         makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
           return {
@@ -385,34 +512,173 @@ export namespace LlmApi {
     };
   };
 
+  const createUserMessage = (
+    prompt: string,
+    attachments: Attachment[] | null = null,
+  ): ModelMessage => {
+    return {
+      role: 'user',
+      content: attachments
+        ? [
+            {
+              type: 'text',
+              text: prompt,
+            },
+            ...attachments,
+          ]
+        : prompt,
+    };
+  };
+
+  const buildStrictJsonSystemPrompt = (
+    providerName: string,
+    systemPrompt = '',
+  ) => {
+    const strictJsonSuffix = `
+
+CRITICAL OUTPUT CONTRACT FOR ${providerName.toUpperCase()}:
+- Output raw JSON only.
+- Your first character must be '{' and your last character must be '}'.
+- Do not output markdown fences like \`\`\`json.
+- Do not output any preamble, explanation, thinking, narration, apology, commentary, bullet list, or analysis before or after the JSON.
+- Do not describe the plan in prose. Put the plan only inside the JSON fields required by the executor schema.
+- Any non-JSON text will be treated as a formatting failure by the executor and scored as wrong.
+- This benchmark is strict about wire-format obedience. A mostly-correct answer with extra prose still fails.
+- Other models on this same benchmark already return clean raw JSON. Losing on format discipline is avoidable and unacceptable.
+- If you are about to write anything except the JSON object, stop and output the JSON object directly.
+`;
+
+    if (!systemPrompt) {
+      return strictJsonSuffix.trim();
+    }
+
+    return `${systemPrompt.trim()}\n${strictJsonSuffix}`.trim();
+  };
+
+  const buildProviderSystemPrompt = (
+    provider: StoredApiKey['provider'],
+    systemPrompt = '',
+  ) => {
+    if (
+      provider === 'anthropic' ||
+      provider === 'zai' ||
+      provider === 'moonshot' ||
+      provider === 'minimax'
+    ) {
+      return buildStrictJsonSystemPrompt(provider, systemPrompt);
+    }
+
+    return systemPrompt;
+  };
+
+  const stripMarkdownFence = (text: string) => {
+    const trimmed = text.trim();
+    const match = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    return match ? match[1].trim() : trimmed;
+  };
+
+  const extractBalancedJson = (text: string) => {
+    const candidates = ['{"a"', '{\n  "a"', '{\n"a"', '{'];
+    const starts = [
+      ...new Set(
+        candidates
+          .map((needle) => text.indexOf(needle))
+          .filter((idx) => idx >= 0),
+      ),
+    ];
+
+    for (const start of starts) {
+      let depth = 0;
+      let inString = false;
+      let escaped = false;
+
+      for (let index = start; index < text.length; index += 1) {
+        const ch = text[index];
+
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+          } else if (ch === '\\') {
+            escaped = true;
+          } else if (ch === '"') {
+            inString = false;
+          }
+          continue;
+        }
+
+        if (ch === '"') {
+          inString = true;
+          continue;
+        }
+
+        if (ch === '{') {
+          depth += 1;
+          continue;
+        }
+
+        if (ch === '}') {
+          depth -= 1;
+          if (depth === 0) {
+            return text.slice(start, index + 1).trim();
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const salvageClaudeJsonOutput = (text: string) => {
+    const fenced = stripMarkdownFence(text);
+    try {
+      JSON.parse(fenced);
+      return fenced;
+    } catch {}
+
+    const extracted = extractBalancedJson(text);
+    if (extracted) {
+      try {
+        JSON.parse(extracted);
+        return extracted;
+      } catch {}
+    }
+
+    return text;
+  };
+
+  const splitIntoChunks = async function* (text: string) {
+    let remain = text;
+    while (remain.length > 0) {
+      const end = Math.min(remain.length, Math.floor(Math.random() * 10 + 1));
+      yield remain.slice(0, end);
+      remain = remain.slice(end);
+      await Util.sleep(Math.random() * 20 + 10);
+    }
+  };
+
   const createPromptObject = (
+    provider: StoredApiKey['provider'],
     prompt: string,
     systemPrompt = '',
     attachments: Attachment[] | null = null,
   ): Array<ModelMessage> => {
-    const promptObj: Array<ModelMessage> = [
-      {
-        role: 'user',
-        content: attachments
-          ? [
-              {
-                type: 'text',
-                text: prompt,
-              },
-              ...attachments,
-            ]
-          : prompt,
-      },
-    ];
+    const resolvedSystemPrompt = buildProviderSystemPrompt(
+      provider,
+      systemPrompt,
+    );
+    const userMessage = createUserMessage(prompt, attachments);
 
-    if (systemPrompt) {
-      promptObj.push({
-        role: 'system',
-        content: systemPrompt,
-      });
+    if (provider === 'google' || !resolvedSystemPrompt) {
+      return [userMessage];
     }
 
-    return promptObj;
+    return [
+      {
+        role: 'system',
+        content: resolvedSystemPrompt,
+      },
+      userMessage,
+    ];
   };
 
   const tryQueryApiTrust = async (_options: {
@@ -539,7 +805,12 @@ export namespace LlmApi {
       }
 
       const q = new AsyncQueue<string>();
-      const promptObj = createPromptObject(prompt, systemPrompt, attachments);
+      const promptObj = createPromptObject(
+        llmApi.provider,
+        prompt,
+        systemPrompt,
+        attachments,
+      );
       const maxStreamRetries = 1;
       let lastError: unknown;
 

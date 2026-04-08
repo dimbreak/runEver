@@ -24,3 +24,24 @@ export const textToDoc = (text: string): JSONContent => {
   };
 };
 
+/**
+ * Converts a Tiptap JSONContent document back to plain text.
+ * Paragraphs are separated by blank lines and hard breaks stay as single newlines.
+ */
+export const docToText = (content: JSONContent): string => {
+  const blocks = content.content ?? [];
+
+  return blocks
+    .map((block) => {
+      if (!block.content?.length) return '';
+
+      return block.content
+        .map((node) => {
+          if (node.type === 'text') return node.text ?? '';
+          if (node.type === 'hardBreak') return '\n';
+          return '';
+        })
+        .join('');
+    })
+    .join('\n\n');
+};

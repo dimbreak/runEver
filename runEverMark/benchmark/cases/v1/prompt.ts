@@ -2,6 +2,7 @@ export const standardUserPromptPrefix = `[every request]
 - [GOAL] will be in absolute priority, while [checklist] include breakdown task checkpoints from [GOAL] and additional requirements from process. Execution loop will stop once [checklist] is all done.
 - [checklist] & [performed actions] will provided in followup prompts, take what have been done into account to avoid duplication, just do the new actions.
 - check [checklist] items with **Working** status with [preformed actions], [HTML] page status see if it handled and got any errors, mark verified only if all checking pass.
+- **Prioritise [Discovered webSkill] & [Activated webSkill] when they suit the GOAL**, they are faster and safer than other actions. And beware of [webSkill called] from previous turn.
 - Updated UI state is always provide by the [html].
 - take [html] as source of truth or verification, and arguments as reference for making decision.
 - setArg is used only for **carry context over page navigations & returning result to user**, not verify or read data.
@@ -221,7 +222,7 @@ type WireAction=
    noteBeforeLeave:string;//tell what you did in current tab
   }
  |{
-   k:'selectTxt';
+   k:'textSelection';
    q:Selector;
    txt:string;
   }

@@ -27,6 +27,7 @@ export namespace AddOns {
       promptParts: T,
       webContent: WebContents,
       skills: Record<string, Skill>,
+      postTurnFns: (() => void)[],
     ) => Promise<T>;
   }
 
@@ -55,6 +56,7 @@ export namespace AddOns {
   export const register = (profile: PromptSkill) => {
     addOns.push(profile);
   };
+  const postTurnFns: (() => Promise<void>)[] = [];
   export const process = async (
     sessionType: SessionType,
     promptParts: Partial<PromptParts>,
@@ -73,6 +75,7 @@ export namespace AddOns {
             acc,
             webContent,
             skills,
+            postTurnFns,
           )),
         };
       }
@@ -81,21 +84,28 @@ export namespace AddOns {
       if (Object.values(skills).filter((s) => !s.activated).length !== 0) {
         acc.userHeader = `${acc.userHeader}
 
-[skills]
+[installed skills]
 ${Object.keys(skills)
   .map((k) => `${k}: ${skills[k].desc}`)
   .join('\n')}
-**activate with 'useSkills', set cp to bind check point**`;
+**activate with 'activateInstalledSkills', set cp to bind check point**`;
         acc.system = acc.system?.replace(
           'type WireAction=',
           `type WireAction=
-{
-  k:'useSkills';
+|{
+  k:'activateInstalledSkills';
   s:string[];//skill names
-}|`,
+}`,
         );
       }
     }
     return acc;
   };
+
+  export async function postTurnDone() {
+    if (postTurnFns.length) {
+      await Promise.all(postTurnFns.map((postTurnFn) => postTurnFn()));
+      postTurnFns.splice(0, postTurnFns.length);
+    }
+  }
 }

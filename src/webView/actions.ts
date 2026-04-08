@@ -1,11 +1,13 @@
-import { Rectangle } from 'electron';
 import { getUniqueSelector } from './selector';
 import { dummyCursor } from './cursor/cursor';
 import type { EventWithDelay, ToMainIpc } from '../contracts/toMain';
-import { BrowserActionRisk } from '../main/llm/roles/system/planner.schema';
 import { Util } from './util';
 import { Network } from './network';
-import { WireAction, WireWait } from '../agentic/execution.schema';
+import {
+  RiskOrComplexityLevel,
+  WireAction,
+  WireWait,
+} from '../agentic/execution.schema';
 import { WireActionWithWaitAndRec } from '../agentic/types';
 import { MiniHtml } from './miniHtml';
 import { SliderSkill } from '../agentic/addOns/skills/slider/slider.webView';
@@ -22,7 +24,7 @@ export const ErrMultipleElementsSelectedForHighRisk = new Error(
 //
 // const getElement = (
 //   selector: string,
-//   risk: BrowserActionRisk,
+//   risk: RiskOrComplexityLevel,
 //   args: Record<string, string> = {},
 // ) => {
 //   const els = querySelectAll(selector, args);
@@ -106,7 +108,7 @@ export namespace BrowserActions {
   };
   export const getElementById = (
     selector: MiniHtml.Selector,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = window.webView.getEl(selector);
@@ -232,7 +234,7 @@ export namespace BrowserActions {
       WireActionToExec,
       { k: 'clickSendBtnAndWaitReply' | 'waitForNewMsg' }
     >,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ): WireWait => {
     const id1stEl = getElementById(action.id1st, risk, args);
@@ -358,7 +360,7 @@ export namespace BrowserActions {
     let postWait: WireWait | null | undefined;
     let execFn: (
       action: any,
-      risk: BrowserActionRisk,
+      risk: RiskOrComplexityLevel,
       args?: Record<string, string>,
     ) => Promise<void> = async () => {};
     for (let i = 0, c = actions.length; i < c; i++) {
@@ -580,14 +582,14 @@ export namespace BrowserActions {
               }
             };
             break;
-          case 'selectTxt':
+          case 'textSelection':
             if (await execInIframeOrEl(rec, action.q, args)) {
               continue;
             }
-            execFn = selectTxt;
+            execFn = textSelection;
             break;
           case 'checklist':
-          case 'useSkills':
+          case 'activateInstalledSkills':
             // should not come here
             break;
         }
@@ -621,7 +623,7 @@ export namespace BrowserActions {
   };
   export const setArgs = async (
     action: Extract<WireActionToExec, { k: 'setArg' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
     argsDelta: [string, string][] = [],
   ) => {
@@ -666,7 +668,7 @@ export namespace BrowserActions {
   };
   export const navigate = async (
     action: Extract<WireAction, { k: 'url' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     switch (action.u) {
@@ -683,17 +685,17 @@ export namespace BrowserActions {
         window.location.href = CommonUtil.replaceJsTpl(action.u, args);
     }
   };
-  export const selectTxt = async (
-    action: Extract<WireActionToExec, { k: 'selectTxt' }>,
-    risk: BrowserActionRisk,
+  export const textSelection = async (
+    action: Extract<WireActionToExec, { k: 'textSelection' }>,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const srcEl = action.el ?? getElementById(action.q, risk, args);
-    await dummyCursor.selectTxt(srcEl, action.txt);
+    await dummyCursor.textSelection(srcEl, action.txt);
   };
   export const dragAndDrop = async (
     action: Extract<WireActionToExec, { k: 'dragAndDrop' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const srcEl = action.el ?? getElementById(action.sq, risk, args);
@@ -725,7 +727,7 @@ export namespace BrowserActions {
   };
   export const scroll = async (
     action: Extract<WireActionToExec, { k: 'scroll' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const scrollOver = action.over
@@ -745,7 +747,7 @@ export namespace BrowserActions {
   };
   export const focus = async (
     action: Extract<WireActionToExec, { k: 'focus' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
@@ -753,7 +755,7 @@ export namespace BrowserActions {
   };
   export const input = async (
     action: Extract<WireActionToExec, { k: 'input' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);
@@ -968,7 +970,7 @@ export namespace BrowserActions {
   };
   export const key = async (
     action: Extract<WireActionToExec, { k: 'key' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
     repeat = 0,
   ) => {
@@ -1055,7 +1057,7 @@ export namespace BrowserActions {
   };
   export const mouse = async (
     action: Extract<WireActionToExec, { k: 'mouse' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const el = action.el ?? getElementById(action.q, risk, args);

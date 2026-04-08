@@ -23,8 +23,69 @@ const averageNullable = (values: Array<number | null>) => {
   return average(filtered);
 };
 
+const toScoreRate = (score: number, maxScore: number) => {
+  if (maxScore <= 0) {
+    return 0;
+  }
+  return Number(((score / maxScore) * 100).toFixed(2));
+};
+
+const getCaseWeight = (weight: number | undefined) => weight ?? 1;
+
+const benchmarkRequestRetriesOnEmptyOutput = 1;
+const benchmarkRequestTimeoutMs = 180_000;
+const benchmarkRequestSpacingMs = 1_000;
+
+const sleep = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const collectBenchmarkStream = async (
+  stream: AsyncIterable<string | null | undefined>,
+) => {
+  return Promise.race([
+    LlmApi.collectStream(stream),
+    sleep(benchmarkRequestTimeoutMs).then(() => {
+      throw new Error(
+        `Benchmark request timed out after ${benchmarkRequestTimeoutMs}ms`,
+      );
+    }),
+  ]);
+};
+
+const isBenchmarkEmptyOutput = (measured: LlmApi.CollectedStream) =>
+  measured.firstTokenMs === null && measured.text.trim() === '';
+
 const uniqueHighlights = (runs: BenchmarkRunResult[]) => {
   return [...new Set(runs.flatMap((run) => run.highlights))];
+};
+
+const detectResultFormat = (
+  result: string,
+): 'empty' | 'raw_json' | 'fenced_json' | 'embedded_json' | 'text' => {
+  const trimmed = result.trim();
+  if (!trimmed) {
+    return 'empty';
+  }
+  if (trimmed.startsWith('```')) {
+    return 'fenced_json';
+  }
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return 'raw_json';
+  }
+  if (trimmed.includes('{"a"') || trimmed.includes('{\n  "a"')) {
+    return 'embedded_json';
+  }
+  return 'text';
+};
+
+const buildResultPreview = (result: string, maxLength = 200) => {
+  const normalized = result.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1)}…`;
 };
 
 const toReportFile = (report: BenchmarkReport): BenchmarkReportFile => {
@@ -34,7 +95,12 @@ const toReportFile = (report: BenchmarkReport): BenchmarkReportFile => {
       ...summary,
       caseSummaries: summary.caseSummaries.map((caseSummary) => ({
         ...caseSummary,
-        runs: caseSummary.runs.map(({ result: _result, ...run }) => run),
+        runs: caseSummary.runs.map(({ result, ...run }) => ({
+          ...run,
+          resultChars: result.length,
+          resultFormat: detectResultFormat(result),
+          resultPreview: buildResultPreview(result),
+        })),
       })),
     })),
   };
@@ -78,7 +144,7 @@ const mergeReportFiles = (
   });
 
   const mergedSummaries = [...summaryByApiId.values()].sort(
-    (left, right) => right.totalScore - left.totalScore,
+    (left, right) => right.adjustedTotalScore - left.adjustedTotalScore,
   );
   const mergedSummaryPath = path.join(outputRootDir, 'summary.json');
 
@@ -196,25 +262,73 @@ export const runBenchmark = async (
       for (let attempt = 0; attempt < apiConfig.repeats; attempt += 1) {
         const attemptNumber = attempt + 1;
         try {
-          const cacheKey = [
-            'benchmark',
-            apiConfig.id,
-            benchmarkCase.id,
-            attemptNumber,
-            Date.now(),
-          ].join(':');
-          console.log(
-            `[benchmark] attempt ${attemptNumber}/${apiConfig.repeats} api=${apiConfig.id} case=${benchmarkCase.id} request start`,
-          );
-          const stream = await client.queryLLMApi(
-            benchmarkCase.userPrompt,
-            benchmarkCase.systemPrompt,
-            null,
-            cacheKey,
-            apiConfig.model,
-            apiConfig.reasoningEffort,
-          );
-          const measured = await LlmApi.collectStream(stream);
+          let measured: LlmApi.CollectedStream | null = null;
+          let lastError: unknown = null;
+
+          for (
+            let requestAttempt = 0;
+            requestAttempt <= benchmarkRequestRetriesOnEmptyOutput;
+            requestAttempt += 1
+          ) {
+            const requestAttemptNumber = requestAttempt + 1;
+            const cacheKey = [
+              'benchmark',
+              apiConfig.id,
+              benchmarkCase.id,
+              attemptNumber,
+              requestAttemptNumber,
+              Date.now(),
+            ].join(':');
+            console.log(
+              `[benchmark] attempt ${attemptNumber}/${apiConfig.repeats} api=${apiConfig.id} case=${benchmarkCase.id} request start try=${requestAttemptNumber}/${benchmarkRequestRetriesOnEmptyOutput + 1}`,
+            );
+
+            try {
+              const stream = await client.queryLLMApi(
+                benchmarkCase.userPrompt,
+                benchmarkCase.systemPrompt,
+                null,
+                cacheKey,
+                apiConfig.model,
+                apiConfig.reasoningEffort,
+              );
+              const currentMeasured = await collectBenchmarkStream(stream);
+              if (isBenchmarkEmptyOutput(currentMeasured)) {
+                lastError = new Error('No output generated.');
+                if (requestAttempt < benchmarkRequestRetriesOnEmptyOutput) {
+                  console.warn(
+                    `[benchmark] empty output api=${apiConfig.id} case=${benchmarkCase.id}; retrying request`,
+                  );
+                  await sleep(benchmarkRequestSpacingMs);
+                  continue;
+                }
+                throw lastError;
+              }
+              measured = currentMeasured;
+              break;
+            } catch (error) {
+              lastError = error;
+              if (requestAttempt < benchmarkRequestRetriesOnEmptyOutput) {
+                const errorMessage =
+                  error instanceof Error ? error.message : String(error);
+                console.warn(
+                  `[benchmark] request failed api=${apiConfig.id} case=${benchmarkCase.id}; retrying request error=${errorMessage}`,
+                );
+                await sleep(benchmarkRequestSpacingMs);
+                continue;
+              }
+              throw error;
+            }
+          }
+
+          if (!measured) {
+            throw (
+              lastError instanceof Error
+                ? lastError
+                : new Error(String(lastError ?? 'Benchmark request failed'))
+            );
+          }
+
           const scored = await benchmarkCase.score({
             result: measured.text,
             firstTokenMs: measured.firstTokenMs,
@@ -248,13 +362,39 @@ export const runBenchmark = async (
             `[benchmark] attempt ${attemptNumber}/${apiConfig.repeats} api=${apiConfig.id} case=${benchmarkCase.id} failed error=${errorMessage}`,
           );
         }
+
+        await sleep(benchmarkRequestSpacingMs);
       }
 
       const caseDetailPath = path.join(casesDir, `${benchmarkCase.id}.json`);
+      const caseWeight = getCaseWeight(benchmarkCase.weight);
+      const caseMaxScore = Number(
+        (benchmarkCase.maxScore * runs.length).toFixed(2),
+      );
+      const caseTotalScore = Number(
+        runs.reduce((sum, run) => sum + run.score, 0).toFixed(2),
+      );
+      const adjustedCaseMaxScore = Number(
+        (caseMaxScore * caseWeight).toFixed(2),
+      );
+      const adjustedCaseTotalScore = Number(
+        (caseTotalScore * caseWeight).toFixed(2),
+      );
       const caseSummary: BenchmarkCaseSummary = {
         caseId: benchmarkCase.id,
         caseName: benchmarkCase.name,
         runCount: runs.length,
+        singleRunMaxScore: benchmarkCase.maxScore,
+        maxScore: caseMaxScore,
+        weight: caseWeight,
+        adjustedMaxScore: adjustedCaseMaxScore,
+        totalScore: caseTotalScore,
+        adjustedTotalScore: adjustedCaseTotalScore,
+        scoreRate: toScoreRate(caseTotalScore, caseMaxScore),
+        adjustedScoreRate: toScoreRate(
+          adjustedCaseTotalScore,
+          adjustedCaseMaxScore,
+        ),
         averageScore: Number(average(runs.map((run) => run.score)).toFixed(2)),
         averageFirstTokenMs: Number(
           averageNullable(runs.map((run) => run.firstTokenMs)).toFixed(2),
@@ -267,9 +407,10 @@ export const runBenchmark = async (
         detailPath: caseDetailPath,
       };
 
+      fs.mkdirSync(casesDir, { recursive: true });
       fs.writeFileSync(caseDetailPath, JSON.stringify(caseSummary, null, 2));
       console.log(
-        `[benchmark] case ${benchmarkCase.id} complete avgScore=${caseSummary.averageScore} avgFirst=${caseSummary.averageFirstTokenMs}ms avgTotal=${caseSummary.averageTotalTimeMs}ms detail=${caseDetailPath}`,
+        `[benchmark] case ${benchmarkCase.id} complete score=${caseSummary.totalScore}/${caseSummary.maxScore} (${caseSummary.scoreRate}%) adjusted=${caseSummary.adjustedTotalScore}/${caseSummary.adjustedMaxScore} avgPerRun=${caseSummary.averageScore}/${caseSummary.singleRunMaxScore} avgFirst=${caseSummary.averageFirstTokenMs}ms avgTotal=${caseSummary.averageTotalTimeMs}ms detail=${caseDetailPath}`,
       );
 
       caseSummaries.push(caseSummary);
@@ -277,14 +418,34 @@ export const runBenchmark = async (
 
     const totalScore = Number(
       caseSummaries
-        .reduce((sum, summary) => sum + summary.averageScore, 0)
+        .reduce((sum, summary) => sum + summary.totalScore, 0)
+        .toFixed(2),
+    );
+    const maxScore = Number(
+      caseSummaries
+        .reduce((sum, summary) => sum + summary.maxScore, 0)
+        .toFixed(2),
+    );
+    const adjustedTotalScore = Number(
+      caseSummaries
+        .reduce((sum, summary) => sum + summary.adjustedTotalScore, 0)
+        .toFixed(2),
+    );
+    const adjustedMaxScore = Number(
+      caseSummaries
+        .reduce((sum, summary) => sum + summary.adjustedMaxScore, 0)
         .toFixed(2),
     );
     const detailPath = path.join(modelDir, 'details.json');
     const apiSummary: BenchmarkApiSummary = {
       apiId: apiConfig.id,
       provider: apiConfig.api,
+      maxScore,
+      adjustedMaxScore,
+      scoreRate: toScoreRate(totalScore, maxScore),
+      adjustedScoreRate: toScoreRate(adjustedTotalScore, adjustedMaxScore),
       totalScore,
+      adjustedTotalScore,
       averageScore: Number(
         average(caseSummaries.map((summary) => summary.averageScore)).toFixed(
           2,
@@ -307,12 +468,14 @@ export const runBenchmark = async (
 
     fs.writeFileSync(detailPath, JSON.stringify(apiSummary, null, 2));
     console.log(
-      `[benchmark] api ${apiConfig.id} complete total=${apiSummary.totalScore} avg=${apiSummary.averageScore} detail=${detailPath}`,
+      `[benchmark] api ${apiConfig.id} complete score=${apiSummary.totalScore}/${apiSummary.maxScore} (${apiSummary.scoreRate}%) adjusted=${apiSummary.adjustedTotalScore}/${apiSummary.adjustedMaxScore} (${apiSummary.adjustedScoreRate}%) avgPerRun=${apiSummary.averageScore} detail=${detailPath}`,
     );
     summaries.push(apiSummary);
   }
 
-  summaries.sort((left, right) => right.totalScore - left.totalScore);
+  summaries.sort(
+    (left, right) => right.adjustedTotalScore - left.adjustedTotalScore,
+  );
 
   const finishedAt = new Date().toISOString();
   const summaryPath = path.join(runDirectory, 'summary.json');
@@ -365,11 +528,14 @@ export const renderReportSummary = (report: BenchmarkReport) => {
 
   for (const summary of report.summaries) {
     lines.push(
-      `${summary.apiId}: total=${summary.totalScore} avg=${summary.averageScore} first=${summary.averageFirstTokenMs}ms totalTime=${summary.averageTotalTimeMs}ms`,
+      `${summary.apiId}: score=${summary.totalScore}/${summary.maxScore} (${summary.scoreRate}%) first=${summary.averageFirstTokenMs}ms totalTime=${summary.averageTotalTimeMs}ms`,
+    );
+    lines.push(
+      `  adjusted=${summary.adjustedTotalScore}/${summary.adjustedMaxScore} (${summary.adjustedScoreRate}%)`,
     );
     for (const caseSummary of summary.caseSummaries) {
       lines.push(
-        `  ${caseSummary.caseId}: avg=${caseSummary.averageScore} first=${caseSummary.averageFirstTokenMs}ms totalTime=${caseSummary.averageTotalTimeMs}ms runs=${caseSummary.runs.length}`,
+        `  ${caseSummary.caseId}: score=${caseSummary.totalScore}/${caseSummary.maxScore} (${caseSummary.scoreRate}%) adjusted=${caseSummary.adjustedTotalScore}/${caseSummary.adjustedMaxScore} weight=${caseSummary.weight} avgPerRun=${caseSummary.averageScore}/${caseSummary.singleRunMaxScore} first=${caseSummary.averageFirstTokenMs}ms totalTime=${caseSummary.averageTotalTimeMs}ms runs=${caseSummary.runs.length}`,
       );
       if (caseSummary.highlights.length > 0) {
         lines.push(`    highlights: ${caseSummary.highlights.join(' | ')}`);

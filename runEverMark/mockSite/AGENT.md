@@ -15,7 +15,7 @@ This directory contains a standalone React application built with Vite. It provi
 ### Installation
 Navigate to this directory and install dependencies:
 ```bash
-cd testHtml/runEverMark
+cd runEverMark/mockSite
 npm install
 ```
 

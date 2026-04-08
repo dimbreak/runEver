@@ -5,10 +5,45 @@ import {
 } from '../../../../../src/agentic/execution.schema';
 import { standardSystemPrompt, standardUserPromptPrefix } from '../prompt';
 
+const calendarQueryIds = ['®9u', '®9q'];
+
+const normalizeText = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[\u2013\u2014]/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const includesAllTokens = (value: string, tokens: string[]) => {
+  const normalized = normalizeText(value);
+  return tokens.every((token) => normalized.includes(normalizeText(token)));
+};
+
 export const reasoningCalendarTest: BenchmarkCase = {
   id: 'reasoning-calendar',
   name: 'Reasoning Calendar',
-  systemPrompt: standardSystemPrompt,
+  maxScore: 5,
+  systemPrompt: standardSystemPrompt.replace(
+    'type WireAction=',
+    `type WireAction=
+|{
+  k:'fillForm';
+  q:'®91'|Selector;//form id
+  data:{f:string|Selector;v:string|string[]}[];//field name or selector and value to fill, string or js argument tpl'
+}|{
+  k:'combobox';
+  q:'®8a'|Selector;//combobox id
+  v:string;//value
+}|{
+  k:'calendar'; **you have no knowledge to pick date, no date & argument with date**
+  q:'®83'|Selector;//calendar id
+  ctx:{//give only full context, **you have no knowledge to pick date, no date & argument with date**
+   goalHint:string|null;//guide from [GOAL], original word only
+   argValHint:string|null;//give argument values that may related to this date picking, not only the key
+   pageHint:string|null;//any content on the page related?
+  };
+}`,
+  ),
   userPrompt: `${standardUserPromptPrefix}
 
   [url]
@@ -149,16 +184,21 @@ Cannot mark checkpoint#3 as done as it's not working status
           const action = parsedResult.data.a.find(
             (a) =>
               a.action.k === 'calendar' &&
-              ((typeof a.action.q === 'string' && a.action.q === '®9u') ||
-                (typeof a.action.q === 'object' && a.action.q.id === '®9u')),
+              ((typeof a.action.q === 'string' &&
+                calendarQueryIds.includes(a.action.q)) ||
+                (typeof a.action.q === 'object' &&
+                  calendarQueryIds.includes(a.action.q.id ?? ''))),
           )?.action as Extract<WireAction, { k: 'calendar' }> | undefined;
           if (action) {
             score++;
+            const goalHint = action.ctx?.goalHint ?? '';
+            const argValHint = action.ctx?.argValHint ?? '';
+            const pageHint = action.ctx?.pageHint ?? '';
+            const combinedHint = [argValHint, pageHint].join(' ');
             if (
-              action.ctx &&
-              action.ctx.argValHint?.includes('not open on monday') &&
-              action.ctx.goalHint?.includes('delivery') &&
-              action.ctx.pageHint?.includes('11 months to produce')
+              includesAllTokens(goalHint, ['delivery']) &&
+              includesAllTokens(combinedHint, ['11', 'months', 'produce']) &&
+              includesAllTokens(combinedHint, ['monday'])
             ) {
               score++;
             }

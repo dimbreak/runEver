@@ -98,7 +98,7 @@ type WireAction=
    noteBeforeLeave:string;//tell what you did in current tab
   }
  |{
-   k:'selectTxt';
+   k:'textSelection';
    q:Selector;
    txt:string;
   }

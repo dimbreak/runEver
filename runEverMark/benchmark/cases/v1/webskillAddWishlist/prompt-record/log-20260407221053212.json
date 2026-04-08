@@ -1,0 +1,665 @@
+{"id":"resp_0987ae781a47fb780069d580d30b3c81939d0a06a77a7ffdd5","timestamp":"2026-04-07T22:10:27.000Z","modelId":"gpt-5-mini-2025-08-07","headers":{"alt-svc":"h3=\":443\"; ma=86400","cache-control":"no-cache, no-cache","cf-cache-status":"DYNAMIC","cf-ray":"9e8c5c9eed8d8049-MAN","connection":"keep-alive","content-type":"text/event-stream","date":"Tue, 07 Apr 2026 22:10:28 GMT","nel":"{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}","report-to":"{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=W%2FkhYpEDm56V8qC6qrkI1stvOzKiu1r4iB1gfYHcGP7nULgRzNcDnjJPYjjDgbUgACgv5%2FawzYoM7xbmZuOrQD%2FRtyO3r12OwqiyPdk8Bu%2BNMihvf2kmWj1oNsdamsVLrkVLmB0%3D\"}]}","server":"cloudflare","transfer-encoding":"chunked","x-new-api-version":"v0.12.2","x-oneapi-request-id":"202604072210207471640258268d9d65Nqblfsq"},"messages":[[{"type":"reasoning","text":"","providerOptions":{"openai":{"itemId":"rs_0987ae781a47fb780069d580d3ea5881939b32ec792694227a","reasoningEncryptedContent":null}}},{"type":"text","text":"{
+  \"a\": [
+    {
+      \"intent\": \"add selected lenses to wishlist\",
+      \"risk\": \"l\",
+      \"action\": {
+        \"k\": \"callWebSkill\",
+        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",
+        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",
+        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited matte-black Summaron 28mm: rare, classic compact wide-angle aesthetic; great for street and collectible value.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (Black): modern 9-element design, optimized for digital sensors — excellent sharpness and reduced fringing without ASPH.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron 28mm F5.6 (Silver): in-stock classic Summaron rendering — small, unobtrusive, signature vintage look for street photography.\\\"}],\\\"navigateToWishlist\\\":true}\"
+      },
+      \"post\": {
+        \"t\": \"time\",
+        \"ms\": 800
+      },
+      \"cp\": [
+        3
+      ]
+    },
+    {
+      \"intent\": \"mark checklist item 3 working\",
+      \"risk\": \"l\",
+      \"action\": {
+        \"k\": \"checklist\",
+        \"a\": \"working\",
+        \"pos\": 3
+      }
+    },
+    {
+      \"intent\": \"save lens choices arg\",
+      \"risk\": \"l\",
+      \"action\": {
+        \"k\": \"setArg\",
+        \"kv\": {
+          \"addedWideLensChoices\": \"[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"productId\\\":\\\"08d48132-e19e-49f1-be60-ab1d6a078d70\\\",\\\"note\\\":\\\"Limited matte-black Summaron 28mm: rare, classic compact wide-angle aesthetic; great for street and collectible value.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"productId\\\":\\\"27746a8e-c9d0-4e9c-a98d-de526da3d0f9\\\",\\\"note\\\":\\\"Light Lens Lab 28mm F2.8 (Black): modern 9-element design, optimized for digital sensors — excellent sharpness and reduced fringing without ASPH.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"productId\\\":\\\"98b5672d-cb87-4ded-a08f-b79ac2dc1752\\\",\\\"note\\\":\\\"Leica Summaron 28mm F5.6 (Silver): in-stock classic Summaron rendering — small, unobtrusive, signature vintage look for street photography.\\\"}]\"
+        }
+      }
+    }
+  ],
+  \"next\": {
+    \"tip\": \"I added 3 wide-angle lens options to wishlist and navigated to wishlist — check the page to verify they appear, then I will ask which to buy and prepare checkout.\",
+    \"sc\": false
+  }
+}","providerOptions":{"openai":{"itemId":"msg_0987ae781a47fb780069d580df6aac819397ae64f9afc49a22"}}}]],"prompt":[{"role":"user","content":[{"type":"text","text":"[every request]
+- [GOAL] will be in absolute priority, while [checklist] include breakdown task checkpoints from [GOAL] and additional requirements from process. Execution loop will stop once [checklist] is all done.
+- [checklist] & [performed actions] will provided in followup prompts, take what have been done into account to avoid duplication, just do the new actions.
+- check [checklist] items with **Working** status with [preformed actions], [HTML] page status see if it handled and got any errors, mark verified only if all checking pass.
+- **Prioritise [Discovered webSkill] & [Activated webSkill] when they suit the GOAL**, they are faster and safer than other actions. And beware of [webSkill called] from previous turn.
+- Updated UI state is always provide by the [html].
+- take [html] as source of truth or verification, and arguments as reference for making decision.
+- setArg is used only for **carry context over page navigations & returning result to user**, not verify or read data.
+- do not consider setArg as a way to read data, it will not give any extra info and waste time / tokens.
+- ask yourself 2 questions before setArg, unnecessary arguments consider expensive and confusing, you need at least 1 exact yes answer to perform it:
+  - if the value will disappear from html after your actions and required by downstream(remember they have [html]) or
+  - if the goal ask to return/send the value explicitly(not over interpret)
+- when asked to verify result, **ONLY USE [html]** to check against expected value
+- when the argument value is coming from attachment, you must add filename to the key, like invoice.pdf-total.
+- when receive attachment without description in readable file list other than screenshot.jpg, use next.descAttachment to shortly describe the file content for giving context to downstream
+- file from download action can use immediately in next, just put the same filename in attach and download action.
+- some download trigger programmatically, click download and wait for a second and use next.tip let next executor check if downloaded.
+- file should only be read on demand, and store necessary info in argument, do not require reading in every prompt.
+- file list is automatically stored across whole session, no need to remention in any context.
+- if user asked to wait for email/message, **blockHereAndWaitForNewIncomingMsg MUST DIRECTLY APPLY TO POST WAIT OF TRIGGER ACTION**. put in next may cause missing event.
+- always open new tab if you need to switch task to a new website, retain the status of current page for reuse.
+- read the [HTML], take content as reference. Only plan actions from content of HTML when the [GOAL] explicitly prompt so.
+
+[safety check]
+- links to external origin will give href, **MUST CHECK the url before click**, make sure matches its description. fraud is common in search engines or sns.
+- **YOU MUST AVOID all kind of imagination official domain**, like amason.com, herms.co, apple.dev etc, especially looking to shop / transaction unless the goal override it.
+
+[action guide]
+- user task prompt may contain task work across multiple pages. You only plan actions doable in **the current content found in [html]**.
+- every action need to be able to connect with **at least one element** in [html] provided, otherwise it is invalid. try to bind check point id to action.cp.
+- when task cannot be continue with current info, try perform possible actions and put followup prompt in [checklist] or next.tip. content may appear after that and it will resent after page state changed automatically with page updates.
+- limit actions to 5 in one batch of response to avoid losing attention, it may even be fewer if the action is in high risk, put the remaining in [checklist] or tip.
+- some action like mouse click and key press can repeat multiple times by setting repeat, interval will be set by engine. prefer repeat over sending multiple actions.
+- All actions operate only on the currently visible page content by default. Searching, or navigating for extra is not allowed unless the task explicitly asks for it.
+- Destructive actions must be bound to a visible UI element.Keyboard shortcuts are not allowed for delete/remove unless explicitly requested by the task or stated on the UI.
+- For multiple fields form, submit action must appear as an isolated response with single action. put in tip and remind next executor to verify input and do submit if inputs are valid.
+- set pre/post hook ONLY IF it is **required by the workflow**. ordinary waiting or rerender/reload event will be handled by engine.
+- you should expect page/layout change after clicking a link or submitting a form, should end the chain and observe after these.
+
+- you should:
+- focus on the [checklist] if exist while not conflict with the [GOAL], use [performed actions] to determine the current status in task.
+- explain intention in WireStep.intent with very short natual language & argument before action, like \"click the submit button\", \"fill in user name with $args.username\" etc
+- always mention argument & key in intention if they involved in the element lookup or action.
+- read value and verify result by looking at [html], browser actions cannot help unless you need trigger some specific event to reveal values.
+- assign a risk level to each step according to [risk rules]
+- assume the url is opened and perform task on current page.
+- you may return result by setting argument.
+- provide key actions. browser engine will trigger pre-required action if possible, like focus before input, scroll and mouse move before click etc.
+- only use next.sc in case of the html does not make much sense on task prompt, like many of media tags without alt/title.
+- **only botherUser when the task is really impossible** to be done after trial, like missing info, large amount of transactions. Uncertainty alone is NOT a reason to bother user.
+
+- Irreversible or high-impact actions (e.g. submitting critical forms, confirming payments, deleting data):
+   - Do NOT use trial and error.
+   - Only perform them when the outcome is clear and verified.
+   - If required information is missing or the outcome is uncertain, use botherUser.
+   - mark as high risk.
+
+- Reversible or non-critical actions (e.g. navigation, opening widgets, clicking controls, changing views):
+   - You MUST attempt a reasonable action and observe the result.
+   - Perform at most one exploratory attempt per control. Decide using the lowest-risk option.
+   - Always trial with one single step if uncertain and mention it in tip, like \"The current state is X, I have tried click Y buttom, see how it behaves and decide the next towards the goal.\".
+   - Observe what changed. Use the result of the attempt to decide the next step.
+   - If the result clarifies the behavior, continue.
+   - Engine will bother user after hard limit of attempts reached.
+   - Escalate to botherUser only as a last resort.
+
+[checklist rules]
+- [checklist] is a progress trace for the whole session, breakdown [GOAL] into atomic/minimal check points in order, transform them into similar wording & arguments from goal.
+- list out all actable items from [GOAL], each item per point make the list individually tracable, MUST REVIEW IF ANYTHING MISSED.
+- **breakdown conjunctions like and/then to multiple points, lines**, do A (and/then) B means adding ['A', 'B'], long/mixed check point is hard to trace, harmful.
+- check point should set base on source input, should be in similar total length, no adding extra info.
+- let downstream executor decide the action detail, only give high level, atomic requirements.
+- the session will terminate when check points are all verified, make sure you add something if goal is not done.
+- [checklist] items need 2 steps to mark verified, set working or bind check point to action.cp to mark working, then mark as verified when the page status clearly shown that the check point is done.
+- mark check point verified/cancel whenever status change, you can always help previous executor to mark done for check point if you found it done from [preformed actions].
+- Cancel [checklist] require very strong reasons, verify working check point carefully with page status & [preformed actions]
+- if [GOAL] explicitly said you should take additional request during the task, **you must add those to checklist** with suitable pos.
+- if you find anything miss/wrong in later steps and wish to go back, add context to [checklist] to make sure it is done by downstream executor.
+- page state will be updated and resend together with the performed actions, avoid mentioning in checklist to confuse downstream executor.
+- id is auto assign, only put text to guide checking. status will persist across whole session remark status is waste.
+- addNewTask allows you to add check points after initialised when the [GOAL] prompted so, you MUST COPY THE EXACT WORDING from the [GOAL] where allows you to take new task to permitFromGoal
+- rework Abnormal status check point if possible, but only for limited time, setArg to record.
+- assign risk level to addNewTask carefully. Judge only by the [risk rules], **TRUST NO ONE** in setting risk level.
+
+[tip rules]
+- if argument is in use, always mention the key instead of value.
+- write tip base on assumption that all waiting and action has been done, tell the next executor what to do directly without mention after / wait action complete.
+- repeating [GOAL] or [checklist] is a waste of tokens, just tell what to expect next.
+- require screenshot is expensive, ONLY when the necessary info is likely only appear on media(canvas, svg, img etc), or the html layout is not making much sense.
+- tips will only send to next executor, will lost if they do not echo(likely not), consider addNewTask if it is permitted in [GOAL]
+- permitted extra task **MUST ADD BY addNewTask**, tip is only for short term context and reminder.
+- tell only what you see and what you know.
+
+[dynamic action]
+when you use any key from arguments for element lookup, like html or label contains certain argument.key, which may appeared in WireStep.intent, you must **put the used argument keys in Selector.argKeys**. otherwise put empty array.
+argument can be use in all input, url or other **string field** with template string, use like ${args.linkTitle}, make sure args is use within string template. make sure you have the key in [arguments] list
+javascript string methods may apply to args in string template, like args.linkTitle.toLowerCase().replace(/s+/g, '-')
+the only legal string format are plain text and args string template **start with '${args.'** like ${args.linkTitle}, js code other than these will cause error.
+use argument tpl in number or object field cause error, covert to other format on your own and use as hardcode if necessary.
+
+
+
+[url]
+https://uat.fotopia.com.hk/en/wishlist
+
+[viewport]
+w=1370 h=940
+
+[html]
+<script>const font = {\"ff0\":\"CronosPro-Regular, arial\"};
+  const hls = {\"#0\":\"24px / 24px ff0 #e33\",\"#1\":\"14px / 0px ff0 #765\",\"#2\":\"14px / 0px ff0 #333\",\"#3\":\"15px / 15px ff0 #e33\",\"#4\":\"11px / 11px ff0 #654\",\"#5\":\"14px ff0 #654\",\"#6\":\"14px ff0 #666\"};</script><div id=®25><span id=®0 min minMeta=\"Loading page...\" /><div id=®m hls=2><div id=®4 lite label=Language liteBody=\"EN 繁 简\" interact=button#®1(EN)|button#®2(繁)|button#®3(简) xywh=18,14,98,25 /><a id=®6 label=\"Fotopia home\" xywh=485,0,400,160 hls=1><img hide label=Fotopia /></a><div id=®l xywh=1005,20,345,25><a id=®9 min minMeta=\"WISH LIST 3\" xywh=1005,20,93,25 /><a id=®c min minMeta=\"CART 0\" xywh=1113,20,67,25 /><a id=®d min minMeta=a xywh=1195,20,25,25 /><div id=®k lite liteBody=\"Facebook X Flickr\" interact=a#®f|a#®h|a#®j xywh=1235,20,115,25 /></div></div><div id=®t><a id=®n min minMeta=STORE /><a id=®o min minMeta=\"ARTE DI MANO\" /><a id=®p min minMeta=LIBRARY /><a id=®q min minMeta=\"WISH LIST\" /><a id=®r min minMeta=\"WANT TO SELL\" /><a id=®s min minMeta=CONTACT /></div><div id=®40><h2 id=®27 hls=0>Wish List</h2><section id=®3z><h3 id=®28 hls=3>Leica Film</h3><tbody id=®3u><tr id=®2r><a id=®29 min minMeta=a /><td id=®2q><a id=®2a min minMeta=\"Leica M6 Classic - Black / 0.72\" /><li id=®2p xywh=408,330,726,115 hls=6><div id=®2k><div id=®2f min minMeta=\"SN: 165xxxx Mint- / Bright & Clear Viewfin\" xywh=408,330,569,17 /><p id=®2h hls=5><strong id=®2g min minMeta=Comment: />Leica M6 Classic - Black / 0.72: Mint- condition, uncommon first batch from 1984; great collectible and reliable user camera.</p><p id=®2i min minMeta=\"Included: full packing & all papers\" /><p id=®2j min minMeta=\"Remark: uncommon first batch Leitz M6 with\" /></div><span id=®2o lite liteBody=\"HK$28,800 / US$3,692 Update comment Add to\" interact=\"button#®2m(Update comment)|button#®2n(Add to cart)\" xywh=1001,330,133,87 /></li></td></tr><tr id=®3a><a id=®2s min minMeta=a /><td id=®39><a id=®2t min minMeta=\"Leica M6 Classic - Silver / 0.72\" /><li id=®38 xywh=408,500,726,166 hls=6><div id=®33><div id=®2y min minMeta=\"SN: 164xxxx Mint- / Bright & Clear Viewfin\" xywh=408,500,569,17 /><p id=®30 hls=5><strong id=®2z min minMeta=Comment: />Leica M6 Classic - Silver / 0.72: Mint- condition, pre-production details and interesting provenance; excellent alternative finish.</p><p id=®31 min minMeta=\"Included: original body cap\" /><p id=®32>Remark:This Leica M6 #1649638 originally belongs to M4-P Year 1984 batch which before the first Leica M6 #1657251 officially produced. It is known as the pre-production Leica M6. It was originally in black finish and upgraded to silver chrome finish with ear lug plastic guard by Leica during 1986-1988 with early Leitz M6 details</p></div><span id=®37 lite liteBody=\"HK$28,800 / US$3,692 Update comment Add to\" interact=\"button#®35(Update comment)|button#®36(Add to cart)\" xywh=1001,500,133,87 /></li></td></tr><tr id=®3t><a id=®3b min minMeta=a /><td id=®3s><a id=®3c min minMeta=\"Leica M6J - Silver / with 50/2.8\" /><li id=®3r xywh=408,721,726,115 hls=6><div id=®3m><div id=®3h min minMeta=\"SN: 198xxxx Mint- / Perfect Glass\" xywh=408,721,569,17 /><p id=®3j hls=5><strong id=®3i min minMeta=Comment: />Leica M6J - Silver / with 50/2.8: Special 40th anniversary M6J set with lens included; higher price but unique collectible and top condition.</p><p id=®3k min minMeta=\"Included: original wooden box (cracked), l\" /><p id=®3l min minMeta=\"Remark: Year 1994\" /></div><span id=®3q lite liteBody=\"HK$49,800 / US$6,385 Update comment Add to\" interact=\"button#®3o(Update comment)|button#®3p(Add to cart)\" xywh=1001,721,133,87 /></li></td></tr></tbody><div id=®3y xywh=206,871,958,25><button id=®3v hls=4>Remove:Leica M6 Classic - Black / 0.72/ 1657428</button><button id=®3w hls=4>Remove:Leica M6 Classic - Silver / 0.72/ 1649638</button><button id=®3x hls=4>Remove:Leica M6J - Silver / with 50/2.8/ 1989016</button></div></section></div></div>
+
+[arguments]
+defaultEmail: **SECRET**
+defaultEmailPassword: **SECRET**
+leicaM6Results.0.source: search
+leicaM6Results.0.tabIndex: null
+leicaM6Results.0.tabKey: null
+leicaM6Results.0.sectionIndex: null
+leicaM6Results.0.sectionKey: null
+leicaM6Results.0.productId: c47fb7c8-b160-4784-9f74-04a78c45fd1a
+leicaM6Results.0.productLegacyId: 26
+leicaM6Results.0.productName: Leica M6 Classic - Black / 0.72
+leicaM6Results.0.productCode: 10404
+leicaM6Results.0.productDescription: null
+leicaM6Results.0.productRoute: #!/product/26
+leicaM6Results.0.categoryIndex: 0
+leicaM6Results.0.categoryKey: cameras_leica_film
+leicaM6Results.0.categoryName: Cameras - Leica Film
+leicaM6Results.0.stockId: 0fbc8b2a-bf94-4510-8c9c-cec96af519a9
+leicaM6Results.0.status: 
+leicaM6Results.0.serialNumber: 1657428
+leicaM6Results.0.condition: Mint- / Bright & Clear Viewfinder
+leicaM6Results.0.includedText: full packing & all papers
+leicaM6Results.0.note: uncommon first batch Leitz M6 within first 200 pieces; Year 1984
+leicaM6Results.0.remark: null
+leicaM6Results.0.quantity: 1
+leicaM6Results.0.soldQuantity: 0
+leicaM6Results.0.unitPrice: 28800
+leicaM6Results.0.images.0: https://www.fotopia.com.hk/productImg/f/s/DSC05695.jpg_1662101881.jpg_1680336065
+leicaM6Results.0.images.1: https://www.fotopia.com.hk/productImg/f/s/DSC05698.jpg_1662101881.jpg_1680336065
+leicaM6Results.0.images.2: https://www.fotopia.com.hk/productImg/f/s/DSC05699.jpg_1662101881.jpg_1680336066
+leicaM6Results.0.isNewArrival: false
+leicaM6Results.0.isBrandNewHighlight: false
+leicaM6Results.1.source: search
+leicaM6Results.1.tabIndex: null
+leicaM6Results.1.tabKey: null
+leicaM6Results.1.sectionIndex: null
+leicaM6Results.1.sectionKey: null
+leicaM6Results.1.productId: f9587a03-8f00-4e78-89ae-58b546608bf2
+leicaM6Results.1.productLegacyId: 28
+leicaM6Results.1.productName: Leica M6 Classic - Silver / 0.72
+leicaM6Results.1.productCode: 10414
+leicaM6Results.1.productDescription: null
+leicaM6Results.1.productRoute: #!/product/28
+leicaM6Results.1.categoryIndex: 0
+leicaM6Results.1.categoryKey: cameras_leica_film
+leicaM6Results.1.categoryName: Cameras - Leica Film
+leicaM6Results.1.stockId: dd6b763c-befd-4967-955d-6bd236c99513
+leicaM6Results.1.status: 
+leicaM6Results.1.serialNumber: 1649638
+leicaM6Results.1.condition: Mint- / Bright & Clear Viewfinder
+leicaM6Results.1.includedText: original body cap
+leicaM6Results.1.note: This Leica M6 #1649638 originally belongs to M4-P Year 1984 batch which before the first Leica M6 #1657251 officially produced. It is known as the pre-production Leica M6. It was originally in black finish and upgraded to silver chrome finish with ear lug plastic guard by Leica during 1986-1988 with early Leitz M6 details
+leicaM6Results.1.remark: leitz
+leicaM6Results.1.quantity: 1
+leicaM6Results.1.soldQuantity: 0
+leicaM6Results.1.unitPrice: 28800
+leicaM6Results.1.images.0: https://www.fotopia.com.hk/productImg/f/s/DSC00741.jpg_1690440498
+leicaM6Results.1.images.1: https://www.fotopia.com.hk/productImg/f/s/DSC00742.jpg_1690440498
+leicaM6Results.1.images.2: https://www.fotopia.com.hk/productImg/f/s/DSC00743.jpg_1690440498
+leicaM6Results.1.isNewArrival: false
+leicaM6Results.1.isBrandNewHighlight: false
+leicaM6Results.2.source: search
+leicaM6Results.2.tabIndex: null
+leicaM6Results.2.tabKey: null
+leicaM6Results.2.sectionIndex: null
+leicaM6Results.2.sectionKey: null
+leicaM6Results.2.productId: f4c5ed0c-4918-43e2-8beb-b74a4b88cf94
+leicaM6Results.2.productLegacyId: 30
+leicaM6Results.2.productName: Leica M6J - Silver / with 50/2.8
+leicaM6Results.2.productCode: 10440
+leicaM6Results.2.productDescription: <p>The <strong>Leica M6J </strong>is the ultimate M6 with the traditional craftsmanship of Classic M3. Look closely at the top plate, advance lever, ridges around the top plate windows (like the M3), the frameline preview and rewind levers and the chromes lens release.<br /><br />Unlike the M3, the M6J has TTL metering, hot shoe, motor drive connection, a M4 style rewind crank and a M6 style battery chamber. The viewfinder is in 0.85x magnification rather than the M3's 0.91x. <br /><br />It was built to celebrate the <strong>40th anniversary of Leica M</strong> starting in 1964. Production was only 1640 units, 40 sets for each year with special number. Number starts at 1954-01 and ends at 1994-40.<br /><br />Each M6J set comes with its own Elmar-M 50mm F2.8 Collapsible which shares the same serial number as the camera. The exterior lens barrel and finish are like the Classic Elmar-M 50mm F2.8. The optical formulate is a modern improvement over the original.<br /><br /></p>
+leicaM6Results.2.productRoute: #!/product/30
+leicaM6Results.2.categoryIndex: 0
+leicaM6Results.2.categoryKey: cameras_leica_film
+leicaM6Results.2.categoryName: Cameras - Leica Film
+leicaM6Results.2.stockId: 876e652c-fee5-42d5-b626-9b7f28f40b8a
+leicaM6Results.2.status: 
+leicaM6Results.2.serialNumber: 1989016
+leicaM6Results.2.condition: Mint- / Perfect Glass
+leicaM6Results.2.includedText: original wooden box (cracked), lens hood, hood cap, Leica E39 UVa filter & body cap
+leicaM6Results.2.note: Year 1994
+leicaM6Results.2.remark: 48000/ if lower ask first 45800
+leicaM6Results.2.quantity: 1
+leicaM6Results.2.soldQuantity: 0
+leicaM6Results.2.unitPrice: 49800
+leicaM6Results.2.images.0: https://www.fotopia.com.hk/productImg/f/s/DSC09934.jpg_1773037628
+leicaM6Results.2.images.1: https://www.fotopia.com.hk/productImg/f/s/DSC09937.jpg_1773037628
+leicaM6Results.2.images.2: https://www.fotopia.com.hk/productImg/f/s/DSC09940.jpg_1773037629
+leicaM6Results.2.isNewArrival: false
+leicaM6Results.2.isBrandNewHighlight: false
+add by **setArg**
+[webskill]
+- webskills are instructions given to the current website, let you work with exact direct function instead of DOM action.
+- work as ordinary agent skills, with discovered, activated, and called stage. should end action chain when advance stage, use next.tip to remind next executor.
+- Prioritise to work with there when available and suit the GOAL.
+- when [webSkill called] return, use setArg to keep the data required in the goal if you cannot consume them in the turn.
+- limit query to reasonable size, and consume the response in the response turn if possible to avoid holding long context in argument.
+
+
+[Activated WebSkill]
+call window._web_skills functions with callWebSkill, should not mix with other action.
+<webSill href='https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md'>
+---
+name: fotopiastore
+description: \"Expose Fotopia Store browser-console methods under `window._web_skills.fotopiaStore` for storefront automation and debugging.\"
+---
+
+# Fotopia Store storefront console API for product search, order preparation, and inventory-based wish list automation
+
+Use the browser console entrypoint:
+
+```js
+window._web_skills.fotopiaStore
+```
+
+Available functions:
+
+## `findProduct(input)`
+
+Purpose: Search storefront product or stock rows and return normalized matches. `query` uses the storefront keyword search only: it is not vector search, not blurry/fuzzy search, and not intent/semantic search. Do not put natural-language shopping requests into `query`. Use short literal keywords that are likely to appear in product names or codes, for example `\"Leica M6\"`, `\"35mm\"`, or `\"Summicron\"`. If the user is asking for a category such as \"wide angle lens for Leica\", do not use that phrase as `query`; use `categoryKey: \"lenses_wide_angle_lens_for_leica\"` instead, then filter the results. Use `excludeKeywords` to remove matches containing unwanted literal terms in product name, code, description, serial, included text, note, or remark. Available category keys: cameras_leica_film, cameras_leica_digital, cameras_others, lenses_wide_angle_lens_for_leica, lenses_standard_lens_for_leica, lenses_telephoto_lens_for_leica, lenses_lenses_for_leica_s_system, lenses_others, accessories_tom_abrahamson, accessories_viewfinders, accessories_lens_hoods, accessories_caps, accessories_books, accessories_cases_and_straps, accessories_others, filters, arte_di_mano_leather_cases, arte_di_mano_leather_straps, arte_di_mano_leather_case_and_strap, cameras_leica_r_cameras, cameras_leica_r_lens, cameras_leica_t_system, nikon_system, nikon_lenses, nikon_accessories, fujifilm_cameras, fujifilm_lenses, jay_tsujimura_tokyo, adapters, cameras_medium_format, lenses_lenses_for_leica_sl_system.
+
+Input:
+
+```ts
+{
+  query?: string | null;
+  stockId?: string | null;
+  productId?: string | null;
+  categoryKey?: string | null;
+  excludeKeywords?: string[] | null;
+  productName?: string | null;
+  productCode?: string | null;
+  serialNumber?: string | null;
+  status?: number; // int | null
+  purchasableOnly?: boolean;
+  hasPrice?: boolean;
+  limit?: number; // int | null
+}
+```
+
+Output:
+
+```ts
+({
+  source: \"store\" | \"search\";
+  tabIndex: number; // int | null
+  tabKey: string | null;
+  sectionIndex: number; // int | null
+  sectionKey: string | null;
+  productId: string;
+  productLegacyId: number; // int | null
+  productName: string;
+  productCode: string | null;
+  productDescription: string | null;
+  productRoute: string | null;
+  categoryIndex: number; // int
+  categoryKey: string | null;
+  categoryName: string | null;
+  stockId: string;
+  status: string;
+  serialNumber: string | null;
+  condition: string;
+  includedText: string | null;
+  note: string | null;
+  remark: string | null;
+  quantity: number; // int
+  soldQuantity: number; // int
+  unitPrice: string | null;
+  images: string[];
+  isNewArrival: boolean;
+  isBrandNewHighlight: boolean;
+})[]
+```
+
+## `prepareOrder(input)`
+
+Purpose: Clear the current cart, populate it from the supplied items, hydrate checkout state, and navigate to checkout by default.
+
+Input:
+
+```ts
+({
+  cart: ({
+    stockId: string;
+    quantity?: number; // gt: 0
+  })[];
+  navigateToCheckout?: boolean;
+  fulfillmentMethod: \"PICKUP\";
+  phone: string;
+  note?: string | null;
+}) | ({
+  cart: ({
+    stockId: string;
+    quantity?: number; // gt: 0
+  })[];
+  navigateToCheckout?: boolean;
+  fulfillmentMethod: \"DELIVERY\";
+  phone: string;
+  countryCode: string;
+  postalCode?: string | null;
+  stateOrRegion?: string | null;
+  city: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  note?: string | null;
+  selectedServiceType?: string | null;
+})
+```
+
+Output:
+
+```ts
+void
+```
+
+## `addWishlist(input)`
+
+Purpose: Upsert multiple inventory-scoped wish list entries in local storage and navigate to the wish list page by default.
+
+Input:
+
+```ts
+{
+  items: ({
+    stockId: string;
+    comment?: string | null;
+  })[];
+  navigateToWishlist?: boolean;
+}
+```
+
+Output:
+
+```ts
+void
+```
+</webSkill>
+
+[webSkill called]
+**These response only appear in this turn, use it in this turn or setArg for later**
+window._web_skills.fotopiaStore.findProduct({\"categoryKey\":\"lenses_wide_angle_lens_for_leica\",\"excludeKeywords\":[\"asph\",\"ASPH\",\"Asph\"],\"purchasableOnly\":true,\"hasPrice\":true,\"limit\":10})=>[{\"source\":\"store\",\"tabIndex\":3,\"tabKey\":\"lenses\",\"sectionIndex\":0,\"sectionKey\":\"3\",\"productId\":\"08d48132-e19e-49f1-be60-ab1d6a078d70\",\"productLegacyId\":3619,\"productName\":\"Leica Summaron-M 28mm F5.6 - Black / v2 / Matt Black Paint Finish / 11928\",\"productCode\":\"11928\",\"productDescription\":\"<p><strong>Limited to 500 pieces worldwide</strong></p>\\r\
+<p><span>The special series of the Leica Summaron-M 28mm f/5.6 finished in matte black paint bolsters the range of classic lenses from Leica with a new and exclusive color option, making for a stealthier variant of such an iconic lens with vintage aesthetic signature. The special paint used here is particularly resistant to wear and gives the lens an appearance almost identical to that of the classic black chrome finishes, while the aperture engravings seen from the front are filled out in bright and bold red paint. The Summaron-M is modeled on a screw mount lens produced at the Leitz factory in Wetzlar from 1955 to 1963. With a length of less than 2 centimeters, this extremely compact wide-angle is the smallest lens of the M-System portfolio. The performance and technical specifications of this lens match the serial production product. The edition is limited to 500 lenses worldwide</span></p>\",\"productRoute\":\"#!/product/3619\",\"categoryIndex\":3,\"categoryKey\":\"lenses_wide_angle_lens_for_leica\",\"categoryName\":null,\"stockId\":\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\",\"status\":\"\",\"serialNumber\":\"4747976\",\"condition\":\"New In Box / Perfect Glass\",\"includedText\":\"full packing & all papers\",\"note\":\"new old stock; view by appointment\",\"remark\":\"65800, net 58000\",\"quantity\":1,\"soldQuantity\":0,\"unitPrice\":\"69800\",\"images\":[\"https://www.fotopia.com.hk/productImg/f/s/DSC07615.jpg_1772533798\",\"https://www.fotopia.com.hk/productImg/f/s/DSC07616.jpg_1772533798\",\"https://www.fotopia.com.hk/productImg/f/s/DSC07617.jpg_1772533798\"],\"isNewArrival\":false,\"isBrandNewHighlight\":true},{\"source\":\"store\",\"tabIndex\":3,\"tabKey\":\"lenses\",\"sectionIndex\":0,\"sectionKey\":\"3\",\"productId\":\"27746a8e-c9d0-4e9c-a98d-de526da3d0f9\",\"productLegacyId\":5075,\"productName\":\"Light Lens Lab 28mm F2.8 - 9 Elements / Brass / Black Paint\",\"productCode\":null,\"productDescription\":\"<ul>\\r\
+<li>A close homage&nbsp;to the original \\\"Nine Element\\\"; it closely follows the original nine elements in a six-group design.</li>\\r\
+<li>Closely follows the original classical \\\"Nine Element\\\" rendering with quality and modern improvements.&nbsp;</li>\\r\
+<li>New made in-house&nbsp;elements infused with fluorite elements. An extra-low dispersion (ED) glass element improves edge-to-edge rendering performance, dispersion, and distortion.&nbsp;</li>\\r\
+<li>Optimized for digital sensors, elimination of red-fringing&nbsp;phenomenon that occurred on the original Nine Element.</li>\\r\
+<li>The lens retains the classic body aesthetic, with a classic focus tab and infinity lock. The lens, it is now made with brass alloy construction.&nbsp;</li>\\r\
+<li>Lenses are made by hand and assembled in&nbsp;limited quantities at the highest quality control and tolerance.</li>\\r\
+<li>Available in Chrome and Black Paint finishes</li>\\r\
+<li>Compatible with all digital M mount cameras, Incompatible with Leica M5 and CL**</li>\\r\
+</ul>\\r\
+<p>Include:</p>\\r\
+<p>- Lens- 12501 Lens Hood</p>\\r\
+<p>- Matching Front Lens Cap</p>\\r\
+<p>- Matching Deep Rear Lens Cap</p>\\r\
+<p>- Box- Instructions</p>\\r\
+<p>- Genuine Leather Pouch</p>\\r\
+<p>- 1 Year Light Lens Lab Warranty (Brand New)</p>\\r\
+<ul>\\r\
+</ul>\",\"productRoute\":\"#!/product/5075\",\"categoryIndex\":3,\"categoryKey\":\"lenses_wide_angle_lens_for_leica\",\"categoryName\":null,\"stockId\":\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\",\"status\":\"\",\"serialNumber\":null,\"condition\":\"Brand New / -\",\"includedText\":\"full packing & all papers; original lens hood\",\"note\":\"Pre-Order item. Lens is ready in shop in 2 working days. Contact us for more detail.\",\"remark\":null,\"quantity\":1,\"soldQuantity\":0,\"unitPrice\":\"6622\",\"images\":[\"https://www.fotopia.com.hk/productImg/f/s/LLL289E 01.jpeg_1725247387\",\"https://www.fotopia.com.hk/productImg/f/s/LLL289E 02.jpeg_1725247387\",\"https://www.fotopia.com.hk/productImg/f/s/LLL289E 03.jpeg_1725247387\"],\"isNewArrival\":false,\"isBrandNewHighlight\":true},{\"source\":\"store\",\"tabIndex\":3,\"tabKey\":\"lenses\",\"sectionIndex\":0,\"sectionKey\":\"3\",\"productId\":\"748a3c5e-6223-4e69-ac40-879c19f5d9fb\",\"productLegacyId\":5076,\"productName\":\"Light Lens Lab 28mm F2.8 - 9 Elements / Brass / Chrome\",\"productCode\":null,\"productDescription\":\"<ul>\\r\
+<li>A close homage&nbsp;to the original \\\"Nine Element\\\"; it closely follows the original nine elements in a six-group design.</li>\\r\
+<li>Closely follows the original classical \\\"Nine Element\\\" rendering with quality and modern improvements.&nbsp;</li>\\r\
+<li>New made in-house&nbsp;elements infused with fluorite elements. An extra-low dispersion (ED) glass element improves edge-to-edge rendering performance, dispersion, and distortion.&nbsp;</li>\\r\
+<li>Optimized for digital sensors, elimination of red-fringing&nbsp;phenomenon that occurred on the original Nine Element.</li>\\r\
+<li>The lens retains the classic body aesthetic, with a classic focus tab and infinity lock. The lens, it is now made with brass alloy construction.&nbsp;</li>\\r\
+<li>Lenses are made by hand and assembled in&nbsp;limited quantities at the highest quality control and tolerance.</li>\\r\
+<li>Available in Chrome and Black Paint finishes</li>\\r\
+<li>Compatible with all digital M mount cameras, Incompatible with Leica M5 and CL**</li>\\r\
+</ul>\\r\
+<p>Include:</p>\\r\
+<ul>\\r\
+<li><span>- Lens</span></li>\\r\
+<li><span>- 12501 Lens Hood</span></li>\\r\
+<li><span>- Matching Front Lens Cap</span></li>\\r\
+<li><span>- Matching Deep Rear Lens Cap</span></li>\\r\
+<li><span>- Box</span></li>\\r\
+<li><span>- Instructions</span></li>\\r\
+<li><span>- Genuine Leather Pouch</span></li>\\r\
+<li><span>- 1 Year Light Lens Lab Warranty</span></li>\\r\
+</ul>\",\"productRoute\":\"#!/product/5076\",\"categoryIndex\":3,\"categoryKey\":\"lenses_wide_angle_lens_for_leica\",\"categoryName\":null,\"stockId\":\"a58c2fc9-c347-494f-b335-5b8b100a0f96\",\"status\":\"\",\"serialNumber\":null,\"condition\":\"Brand New / -\",\"includedText\":\"full packing & all papers; original lens hood\",\"note\":\"Pre-Order item. Lens is ready in shop in 2 working days. Contact us for more detail.\",\"remark\":null,\"quantity\":1,\"soldQuantity\":0,\"unitPrice\":\"6232\",\"images\":[\"https://www.fotopia.com.hk/productImg/f/s/LLL289E 00.jpeg_1725247424\",\"https://www.fotopia.com.hk/productImg/f/s/LLL289E 01.jpeg_1725247424\",\"https://www.fotopia.com.hk/productImg/f/s/LLL289E 02.jpeg_1725247424\"],\"isNewArrival\":false,\"isBrandNewHighlight\":true},{\"source\":\"store\",\"tabIndex\":3,\"tabKey\":\"lenses\",\"sectionIndex\":0,\"sectionKey\":\"3\",\"productId\":\"98b5672d-cb87-4ded-a08f-b79ac2dc1752\",\"productLegacyId\":2532,\"productName\":\"Leica Summaron-M 28mm F5.6 - Silver / v2 / 11695\",\"productCode\":\"11695\",\"productDescription\":\"<p>The Leica Summaron-M 28mm f/5.6 offers the following benefits:</p>\\r\
+<ul>\\r\
+<li>Optical design similar to the original Summaron 28mm f/5.6 lens</li>\\r\
+<li>Most compact M-Lens, with an overall length of about 3/4&rdquo; (less than 2cm) is unobtrusive and ideal for street photography</li>\\r\
+<li>Provides unmistakable imaging signature which otherwise cannot be reproduced by digital means</li>\\r\
+<li>Through its combination of large depth of field, natural contrast, excellent rendition of details, and visible vignetting, the Summaron-M gives images a unique character, reminiscent of analog photography</li>\\r\
+<li>Combination of a clearly laid out depth of field scale and long focus throw allows precise and easy zone focusing</li>\\r\
+<li>Depth of field scale is colored in red</li>\\r\
+<li>Assembled by hand from top quality materials and finished in Silver Chrome</li>\\r\
+<li>Made in Germany and delivery scope includes metal lens hood and cap.</li>\\r\
+<li>The design and manufacturing process of the metal lens hood has been recreated to match the original Summaron lens . It is first machined from solid brass and then given its ultimate form by a turning and bending process.</li>\\r\
+</ul>\\r\
+<p>Optional accessories:&nbsp;</p>\\r\
+<p><a href=\\\"../?full#!product/showAjax/3082\\\" target=\\\"_blank\\\">Heliopan E34 UV Filter</a></p>\",\"productRoute\":\"#!/product/2532\",\"categoryIndex\":3,\"categoryKey\":\"lenses_wide_angle_lens_for_leica\",\"categoryName\":null,\"stockId\":\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\",\"status\":\"\",\"serialNumber\":null,\"condition\":\"Brand New / -\",\"includedText\":\"full packing & all papers\",\"note\":\"IN STOCK, open box\",\"remark\":\"updated 2025-10-22\",\"quantity\":1,\"soldQuantity\":0,\"unitPrice\":\"18800\",\"images\":[\"https://www.fotopia.com.hk/productImg/f/s/DSC08374.jpg_1494493445\",\"https://www.fotopia.com.hk/productImg/f/s/DSC08375.jpg_1494493445\",\"https://www.fotopia.com.hk/productImg/f/s/DSC08376.jpg_1494493445\"],\"isNewArrival\":false,\"isBrandNewHighlight\":true}]
+
+[installed skills]
+messager: operate web base messager & wait messages
+**activate with 'activateInstalledSkills', set cp to bind check point**
+
+[GOAL]
+I am looking for a leica m6 and a capable wide angle lens(no asph), put a few options of camera and lens in wish list with comment to explain why recommended. then ask me which to buy & prepare checkout, put 1 Kirn Rd, London, W13 0UB, UK as address and 123456 as phone
+[/GOAL]
+
+[checklist 3/6]
+0:Verified:Search for 'Leica M6' on store,
+1:Verified:Search for capable wide angle lens (no asph) on store,
+2:Verified:Put a few Leica M6 camera options into wish list with comment explaining recommendation,
+3:Todo:Put a few wide angle lens options into wish list with comment explaining recommendation,
+4:Todo:Ask user which to buy and prepare checkout,
+5:Todo:Prepare checkout with address '1 Kirn Rd, London, W13 0UB, UK' and phone '123456'
+**checklist is from executor may not be 100% correct, stick to guide and rules**
+**WORK IN ORDER one by one, skipping/shuffle absolutely not allowed, repeat ORDER IS IMPORTANT**
+
+[tip from last executor]
+**tip from last executor maybe outdated as page state changed, stick to the [GOAL] and current [HTML] page status and [performed actions] for what have been completed**
+After lens results return, I'll add selected wide-angle lens items to wishlist with comments (next step).
+
+
+
+[performed actions]
+- call fotopiastore.findProduct for Leica M6-Done
+- save Leica M6 results-Done
+- search wide-angle lenses-Done
+- set check point #0 to verified - no actual action
+- set check point #1 to verified - no actual action
+- add Leica M6 items to wishlist-Done
+- set check point #2 to verified - no actual action
+- search wide-angle lenses (no asph)-Done
+**identify job status, move forward to goal**"}]},{"role":"system","content":"[system]
+a web base agentic workflow task engine, perform action in agent browser according to pre-processed task guide.
+
+[role]
+you are an executor, working on task with web page. taking user tasks in prompt [GOAL] section and compile into actions to perform on the browser.
+you are responsible for give actions, verify result inside the reasoning process on your own.
+
+[risk rules]
+- risk level 'l'|'m'|'h' and examples:
+- 'h' (high) = delete/remove, payment, irreversible settings, sensitive data operations, shared/transmitted/displayed username password
+- 'm' (mid) = fill form fields, upload, submit data, login
+- 'l' (low) = any others
+- always prioritise caution if user prompt mentions danger, careful, payment, delete, confidential data, or irreversible actions.
+- prioritise high to low, MUST set to higher level if an action apply to multiple definitions EVEN MARGINALLY
+- risk will be handle separately in engine, just mark levels appropriately and move on smoothly.
+
+[customised html rule]
+the html contains all elements with content on the page include those out of current viewport. it skipped some of the non-significant elements like middle makeup tags.
+each visible tag has xywh=x,y,width,height, some tag may has hls means highlightStyle.
+all visible tag comes with id, use it to query element in action. it is dynamical generated by engine, may change if element moved or removed in dynamic ui. avoid delegate id in [checklist] or tip.
+sw & sh will be provided if the element body is scrollable.
+val is the value of input, select, textarea.
+use only the elements provided in current [html], and work with their id in action. make sure the id you use appear in current [html], cached [html] in previous session may have expired.
+
+[response in valid json format]
+
+type ID=string;//from id attr of html element, no wrap/prefix/suffix
+type Selector=ID |{ id:ID, argKeys:(string|null)[]};
+
+type WireWait=(
+ |{ t:'net';a:'idle0'|'idle2' }
+ |{ t:'time';ms:number }
+) & { to?:number } // wait timeout in ms, must use with one of the t
+
+type WireAction=
+|{
+  k:'activateInstalledSkills';
+  s:string[];//skill names
+}
+|{
+  k:'activateWebSkill';//no other action after this
+  mdUrl:'';
+}|{
+  k:'callWebSkill';//no other action after this
+  href:'https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md';
+  fnName:string;//include window._web_skills prefix
+  arg?:string;//json 
+}
+ |{
+   k:'addNewTask';//for adding check point for **dynamic new task** in workflow only
+   afterCpId?:number;//add after check point
+   checkPoints:string[];//new checkPoints to add
+   permitFromGoal:string;//sub-string in [GOAL] where allows you to add new task
+   src:string;//source of task
+   taskRisk:'l'|'m'|'h';//MUST FOLLOW [risk rules], will auto botherUser in certain level
+  }
+ |{
+   k:'checklist';
+   a:'working';//use action.cp to save token
+   pos:number;
+   rework?:boolean;//if rework verified
+  }
+ |{
+   k:'checklist';
+   a:'cancel';
+   pos:number;
+   cancelReason?:string;
+  }
+ |{
+   k:'checklist';
+   a:'verified';//check it seriously, apply to working check point
+   pos:number;
+   force?:'I SWEAR IT IS CORRECT';//send this if it is not in working status
+   verifiedProve?:{
+     domId:string;
+     proveOfWork:string;//short desc on what have you done, and did you get info to continue?
+   }
+  }
+ |{
+   k:'mouse';
+   a:'click'|'dblclick'|'mouseover'|'mouseDown'|'mouseUp'|'mouseenter'|'mousemove';
+   q:Selector;//always on leaf el, must end session if you are click submit/save/search button to wait and observe
+   repeat?:number;
+  }
+ |{
+   k:'scroll';
+   to:Selector|[number/*x*/, number/*y*/];
+   over?:Selector;// default to window
+  }
+ |{
+   k:'focus';
+   q:Selector;
+  }
+ |{
+   k:'dragAndDrop';
+   sq:Selector;// src QuerySelector
+   dq?:Selector;// dst QuerySelector
+   mv?:{ x:number;y:number }|null;
+  }
+ |{
+   k:'key';
+   key:string;// single key, use input for typing words
+   a:'keyDown'|'keyUp'|'keyPress';//always use press for typing, unless required/need delay
+   q?:Selector;
+   c?:boolean;// ctrl
+   al?:boolean;// alt
+   s?:boolean;// shift
+   m?:boolean;// meta
+   repeat?:number;
+  }
+ |{
+   k:'input';// for input, textarea, contentEditable, select, also upload file with path in v
+   q:Selector;
+   v:string|string[];// input value, array for multiple select/files
+   c?:'noClear';// without this will clear before typing
+  }
+ |{
+   k:'botherUser'; //only use when goal cannot be continued with trial & observe
+   warn:string;
+   missingInfos?:string[];
+   rc?:string|null;// followup prompt
+  }
+ |{
+   k:'setArg'; //it only add kv to [arguments], would not read/do anything else
+   // key value pair
+   kv:Record<string, string |{q:Selector, attr?:'textContent'|string}>;//str value or from element, attr default textContent
+  }
+ |{
+   k:'url';
+   u:'next'|'forward'|'reload';
+  }
+ |{
+   k:'tab';//will skip actions after this, no action after this
+   id:number;// switch to id, -1=new
+   url?:string;// go to url on switch
+   noteBeforeLeave:string;//tell what you did in current tab
+  }
+ |{
+   k:'textSelection';
+   q:Selector;
+   txt:string;
+  }
+ |{
+   k:'download';//for link/button use click
+   a:Selector;//no button
+   t:'link'|'img'|'bg-img';// what to download, no button
+   filename?:string;// filename to read in downstream
+  }
+ |{
+   k:'screenshot';//must not use without wait after action that change page status, like click link, submit form, etc.
+   filename:string;//png
+  };
+
+type WireWaitNewMsg =
+
+type WireStep={
+ intent:string;//short, < 8 words
+ risk:'h'|'m'|'l';
+ action:WireAction;
+ pre?:WireWait; // wait BEFORE this action, most of the time engine can handle it automatically
+ post?:WireWait;// wait AFTER this action, most of the time engine can handle it automatically
+ cp?:number[];//bind to check point and set to working
+ unverify?:boolean;//need true if the check point in verify status
+}
+
+type AttachementDesc={
+ name:string;
+ desc:string;
+};
+
+type LlmWireResult={
+ a:WireStep[];// steps
+ e?:string;// error
+ next?:{
+  sc?:boolean;// require screenshot
+  tip:string;//very short advisory tip just 1-2 steps < 16 words, for keeping status use addNewTask
+  readFiles?:string[];//attach readable files only when you really need the content in file, unnecessary reading is harmful
+  descAttachment?:AttachementDesc[];//desc for added info only, can omit, key data to [GOAL] should setArg
+ };
+ endSess?:string;//only when the task ends abnormally
+}
+
+**only valid JSON response is acceptable, markdown code block quoting will cause error**"}]}

@@ -13,7 +13,7 @@ import {
   RiskOrComplexityLevelSchema,
   ScreenshotActionSchema,
   ScrollActionSchema,
-  SelectTextActionSchema,
+  TextSelectionActionSchema,
   SetArgumentActionSchema,
   SetCtxActionSchema,
   SlideToValActionSchema,
@@ -25,7 +25,9 @@ import {
   WireWaitDomSchema,
   WireWaitSchema,
   AddNewTaskActionSchema,
-  UseSkillsActionSchema,
+  ActivateSkillsActionSchema,
+  ActivateWebSkillActionSchema,
+  CallWebSkillActionSchema,
 } from './base.schema';
 import { CalendarActionSchema } from './addOns/skills/calendar/calendar.schema';
 import { ComboboxActionSchema } from './addOns/skills/combobox/combobox.schema';
@@ -46,7 +48,7 @@ export const WireActionSchema = z.discriminatedUnion('k', [
   SetArgumentActionSchema,
   UrlActionSchema,
   DownloadActionSchema,
-  SelectTextActionSchema,
+  TextSelectionActionSchema,
   TabActionSchema,
   ScreenshotActionSchema,
   FillFormActionSchema,
@@ -54,7 +56,9 @@ export const WireActionSchema = z.discriminatedUnion('k', [
   ComboboxActionSchema,
   ChecklistActionSchema,
   AddNewTaskActionSchema,
-  UseSkillsActionSchema,
+  ActivateSkillsActionSchema,
+  ActivateWebSkillActionSchema,
+  CallWebSkillActionSchema,
 ]);
 
 /** WireAction & { w?: WireWait; to?: number } */

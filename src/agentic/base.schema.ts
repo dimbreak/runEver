@@ -110,9 +110,21 @@ export const ChecklistActionSchema = z.object({
     .nullable(),
 });
 
-export const UseSkillsActionSchema = z.object({
-  k: z.literal('useSkills'),
+export const ActivateSkillsActionSchema = z.object({
+  k: z.literal('activateInstalledSkills'),
   s: z.array(z.string()),
+});
+
+export const ActivateWebSkillActionSchema = z.object({
+  k: z.literal('activateWebSkill'),
+  mdUrl: z.string(),
+});
+
+export const CallWebSkillActionSchema = z.object({
+  k: z.literal('callWebSkill'),
+  href: z.string(),
+  fnName: z.string(),
+  arg: z.string().optional().nullable(),
 });
 
 export const AddNewTaskActionSchema = z.object({
@@ -243,8 +255,8 @@ export const TabActionSchema = z.object({
   noteBeforeLeave: z.string(),
 });
 
-export const SelectTextActionSchema = z.object({
-  k: z.literal('selectTxt'),
+export const TextSelectionActionSchema = z.object({
+  k: z.literal('textSelection'),
   q: WireSelectorSchema,
   txt: z.string(),
 });

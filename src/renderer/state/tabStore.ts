@@ -37,19 +37,29 @@ export class WebTab {
     canGoForward: boolean;
     url: string;
   } | null> {
+    return this.getNavigationStateForSession();
+  }
+
+  async getNavigationStateForSession(sessionId?: number): Promise<{
+    canGoBack: boolean;
+    canGoForward: boolean;
+    url: string;
+  } | null> {
     const frameId = this.id;
     if (frameId === undefined || frameId === -1) return null;
     const res = await ToMainIpc.getTabNavigationState.invoke({
+      sessionId,
       frameId,
     });
     if ('error' in res) return null;
     return res;
   }
 
-  async goBack() {
+  async goBack(sessionId?: number) {
     const frameId = this.id;
     if (frameId === undefined || frameId === -1) return null;
     const res = await ToMainIpc.navigateTabHistory.invoke({
+      sessionId,
       frameId,
       direction: 'back',
     });
@@ -57,10 +67,11 @@ export class WebTab {
     return res;
   }
 
-  async goForward() {
+  async goForward(sessionId?: number) {
     const frameId = this.id;
     if (frameId === undefined || frameId === -1) return null;
     const res = await ToMainIpc.navigateTabHistory.invoke({
+      sessionId,
       frameId,
       direction: 'forward',
     });
@@ -196,7 +207,7 @@ export const useTabStore = create<TabState>((set, get) => {
           new WebTab({
             id: -1,
             title: 'New tab',
-            url: 'https://google.com',
+            url: 'runever://benchmark/#/pos',
             isRunning: false,
           }),
           bounds,

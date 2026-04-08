@@ -41,11 +41,11 @@ AddOns.register({
           system: promptParts.system?.replace(
             'type WireAction=',
             `type WireAction=
-{
+|{
   k:'combobox';
   q:'${ids.join("'|'")}'|Selector;//combobox id
   v:string;//value
-}|`,
+}`,
           ),
         };
       }

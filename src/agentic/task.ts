@@ -20,19 +20,15 @@ import {
   WireActionStatus,
 } from '../schema/taskSnapshot';
 import { AddOns } from './addOns/addons';
+import { WebSkill } from './addOns/skills/webSkill/webSkill.action';
+import { LlmApi } from './api';
 
 export { ExeTaskStatus } from '../schema/taskSnapshot';
 
 // LlmApi.addDummyReturn([
-//   'prompt-record/log-20260208222244459.json',
-//   'prompt-record/log-20260208222256920.json',
-//   'prompt-record/log-20260208222312702.json',
-//   'prompt-record/log-20260208222329924.json',
-//   'prompt-record/log-20260208222346318.json',
-//   'prompt-record/log-20260208222404411.json',
-//   'prompt-record/log-20260208222502144.json',
-//   'prompt-record/log-20260208222514145.json',
-//   'prompt-record/log-20260208222530941.json',
+//   'prompt-record/log-20260407202053825.json',
+//   'prompt-record/log-20260407202110142.json',
+//   'prompt-record/log-20260407202126171.json',
 // ]);
 
 // LlmApi.addDummyReturn('null');
@@ -128,6 +124,7 @@ export class ExecutionTask {
     let toAttach: string[] = this.attachmentInNextPrompt ?? [];
     const promptItem = promptQueue.shift()!;
     this.status = ExeTaskStatus.Working;
+    await AddOns.postTurnDone();
     // eslint-disable-next-line no-labels
     promptQueueLoop: while (true) {
       if (session.stopRequested) {
@@ -206,6 +203,7 @@ ${eventsLogs.length > 10 ? '**last 10 actions**\n' : ''}- ${eventsLogs.slice(Mat
             !res.done,
           );
           if (res.done) {
+            await AddOns.postTurnDone();
             if (
               res.value &&
               session.fixingAction.length &&
@@ -504,11 +502,14 @@ ${runSubPrompt}`,
   }
   async *addAction(action: WireActionWithWaitAndRec) {
     const subtask = await SmartAction.buildSubtask(action, this);
-    const makeWorking = (): boolean => {
-      const useSkillNames =
-        action.action?.k === 'useSkills' ? action.action.s : null;
+    const markWorking = (): boolean => {
+      let useSkillNames =
+        action.action?.k === 'activateInstalledSkills' ? action.action.s : null;
       if (useSkillNames) {
         AddOns.activateSkills(useSkillNames);
+      } else if (action.action.k === 'activateWebSkill') {
+        WebSkill.activateSkill(action.action.mdUrl);
+        useSkillNames = [];
       }
       if (action.cp && action.cp.length) {
         for (const p of action.cp) {
@@ -543,7 +544,7 @@ ${runSubPrompt}`,
     };
     console.log('addAction', action.intent, action.action.k);
     if (subtask) {
-      if (!makeWorking()) return;
+      if (!markWorking()) return;
       this.allSubTasks.push(subtask);
       yield* subtask.exec();
       this.addLog(`${action.intent}:${subtask.response ?? ''}`);
@@ -559,7 +560,7 @@ ${runSubPrompt}`,
         true,
       );
     } else {
-      if (!makeWorking()) return;
+      if (!markWorking()) return;
       this.actions.push(action);
       this.session.addAction(action);
     }

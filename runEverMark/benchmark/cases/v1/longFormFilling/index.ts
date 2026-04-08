@@ -61,7 +61,28 @@ const hasFillFormField = (
 export const longFormFillingTest: BenchmarkCase = {
   id: 'long-form-filling',
   name: 'Long Form Filling',
-  systemPrompt: standardSystemPrompt,
+  maxScore: 8,
+  systemPrompt: standardSystemPrompt.replace(
+    'type WireAction=',
+    `type WireAction=
+|{
+  k:'fillForm';
+  q:'®91'|Selector;//form id
+  data:{f:string|Selector;v:string|string[]}[];//field name or selector and value to fill, string or js argument tpl'
+}|{
+  k:'combobox';
+  q:'®8a'|Selector;//combobox id
+  v:string;//value
+}|{
+  k:'calendar'; **you have no knowledge to pick date, no date & argument with date**
+  q:'®83'|Selector;//calendar id
+  ctx:{//give only full context, **you have no knowledge to pick date, no date & argument with date**
+   goalHint:string|null;//guide from [GOAL], original word only
+   argValHint:string|null;//give argument values that may related to this date picking, not only the key
+   pageHint:string|null;//any content on the page related?
+  };
+}`,
+  ),
   userPrompt: `${standardUserPromptPrefix}
 
   [url]
@@ -154,8 +175,8 @@ Fill the form at ®91, context: Fill the create order form using order details i
 2.TODO:Prepare sufficient order line items by clicking + Add Line Item for each item in order_form.pdf,
 3.TODO:Fill Order Lines with product, qty, and unit price for each item from order_form.pdf,
 4.TODO:Fill Remark with remark from order_form.pdf and review all filled values in the form at ®91
-**you are first executor**, you must use [checklist.add] action to add check points unless you can finish it in few actions
-**reading order_form.pdf, save data valuable to [GOAL] in attached files with setArgs avoid re-read**`,
+  **checklist is from executor may not be 100% correct, stick to guide and rules**
+  **WORK IN ORDER one by one, skipping/shuffle absolutely not allowed, repeat ORDER IS IMPORTANT**`,
   score: ({ result, firstTokenMs, totalTimeMs }) => {
     let score = 0;
     const highlights: string[] = [];
@@ -177,17 +198,21 @@ Fill the form at ®91, context: Fill the create order form using order details i
         if (parsedResult.data.a && parsedResult.data.a.length) {
           score++;
           const actions = parsedResult.data.a;
-          const fillFormAction = actions.find(
+          const fillFormActions = actions.filter(
             (item) =>
               item.action.k === 'fillForm' &&
               matchesActionQueryId(item.action.q, '®91') &&
               Array.isArray(item.action.data),
           );
 
-          if (
-            fillFormAction &&
-            Array.isArray((fillFormAction.action as any).data)
-          ) {
+          if (fillFormActions.length > 0) {
+            const mergedData: FillFormDatum[] = fillFormActions.flatMap(
+              (item) => (item.action as any).data as FillFormDatum[],
+            );
+            // minor deduction for splitting into multiple fillForm actions (wasted tokens)
+            if (fillFormActions.length > 1) {
+              score -= 0.5;
+            }
             const expectedFillFields = [
               {
                 keys: ['clientName'],
@@ -234,11 +259,7 @@ Fill the form at ®91, context: Fill the create order form using order details i
               },
             ];
             const matchedFillFields = expectedFillFields.filter((field) =>
-              hasFillFormField(
-                (fillFormAction.action as any).data,
-                field.keys,
-                field.values,
-              ),
+              hasFillFormField(mergedData, field.keys, field.values),
             );
 
             if (matchedFillFields.length >= expectedFillFields.length - 2) {

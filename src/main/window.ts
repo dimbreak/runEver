@@ -24,7 +24,10 @@ export class RunEverWindow extends BrowserWindow {
     return session;
   }
   static getAgenticSession(id?: number) {
-    return id ? RunEverWindow.sessions[id] : RunEverWindow.sessions[0];
+    if (id !== undefined) {
+      return RunEverWindow.sessions[id];
+    }
+    return Object.values(RunEverWindow.sessions)[0];
   }
 
   getAgenticSessions() {

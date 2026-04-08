@@ -82,7 +82,8 @@
     },
     "testPathIgnorePatterns": [
       "release/app/dist",
-      ".erb/dll"
+      ".erb/dll",
+      "vendor/web-skill/tests"
     ],
     "transform": {
       "\\.(ts|tsx|js|jsx)$": "ts-jest"
@@ -92,20 +93,21 @@
     "*.{js,jsx,ts,tsx}": "eslint --cache --ignore-pattern \"runEverMark/mockSite/**\""
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.29",
-    "@ai-sdk/openai": "^3.0.29",
-    "@ai-sdk/anthropic": "^3.0.29",
-    "@ai-sdk/moonshotai": "^2.0.12",
-    "@ai-sdk/xai": "^3.0.29",
     "@ai-sdk/alibaba": "^1.0.13",
-    "@ai-sdk/openai-compatible": "^2.0.30",
+    "@ai-sdk/anthropic": "^3.0.29",
     "@ai-sdk/deepseek": "^2.0.26",
+    "@ai-sdk/google": "^3.0.29",
+    "@ai-sdk/moonshotai": "^2.0.12",
+    "@ai-sdk/openai": "^3.0.29",
+    "@ai-sdk/openai-compatible": "^2.0.30",
     "@ai-sdk/provider": "^3.0.8",
+    "@ai-sdk/xai": "^3.0.29",
     "@electron/notarize": "^3.0.0",
     "@hookform/resolvers": "^3.10.0",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@napi-rs/keyring": "^1.2.0",
     "@openai/codex-sdk": "^0.114.0",
+    "@openrouter/ai-sdk-provider": "^2.5.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@tiptap/core": "^3.14.0",
     "@tiptap/extension-placeholder": "^3.14.0",

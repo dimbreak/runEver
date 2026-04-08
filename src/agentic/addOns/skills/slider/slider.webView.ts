@@ -1,12 +1,12 @@
-import { BrowserActionRisk } from '../../../../main/llm/roles/system/planner.schema';
 import { dummyCursor } from '../../../../webView/cursor/cursor';
 import { BrowserActions, WireActionToExec } from '../../../../webView/actions';
 import { Util } from '../../../../webView/util';
+import { RiskOrComplexityLevel } from '../../../execution.schema';
 
 export namespace SliderSkill {
   export const slideToVal = async (
     action: Extract<WireActionToExec, { k: 'slideToVal' }>,
-    risk: BrowserActionRisk,
+    risk: RiskOrComplexityLevel,
     args: Record<string, string> = {},
   ) => {
     const slideEl =

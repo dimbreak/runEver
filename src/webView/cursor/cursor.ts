@@ -538,15 +538,15 @@ class DummyCursor {
     return fn();
   }
 
-  async selectTxt(srcEl: Element, txt: string) {
+  async textSelection(srcEl: Element, txt: string) {
     const range = findTextRange(srcEl, txt);
     if (!range) {
-      console.warn('selectTxt: text not found', txt);
+      console.warn('textSelection: text not found', txt);
       return;
     }
     const rects = range.getClientRects();
     if (rects.length === 0) {
-      console.warn('selectTxt: no rects for range', txt);
+      console.warn('textSelection: no rects for range', txt);
       return;
     }
 

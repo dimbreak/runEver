@@ -40,15 +40,15 @@ AddOns.register({
         system: promptParts.system?.replace(
           'type WireAction=',
           `type WireAction=
-{
+|{
   k:'calendar'; **you have no knowledge to pick date, no date & argument with date**
   q:'${ids.join("'|'")}'|Selector;//calendar id
   ctx:{//give only full context, **you have no knowledge to pick date, no date & argument with date**
-  goalHint:string|null;//guide from [GOAL], original word only
-  argValHint:string|null;//give argument values that may related to this date picking, not only the key
-  pageHint:string|null;//any content on the page related?
-};
-}|`,
+   goalHint:string|null;//guide from [GOAL], original word only
+   argValHint:string|null;//give argument values that may related to this date picking, not only the key
+   pageHint:string|null;//any content on the page related?
+  };
+}`,
         ),
       };
     }

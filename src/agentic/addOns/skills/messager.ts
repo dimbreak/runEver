@@ -38,7 +38,7 @@ AddOns.register({
           ?.replace(
             'type WireAction=',
             `type WireAction=
-{
+|{
   k:'clickSendBtnAndWaitReply';
   btn:Selector;//send button dom
   dialog:Selector;// only apply to dialog container must seen the list before apply
@@ -49,7 +49,7 @@ AddOns.register({
   dialog:Selector;
   id1st:Selector;// first msg dom id in list
   idLast:Selector;// last msg dom id in list
-}|`,
+}`,
           )
           .replace(
             "a:'click'|'dblclick'|'mouseover'|'mouseDown'|'mouseUp'|'mouseenter'|'mousemove';",

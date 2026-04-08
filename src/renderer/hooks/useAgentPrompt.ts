@@ -4,10 +4,10 @@ import { dialogService } from '../services/dialogService';
 import { useAgentStoreV2 } from '../state/agentStoreV2';
 import { useTabStore } from '../state/tabStore';
 import { extractPromptArgKeys } from '../utils/promptArgs';
-import { formatBytes } from '../utils/formatter';
 import type { UploadedAttachment } from '../services/uploadService';
 import { ToMainIpc } from '../../contracts/toMain';
 import type { PromptAttachment } from '../../schema/attachments';
+import { docToText } from '../utils/contentUtils';
 
 type UseAgentPromptParams = {
   attachments: UploadedAttachment[];
@@ -23,13 +23,11 @@ export const useAgentPrompt = ({
   const { tabs, activeTabId } = useTabStore();
   const {
     addMessage,
-    upsertMessage,
     setPromptRunningStatus,
     setRunningRequestId,
     activeSessionId,
   } = useAgentStoreV2((state) => ({
     addMessage: state.addMessage,
-    upsertMessage: state.upsertMessage,
     setPromptRunningStatus: state.setPromptRunningStatus,
     setRunningRequestId: state.setRunningRequestId,
     activeSessionId: state.activeSessionId,
@@ -37,10 +35,7 @@ export const useAgentPrompt = ({
 
   const handlePrompt = React.useCallback(
     async (content: JSONContent) => {
-      const userText =
-        content.content
-          ?.map((node) => node.content?.map((n) => n.text ?? '').join('') ?? '')
-          .join('\n\n') ?? '';
+      const userText = docToText(content);
       console.info('send prompt:', userText, tabs);
 
       const currentTab = tabs.find((t) => t.id === activeTabId);
@@ -154,10 +149,8 @@ export const useAgentPrompt = ({
       });
       if (error) throw new Error(error);
       return stopped;
-      setPromptRunningStatus(sessionId, 'error');
-      setRunningRequestId(sessionId, null);
     },
-    [activeSessionId, setPromptRunningStatus, setRunningRequestId],
+    [activeSessionId],
   );
 
   return { handlePrompt, handleStop };

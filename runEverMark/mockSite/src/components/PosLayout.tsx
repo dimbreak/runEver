@@ -1,4 +1,6 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
+import { readSession } from '../utils/session';
+import { publishLoggedInPosOrderSkill } from '../webSkills/prepareOrderRuntime';
 
 // However, original used simple <a> tags. I'll stick to <a> tags with hash.
 
@@ -11,6 +13,15 @@ export default function PosLayout({
 }) {
   // Simple check for active path if possible, or just render links
   const { hash } = window.location;
+  const isAuthenticated = readSession<boolean>('runEverMark_pos_auth', false);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    return publishLoggedInPosOrderSkill();
+  }, [isAuthenticated, hash]);
 
   return (
     <div className="sf-layout">

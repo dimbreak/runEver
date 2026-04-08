@@ -16,7 +16,7 @@ export const estimatePromptComplexity = (
   prompt: string,
 ): RiskOrComplexityLevel => {
   const p = prompt.toLowerCase();
-  if (/verify|confirm|make sure|\[action error]/.test(p)) return 'h';
+  if (/verify|confirm|make sure|\[action error]/.test(p)) return 'm';
   // eslint-disable-next-line no-nested-ternary
-  return p.length < 256 ? 'l' : p.length > 1024 ? 'h' : 'm';
+  return p.length < 512 ? 'l' : p.length > 2048 ? 'h' : 'm';
 };

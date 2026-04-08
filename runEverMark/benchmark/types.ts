@@ -33,6 +33,8 @@ export type BenchmarkScore = {
 export type BenchmarkCase = {
   id: string;
   name: string;
+  maxScore: number;
+  weight?: number;
   systemPrompt: string;
   userPrompt: string;
   score: (
@@ -50,10 +52,24 @@ export type BenchmarkRunResult = {
   error?: string;
 };
 
+export type BenchmarkRunSummary = Omit<BenchmarkRunResult, 'result'> & {
+  resultChars?: number;
+  resultFormat?: 'empty' | 'raw_json' | 'fenced_json' | 'embedded_json' | 'text';
+  resultPreview?: string;
+};
+
 export type BenchmarkCaseSummary = {
   caseId: string;
   caseName: string;
   runCount: number;
+  singleRunMaxScore: number;
+  maxScore: number;
+  weight: number;
+  adjustedMaxScore: number;
+  totalScore: number;
+  adjustedTotalScore: number;
+  scoreRate: number;
+  adjustedScoreRate: number;
   averageScore: number;
   averageFirstTokenMs: number;
   averageTotalTimeMs: number;
@@ -61,8 +77,6 @@ export type BenchmarkCaseSummary = {
   runs: BenchmarkRunResult[];
   detailPath?: string;
 };
-
-export type BenchmarkRunSummary = Omit<BenchmarkRunResult, 'result'>;
 
 export type BenchmarkCaseSummaryFile = Omit<BenchmarkCaseSummary, 'runs'> & {
   runs: BenchmarkRunSummary[];
@@ -82,10 +96,15 @@ export type BenchmarkReportFile = Omit<BenchmarkReport, 'summaries'> & {
 export type BenchmarkApiSummary = {
   apiId: string;
   provider: StoredApiKey['provider'];
+  maxScore: number;
+  adjustedMaxScore: number;
+  scoreRate: number;
+  adjustedScoreRate: number;
   averageScore: number;
   averageFirstTokenMs: number;
   averageTotalTimeMs: number;
   totalScore: number;
+  adjustedTotalScore: number;
   caseSummaries: BenchmarkCaseSummary[];
   modelDir?: string;
   detailPath?: string;

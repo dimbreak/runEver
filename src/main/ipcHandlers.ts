@@ -27,15 +27,22 @@ import { RunEverWindow } from './window';
 const getSession = (sessionId?: number): Session =>
   RunEverWindow.getAgenticSession(sessionId)!;
 
+const getTabFromAnySession = (frameId: number) => {
+  return Object.values(RunEverWindow.sessions)
+    .map((session) => session.getTab(frameId))
+    .find((tab) => tab !== undefined);
+};
+
 function initPromptIpc() {
   const getTab = (
     sessionId: number | undefined,
     frameId: number | undefined,
   ) => {
-    const session = getSession(sessionId);
-    return frameId === undefined
-      ? session.getFocusedTab()
-      : session.getTab(frameId);
+    const session = RunEverWindow.getAgenticSession(sessionId);
+    if (frameId === undefined) {
+      return session?.getFocusedTab();
+    }
+    return session?.getTab(frameId) ?? getTabFromAnySession(frameId);
   };
   ToMainIpc.actionDone.handle(async (event, arg) => {
     console.log('Pop actions:', arg);
@@ -123,8 +130,9 @@ export const setupIpcHandlers = (mainWindow: RunEverWindow) => {
   const apiTrustTokenStore = new ApiTrustTokenStore();
   const userApiKeyStore = RuneverConfigStore.getInstance();
   const getTab = (sessionId?: number, frameId?: number) => {
-    const session = getSession(sessionId);
-    return typeof frameId === 'number' ? session.getTab(frameId) : undefined;
+    if (typeof frameId !== 'number') return undefined;
+    const session = RunEverWindow.getAgenticSession(sessionId);
+    return session?.getTab(frameId) ?? getTabFromAnySession(frameId);
   };
 
   // const removeAllWebViews = () => {

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const rootDir = path.resolve(__dirname, '../../');
-const runEverMarkDir = path.join(rootDir, 'testHtml/runEverMark');
+const runEverMarkDir = path.join(rootDir, 'runEverMark/mockSite');
 const assetsDir = path.join(rootDir, 'assets/runEverMark');
 
 function copyRecursiveSync(src, dest) {

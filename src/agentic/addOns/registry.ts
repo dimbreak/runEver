@@ -7,3 +7,4 @@ import './skills/list';
 import './skills/iframe';
 import './skills/messager';
 import './skills/slider/slider';
+import './skills/webSkill/webSkill';
