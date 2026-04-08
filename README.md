@@ -2,44 +2,6 @@
 
 **RunEver** is an open-source agentic browser built with **TypeScript**, **Electron**, and an **HTML-first automation runtime**.
 
-## Benchmark Snapshot
-
-Latest internal `RunEverMark` benchmark result: `all-configs-final-r3`.
-
-What was tested:
-
-- scam-aware search result selection
-- long-context Amazon purchase flow
-- long task splitting and checkpoint planning
-- long form filling
-- calendar reasoning under delivery constraints
-- wishlist webskill usage
-- order-preparation webskill usage
-
-Setup:
-
-- `7` cases
-- `3` repeats per model
-- mixed HTML-first DOM execution, checklist planning, and task-level webskills
-
-| Model | Score | Adjusted | Avg time |
-| --- | ---: | ---: | ---: |
-| `openai-gpt-5.4` | `122.2/132` | `133.45/144` | `11.1s` |
-| `anthropic-claude-sonnet-4-6` | `111/132` | `121.75/144` | `16.3s` |
-| `openai-gpt-5-mini` | `111/132` | `120/144` | `9.5s` |
-| `google-gemini-3.1-pro-preview` | `110.5/132` | `119.25/144` | `10.6s` |
-| `anthropic-claude-opus-4-6` | `111/132` | `117.5/144` | `13.1s` |
-| `x-ai/grok-4.20` | `108.8/132` | `117.3/144` | `31.3s` |
-| `google-gemini-3.1-flash-lite-preview` | `100/132` | `107.5/144` | `8.2s` |
-| `alibaba-qwen3.6-plus` | `99/132` | `106.5/144` | `73.7s` |
-| `kimi-k2.5` | `96.9/132` | `105.15/144` | `55.7s` |
-| `openai-gpt-5.4-mini` | `97.9/132` | `101.9/144` | `6.9s` |
-| `grok-4.1-fast` | `87.3/132` | `94.05/144` | `7.3s` |
-| `minimax-m2.7` | `84.9/132` | `92.65/144` | `11.3s` |
-| `zai-glm-5` | `83.4/132` | `86.4/144` | `28.3s` |
-
-These scores reflect RunEver's own execution interface rather than a generic chat benchmark, so they are most useful as a measure of structured browser-task reliability.
-
 It is designed to make browser automation practical for real-world work: not just for benchmark demos, not just for teams with frontier models, and not just for companies with dedicated automation engineers.
 
 RunEver focuses on three things:
@@ -133,6 +95,47 @@ RunEver is designed so that useful automation is not limited to the strongest an
 ### Desktop-first experience
 
 RunEver runs as an Electron desktop app and stores provider configuration in the system keyring rather than plaintext project files.
+
+---
+
+
+## Benchmark Snapshot
+
+Latest internal `RunEverMark` benchmark result: `all-configs-final-r3`.
+
+What was tested:
+
+- scam-aware search result selection
+- long-context Amazon purchase flow
+- long task splitting and checkpoint planning
+- long form filling
+- calendar reasoning under delivery constraints
+- wishlist webskill usage
+- order-preparation webskill usage
+
+Setup:
+
+- `7` cases
+- `3` repeats per model
+- mixed HTML-first DOM execution, checklist planning, and task-level webskills
+
+| Model | Score | Adjusted | Avg time |
+| --- | ---: | ---: | ---: |
+| `openai-gpt-5.4` | `122.2/132` | `133.45/144` | `11.1s` |
+| `anthropic-claude-sonnet-4-6` | `111/132` | `121.75/144` | `16.3s` |
+| `openai-gpt-5-mini` | `111/132` | `120/144` | `9.5s` |
+| `google-gemini-3.1-pro-preview` | `110.5/132` | `119.25/144` | `10.6s` |
+| `anthropic-claude-opus-4-6` | `111/132` | `117.5/144` | `13.1s` |
+| `x-ai/grok-4.20` | `108.8/132` | `117.3/144` | `31.3s` |
+| `google-gemini-3.1-flash-lite-preview` | `100/132` | `107.5/144` | `8.2s` |
+| `alibaba-qwen3.6-plus` | `99/132` | `106.5/144` | `73.7s` |
+| `kimi-k2.5` | `96.9/132` | `105.15/144` | `55.7s` |
+| `openai-gpt-5.4-mini` | `97.9/132` | `101.9/144` | `6.9s` |
+| `grok-4.1-fast` | `87.3/132` | `94.05/144` | `7.3s` |
+| `minimax-m2.7` | `84.9/132` | `92.65/144` | `11.3s` |
+| `zai-glm-5` | `83.4/132` | `86.4/144` | `28.3s` |
+
+These scores reflect RunEver's own execution interface rather than a generic chat benchmark, so they are most useful as a measure of structured browser-task reliability.
 
 ---
 
