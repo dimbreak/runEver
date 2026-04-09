@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 7304.33,
+  "averageTotalTimeMs": 11079,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 9699,
+      "totalTimeMs": 14129,
+      "result": "{\"a\":[{\"intent\":\"rework check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3,\"rework\":true}},{\"intent\":\"verify check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"pos\":3,\"verifiedProve\":{\"domId\":\"®6i\",\"proveOfWork\":\"Create order form is filled with the order details including client info, line items, and remark.\"}}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Review the selected delivery date in the form, then continue to preview order.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 733,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"rework check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3,\"rework\":true}},{\"intent\":\"verify check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4658,
+      "totalTimeMs": 7445,
+      "result": "{\"a\":[{\"intent\":\"start checkpoint 4 earliest date\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Verify the chosen delivery date on the form, then continue to preview.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 482,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"start checkpoint 4 earliest date\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"c…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 7556,
+      "totalTimeMs": 11663,
+      "result": "{\"a\":[{\"intent\":\"mark filled order details\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"verify order details filled\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"pos\":3,\"verifiedProve\":{\"domId\":\"®ao\",\"proveOfWork\":\"The create order form is filled with the client info, 3 order lines, remark, and total $3530.00.\"}}},{\"intent\":\"start earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Verify the chosen delivery date in the form, then preview the order.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 822,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"mark filled order details\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"verify order details filled\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"p…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

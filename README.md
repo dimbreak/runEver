@@ -121,19 +121,22 @@ Setup:
 
 | Model | Score | Adjusted | Avg time |
 | --- | ---: | ---: | ---: |
-| `openai-gpt-5.4` | `122.2/132` | `133.45/144` | `11.1s` |
-| `anthropic-claude-sonnet-4-6` | `111/132` | `121.75/144` | `16.3s` |
-| `openai-gpt-5-mini` | `111/132` | `120/144` | `9.5s` |
-| `google-gemini-3.1-pro-preview` | `110.5/132` | `119.25/144` | `10.6s` |
-| `anthropic-claude-opus-4-6` | `111/132` | `117.5/144` | `13.1s` |
-| `x-ai/grok-4.20` | `108.8/132` | `117.3/144` | `31.3s` |
-| `google-gemini-3.1-flash-lite-preview` | `100/132` | `107.5/144` | `8.2s` |
-| `alibaba-qwen3.6-plus` | `99/132` | `106.5/144` | `73.7s` |
-| `kimi-k2.5` | `96.9/132` | `105.15/144` | `55.7s` |
-| `openai-gpt-5.4-mini` | `97.9/132` | `101.9/144` | `6.9s` |
-| `grok-4.1-fast` | `87.3/132` | `94.05/144` | `7.3s` |
-| `minimax-m2.7` | `84.9/132` | `92.65/144` | `11.3s` |
-| `zai-glm-5` | `83.4/132` | `86.4/144` | `28.3s` |
+| `openai-gpt-5.4` | `120.7/129` | `131.2/139.5` | `11.06s` |
+| `anthropic-claude-opus-4-6` | `116/129` | `124.5/139.5` | `13.15s` |
+| `openai-gpt-5.1` | `115/129` | `124/139.5` | `9.49s` |
+| `google-gemini-3.1-pro-preview` | `114.5/129` | `123.25/139.5` | `10.59s` |
+| `openai-gpt-5-mini` | `113/129` | `121.5/139.5` | `11.25s` |
+| `x-ai/grok-4.20` | `110.8/129` | `120.3/139.5` | `31.28s` |
+| `anthropic-claude-sonnet-4-6` | `110/129` | `120.25/139.5` | `16.28s` |
+| `google-gemini-3.1-flash-lite-preview` | `105/129` | `113.5/139.5` | `8.17s` |
+| `alibaba-qwen3.6-plus` | `101/129` | `109.5/139.5` | `73.72s` |
+| `kimi-k2.5` | `100.4/129` | `109.4/139.5` | `55.73s` |
+| `openai-gpt-5.4-mini` | `98.9/129` | `103.4/139.5` | `6.92s` |
+| `minimax-m2.7` | `86.9/129` | `95.65/139.5` | `11.33s` |
+| `grok-4.1-fast` | `88.3/129` | `95.55/139.5` | `7.28s` |
+| `zai-glm-5` | `84.4/129` | `87.4/139.5` | `28.26s` |
+
+`Adjusted` applies light task-importance weighting, with extra emphasis on irreversible workflow planning such as task splitting.
 
 These scores reflect RunEver's own execution interface rather than a generic chat benchmark, so they are most useful as a measure of structured browser-task reliability.
 

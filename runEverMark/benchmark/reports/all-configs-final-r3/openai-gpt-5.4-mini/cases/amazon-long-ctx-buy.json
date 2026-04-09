@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 4604,
+  "averageTotalTimeMs": 6008,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 5594,
+      "totalTimeMs": 6532,
+      "result": "{\"a\":[{\"intent\":\"pick quantity from buy_quantity\",\"risk\":\"h\",\"cp\":[2],\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}},{\"intent\":\"click buy now\",\"risk\":\"h\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"}}],\"next\":{\"tip\":\"Confirm checkout page shows the default address and payment before placing order.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 295,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"pick quantity from buy_quantity\",\"risk\":\"h\",\"cp\":[2],\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}},{\"intent\":\"click buy now\",\"risk\":\"h\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"}}],\"ne…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4510,
+      "totalTimeMs": 6558,
+      "result": "{\"a\":[{\"intent\":\"save buy_quantity as context\",\"risk\":\"l\",\"action\":{\"k\":\"setArg\",\"kv\":{\"buy_quantity\":\"3\"}}},{\"intent\":\"pick quantity from buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"},\"cp\":[2]},{\"intent\":\"click the Buy Now button\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"},\"cp\":[2],\"post\":{\"t\":\"net\",\"a\":\"idle2\"}}],\"next\":{\"tip\":\"Verify the quantity switched to 3, then continue checkout with default payment and address.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 512,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"save buy_quantity as context\",\"risk\":\"l\",\"action\":{\"k\":\"setArg\",\"kv\":{\"buy_quantity\":\"3\"}}},{\"intent\":\"pick quantity from buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3708,
+      "totalTimeMs": 4934,
+      "result": "{\"a\":[{\"intent\":\"set quantity to $args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"},\"cp\":[2]},{\"intent\":\"click the Buy Now button\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\",\"argKeys\":[]}},\"cp\":[2],\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":12000}}],\"next\":{\"tip\":\"Confirm the checkout page loads and use default payment/address.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 416,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to $args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"},\"cp\":[2]},{\"intent\":\"click the Buy Now bu…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4-mini/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

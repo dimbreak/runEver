@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 9,
+  "scoreRate": 60,
+  "averageScore": 3,
+  "averageFirstTokenMs": 8720.67,
+  "averageTotalTimeMs": 10287.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 7964,
+      "totalTimeMs": 9497,
+      "result": "{\"a\":[{\"intent\":\"Click calendar header to open/navigate to find earliest delivery date\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®79\"},\"cp\":[4]}],\"next\":{\"sc\":true,\"tip\":\"Calendar shows Feb 2026 with disabled dates. Order takes 11 months to produce. Navigate forward to find earliest available date for delivery (likely Dec 2026 or later). Once found, click the date to select it.\"}}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 392,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Click calendar header to open/navigate to find earliest delivery date\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®79\"},\"cp\":[4]}],\"next\":{\"sc\":true,\"tip\":\"Calendar shows Feb …"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8252,
+      "totalTimeMs": 9535,
+      "result": "{\"a\":[{\"intent\":\"Select March 1, 2026 as earliest delivery date in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®9o\"},\"cp\":[4]}}],\"next\":{\"sc\":false,\"tip\":\"After setting delivery date, click Preview Order button to proceed. Since total $3530 > $1000, you'll need manager approval in messenger.\"}}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 317,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Select March 1, 2026 as earliest delivery date in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®9o\"},\"cp\":[4]}}],\"next\":{\"sc\":false,\"tip\":\"After setting delivery…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 9946,
+      "totalTimeMs": 11831,
+      "result": "{\"a\":[{\"intent\":\"Select earliest available delivery date in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®83\"},\"cp\":[4]}},{\"intent\":\"Click Preview Order to see order summary before approval\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®aq\"},\"post\":{\"t\":\"time\",\"ms\":1500}},\"cp\":[5]}],\"next\":{\"tip\":\"After preview loads, check if total > $1000. If yes, capture screenshot and switch to messenger tab to send to manager dillion for approval.\",\"sc\":true}}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 484,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Select earliest available delivery date in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®83\"},\"cp\":[4]}},{\"intent\":\"Click Preview Order to see order summary befo…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/minimax-m2.7/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 9,
+  "adjustedScoreRate": 60
+}

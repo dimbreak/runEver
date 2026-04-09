@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 24,
+  "scoreRate": 100,
+  "averageScore": 8,
+  "averageFirstTokenMs": 8524.67,
+  "averageTotalTimeMs": 10171,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 7637,
+      "totalTimeMs": 9749,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Use posOrderPrep skill to fill the order form with client details, items, and delivery date\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\": \\\"Northwind Travel\\\", \\\"clientEmail\\\": \\\"contact@client.com\\\", \\\"clientPhone\\\": \\\"555-0100\\\", \\\"address\\\": \\\"123 Client St\\\", \\\"city\\\": \\\"Business City\\\", \\\"region\\\": \\\"ST\\\", \\\"postal\\\": \\\"12345\\\", \\\"deliveryDate\\\": \\\"2027-03-09\\\", \\\"remark\\\": \\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\", \\\"lines\\\": [{\\\"productId\\\": \\\"sku-laptop\\\", \\\"quantity\\\": 5, \\\"unitPrice\\\": 1200.00}, {\\\"productId\\\": \\\"sku-chair\\\", \\\"quantity\\\": 1, \\\"unitPrice\\\": 350.00}, {\\\"productId\\\": \\\"sku-keyboard\\\", \\\"quantity\\\": 3, \\\"unitPrice\\\": 80.00}]}\"\n      },\n      \"cp\": [\n        0,\n        1\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Skill execution will populate the form and prepare for preview. Once done, verify the filled form on screen.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1131,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Use posOrderPrep skill to fill the order form with client details, items, and delivery date\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/s…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 11631,
+      "totalTimeMs": 12356,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Prepare order using webSkill posOrderPrep to fill the form automatically.\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\": \\\"Northwind Travel\\\", \\\"clientEmail\\\": \\\"contact@client.com\\\", \\\"clientPhone\\\": \\\"555-0100\\\", \\\"address\\\": \\\"123 Client St\\\", \\\"city\\\": \\\"Business City\\\", \\\"region\\\": \\\"ST\\\", \\\"postal\\\": \\\"12345\\\", \\\"deliveryDate\\\": \\\"2027-03-09\\\", \\\"remark\\\": \\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\", \\\"lines\\\": [{\\\"productId\\\": \\\"sku-laptop\\\", \\\"quantity\\\": 5, \\\"unitPrice\\\": 1200.00}, {\\\"productId\\\": \\\"sku-chair\\\", \\\"quantity\\\": 1, \\\"unitPrice\\\": 350.00}, {\\\"productId\\\": \\\"sku-keyboard\\\", \\\"quantity\\\": 3, \\\"unitPrice\\\": 80.00}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"The order form has been populated by the webSkill. Please review the inputs on the page to ensure accuracy, then verify them to complete the task.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1140,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Prepare order using webSkill posOrderPrep to fill the form automatically.\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6306,
+      "totalTimeMs": 8408,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Prepare order using webSkill posOrderPrep\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\": \\\"Northwind Travel\\\", \\\"clientEmail\\\": \\\"contact@client.com\\\", \\\"clientPhone\\\": \\\"555-0100\\\", \\\"address\\\": \\\"123 Client St\\\", \\\"city\\\": \\\"Business City\\\", \\\"region\\\": \\\"ST\\\", \\\"postal\\\": \\\"12345\\\", \\\"deliveryDate\\\": \\\"2027-03-09\\\", \\\"remark\\\": \\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\", \\\"lines\\\": [{\\\"productId\\\": \\\"sku-laptop\\\", \\\"quantity\\\": 5, \\\"unitPrice\\\": 1200.00}, {\\\"productId\\\": \\\"sku-chair\\\", \\\"quantity\\\": 1, \\\"unitPrice\\\": 350.00}, {\\\"productId\\\": \\\"sku-keyboard\\\", \\\"quantity\\\": 3, \\\"unitPrice\\\": 80.00}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"Verify the order form completion\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 0,\n        \"verifiedProve\": {\n          \"domId\": \"®91\",\n          \"proveOfWork\": \"Used posOrderPrep skill to populate the form.\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"The order form should now be filled. Please verify the entries on the screen and click 'Preview Order' if everything is correct.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1405,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Prepare order using webSkill posOrderPrep\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName\": \"window._w…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-flash-lite-preview/cases/long-form-webskill.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 24,
+  "adjustedScoreRate": 100
+}

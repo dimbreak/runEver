@@ -1,0 +1,53 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 16,
+  "scoreRate": 88.89,
+  "averageScore": 5.33,
+  "averageFirstTokenMs": 4593.67,
+  "averageTotalTimeMs": 8382,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3512,
+      "totalTimeMs": 7188,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Add 3 wide angle lens options to wishlist with comments explaining recommendation\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black v2 Matt Black Paint: Limited 500 pcs, compact wide-angle with vintage aesthetic, perfect stealth street lens for Leica M6\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements Brass Black Paint: Homage to classic 9-element design with modern ED glass, brass build, great non-ASPH alternative for characterful wide shots on M6\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements Brass Chrome: Same excellent 9-el rendering in chrome finish, compact and high quality for Leica M6 pairing\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wishlist now has Leica M6 cameras and wide-angle lens options with comments. Next: ask user which to buy, then use prepareOrder for selected items with UK address and phone.\"\n  }\n}\n```",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 1333,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"Add 3 wide angle lens options to wishlist with comments explaining recommendation\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/ski…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4834,
+      "totalTimeMs": 8940,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide angle lens options to wishlist with comments explaining recommendation\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black v2 Matt Black Paint - limited 500pcs, compact wide-angle with vintage aesthetic, perfect companion for Leica M6 film cameras\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements Brass Black Paint - modern homage to classic 9-element design with ED glass, excellent for Leica M6 street photography\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements Brass Chrome - same high-quality 9-element rendering optimized for digital M sensors, great value wide-angle option\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wishlist now has Leica M6 cameras + wide-angle lens options with comments. Verify items added in HTML, then proceed to ask user which to buy and prepare checkout.\"\n  }\n}\n```",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 1309,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"add selected wide angle lens options to wishlist with comments explaining recommendation\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5435,
+      "totalTimeMs": 9018,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add wide angle lens options to wishlist with recommendation comments using webSkill\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black v2 Matt: Limited 500pcs stealth vintage wide-angle, compact & resistant paint, perfect no-ASPH classic rendering for M6\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9E Brass Black: Homage to classic 9-element, modern ED glass for better digital performance, no-ASPH brass build, great value wide for M6\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9E Brass Chrome: Same excellent 9-element homage with chrome finish, optimized no-ASPH optics, compact & high quality alternative for Leica M6\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wishlist now has M6 cameras + wide lenses with comments. Next: ask user which to buy then prepare checkout with UK address & phone.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1280,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add wide angle lens options to wishlist with recommendation comments using webSkill\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fo…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/grok-4.1-fast/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 16,
+  "adjustedScoreRate": 88.89
+}

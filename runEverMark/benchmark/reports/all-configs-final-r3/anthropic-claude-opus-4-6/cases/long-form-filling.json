@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 18,
+  "scoreRate": 75,
+  "averageScore": 6,
+  "averageFirstTokenMs": 8133.33,
+  "averageTotalTimeMs": 14244.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 7405,
+      "totalTimeMs": 13610,
+      "result": "{\"a\":[{\"intent\":\"Fill client info and address fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"},{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"},{\"f\":\"remark\",\"v\":\"${args.remark}\"}]},\"cp\":[0,1]},{\"intent\":\"Mark client info working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":0}},{\"intent\":\"Mark address working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1}},{\"intent\":\"Click + Add Line Item to prepare 2nd line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Click + Add Line Item to prepare 3rd line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}}],\"next\":{\"tip\":\"Verify client/address fields filled, then fill 3 order line comboboxes (Laptop Pro, Desk Chair, Keyboard) with qty. Also set calendar date and remark.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1019,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Fill client info and address fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 10723,
+      "totalTimeMs": 15300,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Fill client name with ${args.clientName}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"®4r\", \"v\": \"${args.clientName}\"},\n          {\"f\": \"®4u\", \"v\": \"${args.clientEmail}\"},\n          {\"f\": \"®4x\", \"v\": \"${args.clientPhone}\"}\n        ]\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"Fill delivery address fields\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"®52\", \"v\": \"${args.address}\"},\n          {\"f\": \"®55\", \"v\": \"${args.city}\"},\n          {\"f\": \"®58\", \"v\": \"${args.region}\"},\n          {\"f\": \"®5c\", \"v\": \"${args.postal}\"}\n        ]\n      },\n      \"cp\": [1]\n    },\n    {\n      \"intent\": \"Click + Add Line Item to prepare for 3 items\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Added 2 more line items. Fill all 3 order lines with product, qty, unit price from arguments, then fill remark and review.\"\n  }\n}",
+      "score": 5.5,
+      "highlights": [],
+      "resultChars": 1135,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Fill client name with ${args.clientName}\", \"risk\": \"m\", \"action\": { \"k\": \"fillForm\", \"q\": \"®91\", \"data\": [ {\"f\": \"®4r\", \"v\": \"${args.clientName}\"}, {\"f\": \"®4u\", \"v\": \"${args.cli…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6272,
+      "totalTimeMs": 13823,
+      "result": "{\"a\":[{\"intent\":\"Fill client info: name, email, phone\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields: street, city, region, postal code\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"}]},\"cp\":[1]},{\"intent\":\"Fill remark field\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"remark\",\"v\":\"${args.remark}\"}]}},{\"intent\":\"Click + Add Line Item to prepare 2 more order line slots (need 3 total, 1 exists)\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]}],\"next\":{\"tip\":\"Client info, address, and remark filled. 3 order line slots should now be available. Next: use combobox to select products (Laptop Pro, Desk Chair, Keyboard) and fill qty for each line item. Also pick delivery date via calendar. Verify all values at the end.\"}}",
+      "score": 6.5,
+      "highlights": [],
+      "resultChars": 1112,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Fill client info: name, email, phone\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/anthropic-claude-opus-4-6/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 75
+}

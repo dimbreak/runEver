@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 15.5,
+  "scoreRate": 64.58,
+  "averageScore": 5.17,
+  "averageFirstTokenMs": 4865,
+  "averageTotalTimeMs": 7047,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 5553,
+      "totalTimeMs": 6932,
+      "result": "{\"a\":[{\"intent\":\"fill form at ®91 with client and address fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"},{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"}]},\"cp\":[0,1]},{\"intent\":\"click + Add Line Item twice to prepare order lines\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]},{\"intent\":\"choose first product Laptop Pro in combobox\",\"risk\":\"m\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Laptop Pro\"},\"cp\":[3]}],\"next\":{\"tip\":\"Continue by filling qty and unit price for each line, then review all values.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 742,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"fill form at ®91 with client and address fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@clien…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4621,
+      "totalTimeMs": 7333,
+      "result": "{\"a\":[{\"intent\":\"fill client and address fields in form ®91\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"},{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"},{\"f\":\"remark\",\"v\":\"We are not open on monday, please do not delivery on monday\"}]}},{\"intent\":\"click + Add Line Item twice for 3 items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2}},{\"intent\":\"prepare order line items in form ®91\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"Product\",\"v\":\"Laptop Pro\"},{\"f\":\"Qty\",\"v\":\"5\"},{\"f\":\"Unit Price\",\"v\":\"1200.00\"}]}}],\"next\":{\"tip\":\"Review the newly added line-item fields, then fill Desk Chair and Keyboard with their qty and prices.\"}}",
+      "score": 6.5,
+      "highlights": [],
+      "resultChars": 873,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"fill client and address fields in form ®91\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 4421,
+      "totalTimeMs": 6876,
+      "result": "{\"a\":[{\"intent\":\"fill form fields clientName, clientEmail, clientPhone, address, city, region, postal, remark in ®91\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"},{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"},{\"f\":\"remark\",\"v\":\"${args.remark}\"}]},\"cp\":[0,1,4]},{\"intent\":\"prepare sufficient order lines by clicking + Add Line Item\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]},{\"intent\":\"wait for added line items to render\",\"risk\":\"l\",\"action\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":5000},\"post\":{\"t\":\"time\",\"ms\":300}}],\"next\":{\"tip\":\"Then fill each product, qty, and unit price in the added line items, and review the form values.\"}}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 897,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"fill form fields clientName, clientEmail, clientPhone, address, city, region, postal, remark in ®91\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${ar…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4-mini/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 15.5,
+  "adjustedScoreRate": 64.58
+}

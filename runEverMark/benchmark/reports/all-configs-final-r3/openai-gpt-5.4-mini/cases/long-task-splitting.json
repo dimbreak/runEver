@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 9,
+  "scoreRate": 42.86,
+  "averageScore": 3,
+  "averageFirstTokenMs": 4506,
+  "averageTotalTimeMs": 10875.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3804,
+      "totalTimeMs": 5012,
+      "result": "{\"a\":[{\"k\":\"addNewTask\",\"checkPoints\":[\"login to email account\",\"read new order email\",\"login to pos account\",\"fill create order form and set earliest delivery date\",\"preview order and seek approval if order amount > 1000\",\"save order and download the invoice\",\"reply the client with id, detail, and invoice\"],\"permitFromGoal\":\"email platform url: runever://benchmark/#/email\",\"src\":\"GOAL\",\"taskRisk\":\"m\"}],\"next\":{\"tip\":\"Start with email login, then open the new order message and extract the order details.\",\"descAttachment\":[{\"name\":\"new_arg_1770940290032\",\"desc\":\"SECRET credential placeholder available for downstream use\"}]}}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 631,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"k\":\"addNewTask\",\"checkPoints\":[\"login to email account\",\"read new order email\",\"login to pos account\",\"fill create order form and set earliest delivery date\",\"preview order and seek approval …"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 7616,
+      "totalTimeMs": 24520,
+      "result": "{\"a\":[{\"intent\":\"add checklist for email login\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"login to email account\"],\"permitFromGoal\":\"login to email / pos account with:\",\"src\":\"GOAL\",\"taskRisk\":\"m\"}},{\"intent\":\"add checklist for read order email\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"read new order email\"],\"permitFromGoal\":\"read new order email and get order detail from it\",\"src\":\"GOAL\",\"taskRisk\":\"l\"}},{\"intent\":\"add checklist for create pos order\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"go to pos system\",\"fill create order form with detail from the order\",\"set earliest delivery date\"],\"permitFromGoal\":\"then go to pos system, fill create order form with detail from the the order form and set earliest delivery date.\",\"src\":\"GOAL\",\"taskRisk\":\"m\"}},{\"intent\":\"add checklist for approve if needed\",\"risk\":\"h\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"in preview order step, if order amount > 1000, cap screenshot\",\"go to messager\",\"send him order file/detail & screenshot seek for manager dillion's approve\",\"do what he advise in case\"],\"permitFromGoal\":\"in preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case\",\"src\":\"GOAL\",\"taskRisk\":\"h\"}},{\"intent\":\"add checklist for save and invoice\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"save order\",\"download the invoice in order list\"],\"permitFromGoal\":\"after that save order, download the invoice in order list.\",\"src\":\"GOAL\",\"taskRisk\":\"m\"}},{\"intent\":\"add checklist for reply email\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"go to email\",\"reply the client with id, detail & invoice\"],\"permitFromGoal\":\"go to email and reply the client with id, detail & invoice\",\"src\":\"GOAL\",\"taskRisk\":\"m\"}}]}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 1840,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add checklist for email login\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"login to email account\"],\"permitFromGoal\":\"login to email / pos account with:\",\"src\":\"GOAL\",\"task…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 2098,
+      "totalTimeMs": 3095,
+      "result": "{\"a\":[{\"k\":\"addNewTask\",\"checkPoints\":[\"login to email account\",\"read new order email and get order detail\",\"go to pos system and fill create order form\",\"set earliest delivery date\",\"save order and download the invoice\",\"reply the client with id, detail & invoice\"],\"permitFromGoal\":\"login to email / pos account with:\",\"src\":\"breakdown from goal into atomic steps\",\"taskRisk\":\"m\"}]}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 384,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"k\":\"addNewTask\",\"checkPoints\":[\"login to email account\",\"read new order email and get order detail\",\"go to pos system and fill create order form\",\"set earliest delivery date\",\"save order and …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4-mini/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 13.5,
+  "adjustedScoreRate": 42.86
+}

@@ -1,0 +1,53 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 18,
+  "scoreRate": 100,
+  "averageScore": 6,
+  "averageFirstTokenMs": 3415.33,
+  "averageTotalTimeMs": 6056.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3692,
+      "totalTimeMs": 5841,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add selected wide angle lenses to wishlist with recommendations\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Black / v2: Rare Matte Black Paint limited edition (500pcs), vintage aesthetic without ASPH elements.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver / v2: Modern reissue of the classic 1950s design, extremely compact, non-ASPH character.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wide angle lenses added to wishlist. Now asking user for choice and preparing checkout details.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 925,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add selected wide angle lenses to wishlist with recommendations\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\"…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 3707,
+      "totalTimeMs": 7102,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add selected wide angle lenses to wish list with recommendation comments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Black / v2: Rare Matte Black Paint limited edition (500 pcs); vintage rendering in a modern, compact build.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver / v2: Reissue of the classic 1950s design; provides a unique analog character and extreme portability.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 - Black Paint: Faithful homage to the legendary '9-element' Elmarit; brass construction with classic rendering at a more accessible price.\\\"}]}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wide angle lenses added to wish list. I will now ask which items you'd like to proceed with for checkout.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1171,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add selected wide angle lenses to wish list with recommendation comments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 2847,
+      "totalTimeMs": 5226,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Mark wide angle lens wishlist addition as working and add selected lenses to wishlist with comments\",\n      \"risk\": \"m\",\n      \"cp\": [3],\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Black: Extremely compact, classic vintage aesthetic signature, limited edition (1 of 500).\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver: Modern reproduction of the 1955 classic, unique analog character and very compact.\\\"}]}\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wide angle lenses added to wishlist. Now asking user for selection to proceed to checkout.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 912,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Mark wide angle lens wishlist addition as working and add selected lenses to wishlist with comments\", \"risk\": \"m\", \"cp\": [3], \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://u…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-pro-preview/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 100
+}

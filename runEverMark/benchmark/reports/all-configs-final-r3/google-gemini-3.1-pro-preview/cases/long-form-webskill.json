@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 24,
+  "scoreRate": 100,
+  "averageScore": 8,
+  "averageFirstTokenMs": 3134,
+  "averageTotalTimeMs": 6559.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 2085,
+      "totalTimeMs": 5818,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"Initialize the checklist for creating the order based on the provided goal.\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"addNewTask\",\n    \"checkPoints\": [\n     \"Fill client information (Name, Email, Phone)\",\n     \"Fill delivery address (Street, City, Region, Postal Code)\",\n     \"Select delivery date according to production lead time and client instruction\",\n     \"Add order line items (Product, Qty, Unit Price) for each item\",\n     \"Add remark from arguments\",\n     \"Review and preview order\"\n    ],\n    \"permitFromGoal\": \"Create order using details in arguments extracted from order_form.pdf\",\n    \"src\": \"goal\",\n    \"taskRisk\": \"m\"\n   }\n  },\n  {\n   \"intent\": \"Use the posOrderPrep webSkill to fill the order form in one go for efficiency and accuracy.\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"callWebSkill\",\n    \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n    \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n    \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args['items.0.name']}\\\",\\\"quantity\\\":${args['items.0.qty']},\\\"unitPrice\\\":${args['items.0.unit_price']}},{\\\"productName\\\":\\\"${args['items.1.name']}\\\",\\\"quantity\\\":${args['items.1.qty']},\\\"unitPrice\\\":${args['items.1.unit_price']}},{\\\"productName\\\":\\\"${args['items.2.name']}\\\",\\\"quantity\\\":${args['items.2.qty']},\\\"unitPrice\\\":${args['items.2.unit_price']}}]}\"\n   },\n   \"cp\": [\n    0,\n    1,\n    2,\n    3,\n    4\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"WebSkill called to fill the form. Next executor should verify the filled data and proceed to preview.\"\n }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1869,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize the checklist for creating the order based on the provided goal.\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill client information (Name, Email,…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 3512,
+      "totalTimeMs": 7347,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"Initialize the checklist for creating the order based on extracted details.\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"addNewTask\",\n    \"checkPoints\": [\n     \"Set client name, email, and phone from order details\",\n     \"Set delivery address fields: street, city, region, and postal code\",\n     \"Set delivery date considering 11-month lead time and no Monday/weekend rule\",\n     \"Add all order line items with product, quantity, and unit price\",\n     \"Add the remark: ${args.remark}\",\n     \"Review form and click Preview Order\"\n    ],\n    \"permitFromGoal\": \"Create order using details in arguments extracted from order_form.pdf\",\n    \"src\": \"goal\",\n    \"taskRisk\": \"m\"\n   }\n  },\n  {\n   \"intent\": \"Use the activated webSkill to fill the order form efficiently using ${args}\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"callWebSkill\",\n    \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n    \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n    \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"2027-03-10\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args['items.0.name']}\\\",\\\"quantity\\\":${args['items.0.qty']},\\\"unitPrice\\\":${args['items.0.unit_price']}},{\\\"productName\\\":\\\"${args['items.1.name']}\\\",\\\"quantity\\\":${args['items.1.qty']},\\\"unitPrice\\\":${args['items.1.unit_price']}},{\\\"productName\\\":\\\"${args['items.2.name']}\\\",\\\"quantity\\\":${args['items.2.qty']},\\\"unitPrice\\\":${args['items.2.unit_price']}}]}\"\n   },\n   \"cp\": [\n    0,\n    1,\n    2,\n    3,\n    4\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"The webSkill is filling the form. Calculated delivery date is 2027-03-10 (11 months from ${args.today}, avoiding Mondays/weekends). Verify and submit.\"\n }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1935,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize the checklist for creating the order based on extracted details.\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Set client name, email, and phone fro…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3805,
+      "totalTimeMs": 6514,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"Use webSkill to prepare the order with details from arguments\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"callWebSkill\",\n    \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n    \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n    \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args['items.0.name']}\\\",\\\"quantity\\\":${args['items.0.qty']},\\\"unitPrice\\\":${args['items.0.unit_price']}},{\\\"productName\\\":\\\"${args['items.1.name']}\\\",\\\"quantity\\\":${args['items.1.qty']},\\\"unitPrice\\\":${args['items.1.unit_price']}},{\\\"productName\\\":\\\"${args['items.2.name']}\\\",\\\"quantity\\\":${args['items.2.qty']},\\\"unitPrice\\\":${args['items.2.unit_price']}}]}\"\n   },\n   \"cp\": [\n    0\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"Review the filled form and line items, then proceed to preview.\"\n }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1110,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Use webSkill to prepare the order with details from arguments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-pro-preview/cases/long-form-webskill.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 24,
+  "adjustedScoreRate": 100
+}

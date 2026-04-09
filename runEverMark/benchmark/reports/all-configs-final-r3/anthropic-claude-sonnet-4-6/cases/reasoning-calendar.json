@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 12,
+  "scoreRate": 80,
+  "averageScore": 4,
+  "averageFirstTokenMs": 9066,
+  "averageTotalTimeMs": 10947,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 8578,
+      "totalTimeMs": 10351,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set delivery date using calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce, po-date: 25 Feb 2026\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Calendar set, verify delivery date then preview order\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 505,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date using calendar\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"order takes 11 months …"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 7975,
+      "totalTimeMs": 9924,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set delivery date using calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce, po-date: 25 Feb 2026\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Calendar set, verify delivery date then preview order\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 505,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date using calendar\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"order takes 11 months …"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 10645,
+      "totalTimeMs": 12566,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set delivery date using calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce, po-date: 25 Feb 2026\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Calendar set, verify delivery date then preview order\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 505,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date using calendar\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"order takes 11 months …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/anthropic-claude-sonnet-4-6/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 80
+}

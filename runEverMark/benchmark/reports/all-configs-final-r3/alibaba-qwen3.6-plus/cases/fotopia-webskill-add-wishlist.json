@@ -1,0 +1,59 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 14,
+  "scoreRate": 77.78,
+  "averageScore": 4.67,
+  "averageFirstTokenMs": 89707.33,
+  "averageTotalTimeMs": 95853.33,
+  "highlights": [
+    "wishlist item count or stock ids mismatch"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 121712,
+      "totalTimeMs": 128265,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add 3 wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Classic compact 28mm wide-angle, limited black paint edition. Excellent for discreet street photography.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Modern homage to nine-element design in brass. Unique rendering, includes hood & leather pouch.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Chrome version of the nine-element brass lens. Classic aesthetic with modern optical improvements.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify wishlist updated with 3 lenses. Mark cp 3 verified, set cp 4 working, then botherUser to ask which camera & lens combinations to buy. Use prepareOrder skill upon confirmation.\"\n  }\n}",
+      "score": 4,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 1113,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add 3 wide-angle lenses to wishlist with comments\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName\": \"w…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 73925,
+      "totalTimeMs": 79369,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add selected wide angle lenses to wishlist with recommendation comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Compact classic 28mm f/2.8 with brass build, modern ED glass for excellent digital sharpness.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Original Leica Summaron-M 28mm f/5.6, ultra-compact and iconic for street photography.\\\"}]}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify lenses were added to wishlist, mark cp 3 verified, then ask user which camera/lens combo to buy and prepare checkout with provided address.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 881,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add selected wide angle lenses to wishlist with recommendation comments\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/S…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 73485,
+      "totalTimeMs": 79926,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited matte black paint, compact 28mm ideal for street photography.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Classic 9-element rendering in black paint, matches vintage Leica style.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Chrome finish version of the classic 9-element lens, perfect for silver M6 bodies.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Lenses added to wishlist. Ask user which items to purchase, then prepare checkout with address 1 Kirn Rd, London, W13 0UB, UK and phone 123456.\"\n  }\n}",
+      "score": 4,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 998,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add wide-angle lenses to wishlist with comments\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName\": \"win…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 14,
+  "adjustedScoreRate": 77.78
+}

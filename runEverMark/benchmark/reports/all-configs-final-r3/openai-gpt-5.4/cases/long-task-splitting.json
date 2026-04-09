@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 21,
+  "scoreRate": 100,
+  "averageScore": 7,
+  "averageFirstTokenMs": 4760.67,
+  "averageTotalTimeMs": 13067.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 5350,
+      "totalTimeMs": 13463,
+      "result": "{\"a\":[{\"intent\":\"add workflow checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account\",\"Read the new order email\",\"Get the order details from the email\",\"Open the POS system in a new tab\",\"Log in to the POS account\",\"Fill the create order form with the order details\",\"Set the earliest delivery date\",\"Review the preview order step amount\",\"Capture a screenshot if the order amount is more than 1000\",\"Open messager in a new tab if approval is needed\",\"Send the order detail or file and screenshot to manager dillion\",\"Follow manager dillion's advice if approval is needed\",\"Save the order\",\"Download the invoice from the order list\",\"Return to email\",\"Reply to the client with the order id\",\"Include the order details in the reply\",\"Attach the invoice in the reply\"],\"permitFromGoal\":\"read new order email and get order detail from it. then go to pos system, fill create order form with detail from the the order form and set earliest delivery date.\\n\\n  in preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case\\n\\n  after that save order, download the invoice in order list. go to email and reply the client with id, detail & invoice\",\"src\":\"initial goal breakdown\",\"taskRisk\":\"m\"}},{\"intent\":\"start login email account\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1}},{\"intent\":\"fill email with account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[1]},{\"intent\":\"fill password with account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"},\"cp\":[1]},{\"intent\":\"next submit email login\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®c\"},\"cp\":[1],\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":10000}}],\"next\":{\"tip\":\"Check whether email login succeeded, then open the new order email.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1902,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add workflow checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account\",\"Read the new order email\",\"Get the order details from the email\",\"Open t…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 3395,
+      "totalTimeMs": 12853,
+      "result": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Open the new order email\",\"Get the order detail from the email\",\"Open the POS system in a new tab\",\"Log in to the POS account with the provided credentials\",\"Fill the create order form with the order detail\",\"Set the earliest delivery date\",\"Review the preview order step amount\",\"Capture a screenshot if order amount is more than 1000\",\"Open the messager in a new tab\",\"Send order detail and screenshot to ask manager dillion for approval if amount is more than 1000\",\"Follow manager dillion's advice if amount is more than 1000\",\"Save the order\",\"Download the invoice from the order list\",\"Return to email\",\"Reply to the client with id\",\"Reply to the client with detail\",\"Reply to the client with invoice\"],\"permitFromGoal\":\"login to email / pos account with:\\n\\nemail: pikachu@pokemon.com\\n\\npassword: P@ssword321\\n\\nread new order email and get order detail from it. then go to pos system, fill create order form with detail from the the order form and set earliest delivery date.\\n\\nin preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case\\n\\nafter that save order, download the invoice in order list. go to email and reply the client with id, detail & invoice\",\"src\":\"initial checklist breakdown from goal\",\"taskRisk\":\"m\"}},{\"intent\":\"fill email with provided email\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[0]},{\"intent\":\"fill password with provided password\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"}},{\"intent\":\"mark email login working\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":0}},{\"intent\":\"click Next to sign in\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®c\"},\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":10000}}],\"next\":{\"tip\":\"Check whether email login succeeded and open the new order email.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 2049,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Open the new order email\",\"Get the order detail from…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5537,
+      "totalTimeMs": 12886,
+      "result": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Log in to the email account with the provided password\",\"Read the new order email\",\"Get the order details from the order email\",\"Go to the POS system\",\"Fill the create order form with the order details\",\"Set the earliest delivery date\",\"Check the preview order amount\",\"Capture a screenshot if the order amount is more than 1000\",\"Go to messager if the order amount is more than 1000\",\"Send the order detail or file and screenshot to manager dillion for approval if the order amount is more than 1000\",\"Follow manager dillion's advice if the order amount is more than 1000\",\"Save the order\",\"Download the invoice in the order list\",\"Go to email\",\"Reply the client with id\",\"Reply the client with detail\",\"Reply the client with invoice\"],\"permitFromGoal\":\"do what you can what you want, no botherUser\",\"src\":\"initial breakdown from GOAL\",\"taskRisk\":\"m\"}},{\"intent\":\"start email login email\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":0}},{\"intent\":\"fill email with provided account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[0]},{\"intent\":\"start email login password\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1}},{\"intent\":\"fill password with provided account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"},\"cp\":[1]}],\"next\":{\"tip\":\"Click Next to submit the sign-in form and inspect the inbox.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1520,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Log in to the email account with the provided passwo…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 31.5,
+  "adjustedScoreRate": 100
+}

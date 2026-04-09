@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 18,
+  "scoreRate": 85.71,
+  "averageScore": 6,
+  "averageFirstTokenMs": 3347,
+  "averageTotalTimeMs": 6230.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 2165,
+      "totalTimeMs": 6040,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist items for entire multi-step workflow\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 0,\n        \"checkPoints\": [\n          \"login to email account with provided credentials\",\n          \"identify and open the newest order-related email\",\n          \"read the new order email and extract client info and order details\",\n          \"navigate to the pos system url\",\n          \"login to pos account with provided credentials\",\n          \"open the create order form in the pos system\",\n          \"fill create order form with order details from the email\",\n          \"set the earliest available delivery date in the order form\",\n          \"go to preview order step in the pos workflow\",\n          \"check if order amount is greater than 1000 in preview order\",\n          \"if order amount is greater than 1000, capture a screenshot of the preview order\",\n          \"if order amount is greater than 1000, navigate to messager url\",\n          \"if order amount is greater than 1000, prepare order file or details and screenshot for manager review\",\n          \"if order amount is greater than 1000, send manager dillion the order details and screenshot in messager to seek approval\",\n          \"if order amount is greater than 1000, follow and execute manager dillion’s advice regarding the order\",\n          \"save or finalize the order in the pos system\",\n          \"go to the order list in the pos system\",\n          \"download the invoice file for the created order from the order list\",\n          \"navigate back to the email platform\",\n          \"compose a reply to the client’s order email including order id\",\n          \"include key order details in the email reply\",\n          \"attach or include invoice information or file in the email reply\",\n          \"send the email reply to the client\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"init checklist from GOAL requirements for email, pos, and messager workflow\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Log into the email platform with provided credentials and locate the newest order email.\",\n    \"sc\": false\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 2229,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add checklist items for entire multi-step workflow\", \"risk\": \"m\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": 0, \"checkPoints\": [ \"login to email account with provided credentia…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4544,
+      "totalTimeMs": 7170,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist for full workflow from GOAL\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 0,\n        \"checkPoints\": [\n          \"login to email account with provided email and password\",\n          \"identify and open the new order email in the email inbox\",\n          \"read the new order email and extract all order details from it\",\n          \"navigate to the pos system using the provided ordering platform url\",\n          \"fill the create order form in the pos system with the extracted order details\",\n          \"set the earliest possible delivery date in the create order form\",\n          \"proceed to the preview order step in the pos system\",\n          \"if the order amount is greater than 1000, capture a screenshot of the preview order\",\n          \"go to the messager using the provided messager url\",\n          \"send manager dillion the order file or order details and the screenshot in messager to seek his approval\",\n          \"receive and review manager dillion's advice in messager\",\n          \"apply and perform the actions advised by manager dillion regarding the order\",\n          \"save the order in the pos system after following manager dillion's advice\",\n          \"access the order list in the pos system and download the invoice for the order\",\n          \"return to the email platform\",\n          \"compose and send a reply email to the client including the order id, order details, and the invoice file as attachment\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"Initial breakdown of GOAL into actionable checkpoints\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Use provided credentials to log into the email platform sign-in form.\",\n    \"sc\": false\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1828,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add checklist for full workflow from GOAL\", \"risk\": \"m\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": 0, \"checkPoints\": [ \"login to email account with provided email and password…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3332,
+      "totalTimeMs": 5481,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist items from GOAL steps\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 0,\n        \"checkPoints\": [\n          \"login to email account with provided email and password\",\n          \"read the new order email in the email account\",\n          \"get the order detail from the new order email\",\n          \"login to pos account with provided email and password\",\n          \"open the create order form in the pos system\",\n          \"fill the create order form with the order detail and set earliest delivery date\",\n          \"go to the preview order step in the pos system\",\n          \"if order amount > 1000, capture screenshot of the order preview\",\n          \"if order amount > 1000, go to the messager platform\",\n          \"if order amount > 1000, send manager dillion the order file/detail and screenshot to seek approval\",\n          \"follow manager dillion's advice regarding the order\",\n          \"save the order in the pos system\",\n          \"download the invoice for the order from the order list\",\n          \"go to the email platform after order and invoice are ready\",\n          \"reply to the client with the order id, order detail, and invoice attached\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"initial breakdown of GOAL into atomic checkpoints\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ]\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1437,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add checklist items from GOAL steps\", \"risk\": \"m\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": 0, \"checkPoints\": [ \"login to email account with provided email and password\", \"re…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.1/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 27,
+  "adjustedScoreRate": 85.71
+}

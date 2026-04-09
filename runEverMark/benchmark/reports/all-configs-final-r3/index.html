@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>runEverMark Benchmark Dashboard</title>
+  <meta name="description" content="Interactive benchmark results dashboard for runEverMark model evaluation." />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Vars ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0b0f1a;
+      --surface:   #111827;
+      --surface2:  #1a2236;
+      --border:    #1e293b;
+      --text:      #e2e8f0;
+      --muted:     #94a3b8;
+      --accent:    #6366f1;
+      --accent2:   #818cf8;
+      --green:     #34d399;
+      --amber:     #fbbf24;
+      --rose:      #fb7185;
+      --cyan:      #22d3ee;
+      --radius:    12px;
+      --shadow:    0 4px 24px rgba(0,0,0,.35);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    .page { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeUp .6s ease-out;
+    }
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent2), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -.02em;
+    }
+    header p { color: var(--muted); font-size: .95rem; margin-top: 8px; }
+    .meta-pills { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: .82rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .pill b { color: var(--text); font-weight: 600; }
+
+    /* ── Section ───────────────────────────────────────────── */
+    .section {
+      margin-bottom: 48px;
+      animation: fadeUp .6s ease-out both;
+    }
+    .section:nth-child(2) { animation-delay: .1s; }
+    .section:nth-child(3) { animation-delay: .2s; }
+    .section:nth-child(4) { animation-delay: .3s; }
+
+    .section-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 22px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--accent), var(--cyan));
+    }
+
+    /* ── Cards ─────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: border-color .25s;
+    }
+    .card:hover { border-color: var(--accent); }
+
+    /* ── Chart containers ──────────────────────────────────── */
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .chart-wrap { position: relative; height: 420px; }
+
+    @media (max-width: 900px) {
+      .chart-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── Highlight comparison ──────────────────────────────── */
+    .highlight-subtitle {
+      font-size: .88rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .highlight-subtitle strong { color: var(--text); }
+    .highlight-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .badge-fill { background: #6366f133; color: #a5b4fc; border: 1px solid #6366f155; }
+    .badge-skill { background: #22d3ee22; color: #67e8f9; border: 1px solid #22d3ee44; }
+    .highlight-chart-wrap { height: 440px; position: relative; }
+    .highlight-insights {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .insight-card {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+    }
+    .insight-card .insight-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .insight-card .insight-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    /* ── Leaderboard Table──────────────────────────────────── */
+    .lb-table-wrap { overflow-x: auto; margin-top: 16px; }
+    table.lb {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .88rem;
+    }
+    table.lb th, table.lb td {
+      padding: 10px 14px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    table.lb th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+    }
+    table.lb tr { transition: background .2s; }
+    table.lb tr:hover { background: var(--surface2); }
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: .78rem;
+    }
+    .rank-1 { background: linear-gradient(135deg,#fbbf24,#f59e0b); color: #1a1a1a; }
+    .rank-2 { background: linear-gradient(135deg,#94a3b8,#cbd5e1); color: #1a1a1a; }
+    .rank-3 { background: linear-gradient(135deg,#b45309,#d97706); color: #fff; }
+    .rank-other { background: var(--surface2); color: var(--muted); }
+
+    .score-bar-cell { min-width: 200px; }
+    .score-bar-outer {
+      background: var(--surface2);
+      border-radius: 6px;
+      height: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+    .score-bar-inner {
+      height: 100%;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--accent), var(--cyan));
+      transition: width .8s cubic-bezier(.4,0,.2,1);
+    }
+    .score-bar-label {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-weight: 600;
+      font-size: .75rem;
+      color: var(--text);
+      text-shadow: 0 1px 3px rgba(0,0,0,.5);
+    }
+
+    /* ── Per-case section ──────────────────────────────────── */
+    .case-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .case-tab {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .case-tab:hover { border-color: var(--accent2); color: var(--text); }
+    .case-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .case-chart-wrap { height: 380px; position: relative; }
+
+    /* ── JSON Viewer section ────────────────────────────────── */
+    .controls-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .ctrl-group { display: flex; flex-direction: column; gap: 4px; }
+    .ctrl-group label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .ctrl-group select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: .88rem;
+      font-family: inherit;
+      min-width: 200px;
+      cursor: pointer;
+      transition: border-color .2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .ctrl-group select:focus { border-color: var(--accent); outline: none; }
+
+    .json-viewer-area {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: .82rem;
+      line-height: 1.7;
+      overflow: auto;
+      max-height: 560px;
+      min-height: 200px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+    }
+    .json-viewer-area .json-key { color: #7dd3fc; }
+    .json-viewer-area .json-string { color: #86efac; }
+    .json-viewer-area .json-number { color: #fbbf24; }
+    .json-viewer-area .json-bool { color: #c084fc; }
+    .json-viewer-area .json-null { color: #94a3b8; font-style: italic; }
+    .json-viewer-area .json-bracket { color: #64748b; }
+    .json-viewer-area .json-toggle {
+      cursor: pointer;
+      user-select: none;
+      display: inline-block;
+      width: 16px;
+      text-align: center;
+      color: var(--accent2);
+      font-weight: 700;
+      transition: transform .2s;
+    }
+    .json-viewer-area .json-toggle:hover { color: var(--cyan); }
+    .json-viewer-area .json-collapsed { display: none; }
+    .json-viewer-area .json-ellipsis { color: var(--muted); font-style: italic; }
+
+    .run-meta {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .run-meta-item {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    .run-meta-item span:first-child {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .run-meta-item span:last-child {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .score-good { color: var(--green); }
+    .score-mid { color: var(--amber); }
+    .score-low { color: var(--rose); }
+
+    /* ── Animations ────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Scrollbar ─────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+  </style>
+</head>
+<body>
+  <div class="page" id="app">
+    <header>
+      <h1>runEverMark Benchmark</h1>
+      <p>Model performance comparison across test cases</p>
+      <div class="meta-pills" id="meta-pills"></div>
+    </header>
+
+    <!-- 1. Leaderboard -->
+    <div class="section" id="sec-leaderboard">
+      <h2 class="section-title">Leaderboard</h2>
+      <div class="card">
+        <div class="lb-table-wrap" id="leaderboard"></div>
+      </div>
+    </div>
+
+    <!-- 2. Overall Charts -->
+    <div class="section" id="sec-overall">
+      <h2 class="section-title">Overall Scores &amp; Timing</h2>
+      <div class="chart-row">
+        <div class="card">
+          <div class="chart-wrap"><canvas id="chartScore"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="chart-wrap"><canvas id="chartTime"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.5 Highlight: Form Filling vs WebSkill -->
+    <div class="section" id="sec-highlight">
+      <h2 class="section-title">Form Filling vs WebSkill</h2>
+      <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#111827 60%,#1a1e3a);border-color:#2d3561;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <span style="font-size:1.8rem;line-height:1;">🔌</span>
+          <div>
+            <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">What is WebSkill?</div>
+            <p style="color:var(--muted);font-size:.88rem;line-height:1.6;margin:0;">
+              WebSkill lets websites expose callable frontend functions to AI agents — bridging humans and agents through web UI.
+              Instead of the agent clicking through form fields step-by-step (<span style="color:var(--text);">&gt;10 turns</span>),
+              a WebSkill function fills the entire form in <span style="color:var(--green);font-weight:600;">one shot</span>.
+            </p>
+            <a href="https://github.com/dimbreak/web-skill" target="_blank" rel="noopener"
+               style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:7px 16px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--cyan);font-size:.82rem;font-weight:600;text-decoration:none;transition:all .2s;"
+               onmouseover="this.style.borderColor='var(--cyan)';this.style.background='#1a2236'"
+               onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 016.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58A12.01 12.01 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              dimbreak/web-skill
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="highlight-subtitle">
+          Comparing model performance on manual
+          <span class="highlight-badge badge-fill">Long Form Filling</span>
+          vs WebSkill-assisted
+          <span class="highlight-badge badge-skill">Long Form WebSkill</span>
+          — same form, different approaches.
+        </p>
+        <div class="chart-row">
+          <div class="highlight-chart-wrap"><canvas id="chartHighlightScore"></canvas></div>
+          <div class="highlight-chart-wrap"><canvas id="chartHighlightTime"></canvas></div>
+        </div>
+        <div class="highlight-insights" id="highlightInsights"></div>
+      </div>
+    </div>
+
+    <!-- 3. Per-Case Charts -->
+    <div class="section" id="sec-cases">
+      <h2 class="section-title">Scores by Case</h2>
+      <div class="card">
+        <div class="case-tabs" id="caseTabs"></div>
+        <div class="case-chart-wrap"><canvas id="chartCase"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 4. JSON Viewer -->
+    <div class="section" id="sec-json">
+      <h2 class="section-title">Response Viewer</h2>
+      <div class="card">
+        <div class="controls-row">
+          <div class="ctrl-group">
+            <label>Model</label>
+            <select id="selModel"></select>
+          </div>
+          <div class="ctrl-group">
+            <label>Case</label>
+            <select id="selCase"></select>
+          </div>
+          <div class="ctrl-group">
+            <label>Run</label>
+            <select id="selRun"></select>
+          </div>
+        </div>
+        <div class="run-meta" id="runMeta"></div>
+        <div class="json-viewer-area" id="jsonViewer">Select a model, case, and run to view the response.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Load Data ──────────────────────────────────────────── */
+    let DATA = null;
+
+    async function loadData() {
+      const resp = await fetch('./summary.json');
+      DATA = await resp.json();
+      init();
+    }
+
+    /* ── Helpers ────────────────────────────────────────────── */
+    const MODEL_COLORS = [
+      '#6366f1','#22d3ee','#34d399','#fbbf24','#fb7185',
+      '#a78bfa','#f472b6','#38bdf8','#4ade80','#facc15',
+      '#f97316','#e879f9','#2dd4bf'
+    ];
+
+    function shortName(apiId) {
+      return apiId
+        .replace('openai-','')
+        .replace('anthropic-','')
+        .replace('google-','')
+        .replace('x-ai/','')
+        .replace('alibaba-','')
+        .replace('-preview','');
+    }
+
+    function fmtMs(ms) {
+      if (ms < 1000) return ms.toFixed(0) + 'ms';
+      return (ms / 1000).toFixed(1) + 's';
+    }
+
+    function scoreClass(rate) {
+      if (rate >= 85) return 'score-good';
+      if (rate >= 65) return 'score-mid';
+      return 'score-low';
+    }
+
+    /* ── Init ──────────────────────────────────────────────── */
+    function init() {
+      renderPills();
+      renderLeaderboard();
+      renderOverallCharts();
+      renderHighlightComparison();
+      renderCaseTabs();
+      renderJsonControls();
+    }
+
+    /* ── Meta Pills ────────────────────────────────────────── */
+    function renderPills() {
+      const el = document.getElementById('meta-pills');
+      const d1 = new Date(DATA.startedAt).toLocaleString();
+      const d2 = new Date(DATA.finishedAt).toLocaleString();
+      el.innerHTML = `
+        <span class="pill"><b>${DATA.apis.length}</b>&nbsp;Models</span>
+        <span class="pill"><b>${DATA.caseCount}</b>&nbsp;Cases</span>
+        <span class="pill"><b>${DATA.repeats}</b>&nbsp;Runs each</span>
+        <span class="pill">${d1}</span>
+      `;
+    }
+
+    /* ── Leaderboard ───────────────────────────────────────── */
+    function renderLeaderboard() {
+      const el = document.getElementById('leaderboard');
+      const sorted = [...DATA.summaries].sort((a, b) => b.adjustedScoreRate - a.adjustedScoreRate);
+
+      let rows = sorted.map((s, i) => {
+        const rank = i + 1;
+        const rc = rank <= 3 ? `rank-${rank}` : 'rank-other';
+        return `<tr>
+          <td><span class="rank-badge ${rc}">${rank}</span></td>
+          <td style="font-weight:600">${shortName(s.apiId)}</td>
+          <td class="${scoreClass(s.adjustedScoreRate)}" style="font-weight:700">${s.adjustedScoreRate.toFixed(1)}%</td>
+          <td>${s.adjustedTotalScore.toFixed(1)} / ${s.adjustedMaxScore}</td>
+          <td class="score-bar-cell">
+            <div class="score-bar-outer">
+              <div class="score-bar-inner" style="width:${s.adjustedScoreRate}%"></div>
+              <span class="score-bar-label">${s.adjustedScoreRate.toFixed(1)}%</span>
+            </div>
+          </td>
+          <td>${fmtMs(s.averageFirstTokenMs)}</td>
+          <td>${fmtMs(s.averageTotalTimeMs)}</td>
+        </tr>`;
+      }).join('');
+
+      el.innerHTML = `<table class="lb">
+        <thead><tr>
+          <th>#</th><th>Model</th><th>Score Rate</th><th>Score</th><th>Bar</th><th>Avg TTFT</th><th>Avg Total</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    /* ── Overall Charts ────────────────────────────────────── */
+    function renderOverallCharts() {
+      const sorted = [...DATA.summaries].sort((a, b) => b.adjustedScoreRate - a.adjustedScoreRate);
+      const labels = sorted.map(s => shortName(s.apiId));
+      const rawScores = sorted.map(s => s.scoreRate);
+      const adjScores = sorted.map(s => s.adjustedScoreRate);
+
+      const chartDefaults = {
+        color: '#94a3b8',
+        borderColor: '#1e293b',
+        font: { family: 'Inter' }
+      };
+      Chart.defaults.color = chartDefaults.color;
+      Chart.defaults.font.family = 'Inter';
+
+      // Score chart
+      new Chart(document.getElementById('chartScore'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Raw Score Rate',
+              data: rawScores,
+              backgroundColor: '#6366f1aa',
+              borderColor: '#6366f1',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            },
+            {
+              label: 'Adjusted Score Rate',
+              data: adjScores,
+              backgroundColor: '#22d3eeaa',
+              borderColor: '#22d3ee',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+            title: { display: true, text: 'Score Rate by Model', font: { size: 15, weight: 600 }, padding: { bottom: 16 } },
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: '#1e293b' }, ticks: { callback: v => v + '%' } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 30, font: { size: 11 } } }
+          },
+          animation: { duration: 1000, easing: 'easeOutQuart' }
+        }
+      });
+
+      // Time chart
+      const ttft = sorted.map(s => s.averageFirstTokenMs);
+      const total = sorted.map(s => s.averageTotalTimeMs);
+      new Chart(document.getElementById('chartTime'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Avg TTFT (ms)',
+              data: ttft,
+              backgroundColor: '#6366f1aa',
+              borderColor: '#6366f1',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            },
+            {
+              label: 'Avg Total (ms)',
+              data: total,
+              backgroundColor: '#22d3eeaa',
+              borderColor: '#22d3ee',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            },
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+            title: { display: true, text: 'Average Response Timing', font: { size: 15, weight: 600 }, padding: { bottom: 16 } },
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { callback: v => fmtMs(v) } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 30, font: { size: 11 } } }
+          },
+          animation: { duration: 1000, easing: 'easeOutQuart' }
+        }
+      });
+    }
+
+    /* ── Highlight: Form Filling vs WebSkill ─────────────── */
+    function renderHighlightComparison() {
+      const FILL_ID = 'long-form-filling';
+      const SKILL_ID = 'long-form-webskill';
+      const sorted = [...DATA.summaries].sort((a, b) => b.adjustedScoreRate - a.adjustedScoreRate);
+      const labels = sorted.map(s => shortName(s.apiId));
+
+      const fillScores = sorted.map(s => {
+        const cs = s.caseSummaries.find(c => c.caseId === FILL_ID);
+        return cs ? cs.adjustedScoreRate : 0;
+      });
+      const skillScores = sorted.map(s => {
+        const cs = s.caseSummaries.find(c => c.caseId === SKILL_ID);
+        return cs ? cs.adjustedScoreRate : 0;
+      });
+      const fillTimes = sorted.map(s => {
+        const cs = s.caseSummaries.find(c => c.caseId === FILL_ID);
+        return cs ? cs.averageTotalTimeMs : 0;
+      });
+      const skillTimes = sorted.map(s => {
+        const cs = s.caseSummaries.find(c => c.caseId === SKILL_ID);
+        return cs ? cs.averageTotalTimeMs : 0;
+      });
+
+      // Score comparison chart
+      new Chart(document.getElementById('chartHighlightScore'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Form Filling',
+              data: fillScores,
+              backgroundColor: '#6366f1aa',
+              borderColor: '#6366f1',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            },
+            {
+              label: 'WebSkill',
+              data: skillScores,
+              backgroundColor: '#22d3eeaa',
+              borderColor: '#22d3ee',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+            title: { display: true, text: 'Score Rate Comparison (%)', font: { size: 14, weight: 600 }, padding: { bottom: 14 } },
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: '#1e293b' }, ticks: { callback: v => v + '%' } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 30, font: { size: 10 } } }
+          },
+          animation: { duration: 900, easing: 'easeOutQuart' }
+        }
+      });
+
+      // Time comparison chart
+      new Chart(document.getElementById('chartHighlightTime'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Form Filling',
+              data: fillTimes,
+              backgroundColor: '#6366f1aa',
+              borderColor: '#6366f1',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            },
+            {
+              label: 'WebSkill',
+              data: skillTimes,
+              backgroundColor: '#22d3eeaa',
+              borderColor: '#22d3ee',
+              borderWidth: 1.5,
+              borderRadius: 6,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+            title: { display: true, text: ['Avg Total Time (1st turn only)', 'Filling typically needs >10 turns · WebSkill completes in one shot'], font: { size: 14, weight: 600 }, padding: { bottom: 14 } },
+            subtitle: { display: false },
+          },
+          scales: {
+            y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { callback: v => fmtMs(v) } },
+            x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 30, font: { size: 10 } } }
+          },
+          animation: { duration: 900, easing: 'easeOutQuart' }
+        }
+      });
+
+      // Compute insights
+      const avgFillScore = fillScores.reduce((a, b) => a + b, 0) / fillScores.length;
+      const avgSkillScore = skillScores.reduce((a, b) => a + b, 0) / skillScores.length;
+      const avgFillTime = fillTimes.reduce((a, b) => a + b, 0) / fillTimes.length;
+      const avgSkillTime = skillTimes.reduce((a, b) => a + b, 0) / skillTimes.length;
+      const scoreLift = avgSkillScore - avgFillScore;
+      const timeDiff = avgFillTime - avgSkillTime;
+
+      // Count models where skill > fill
+      let skillWins = 0;
+      sorted.forEach((_, i) => { if (skillScores[i] > fillScores[i]) skillWins++; });
+
+      const insightsEl = document.getElementById('highlightInsights');
+      insightsEl.innerHTML = `
+        <div class="insight-card">
+          <div class="insight-label">Avg Fill Score</div>
+          <div class="insight-value ${scoreClass(avgFillScore)}">${avgFillScore.toFixed(1)}%</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Avg WebSkill Score</div>
+          <div class="insight-value ${scoreClass(avgSkillScore)}">${avgSkillScore.toFixed(1)}%</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">WebSkill Score Lift</div>
+          <div class="insight-value" style="color:${scoreLift >= 0 ? 'var(--green)' : 'var(--rose)'}">${scoreLift >= 0 ? '+' : ''}${scoreLift.toFixed(1)}pp</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Avg Time Saved</div>
+          <div class="insight-value" style="color:${timeDiff >= 0 ? 'var(--green)' : 'var(--rose)'}">${timeDiff >= 0 ? '' : '+'}${fmtMs(Math.abs(timeDiff))}</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">WebSkill Wins</div>
+          <div class="insight-value" style="color:var(--cyan)">${skillWins} / ${sorted.length}</div>
+        </div>
+      `;
+    }
+
+    /* ── Per-Case ───────────────────────────────────────────── */
+    let caseChart = null;
+    let allCases = [];
+
+    function renderCaseTabs() {
+      const casesSet = new Map();
+      DATA.summaries.forEach(s => {
+        s.caseSummaries.forEach(cs => {
+          if (!casesSet.has(cs.caseId)) casesSet.set(cs.caseId, cs.caseName);
+        });
+      });
+      allCases = [...casesSet.entries()];
+
+      const tabsEl = document.getElementById('caseTabs');
+      // Add "All Cases" tab
+      tabsEl.innerHTML = `<button class="case-tab active" data-case="__all__">All Cases (Radar)</button>` +
+        allCases.map(([id, name]) =>
+          `<button class="case-tab" data-case="${id}">${name}</button>`
+        ).join('');
+
+      tabsEl.querySelectorAll('.case-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabsEl.querySelectorAll('.case-tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (btn.dataset.case === '__all__') renderRadarChart();
+          else renderCaseChart(btn.dataset.case);
+        });
+      });
+
+      renderRadarChart();
+    }
+
+    function renderRadarChart() {
+      if (caseChart) caseChart.destroy();
+      const sorted = [...DATA.summaries].sort((a, b) => b.adjustedScoreRate - a.adjustedScoreRate);
+      const caseLabels = allCases.map(([, name]) => name);
+
+      const datasets = sorted.map((s, i) => {
+        const rates = allCases.map(([cid]) => {
+          const cs = s.caseSummaries.find(c => c.caseId === cid);
+          return cs ? cs.adjustedScoreRate : 0;
+        });
+        return {
+          label: shortName(s.apiId),
+          data: rates,
+          borderColor: MODEL_COLORS[i % MODEL_COLORS.length],
+          backgroundColor: MODEL_COLORS[i % MODEL_COLORS.length] + '18',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+        };
+      });
+
+      caseChart = new Chart(document.getElementById('chartCase'), {
+        type: 'radar',
+        data: { labels: caseLabels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: '#1e293b' },
+              angleLines: { color: '#1e293b' },
+              pointLabels: { font: { size: 11 }, color: '#94a3b8' },
+              ticks: { backdropColor: 'transparent', color: '#64748b', font: { size: 9 } }
+            }
+          },
+          plugins: {
+            legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11 } } }
+          },
+          animation: { duration: 800, easing: 'easeOutQuart' }
+        }
+      });
+    }
+
+    function renderCaseChart(caseId) {
+      if (caseChart) caseChart.destroy();
+      const sorted = [...DATA.summaries].sort((a, b) => b.adjustedScoreRate - a.adjustedScoreRate);
+      const labels = sorted.map(s => shortName(s.apiId));
+
+      const scores = sorted.map(s => {
+        const cs = s.caseSummaries.find(c => c.caseId === caseId);
+        return cs ? cs.adjustedScoreRate : 0;
+      });
+
+      caseChart = new Chart(document.getElementById('chartCase'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Score Rate (%)',
+            data: scores,
+            backgroundColor: sorted.map((_, i) => MODEL_COLORS[i % MODEL_COLORS.length] + 'cc'),
+            borderColor: sorted.map((_, i) => MODEL_COLORS[i % MODEL_COLORS.length]),
+            borderWidth: 1.5,
+            borderRadius: 6,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            title: {
+              display: true,
+              text: allCases.find(([id]) => id === caseId)?.[1] || caseId,
+              font: { size: 15, weight: 600 },
+              padding: { bottom: 16 }
+            }
+          },
+          scales: {
+            x: { beginAtZero: true, max: 100, grid: { color: '#1e293b' }, ticks: { callback: v => v + '%' } },
+            y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+          },
+          animation: { duration: 600, easing: 'easeOutQuart' }
+        }
+      });
+    }
+
+    /* ── JSON Viewer ────────────────────────────────────────── */
+    function renderJsonControls() {
+      const selModel = document.getElementById('selModel');
+      const selCase = document.getElementById('selCase');
+      const selRun = document.getElementById('selRun');
+
+      const sorted = [...DATA.summaries].sort((a, b) => b.adjustedScoreRate - a.adjustedScoreRate);
+      selModel.innerHTML = sorted.map(s =>
+        `<option value="${s.apiId}">${shortName(s.apiId)}</option>`
+      ).join('');
+
+      function updateCases() {
+        const model = DATA.summaries.find(s => s.apiId === selModel.value);
+        if (!model) return;
+        selCase.innerHTML = model.caseSummaries.map(cs =>
+          `<option value="${cs.caseId}">${cs.caseName}</option>`
+        ).join('');
+        updateRuns();
+      }
+
+      function updateRuns() {
+        const model = DATA.summaries.find(s => s.apiId === selModel.value);
+        if (!model) return;
+        const cs = model.caseSummaries.find(c => c.caseId === selCase.value);
+        if (!cs) return;
+        selRun.innerHTML = cs.runs.map(r =>
+          `<option value="${r.attempt}">Run ${r.attempt}  (score: ${r.score})</option>`
+        ).join('');
+        showResult();
+      }
+
+      function showResult() {
+        const model = DATA.summaries.find(s => s.apiId === selModel.value);
+        if (!model) return;
+        const cs = model.caseSummaries.find(c => c.caseId === selCase.value);
+        if (!cs) return;
+        const run = cs.runs.find(r => r.attempt === parseInt(selRun.value));
+        if (!run) return;
+
+        // Meta
+        const metaEl = document.getElementById('runMeta');
+        const sc = (run.score / cs.singleRunMaxScore * 100);
+        metaEl.innerHTML = `
+          <div class="run-meta-item">
+            <span>Score</span>
+            <span class="${scoreClass(sc)}">${run.score} / ${cs.singleRunMaxScore}</span>
+          </div>
+          <div class="run-meta-item">
+            <span>TTFT</span>
+            <span>${fmtMs(run.firstTokenMs)}</span>
+          </div>
+          <div class="run-meta-item">
+            <span>Total Time</span>
+            <span>${fmtMs(run.totalTimeMs)}</span>
+          </div>
+          <div class="run-meta-item">
+            <span>Response Size</span>
+            <span>${run.resultChars.toLocaleString()} chars</span>
+          </div>
+          ${run.highlights && run.highlights.length ? `<div class="run-meta-item">
+            <span>Highlights</span>
+            <span style="color:var(--amber);font-size:.85rem">${run.highlights.join(', ')}</span>
+          </div>` : ''}
+        `;
+
+        // Parse and render JSON
+        const viewer = document.getElementById('jsonViewer');
+        let parsed;
+        try {
+          parsed = JSON.parse(run.result);
+        } catch {
+          // try if it's already an object
+          parsed = run.result;
+        }
+        viewer.innerHTML = '';
+        viewer.appendChild(renderJsonNode(parsed, 0));
+      }
+
+      selModel.addEventListener('change', updateCases);
+      selCase.addEventListener('change', updateRuns);
+      selRun.addEventListener('change', showResult);
+
+      updateCases();
+    }
+
+    /* ── JSON Renderer ──────────────────────────────────────── */
+    function renderJsonNode(data, depth) {
+      const indent = '  '.repeat(depth);
+      const innerIndent = '  '.repeat(depth + 1);
+
+      if (data === null) {
+        const s = document.createElement('span');
+        s.className = 'json-null';
+        s.textContent = 'null';
+        return s;
+      }
+
+      if (typeof data === 'boolean') {
+        const s = document.createElement('span');
+        s.className = 'json-bool';
+        s.textContent = String(data);
+        return s;
+      }
+
+      if (typeof data === 'number') {
+        const s = document.createElement('span');
+        s.className = 'json-number';
+        s.textContent = String(data);
+        return s;
+      }
+
+      if (typeof data === 'string') {
+        const s = document.createElement('span');
+        s.className = 'json-string';
+        // Try to detect nested JSON strings
+        let nested = null;
+        try { nested = JSON.parse(data); if (typeof nested !== 'object' || nested === null) nested = null; } catch {}
+        if (nested) {
+          // Render as expandable nested JSON
+          const wrap = document.createElement('span');
+          const quote = document.createElement('span');
+          quote.className = 'json-string';
+          quote.textContent = '"';
+          wrap.appendChild(quote);
+
+          const toggle = document.createElement('span');
+          toggle.className = 'json-toggle';
+          toggle.textContent = '▸';
+          const nestedWrap = document.createElement('span');
+          nestedWrap.className = 'json-collapsed';
+          nestedWrap.appendChild(document.createTextNode('\n'));
+          nestedWrap.appendChild(renderJsonNode(nested, depth + 1));
+          nestedWrap.appendChild(document.createTextNode('\n' + indent));
+
+          const ellipsis = document.createElement('span');
+          ellipsis.className = 'json-ellipsis';
+          ellipsis.textContent = '{…}';
+
+          toggle.addEventListener('click', () => {
+            const collapsed = nestedWrap.classList.toggle('json-collapsed');
+            toggle.textContent = collapsed ? '▸' : '▾';
+            ellipsis.style.display = collapsed ? 'inline' : 'none';
+          });
+
+          wrap.appendChild(toggle);
+          wrap.appendChild(ellipsis);
+          wrap.appendChild(nestedWrap);
+
+          const quote2 = document.createElement('span');
+          quote2.className = 'json-string';
+          quote2.textContent = '"';
+          wrap.appendChild(quote2);
+          return wrap;
+        }
+        s.textContent = JSON.stringify(data);
+        return s;
+      }
+
+      if (Array.isArray(data)) {
+        const wrap = document.createElement('span');
+        if (data.length === 0) {
+          wrap.innerHTML = '<span class="json-bracket">[]</span>';
+          return wrap;
+        }
+
+        const toggle = document.createElement('span');
+        toggle.className = 'json-toggle';
+        toggle.textContent = '▾';
+
+        const bracket1 = document.createElement('span');
+        bracket1.className = 'json-bracket';
+        bracket1.textContent = '[';
+
+        const content = document.createElement('span');
+        const ellipsis = document.createElement('span');
+        ellipsis.className = 'json-ellipsis';
+        ellipsis.textContent = `${data.length} items`;
+        ellipsis.style.display = 'none';
+
+        data.forEach((item, i) => {
+          content.appendChild(document.createTextNode('\n' + innerIndent));
+          content.appendChild(renderJsonNode(item, depth + 1));
+          if (i < data.length - 1) content.appendChild(document.createTextNode(','));
+        });
+        content.appendChild(document.createTextNode('\n' + indent));
+
+        const bracket2 = document.createElement('span');
+        bracket2.className = 'json-bracket';
+        bracket2.textContent = ']';
+
+        toggle.addEventListener('click', () => {
+          const collapsed = content.classList.toggle('json-collapsed');
+          toggle.textContent = collapsed ? '▸' : '▾';
+          ellipsis.style.display = collapsed ? 'inline' : 'none';
+        });
+
+        wrap.appendChild(toggle);
+        wrap.appendChild(bracket1);
+        wrap.appendChild(ellipsis);
+        wrap.appendChild(content);
+        wrap.appendChild(bracket2);
+        return wrap;
+      }
+
+      if (typeof data === 'object') {
+        const keys = Object.keys(data);
+        const wrap = document.createElement('span');
+        if (keys.length === 0) {
+          wrap.innerHTML = '<span class="json-bracket">{}</span>';
+          return wrap;
+        }
+
+        const toggle = document.createElement('span');
+        toggle.className = 'json-toggle';
+        toggle.textContent = '▾';
+
+        const bracket1 = document.createElement('span');
+        bracket1.className = 'json-bracket';
+        bracket1.textContent = '{';
+
+        const content = document.createElement('span');
+        const ellipsis = document.createElement('span');
+        ellipsis.className = 'json-ellipsis';
+        ellipsis.textContent = '…';
+        ellipsis.style.display = 'none';
+
+        keys.forEach((key, i) => {
+          content.appendChild(document.createTextNode('\n' + innerIndent));
+          const k = document.createElement('span');
+          k.className = 'json-key';
+          k.textContent = JSON.stringify(key);
+          content.appendChild(k);
+          content.appendChild(document.createTextNode(': '));
+          content.appendChild(renderJsonNode(data[key], depth + 1));
+          if (i < keys.length - 1) content.appendChild(document.createTextNode(','));
+        });
+        content.appendChild(document.createTextNode('\n' + indent));
+
+        const bracket2 = document.createElement('span');
+        bracket2.className = 'json-bracket';
+        bracket2.textContent = '}';
+
+        toggle.addEventListener('click', () => {
+          const collapsed = content.classList.toggle('json-collapsed');
+          toggle.textContent = collapsed ? '▸' : '▾';
+          ellipsis.style.display = collapsed ? 'inline' : 'none';
+        });
+
+        wrap.appendChild(toggle);
+        wrap.appendChild(bracket1);
+        wrap.appendChild(ellipsis);
+        wrap.appendChild(content);
+        wrap.appendChild(bracket2);
+        return wrap;
+      }
+
+      const s = document.createElement('span');
+      s.textContent = String(data);
+      return s;
+    }
+
+    /* ── Boot ───────────────────────────────────────────────── */
+    loadData();
+  </script>
+</body>
+</html>

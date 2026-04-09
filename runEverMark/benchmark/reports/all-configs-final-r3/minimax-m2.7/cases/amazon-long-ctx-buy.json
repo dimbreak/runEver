@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 11,
+  "scoreRate": 73.33,
+  "averageScore": 3.67,
+  "averageFirstTokenMs": 12605.33,
+  "averageTotalTimeMs": 12612.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 10754,
+      "totalTimeMs": 10763,
+      "result": "{\"a\":[{\"intent\":\"select quantity 3 for one-time purchase\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[]},\"v\":[\"3\"]}},{\"intent\":\"click Buy Now button for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\",\"argKeys\":[]}},\"post\":{\"t\":\"net\",\"a\":\"idle0\"}}]}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 296,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"select quantity 3 for one-time purchase\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[]},\"v\":[\"3\"]}},{\"intent\":\"click Buy Now button for express checkout\",\"risk\":\"m\",\"…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 13114,
+      "totalTimeMs": 13118,
+      "result": "{\"a\":[{\"intent\":\"click Buy Now button\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"el\"}}}],\"cp\":[2]}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 112,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"click Buy Now button\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"el\"}}}],\"cp\":[2]}"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 13948,
+      "totalTimeMs": 13956,
+      "result": "{\"a\":[{\"intent\":\"Select quantity 3 from dropdown\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[]},\"v\":\"3\"}},{\"intent\":\"Click Buy Now button to proceed to checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\",\"argKeys\":[]}},\"cp\":[2]}]}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 266,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Select quantity 3 from dropdown\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[]},\"v\":\"3\"}},{\"intent\":\"Click Buy Now button to proceed to checkout\",\"risk\":\"m\",\"action\":…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/minimax-m2.7/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 11,
+  "adjustedScoreRate": 73.33
+}

@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 10,
+  "scoreRate": 66.67,
+  "averageScore": 3.33,
+  "averageFirstTokenMs": 4320.67,
+  "averageTotalTimeMs": 6231,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 5548,
+      "totalTimeMs": 6982,
+      "result": "{\"a\":[{\"intent\":\"set earliest delivery date in calendar\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":{\"id\":\"®9u\",\"argKeys\":[]},\"ctx\":{\"goalHint\":\"Set earliest delivery date in POS create order form\",\"argValHint\":\"earliest delivery date\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4],\"post\":{\"t\":\"time\",\"ms\":300}}],\"next\":{\"tip\":\"After the date is set, verify it on the form and continue to preview order.\",\"descAttachment\":[{\"name\":\"order_form.pdf\",\"desc\":\"Purchase order reference with PO-5214, 3 line items, total $3530.00, and Monday delivery restriction.\"}]}}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 586,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set earliest delivery date in calendar\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":{\"id\":\"®9u\",\"argKeys\":[]},\"ctx\":{\"goalHint\":\"Set earliest delivery date in POS create order form\",\"arg…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 3805,
+      "totalTimeMs": 7080,
+      "result": "{\"a\":[{\"intent\":\"set earliest delivery date in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"Set earliest delivery date in POS create order form\",\"argValHint\":\"earliest delivery date\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Choose the earliest selectable delivery date, then verify the calendar update.\"}}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 384,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set earliest delivery date in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"Set earliest delivery date in POS create order form\",\"argValHint\":\"earliest d…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3609,
+      "totalTimeMs": 4631,
+      "result": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4},{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"Set earliest delivery date in POS create order form\",\"argValHint\":\"earliest delivery date\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}}],\"next\":{\"tip\":\"Check whether the calendar moved to the earliest selectable date, then verify the form date field.\"}}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 363,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4},{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"Set earliest delivery date in POS create order form\",\"argValHint\":\"earliest delivery date\",\"pageHint\":\"Deliv…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4-mini/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 10,
+  "adjustedScoreRate": 66.67
+}

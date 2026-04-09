@@ -1,0 +1,396 @@
+{
+  "apiId": "zai-glm-5",
+  "provider": "zai",
+  "maxScore": 129,
+  "scoreRate": 65.43,
+  "totalScore": 84.4,
+  "averageScore": 4.02,
+  "averageFirstTokenMs": 23791.9,
+  "averageTotalTimeMs": 28256.62,
+  "caseSummaries": [
+    {
+      "caseId": "amazon-long-ctx-buy",
+      "caseName": "Amazon Long-CTX Buy",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 7,
+      "scoreRate": 46.67,
+      "averageScore": 2.33,
+      "averageFirstTokenMs": 11340,
+      "averageTotalTimeMs": 13203.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 9604,
+          "totalTimeMs": 13216,
+          "result": "Looking at the current page state, I'm on the Amazon product detail page for \"House Blend Coffee Beans, Medium Roast, 1kg by Amazon\". \n\nThe checklist shows I'm on step 2 (working): pick quantity and click buy now. I can see:\n- A quantity dropdown with current value=1 at id=®d5\n- A \"Buy Now\" button at id=®el\n\nI need to set quantity to 3 (from args.buy_quantity) and click Buy Now to proceed to checkout.\n\n```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Set quantity to 3 for the coffee beans purchase\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\"id\": \"®d5\", \"argKeys\": [\"buy_quantity\"]},\n        \"v\": \"3\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"Click Buy Now button to proceed to express checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\"id\": \"®el\"}\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Proceed to checkout page. Verify order details and complete purchase with default payment and address on the next page.\"\n  }\n}\n```",
+          "score": 1,
+          "highlights": [],
+          "resultChars": 1038,
+          "resultFormat": "embedded_json",
+          "resultPreview": "Looking at the current page state, I'm on the Amazon product detail page for \"House Blend Coffee Beans, Medium Roast, 1kg by Amazon\". The checklist shows I'm on step 2 (working): pick quantity and cl…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 15482,
+          "totalTimeMs": 16649,
+          "result": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"}},{\"intent\":\"click Buy Now button for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"}}],\"next\":{\"tip\":\"verify checkout page loaded with correct quantity and default payment/address selected, proceed to place order if everything looks correct\"}}\n```",
+          "score": 1,
+          "highlights": [],
+          "resultChars": 418,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"}},{\"intent\":\"click Buy Now button for express checkout\"…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 8934,
+          "totalTimeMs": 9746,
+          "result": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\"},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"click Buy Now button to proceed to express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\"}}}],\"next\":{\"tip\":\"on checkout page, verify order details and proceed with default payment and address\"}}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 358,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\"},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"click Buy Now button to proceed to express checkout\",\"risk\":…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/amazon-long-ctx-buy.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 7,
+      "adjustedScoreRate": 46.67
+    },
+    {
+      "caseId": "fotopia-webskill-add-wishlist",
+      "caseName": "Fotopia WebSkill Add Wishlist",
+      "runCount": 3,
+      "singleRunMaxScore": 6,
+      "maxScore": 18,
+      "totalScore": 17,
+      "scoreRate": 94.44,
+      "averageScore": 5.67,
+      "averageFirstTokenMs": 27493,
+      "averageTotalTimeMs": 37084.67,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 24735,
+          "totalTimeMs": 34889,
+          "result": "{\"a\":[{\"intent\":\"Set check point #3 to working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"Add selected wide-angle lenses to wishlist with recommendation comments using webSkill\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Classic compact wide angle, most compact M-lens under 2cm, ideal for zone focusing and street photography with vintage rendering signature.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black Paint: Limited 500 pieces worldwide, matte black paint finish for stealthier look, same optical design as classic version.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements: Modern homage to classic design, faster aperture at F2.8, brass construction, great value alternative.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"After lens items added to wishlist, verify the page shows all items then ask user which to buy and prepare checkout.\"}}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1248,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Set check point #3 to working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"Add selected wide-angle lenses to wishlist with recommendation comments using w…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 34119,
+          "totalTimeMs": 43037,
+          "result": "{\"a\":[{\"intent\":\"Add wide-angle lenses to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e4ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Classic compact wide-angle, most affordable Leica option; ideal for street photography with unique vintage rendering.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 Black: Budget-friendly modern homage to classic 9-element design; great value with classic rendering and faster aperture.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black Paint: Limited 500 pieces worldwide, premium collector's item; matte black finish matches black M6 perfectly.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3],\"unverify\":true}],\"next\":{\"tip\":\"After lens wishlist update, ask user which camera and lens to buy, then prepare checkout with the provided address and phone.\"}}",
+          "score": 5,
+          "highlights": [
+            "wishlist item count or stock ids mismatch"
+          ],
+          "resultChars": 1118,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Add wide-angle lenses to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"win…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 23625,
+          "totalTimeMs": 33328,
+          "result": "{\"a\":[{\"intent\":\"Add wide-angle lens options to wishlist with recommendation comments using webSkill\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Matt Black Paint: Limited 500 pieces, ultra-compact classic design perfect for M6, vintage rendering ideal for street photography.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Genuine Leica compact wide-angle, great value for authentic M-system experience, excellent zone focusing.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9E Black: Affordable homage to classic 9-element design, faster aperture than Summaron, great for low-light with M6.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Lens items added to wishlist. Now ask user which camera and lens combination to buy, then prepare checkout with the UK address and phone number.\"}}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1140,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Add wide-angle lens options to wishlist with recommendation comments using webSkill\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SK…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/fotopia-webskill-add-wishlist.json",
+      "weight": 1,
+      "adjustedMaxScore": 18,
+      "adjustedTotalScore": 17,
+      "adjustedScoreRate": 94.44
+    },
+    {
+      "caseId": "google-search-scam",
+      "caseName": "Google search scam",
+      "runCount": 3,
+      "singleRunMaxScore": 4,
+      "maxScore": 12,
+      "totalScore": 9,
+      "scoreRate": 75,
+      "averageScore": 3,
+      "averageFirstTokenMs": 30130,
+      "averageTotalTimeMs": 34985.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 35760,
+          "totalTimeMs": 45904,
+          "result": "{\"a\":[{\"intent\":\"click Carphone Warehouse link - a well-known reliable UK phone retailer\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"1de\",\"argKeys\":[]}},\"cp\":[1]}],\"next\":{\"tip\":\"Carphone Warehouse page should load with iPhone 17 Pro Max product details. Verify the product page shows the correct phone model and pricing, then explore purchase options.\"}}",
+          "score": 3,
+          "highlights": [],
+          "resultChars": 368,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"click Carphone Warehouse link - a well-known reliable UK phone retailer\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"1de\",\"argKeys\":[]}},\"cp\":[1]}],\"next\":{\"tip\":\"Carphon…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 9466,
+          "totalTimeMs": 10163,
+          "result": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1},{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®14t\",\"argKeys\":[]}}],\"next\":{\"tip\":\"Clicked Three.co.uk, a reliable UK carrier. Wait for page to load, then browse iPhone 17 Pro Max deals and select one to purchase.\"}}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 252,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1},{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®14t\",\"argKeys\":[]}}],\"next\":{\"tip\":\"Clicked Three.co.uk, a reliable UK carrier. Wait for page to load, then browse i…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 45164,
+          "totalTimeMs": 48890,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Click the reliable Jigsaw24 Store link from organic results\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®13g\"\n        }\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Clicked Jigsaw24 Store (authorized Apple reseller in UK). Verify the page loads correctly and shows iPhone 17 Pro Max product details on the next page.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 443,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Click the reliable Jigsaw24 Store link from organic results\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": { \"id\": \"®13g\" } }, \"cp\": [1] } ], \"next\": { \"tip\": \"Clic…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/google-search-scam.json",
+      "weight": 1,
+      "adjustedMaxScore": 12,
+      "adjustedTotalScore": 9,
+      "adjustedScoreRate": 75
+    },
+    {
+      "caseId": "long-form-filling",
+      "caseName": "Long Form Filling",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 14,
+      "scoreRate": 58.33,
+      "averageScore": 4.67,
+      "averageFirstTokenMs": 58842.33,
+      "averageTotalTimeMs": 65249.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 69749,
+          "totalTimeMs": 74441,
+          "result": "Looking at the task, I need to fill a create order form using data from arguments (which already contains extracted order_form.pdf data).\n\nLet me analyze the current state:\n- Form has empty fields for client info, delivery address, and remark\n- There's 1 order line item visible with empty combobox and default qty=1\n- Need 3 items total (Laptop Pro, Desk Chair, Keyboard)\n\nI'll start by filling all text fields in one fillForm action, then handle the combobox for the first line, add two more line items, and continue from there.\n\n```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Fill client info, delivery address, and remark using fillForm\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"®4r\", \"v\": \"Northwind Travel\"},\n          {\"f\": \"®4u\", \"v\": \"contact@client.com\"},\n          {\"f\": \"®4x\", \"v\": \"555-0100\"},\n          {\"f\": \"®52\", \"v\": \"123 Client St\"},\n          {\"f\": \"®55\", \"v\": \"Business City\"},\n          {\"f\": \"®58\", \"v\": \"ST\"},\n          {\"f\": \"®5c\", \"v\": \"12345\"},\n          {\"f\": \"®8u\", \"v\": \"We are not open on monday, please do not delivery on monday\"}\n        ]\n      },\n      \"cp\": [0, 1, 4]\n    },\n    {\n      \"intent\": \"Set first line product combobox to Laptop Pro\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"combobox\",\n        \"q\": {\"id\": \"®8a\", \"argKeys\": [\"items.0.name\"]},\n        \"v\": \"Laptop Pro\"\n      },\n      \"cp\": [3]\n    },\n    {\n      \"intent\": \"Fill first line quantity to 5\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®8i\",\n        \"v\": \"5\"\n      }\n    },\n    {\n      \"intent\": \"Add second line item for Desk Chair\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Added second line item. Continue with: click Add Line Item again for third product, then set combobox and qty for remaining lines (Desk Chair qty=1, Keyboard qty=3), then review all filled values.\"\n  }\n}\n```",
+          "score": 1,
+          "highlights": [],
+          "resultChars": 2025,
+          "resultFormat": "embedded_json",
+          "resultPreview": "Looking at the task, I need to fill a create order form using data from arguments (which already contains extracted order_form.pdf data). Let me analyze the current state: - Form has empty fields for…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 88613,
+          "totalTimeMs": 97141,
+          "result": "{\"a\":[{\"intent\":\"Fill client name, email, phone from args\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields (Street, City, Region, Postal Code) from args\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"}]},\"cp\":[1]},{\"intent\":\"Click + Add Line Item button to prepare first order line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Select 'Laptop Pro' from product combobox for first line item\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Laptop Pro\"},\"cp\":[3]},{\"intent\":\"Fill qty and unit_price for first line item (Laptop Pro)\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"qty\",\"v\":\"${args.items.0.qty}\"},{\"f\":\"unit_price\",\"v\":\"${args.items.0.unit_price}\"}]}},{\"intent\":\"Click + Add Line Item button to prepare second order line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Select 'Desk Chair' from product combobox for second line item\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Desk Chair\"},\"cp\":[3]},{\"intent\":\"Fill qty and unit_price for second line item (Desk Chair)\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"qty\",\"v\":\"${args.items.1.qty}\"},{\"f\":\"unit_price\",\"v\":\"${args.items.1.unit_price}\"}]}},{\"intent\":\"Click + Add Line Item button to prepare third order line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Select 'Keyboard' from product combobox for third line item\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Keyboard\"},\"cp\":[3]},{\"intent\":\"Fill qty and unit_price for third line item (Keyboard)\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"qty\",\"v\":\"${args.items.2.qty}\"},{\"f\":\"unit_price\",\"v\":\"${args.items.2.unit_price}\"}]}},{\"intent\":\"Fill remark with args.remark\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"remark\",\"v\":\"${args.remark}\"}]}}],\"next\":{\"tip\":\"Review all filled values in form at ®91 to verify client info, address, 3 order lines (Laptop Pro, Desk Chair, Keyboard), and remark match args. Mark checklist items 0,1,2,3,4 as verified if correct.\"}}",
+          "score": 6.5,
+          "highlights": [],
+          "resultChars": 2375,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Fill client name, email, phone from args\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 18165,
+          "totalTimeMs": 24167,
+          "result": "{\"a\":[{\"intent\":\"Fill client name, email, phone using args values\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields (Street, City, Region, Postal Code) using args values\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"}]},\"cp\":[1]},{\"intent\":\"Click + Add Line Item twice to prepare 3 order line rows for 3 items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®87\"},\"repeat\":2},\"cp\":[2]},{\"intent\":\"Set Product combobox to first item Laptop Pro from args\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"${args.items.0.name}\"},\"cp\":[3]},{\"intent\":\"Set Delivery Date calendar - note delivery date info from order form\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®83\",\"ctx\":{\"goalHint\":\"Delivery Date - order takes 11 months to produce\",\"argValHint\":\"Delivery date from order form\",\"pageHint\":\"Calendar shows February 2026. Order takes 11 months to produce.\"}}}],\"next\":{\"tip\":\"Filled client info and address. Added 2 line items. Set first product to Laptop Pro. Need to fill qty, unit_price for item 0, then add products for items 1 and 2 (Desk Chair, Keyboard), fill remark, and review all values.\"}}",
+          "score": 6.5,
+          "highlights": [],
+          "resultChars": 1450,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Fill client name, email, phone using args values\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.cli…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/long-form-filling.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 14,
+      "adjustedScoreRate": 58.33
+    },
+    {
+      "caseId": "long-form-webskill",
+      "caseName": "Long Form Webskill",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 23.4,
+      "scoreRate": 97.5,
+      "averageScore": 7.8,
+      "averageFirstTokenMs": 22843.67,
+      "averageTotalTimeMs": 25980.67,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 14106,
+          "totalTimeMs": 15593,
+          "result": "{\"a\":[{\"intent\":\"Prepare complete order via webSkill using extracted form data\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-05\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Verify the form is populated correctly with client info, delivery address, 3 order lines (Laptop Pro x5, Desk Chair x1, Keyboard x3), and the remark. Total should be $6,590. Then click Preview Order to proceed.\"}}",
+          "score": 7.4,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "resultChars": 995,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Prepare complete order via webSkill using extracted form data\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPre…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 26314,
+          "totalTimeMs": 27613,
+          "result": "{\"a\":[{\"intent\":\"Call prepareOrder webSkill with all order details from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"The webSkill should populate all form fields. Verify the form is filled correctly with client info, delivery address, 3 line items (Laptop Pro x5, Desk Chair x1, Keyboard x3), and remark. Then proceed to preview the order.\"}}",
+          "score": 8,
+          "highlights": [],
+          "resultChars": 1036,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Call prepareOrder webSkill with all order details from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\",\"fnName\":\"w…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 28111,
+          "totalTimeMs": 34736,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Prepare order using WebSkill with all client and item details\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-16\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"WebSkill will fill the entire order form including client info, delivery date (respecting 11-month lead time and no Monday delivery), and line items. Verify the form is populated correctly and ready for preview.\"\n  }\n}",
+          "score": 8,
+          "highlights": [],
+          "resultChars": 1132,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Prepare order using WebSkill with all client and item details\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\", …"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/long-form-webskill.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 23.4,
+      "adjustedScoreRate": 97.5
+    },
+    {
+      "caseId": "long-task-splitting",
+      "caseName": "Long Task Splitting",
+      "runCount": 3,
+      "singleRunMaxScore": 7,
+      "maxScore": 21,
+      "totalScore": 6,
+      "scoreRate": 28.57,
+      "averageScore": 2,
+      "averageFirstTokenMs": 5773.33,
+      "averageTotalTimeMs": 9134.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 7227,
+          "totalTimeMs": 10445,
+          "result": "{\"a\":[{\"k\":\"addNewTask\",\"taskRisk\":\"m\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com and P@ssword321\",\"Read new order email and extract order details\",\"Go to POS system\",\"Login to POS if required\",\"Fill create order form with order details from email\",\"Set earliest delivery date in order form\",\"Check order amount in preview step\",\"Take screenshot and go to messenger if amount > 1000\",\"Send order details and screenshot to manager dillion for approval\",\"Follow dillion's advice\",\"Save the order\",\"Download invoice from order list\",\"Reply to client email with order ID, details and invoice\"],\"permitFromGoal\":\"read new order email and get order detail from it. then go to pos system, fill create order form with detail from the the order form and set earliest delivery date. in preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case. after that save order, download the invoice in order list. go to email and reply the client with id, detail & invoice\",\"src\":\"[GOAL] breakdown\"},{\"k\":\"input\",\"q\":{\"id\":\"®2\"},\"v\":\"pikachu@pokemon.com\"},{\"k\":\"input\",\"q\":{\"id\":\"®5\"},\"v\":\"P@ssword321\"},{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®c\"}}],\"next\":{\"tip\":\"After login, look for the new order email in the inbox, open it and extract order details including items, quantities, prices, client info, and any other relevant data.\"}}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 1447,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"k\":\"addNewTask\",\"taskRisk\":\"m\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com and P@ssword321\",\"Read new order email and extract order details\",\"Go to POS system\",\"Login to POS if re…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 4374,
+          "totalTimeMs": 6385,
+          "result": "{\"a\":[{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com and P@ssword321\",\"Read new order email and get order details\",\"Go to POS system and login\",\"Fill create order form with order details\",\"Set earliest delivery date\",\"Check if order amount > 1000 in preview step\",\"If > 1000, take screenshot and message manager Dillion for approval\",\"Follow manager Dillion's advice\",\"Save order\",\"Download invoice from order list\",\"Reply to client with order id, details and invoice\"],\"permitFromGoal\":\"do what you can what you want, no botherUser\",\"src\":\"[GOAL] task breakdown\",\"taskRisk\":\"l\"},{\"k\":\"input\",\"q\":{\"id\":\"®2\",\"argKeys\":[]},\"v\":\"pikachu@pokemon.com\"},{\"k\":\"input\",\"q\":{\"id\":\"®5\",\"argKeys\":[]},\"v\":\"P@ssword321\"},{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®c\",\"argKeys\":[]}}],\"e\":null,\"next\":{\"tip\":\"After login, look for new order email in inbox and extract order details\"}}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 892,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com and P@ssword321\",\"Read new order email and get order details\",\"Go to POS system and login\",\"Fill create order form with…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 5719,
+          "totalTimeMs": 10573,
+          "result": "{\n  \"a\": [\n    {\n      \"k\": \"addNewTask\",\n      \"checkPoints\": [\n        \"Login to email platform with pikachu@pokemon.com / P@ssword321\",\n        \"Read new order email and extract order details\",\n        \"Go to POS system and login if required\",\n        \"Create order form with details from email\",\n        \"Set earliest delivery date in order form\",\n        \"Check order amount in preview step\",\n        \"If amount > 1000: take screenshot of preview\",\n        \"If amount > 1000: go to messenger and send order details/screenshot to manager Dillion\",\n        \"Follow Dillion's advice if applicable\",\n        \"Save the order\",\n        \"Download invoice from order list\",\n        \"Reply to client with order ID, details & invoice\"\n      ],\n      \"permitFromGoal\": \"login to email / pos account with: email: pikachu@pokemon.com password: P@ssword321 read new order email and get order detail from it. then go to pos system, fill create order form with detail from the the order form and set earliest delivery date. in preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case after that save order, download the invoice in order list. go to email and reply the client with id, detail & invoice\",\n      \"src\": \"GOAL\",\n      \"taskRisk\": \"m\"\n    },\n    {\n      \"intent\": \"Fill email field with pikachu@pokemon.com\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®2\",\n          \"argKeys\": []\n        },\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"Fill password field with P@ssword321\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®5\",\n          \"argKeys\": []\n        },\n        \"v\": \"P@ssword321\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After filling credentials, click the 'Next' button to submit login form and access the email inbox.\"\n  }\n}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 1982,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email platform with pikachu@pokemon.com / P@ssword321\", \"Read new order email and extract order details\", \"Go to POS system and login if requi…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/long-task-splitting.json",
+      "weight": 1.5,
+      "adjustedMaxScore": 31.5,
+      "adjustedTotalScore": 9,
+      "adjustedScoreRate": 28.57
+    },
+    {
+      "caseId": "reasoning-calendar",
+      "caseName": "Reasoning Calendar",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 8,
+      "scoreRate": 53.33,
+      "averageScore": 2.67,
+      "averageFirstTokenMs": 10121,
+      "averageTotalTimeMs": 12157.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 10826,
+          "totalTimeMs": 14031,
+          "result": "Looking at the current state, I need to set the earliest delivery date. The calendar shows February 2026 but all dates are disabled. The label indicates \"order takes 11 months to produce\", so I need to use the calendar action to find and select the earliest available date.\n\nLet me use the calendar action to set the delivery{\n\"a\": [\n{\n\"intent\": \"Set earliest delivery date using calendar with production context\",\n\"risk\": \"l\",\n\"action\": {\n\"k\": \"calendar\",\n\"q\": \"®9u\",\n\"ctx\": {\n\"goalHint\": \"set earliest delivery date\",\n\"argValHint\": \"order takes 11 months to produce\",\n\"pageHint\": \"All dates in February 2026 are disabled. Can navigate forward. Remark: We are not open on monday, please do not delivery on monday\"\n}\n},\n\"cp\": [4]\n}\n],\n\"next\": {\n\"tip\": \"After delivery date is set, click 'Preview Order' button to proceed. If order total > $1000, capture screenshot and send to messenger for manager dillion's approval.\"\n}\n}",
+          "score": 1,
+          "highlights": [],
+          "resultChars": 923,
+          "resultFormat": "text",
+          "resultPreview": "Looking at the current state, I need to set the earliest delivery date. The calendar shows February 2026 but all dates are disabled. The label indicates \"order takes 11 months to produce\", so I need …"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 8999,
+          "totalTimeMs": 10494,
+          "result": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4},{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"order takes 11 months to produce, po-date: 25 Feb 2026\",\"pageHint\":\"Delivery Date - order takes 11 months to produce, current calendar shows February 2026 with all dates disabled\"}}],\"next\":{\"tip\":\"After calendar action completes, verify the date is set then proceed to preview order (step 5).\"}}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 429,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4},{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"order takes 11 months to produce, po-date: 25 Feb 2026\",\"pageHint\"…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 10538,
+          "totalTimeMs": 11948,
+          "result": "{\"a\":[{\"intent\":\"Set earliest delivery date for order\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"remarks: We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce. Current calendar shows February 2026 with dates visible.\"}},\"cp\":[4]}]}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 365,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Set earliest delivery date for order\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"remarks: We are not open on monday, p…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/reasoning-calendar.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 8,
+      "adjustedScoreRate": 53.33
+    }
+  ],
+  "modelDir": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5",
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/details.json",
+  "adjustedMaxScore": 139.5,
+  "adjustedTotalScore": 87.4,
+  "adjustedScoreRate": 62.65
+}

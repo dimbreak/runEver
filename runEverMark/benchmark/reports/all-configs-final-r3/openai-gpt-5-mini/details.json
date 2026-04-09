@@ -1,0 +1,325 @@
+{
+  "apiId": "openai-gpt-5-mini",
+  "provider": "openai",
+  "maxScore": 129,
+  "adjustedMaxScore": 139.5,
+  "scoreRate": 87.6,
+  "adjustedScoreRate": 87.1,
+  "totalScore": 113,
+  "adjustedTotalScore": 121.5,
+  "averageScore": 5.38,
+  "averageFirstTokenMs": 9395.67,
+  "averageTotalTimeMs": 11246.33,
+  "caseSummaries": [
+    {
+      "caseId": "google-search-scam",
+      "caseName": "Google search scam",
+      "runCount": 3,
+      "singleRunMaxScore": 4,
+      "maxScore": 12,
+      "weight": 1,
+      "adjustedMaxScore": 12,
+      "totalScore": 9,
+      "adjustedTotalScore": 9,
+      "scoreRate": 75,
+      "adjustedScoreRate": 75,
+      "averageScore": 3,
+      "averageFirstTokenMs": 7551.67,
+      "averageTotalTimeMs": 8410.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 7568,
+          "totalTimeMs": 8259,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click Apple result link to open reliable shop\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®12r\",\n          \"argKeys\": []\n        }\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 10000\n      },\n      \"cp\": [\n        1\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After the new page loads, verify the site is a trusted seller (Apple/John Lewis/Currys) and then open product page to check price and availability.\",\n    \"sc\": false\n  }\n}",
+          "score": 3,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 9518,
+          "totalTimeMs": 11138,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click John Lewis result to open reliable shop\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®1ld\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\"\n      },\n      \"cp\": [\n        1\n      ]\n    },\n    {\n      \"intent\": \"save clicked link href as chosenSource.url\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"chosenSource.url\": {\n            \"q\": {\n              \"id\": \"®1ld\",\n              \"argKeys\": []\n            },\n            \"attr\": \"href\"\n          }\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify new tab/page loaded and confirm product listing; if not John Lewis, pick another reputable vendor (e.g., Currys, Three)\",\n    \"sc\": false\n  }\n}",
+          "score": 3,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 5569,
+          "totalTimeMs": 5835,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click the Apple result link to open shop\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®12r\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 10000\n      },\n      \"cp\": [\n        1\n      ]\n    }\n  ]\n}",
+          "score": 3,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/google-search-scam.json"
+    },
+    {
+      "caseId": "amazon-long-ctx-buy",
+      "caseName": "Amazon Long-CTX Buy",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "totalScore": 15,
+      "adjustedTotalScore": 15,
+      "scoreRate": 100,
+      "adjustedScoreRate": 100,
+      "averageScore": 5,
+      "averageFirstTokenMs": 10121.67,
+      "averageTotalTimeMs": 12485,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 10261,
+          "totalTimeMs": 10843,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to ${args.buy_quantity}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\n            \"buy_quantity\"\n          ]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 300\n      }\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 15000\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After Buy Now, verify checkout page shows default address & payment; if prompted confirm order, do NOT auto-submit without explicit confirmation.\",\n    \"sc\": false\n  }\n}",
+          "score": 5,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 12553,
+          "totalTimeMs": 16831,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"record chosen quantity\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"buy_quantity\": \"3\",\n          \"quantitySelected_domId\": {\n            \"q\": {\n              \"id\": \"®d5\",\n              \"argKeys\": []\n            },\n            \"attr\": \"value\"\n          }\n        }\n      }\n    },\n    {\n      \"intent\": \"set quantity dropdown to ${args.buy_quantity}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\n            \"buy_quantity\"\n          ]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 400\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        },\n        \"repeat\": 1\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\",\n        \"to\": 30000\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"verify quantity set and Buy Now click initiated\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 2,\n        \"verifiedProve\": {\n          \"domId\": \"®d5\",\n          \"proveOfWork\": \"Quantity dropdown set to 3 (value changed to 3) and Buy Now clicked to begin checkout\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After Buy Now navigates, verify checkout page shows default payment & address. If it doesn't, stop and report.\",\n    \"sc\": false\n  }\n}",
+          "score": 5,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 7551,
+          "totalTimeMs": 9781,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to args.buy_quantity (3)\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 300\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\",\n        \"to\": 60000\n      },\n      \"cp\": [\n        2\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After clicking Buy Now, check the new page HTML for order preview/payment details and verify default address/payment before confirming.\",\n    \"sc\": false\n  }\n}",
+          "score": 5,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/amazon-long-ctx-buy.json"
+    },
+    {
+      "caseId": "long-task-splitting",
+      "caseName": "Long Task Splitting",
+      "runCount": 3,
+      "singleRunMaxScore": 7,
+      "maxScore": 21,
+      "weight": 1.5,
+      "adjustedMaxScore": 31.5,
+      "totalScore": 17,
+      "adjustedTotalScore": 25.5,
+      "scoreRate": 80.95,
+      "adjustedScoreRate": 80.95,
+      "averageScore": 5.67,
+      "averageFirstTokenMs": 6552.67,
+      "averageTotalTimeMs": 8545,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 8321,
+          "totalTimeMs": 9536,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist for GOAL steps\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email / pos account with: email: pikachu@pokemon.com and password: P@ssword321\",\n          \"read new order email and get order detail from it\",\n          \"go to pos system and fill create order form with detail from the order form\",\n          \"set earliest delivery date in the create order form\",\n          \"in preview order step, if order amount > 1000, capture screenshot & go to messager, send order file/detail & screenshot seeking manager dillion's approve and follow his advice\",\n          \"save order and download the invoice in order list\",\n          \"go to email and reply the client with id, detail & invoice\"\n        ],\n        \"permitFromGoal\": \"login to email / pos account with:\",\n        \"src\": \"user GOAL\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Start by signing in to the email account on this page using the provided credentials; I'll then open the new order email.\",\n    \"sc\": false\n  }\n}",
+          "score": 5.5,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 6020,
+          "totalTimeMs": 7670,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add checklist from GOAL\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 0,\n        \"checkPoints\": [\n          \"Login to email with email: pikachu@pokemon.com and password: P@ssword321\",\n          \"Read new order email and extract order details\",\n          \"Open POS system (runever://benchmark/#/pos) and create order with the extracted details; set earliest delivery date\",\n          \"If order amount > 1000, capture screenshot and send order file/detail & screenshot to messager (runever://benchmark/#/im) asking for manager dillion's approval and follow his advice\",\n          \"Save the order and download the invoice from order list\",\n          \"Reply to client email with order id, details & attach the invoice\"\n        ],\n        \"permitFromGoal\": \"login to email / pos account with:\",\n        \"src\": \"GOAL\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"I'll start by logging into the email on this page with the provided credentials; proceed if this is correct.\",\n    \"sc\": false\n  }\n}",
+          "score": 5.5,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 5317,
+          "totalTimeMs": 8429,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist from GOAL\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 0,\n        \"checkPoints\": [\n          \"login to email account with: email: pikachu@pokemon.com and password: P@ssword321\",\n          \"read new order email and get order detail from it\",\n          \"go to pos system (runever://benchmark/#/pos)\",\n          \"fill create order form in POS with detail from the order email\",\n          \"set earliest delivery date in the POS create order form\",\n          \"preview order and check order amount\",\n          \"if order amount > 1000: capture screenshot of preview and go to messager (runever://benchmark/#/im)\",\n          \"send order file/detail & screenshot to messager to seek manager dillion's approve; follow his advice\",\n          \"save order in POS\",\n          \"download the invoice from order list\",\n          \"go to email and reply the client with id, detail & invoice attached\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"user-GOAL\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Start by signing in to the email (pikachu@pokemon.com). After login, open the newest order email and extract details.\",\n    \"sc\": false\n  }\n}",
+          "score": 6,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/long-task-splitting.json"
+    },
+    {
+      "caseId": "long-form-filling",
+      "caseName": "Long Form Filling",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "totalScore": 16,
+      "adjustedTotalScore": 16,
+      "scoreRate": 66.67,
+      "adjustedScoreRate": 66.67,
+      "averageScore": 5.33,
+      "averageFirstTokenMs": 15004,
+      "averageTotalTimeMs": 16963.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 19693,
+          "totalTimeMs": 22291,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill clientName, clientEmail, clientPhone from args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"fill address, city, region, postal from args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          }\n        ]\n      },\n      \"cp\": [\n        1\n      ]\n    },\n    {\n      \"intent\": \"add 2 more line items to prepare 3 total (itemsCount=3)\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 400\n      }\n    },\n    {\n      \"intent\": \"select product for first line using items.0.name\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"combobox\",\n        \"q\": {\n          \"id\": \"®8a\",\n          \"argKeys\": [\n            \"items.0.name\"\n          ]\n        },\n        \"v\": \"${args.items.0.name}\"\n      },\n      \"cp\": [\n        3\n      ]\n    },\n    {\n      \"intent\": \"fill remark with args.remark\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"remark\",\n            \"v\": \"${args.remark}\"\n          }\n        ]\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After product selection(s), fill each line's qty and unit price (they're enabled after choosing product) and verify totals; repeat combobox per new line with items.1.name and items.2.name.\",\n    \"sc\": false\n  }\n}",
+          "score": 7.5,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 20286,
+          "totalTimeMs": 21631,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client name, email, phone\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"fill delivery address fields Street, City, Region, Postal Code\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          }\n        ]\n      },\n      \"cp\": [\n        1\n      ]\n    },\n    {\n      \"intent\": \"add required line items (+ Add Line Item) to reach itemsCount\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      }\n    },\n    {\n      \"intent\": \"stop here and leave product selection & qty/unit price for isolated combobox filling\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 2,\n        \"rework\": false\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Now select each product (combobox), set qty and unit price for each of the 3 items, then fill Remark and review all fields. Use isolated combobox steps for product picks.\",\n    \"sc\": false\n  }\n}",
+          "score": 5.5,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 5033,
+          "totalTimeMs": 6968,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill clientName, clientEmail, clientPhone\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After this, prepare delivery address fields (Street, City, Region, Postal Code) as next step.\",\n    \"sc\": false\n  }\n}",
+          "score": 3,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/long-form-filling.json"
+    },
+    {
+      "caseId": "reasoning-calendar",
+      "caseName": "Reasoning Calendar",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "totalScore": 14,
+      "adjustedTotalScore": 14,
+      "scoreRate": 93.33,
+      "adjustedScoreRate": 93.33,
+      "averageScore": 4.67,
+      "averageFirstTokenMs": 9432.33,
+      "averageTotalTimeMs": 11018.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 7184,
+          "totalTimeMs": 7800,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"open calendar to set earliest delivery date\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form\",\n          \"argValHint\": \"po-date: 25 Feb 2026; remarks: We are not open on monday, please do not delivery on monday; note: order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; calendar month shown: 2026年2月\"\n        }\n      },\n      \"cp\": [\n        4\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 500\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar executor sets the earliest date, verify the delivery input shows the chosen date then continue to Preview Order (checkpoint 5).\"\n  }\n}",
+          "score": 5,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 14655,
+          "totalTimeMs": 16521,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add isolated calendar checkpoint for delivery date\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 4,\n        \"checkPoints\": [\n          \"Set earliest delivery date in POS create order form\"\n        ],\n        \"permitFromGoal\": \"set earliest delivery date\",\n        \"src\": \"GOAL\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"mark calendar checkpoint working and open calendar widget\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"invoke calendar helper with page context for picking earliest delivery date\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday; order takes 11 months to produce; order-total: 3530.00\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [\n        4\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar executor picks the earliest delivery date, open Preview Order and take screenshot if amount > 1000.\",\n    \"sc\": false\n  }\n}",
+          "score": 5,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 6458,
+          "totalTimeMs": 8734,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set earliest delivery date\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; calendar currently shows 2026年2月 with date buttons disabled\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After the calendar executor sets the date, verify the Delivery Date input shows the chosen earliest date and continue to preview step.\"\n  }\n}",
+          "score": 4,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/reasoning-calendar.json"
+    },
+    {
+      "caseId": "fotopia-webskill-add-wishlist",
+      "caseName": "Fotopia WebSkill Add Wishlist",
+      "runCount": 3,
+      "singleRunMaxScore": 6,
+      "maxScore": 18,
+      "weight": 1,
+      "adjustedMaxScore": 18,
+      "totalScore": 18,
+      "adjustedTotalScore": 18,
+      "scoreRate": 100,
+      "adjustedScoreRate": 100,
+      "averageScore": 6,
+      "averageFirstTokenMs": 8202,
+      "averageTotalTimeMs": 10435.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 7585,
+          "totalTimeMs": 8524,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 (limited 500) — compact, classic rendering ideal for street; excellent collectible and new-in-box.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver (in-stock open box) — same optical signature as Summaron, available now and good value for immediate use.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements (Black) — modern nine-element design, optimized for digital sensors; wider aperture for low-light and cleaner edges.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After wishlist is updated, ask user which camera+lens combo to buy; then prepare checkout with provided address and phone.\",\n    \"sc\": false\n  }\n}",
+          "score": 6,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 6192,
+          "totalTimeMs": 10099,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 — limited edition, compact classic wide-angle with vintage rendering; ideal for street use and pairs well with M6.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (Brass, Black) — modern 9-element design, optimized for digital sensors, excellent edge-to-edge performance; strong value and compatible with M system.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 (Silver) — classic Summaron optical character, in-stock open box option for quicker pickup; great alternative to the limited matte version.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Ask the user which camera + lens pair they'd like to buy, then prepare checkout with address '1 Kirn Rd, London, W13 0UB, UK' and phone '123456'.\",\n    \"sc\": false\n  }\n}",
+          "score": 6,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 10829,
+          "totalTimeMs": 12684,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comment\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 (matte black) — limited edition, ultra-compact classic wide; excellent for discreet street shooting.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (9 Elements, Brass) — modern 9-element design with ED element, optimized for digital sensors; good balance of classic rendering and digital performance.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (9 Elements, Chrome) — alternative finish to the brass option; same optical character, available for quick pre-order.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 1000\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Ask the user which camera+lens to buy; after selection I'll prepare checkout with address '1 Kirn Rd, London, W13 0UB, UK' and phone '123456'.\",\n    \"sc\": false\n  }\n}",
+          "score": 6,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/fotopia-webskill-add-wishlist.json"
+    },
+    {
+      "caseId": "long-form-webskill",
+      "caseName": "Long Form Webskill",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "totalScore": 24,
+      "adjustedTotalScore": 24,
+      "scoreRate": 100,
+      "adjustedScoreRate": 100,
+      "averageScore": 8,
+      "averageFirstTokenMs": 8905.33,
+      "averageTotalTimeMs": 10866.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 13230,
+          "totalTimeMs": 14331,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepareOrder using args (clientName, clientEmail, clientPhone, address, city, region, postal, remark, items.*)\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args.items.0.name}\\\",\\\"quantity\\\":${args.items.0.qty},\\\"unitPrice\\\":${args.items.0.unit_price}},{\\\"productName\\\":\\\"${args.items.1.name}\\\",\\\"quantity\\\":${args.items.1.qty},\\\"unitPrice\\\":${args.items.1.unit_price}},{\\\"productName\\\":\\\"${args.items.2.name}\\\",\\\"quantity\\\":${args.items.2.qty},\\\"unitPrice\\\":${args.items.2.unit_price}}]}\"\n      },\n      \"cp\": [\n        0\n      ],\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 5000\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Review the populated form (client, address, 3 line items, totals) and then verify inputs (check point 1). If deliveryDate needs weekday adjustment, change before preview.\",\n    \"sc\": false\n  }\n}",
+          "score": 8,
+          "highlights": []
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 5454,
+          "totalTimeMs": 8449,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call posOrderPrep.prepareOrder with order data\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200.00},{\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350.00},{\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80.00}]}\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 3000\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After prepareOrder runs, verify form fields and totals on the page (check checklist item 1).\"\n  }\n}",
+          "score": 8,
+          "highlights": []
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 8032,
+          "totalTimeMs": 9819,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepare order with args via webSkill\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200.00},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350.00},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80.00}]}\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\",\n        \"to\": 5000\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Review the populated form on page (client fields, 3 line items, totals, delivery date) and then click Preview Order to continue.\",\n    \"sc\": false\n  }\n}",
+          "score": 8,
+          "highlights": []
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/long-form-webskill.json"
+    }
+  ],
+  "modelDir": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini",
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/details.json"
+}

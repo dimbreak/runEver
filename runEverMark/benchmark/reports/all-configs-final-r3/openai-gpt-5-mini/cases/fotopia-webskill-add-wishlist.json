@@ -1,0 +1,44 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "totalScore": 18,
+  "adjustedTotalScore": 18,
+  "scoreRate": 100,
+  "adjustedScoreRate": 100,
+  "averageScore": 6,
+  "averageFirstTokenMs": 8202,
+  "averageTotalTimeMs": 10435.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 7585,
+      "totalTimeMs": 8524,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 (limited 500) — compact, classic rendering ideal for street; excellent collectible and new-in-box.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver (in-stock open box) — same optical signature as Summaron, available now and good value for immediate use.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements (Black) — modern nine-element design, optimized for digital sensors; wider aperture for low-light and cleaner edges.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After wishlist is updated, ask user which camera+lens combo to buy; then prepare checkout with provided address and phone.\",\n    \"sc\": false\n  }\n}",
+      "score": 6,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 6192,
+      "totalTimeMs": 10099,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 — limited edition, compact classic wide-angle with vintage rendering; ideal for street use and pairs well with M6.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (Brass, Black) — modern 9-element design, optimized for digital sensors, excellent edge-to-edge performance; strong value and compatible with M system.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 (Silver) — classic Summaron optical character, in-stock open box option for quicker pickup; great alternative to the limited matte version.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Ask the user which camera + lens pair they'd like to buy, then prepare checkout with address '1 Kirn Rd, London, W13 0UB, UK' and phone '123456'.\",\n    \"sc\": false\n  }\n}",
+      "score": 6,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 10829,
+      "totalTimeMs": 12684,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comment\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 (matte black) — limited edition, ultra-compact classic wide; excellent for discreet street shooting.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (9 Elements, Brass) — modern 9-element design with ED element, optimized for digital sensors; good balance of classic rendering and digital performance.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 (9 Elements, Chrome) — alternative finish to the brass option; same optical character, available for quick pre-order.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 1000\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Ask the user which camera+lens to buy; after selection I'll prepare checkout with address '1 Kirn Rd, London, W13 0UB, UK' and phone '123456'.\",\n    \"sc\": false\n  }\n}",
+      "score": 6,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/fotopia-webskill-add-wishlist.json"
+}

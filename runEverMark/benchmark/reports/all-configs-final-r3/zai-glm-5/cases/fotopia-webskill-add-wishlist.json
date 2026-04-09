@@ -1,0 +1,57 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 17,
+  "scoreRate": 94.44,
+  "averageScore": 5.67,
+  "averageFirstTokenMs": 27493,
+  "averageTotalTimeMs": 37084.67,
+  "highlights": [
+    "wishlist item count or stock ids mismatch"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 24735,
+      "totalTimeMs": 34889,
+      "result": "{\"a\":[{\"intent\":\"Set check point #3 to working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"Add selected wide-angle lenses to wishlist with recommendation comments using webSkill\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Classic compact wide angle, most compact M-lens under 2cm, ideal for zone focusing and street photography with vintage rendering signature.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black Paint: Limited 500 pieces worldwide, matte black paint finish for stealthier look, same optical design as classic version.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements: Modern homage to classic design, faster aperture at F2.8, brass construction, great value alternative.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"After lens items added to wishlist, verify the page shows all items then ask user which to buy and prepare checkout.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1248,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set check point #3 to working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"Add selected wide-angle lenses to wishlist with recommendation comments using w…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 34119,
+      "totalTimeMs": 43037,
+      "result": "{\"a\":[{\"intent\":\"Add wide-angle lenses to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e4ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Classic compact wide-angle, most affordable Leica option; ideal for street photography with unique vintage rendering.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 Black: Budget-friendly modern homage to classic 9-element design; great value with classic rendering and faster aperture.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black Paint: Limited 500 pieces worldwide, premium collector's item; matte black finish matches black M6 perfectly.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3],\"unverify\":true}],\"next\":{\"tip\":\"After lens wishlist update, ask user which camera and lens to buy, then prepare checkout with the provided address and phone.\"}}",
+      "score": 5,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 1118,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add wide-angle lenses to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"win…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 23625,
+      "totalTimeMs": 33328,
+      "result": "{\"a\":[{\"intent\":\"Add wide-angle lens options to wishlist with recommendation comments using webSkill\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Matt Black Paint: Limited 500 pieces, ultra-compact classic design perfect for M6, vintage rendering ideal for street photography.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Genuine Leica compact wide-angle, great value for authentic M-system experience, excellent zone focusing.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9E Black: Affordable homage to classic 9-element design, faster aperture than Summaron, great for low-light with M6.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Lens items added to wishlist. Now ask user which camera and lens combination to buy, then prepare checkout with the UK address and phone number.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1140,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add wide-angle lens options to wishlist with recommendation comments using webSkill\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SK…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 17,
+  "adjustedScoreRate": 94.44
+}

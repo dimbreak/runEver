@@ -66,10 +66,21 @@ const hasFollowManagerAdviceCheckpoint = (checkpoints: string[]) => {
   });
 };
 
+const hasSetArgKey = (actions: any[], key: string) =>
+  actions.some((step) => {
+    const action = step?.action;
+    return (
+      action?.k === 'setArg' &&
+      action.kv &&
+      typeof action.kv === 'object' &&
+      Object.prototype.hasOwnProperty.call(action.kv, key)
+    );
+  });
+
 export const longTaskSplittingTest: BenchmarkCase = {
   id: 'long-task-splitting',
   name: 'Long Task Splitting',
-  maxScore: 8,
+  maxScore: 7,
   weight: 1.5,
   systemPrompt: standardSystemPrompt,
   userPrompt: `${standardUserPromptPrefix}
@@ -140,23 +151,34 @@ export const longTaskSplittingTest: BenchmarkCase = {
         if (parsedResult.data.a && parsedResult.data.a.length) {
           const allCheckpoints = getAllAddedCheckpoints(parsedResult.data.a);
           score++;
-          let { action } = parsedResult.data.a[0];
-          if (
-            (action.k === 'checklist' && action.a === 'add') ||
-            action.k === 'addNewTask'
-          ) {
-            score++;
+          const checklistInitStep = parsedResult.data.a.find((step) => {
+            const action = step?.action;
+            return (
+              action &&
+              ((action.k === 'checklist' && action.a === 'add') ||
+                action.k === 'addNewTask')
+            );
+          });
+          if (checklistInitStep) {
+            const { action } = checklistInitStep;
+            score += 2;
             if (getAddedCheckpointCount(action) > 10) {
-              score++;
+              score += 0.5;
             }
           }
           if (hasFollowManagerAdviceCheckpoint(allCheckpoints)) {
-            score++;
+            score += 0.5;
           }
-          const loginStep = parsedResult.data.a[1];
-          if (loginStep) {
-            action = loginStep.action;
-            if (
+          const loginActions = parsedResult.data.a.filter(
+            (step) => step?.action,
+          );
+          const hasPasswordSetArg = hasSetArgKey(
+            loginActions,
+            'new_arg_1770940290032',
+          );
+          const fillFormLogin = loginActions.find((step) => {
+            const { action } = step;
+            return (
               action.k === 'fillForm' &&
               matchesActionQueryId(action.q, '®e') &&
               Array.isArray(action.data) &&
@@ -164,36 +186,45 @@ export const longTaskSplittingTest: BenchmarkCase = {
                 (vv) => vv.f === 'email' && vv.v === 'pikachu@pokemon.com',
               ) &&
               action.data.find(
-                (vv) => vv.f === 'password' && vv.v === 'P@ssword321',
+                (vv) =>
+                  vv.f === 'password' &&
+                  (vv.v === 'P@ssword321' ||
+                    (hasPasswordSetArg &&
+                      // eslint-disable-next-line no-template-curly-in-string
+                      vv.v === '${args.new_arg_1770940290032}')),
               )
-            ) {
-              score += 2;
-            } else {
-              const loginActions = parsedResult.data.a.slice(1, 5);
-              const emailInput = loginActions.find(
-                (step) =>
-                  step.action.k === 'input' &&
-                  matchesActionQueryId(step.action.q, '®2') &&
-                  step.action.v === 'pikachu@pokemon.com',
-              );
-              const passwordInput = loginActions.find(
-                (step) =>
-                  step.action.k === 'input' &&
-                  matchesActionQueryId(step.action.q, '®5') &&
-                  step.action.v === 'P@ssword321',
-              );
-              const submitClick = loginActions.find(
-                (step) =>
-                  step.action.k === 'mouse' &&
-                  step.action.a === 'click' &&
-                  matchesActionQueryId(step.action.q, '®c'),
-              );
+            );
+          });
 
-              if (emailInput && passwordInput) {
-                score += 1.5;
-              } else if (emailInput && submitClick) {
-                score += 0.5;
-              }
+          if (fillFormLogin) {
+            score += 1;
+          } else {
+            const emailInput = loginActions.find(
+              (step) =>
+                step.action.k === 'input' &&
+                matchesActionQueryId(step.action.q, '®2') &&
+                step.action.v === 'pikachu@pokemon.com',
+            );
+            const passwordInput = loginActions.find(
+              (step) =>
+                step.action.k === 'input' &&
+                matchesActionQueryId(step.action.q, '®5') &&
+                (step.action.v === 'P@ssword321' ||
+                  (hasPasswordSetArg &&
+                    // eslint-disable-next-line no-template-curly-in-string
+                    step.action.v === '${args.new_arg_1770940290032}')),
+            );
+            const submitClick = loginActions.find(
+              (step) =>
+                step.action.k === 'mouse' &&
+                step.action.a === 'click' &&
+                matchesActionQueryId(step.action.q, '®c'),
+            );
+
+            if (emailInput && passwordInput) {
+              score += 1;
+            } else if (emailInput && submitClick) {
+              score += 0.5;
             }
           }
         }

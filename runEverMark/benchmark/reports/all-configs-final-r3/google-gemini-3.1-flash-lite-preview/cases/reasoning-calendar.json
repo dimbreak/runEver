@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 13,
+  "scoreRate": 86.67,
+  "averageScore": 4.33,
+  "averageFirstTokenMs": 7717,
+  "averageTotalTimeMs": 9210.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 8497,
+      "totalTimeMs": 10458,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Mark previous checkpoint #3 as working to verify form completion\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 3\n      }\n    },\n    {\n      \"intent\": \"Mark checkpoint #3 as verified as form is filled\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 3,\n        \"verifiedProve\": {\n          \"domId\": \"®6i\",\n          \"proveOfWork\": \"Form fields are populated with data from PDF.\"\n        }\n      }\n    },\n    {\n      \"intent\": \"Set earliest delivery date in calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date\",\n          \"argValHint\": \"Earliest available date, avoiding Mondays.\",\n          \"pageHint\": \"Order takes 11 months to produce, calendar currently showing February 2026.\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wait for calendar selection to reflect in the UI. Ensure a date is selected that complies with the 'no Monday' delivery restriction.\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 1161,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Mark previous checkpoint #3 as working to verify form completion\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 3 } }, { \"intent\": \"Mark checkpoint #3 as ve…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 7659,
+      "totalTimeMs": 8969,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Select the earliest possible delivery date in the calendar as per the 11-month production requirement\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form - order takes 11 months to produce\",\n          \"argValHint\": \"Current date is Feb 2026, need to set 11 months ahead (Jan 2027) if possible or latest available date\",\n          \"pageHint\": \"Calendar currently showing Feb 2026\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After setting the date, verify the calendar value is updated, then click 'Preview Order' to proceed to the preview screen. If amount > 1000, prepare to capture screenshot.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 802,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Select the earliest possible delivery date in the calendar as per the 11-month production requirement\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\"…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6995,
+      "totalTimeMs": 8205,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Select the earliest delivery date in the calendar widget, noting the order takes 11 months to produce.\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date - order takes 11 months to produce\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"The calendar displays February 2026.\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After setting the delivery date, I will proceed to preview the order.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 608,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Select the earliest delivery date in the calendar widget, noting the order takes 11 months to produce.\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-flash-lite-preview/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 13,
+  "adjustedScoreRate": 86.67
+}

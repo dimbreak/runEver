@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 12,
+  "scoreRate": 50,
+  "averageScore": 4,
+  "averageFirstTokenMs": 76106,
+  "averageTotalTimeMs": 87911.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 162002,
+      "totalTimeMs": 167462,
+      "result": " {\"a\":[{\"intent\":\"Fill client name, email, phone with Northwind Travel contact info\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"®4r\",\"v\":\"Northwind Travel\"},{\"f\":\"®4u\",\"v\":\"contact@client.com\"},{\"f\":\"®4x\",\"v\":\"555-0100\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields: Street, City, Region, Postal Code\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"®52\",\"v\":\"123 Client St\"},{\"f\":\"®55\",\"v\":\"Business City\"},{\"f\":\"®58\",\"v\":\"ST\"},{\"f\":\"®5c\",\"v\":\"12345\"}]},\"cp\":[1]},{\"intent\":\"Select Laptop Pro via combobox for first order line\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Laptop Pro\"},\"cp\":[3]},{\"intent\":\"Set quantity to 5 for first order line (Laptop Pro)\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®8i\",\"v\":\"5\"},\"cp\":[3]},{\"intent\":\"Click + Add Line Item twice to add second and third order lines\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]}],\"next\":{\"tip\":\"First line item (Laptop Pro qty 5) filled. Clicked Add Line Item twice for remaining items. Next: fill second line with Desk Chair qty 1, third with Keyboard qty 3 using combobox selections, then fill remark and review values.\"}}",
+      "score": 6.5,
+      "highlights": [],
+      "resultChars": 1163,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Fill client name, email, phone with Northwind Travel contact info\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"®4r\",\"v\":\"Northwind Travel\"},{\"f\":\"®4u\",\"v\":\"contact@cl…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 54019,
+      "totalTimeMs": 63899,
+      "result": " ```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Fill client name, email, and phone fields\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"®4r\", \"v\": \"Northwind Travel\"},\n          {\"f\": \"®4u\", \"v\": \"contact@client.com\"},\n          {\"f\": \"®4x\", \"v\": \"555-0100\"}\n        ]\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"Fill delivery address fields (street, city, region, postal)\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"®52\", \"v\": \"123 Client St\"},\n          {\"f\": \"®55\", \"v\": \"Business City\"},\n          {\"f\": \"®58\", \"v\": \"ST\"},\n          {\"f\": \"®5c\", \"v\": \"12345\"}\n        ]\n      },\n      \"cp\": [1]\n    },\n    {\n      \"intent\": \"Click Add Line Item button twice to prepare 3 total rows for order items\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After filling client/address info and adding line item rows, check the updated HTML to see the dynamically added order line fields, then fill products using combobox actions, quantities, and finally the remark.\"\n  }\n}\n```",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 1260,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"Fill client name, email, and phone fields\", \"risk\": \"l\", \"action\": { \"k\": \"fillForm\", \"q\": \"®91\", \"data\": [ {\"f\": \"®4r\", \"v\": \"Northwind Travel\"}, {\"f\": \"®4u\", \"v\": \"con…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 12297,
+      "totalTimeMs": 32373,
+      "result": " {\"a\": [\n  {\n    \"intent\": \"Add checkpoint: Fill client name, email, phone\",\n    \"risk\": \"l\",\n    \"action\": {\n      \"k\": \"addNewTask\",\n      \"checkPoints\": [\n        \"Fill the create order form's client name, email, and phone\",\n        \"Fill the create order form's delivery address fields (Street, City, Region, Postal Code)\",\n        \"Click + Add Line Item button twice to prepare 3 total line items for 3 products\",\n        \"Fill first order line with Laptop Pro, qty 5\",\n        \"Fill second order line with Desk Chair, qty 1\",\n        \"Fill third order line with Keyboard, qty 3\",\n        \"Fill Remark field with 'We are not open on monday, please do not delivery on monday' and review all values\"\n      ],\n      \"permitFromGoal\": \"Fill the create order form using order details in arguments: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark\",\n      \"src\": \"Initial task breakdown per instruction\",\n      \"taskRisk\": \"l\"\n    },\n    \"cp\": [0]\n  },\n  {\n    \"intent\": \"Fill client name with 'Northwind Travel', email with 'contact@client.com', phone with '555-0100'\",\n    \"risk\": \"l\",\n    \"action\": {\n      \"k\": \"fillForm\",\n      \"q\": \"®91\",\n      \"data\": [\n        {\"f\": \"®4r\", \"v\": \"Northwind Travel\"},\n        {\"f\": \"®4u\", \"v\": \"contact@client.com\"},\n        {\"f\": \"®4x\", \"v\": \"555-0100\"}\n      ]\n    },\n    \"cp\": [0]\n  },\n  {\n    \"intent\": \"Fill delivery address: Street='123 Client St', City='Business City', Region='ST', Postal='12345'\",\n    \"risk\": \"l\",\n    \"action\": {\n      \"k\": \"fillForm\",\n      \"q\": \"®91\",\n      \"data\": [\n        {\"f\": \"®52\", \"v\": \"123 Client St\"},\n        {\"f\": \"®55\", \"v\": \"Business City\"},\n        {\"f\": \"®58\", \"v\": \"ST\"},\n        {\"f\": \"®5c\", \"v\": \"12345\"}\n      ]\n    },\n    \"cp\": [1]\n  },\n  {\n    \"intent\": \"Click + Add Line Item button to add second row for additional product\",\n    \"risk\": \"l\",\n    \"action\": {\n      \"k\": \"mouse\",\n      \"a\": \"click\",\n      \"q\": \"®87\"\n    }\n  },\n  {\n    \"intent\": \"Click + Add Line Item button again to add third row for additional product\",\n    \"risk\": \"l\",\n    \"action\": {\n      \"k\": \"mouse\",\n      \"a\": \"click\",\n      \"q\": \"®87\"\n    },\n    \"cp\": [2]\n  }\n]}\n",
+      "score": 4.5,
+      "highlights": [],
+      "resultChars": 2212,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\": [ { \"intent\": \"Add checkpoint: Fill client name, email, phone\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill the create order form's client name, email, and phone\", \"Fill …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/kimi-k2.5/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 50
+}

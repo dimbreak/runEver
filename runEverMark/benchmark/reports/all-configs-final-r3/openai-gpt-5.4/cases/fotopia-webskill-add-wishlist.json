@@ -1,0 +1,53 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 18,
+  "scoreRate": 100,
+  "averageScore": 6,
+  "averageFirstTokenMs": 4741.33,
+  "averageTotalTimeMs": 12032.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 5082,
+      "totalTimeMs": 12208,
+      "result": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist\",\"risk\":\"m\",\"cp\":[3],\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as the most practical Leica-made no-ASPH wide-angle option: compact 28mm, in stock, and far more affordable than the limited black version.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended as a premium collectible no-ASPH Leica wide-angle: matte black limited edition Summaron-M 28mm F5.6 with classic rendering and top collector appeal.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a budget-friendly capable no-ASPH 28mm option: modern remake of the classic 9-element design in black paint, good value for shooting.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Recommended as another budget-friendly capable no-ASPH 28mm option in chrome finish, for similar performance with different styling.\\\"}],\\\"navigateToWishlist\\\":true}\"}}],\"next\":{\"tip\":\"Verify the lens items appear in wish list, then ask the user which camera and lens to buy.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1267,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist\",\"risk\":\"m\",\"cp\":[3],\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skill…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4724,
+      "totalTimeMs": 13577,
+      "result": "{\"a\":[{\"intent\":\"add wide-angle lens wishlist options\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as a capable non-ASPH Leica 28mm option: genuine Leica Summaron-M 28/5.6, compact, classic rendering, brand new/open box, and far more accessible in price than the limited black paint version.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended if you want the top-end non-ASPH Leica option: Leica Summaron-M 28/5.6 black paint limited edition, collectible, new old stock, and strong vintage-style rendering.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a more budget-friendly non-ASPH-style wide-angle choice: Light Lens Lab 28mm F2.8 9-element in black paint, faster at f/2.8 and inspired by the classic non-ASPH 9-element design.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Recommended as the chrome alternative of the Light Lens Lab 28mm F2.8 9-element: same capable non-ASPH-style design, lower cost, and suitable if you prefer silver/chrome finish.\\\"}],\\\"navigateToWishlist\\\":true}\",\"cp\":[3]}}],\"next\":{\"tip\":\"Verify the lens items appear in wishlist, then ask user which camera and lens to buy.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1417,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add wide-angle lens wishlist options\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaSto…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 4418,
+      "totalTimeMs": 10313,
+      "result": "{\"a\":[{\"intent\":\"add lens options to wishlist\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended as a premium non-ASPH 28mm option: classic rendering, ultra-compact, and a strong match for Leica M6 shooting if budget allows.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as a more affordable non-ASPH Leica 28mm option: capable wide-angle coverage, compact size, and easier entry price for pairing with an M6.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a budget-friendly non-ASPH style 28mm option: faster f/2.8 aperture and useful wide-angle capability for practical M6 use.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Verify the lens items now appear in the wish list, then ask which camera and lens to buy.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1018,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add lens options to wishlist\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWi…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 100
+}

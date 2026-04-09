@@ -1,0 +1,53 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 18,
+  "scoreRate": 100,
+  "averageScore": 6,
+  "averageFirstTokenMs": 6235.33,
+  "averageTotalTimeMs": 10080,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 7122,
+      "totalTimeMs": 10437,
+      "result": "{\"a\":[{\"intent\":\"Add wide angle lens options to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black: Limited 500 pieces worldwide, vintage aesthetic, extremely compact M-lens, unique matte black paint finish with red aperture engravings\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: Classic design, most compact M-Lens, natural analog photography character, great for street photography with zone focusing\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 Chrome: Modern homage to classic Nine Element, 9 elements optical design, fluorite elements, excellent value alternative to vintage lenses\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[4]}],\"next\":{\"tip\":\"Wide angle lenses added to wishlist. Review wishlist, then ask user which camera and lens combination they want to purchase.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1156,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add wide angle lens options to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 5793,
+      "totalTimeMs": 9511,
+      "result": "{\"a\":[{\"intent\":\"Add wide angle lens options to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Matt Black Paint: Limited 500 pieces, vintage aesthetic, most compact M-Lens, unique analog character with natural vignetting - HK$69,800\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9 Elements - Chrome: Close homage to classic Nine Element, modern improvements with fluorite/ED glass, excellent value at HK$6,232\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver: Classic compact wide angle, German craftsmanship, red depth of field scale, ideal for street photography - HK$18,800\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Wide angle lenses added to wishlist. After page updates, check wishlist and proceed to ask user which items to purchase.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1137,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add wide angle lens options to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5791,
+      "totalTimeMs": 10292,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add wide angle lens options to wishlist with recommendation comments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Black / v2: Vintage aesthetic, extremely compact M-Lens, unique analog character with natural contrast and vignetting. Limited to 500 pieces worldwide - a collectible gem.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements / Black Paint: Modern homage to classic Nine Element design with fluorite elements, excellent value alternative. Optimized for digital sensors, eliminates red-fringing. Brass construction with hand-made quality.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements / Chrome: Same great 9 Elements design in chrome finish. Budget-friendly at HK$6,232, great starter wide-angle for M-mount system with modern optics.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wide angle lenses added to wishlist. Now checkpoint 4 requires asking user which to buy and preparing checkout with address 1 Kirn Rd, London, W13 0UB, UK and phone 123456\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1460,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add wide angle lens options to wishlist with recommendation comments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKIL…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/minimax-m2.7/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 100
+}

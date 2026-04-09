@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 14.5,
+  "scoreRate": 69.05,
+  "averageScore": 4.83,
+  "averageFirstTokenMs": 4133.33,
+  "averageTotalTimeMs": 7838.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3708,
+      "totalTimeMs": 7161,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"add checklist breakdown from GOAL\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": null,\n        \"checkPoints\": [\n          \"login to email account\",\n          \"read new order email\",\n          \"get order detail from it\",\n          \"go to pos system\",\n          \"fill create order form with detail from the order email\",\n          \"set earliest delivery date\",\n          \"in preview order step if order amount > 1000 cap screenshot\",\n          \"go to messager send him order file/detail & screenshot seek for manager dillion's approve\",\n          \"do what he advise in case\",\n          \"after that save order\",\n          \"download the invoice in order list\",\n          \"go to email and reply the client with id detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"GOAL breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"focus email field\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"focus\",\n        \"q\": \"®2\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"input email pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"focus password field\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"focus\",\n        \"q\": \"®5\"\n      }\n    },\n    {\n      \"intent\": \"input password P@ssword321\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      }\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"After Next button click observe inbox for new order email, then continue checklist\",\n    \"readFiles\": []\n  }\n}\n```",
+      "score": 5.5,
+      "highlights": [],
+      "resultChars": 1772,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"add checklist breakdown from GOAL\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": null, \"checkPoints\": [ \"login to email account\", \"read new order email\", \"ge…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 5861,
+      "totalTimeMs": 9355,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"add checklist breakdown from GOAL\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": null,\n        \"checkPoints\": [\n          \"login to email account with pikachu@pokemon.com and P@ssword321\",\n          \"read new order email and get order detail from it\",\n          \"go to pos system\",\n          \"fill create order form with detail from the order email\",\n          \"set earliest delivery date in pos create order\",\n          \"in preview order step if order amount > 1000 cap screenshot and go to messager send him order file detail and screenshot seek for manager dillion's approve do what he advise\",\n          \"after that save order\",\n          \"download the invoice in order list\",\n          \"go to email and reply the client with id detail and invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"GOAL\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"Current tab is email login page. Next: fill email pikachu@pokemon.com then password and submit to login.\",\n    \"readFiles\": []\n  }\n}\n```",
+      "score": 4.5,
+      "highlights": [],
+      "resultChars": 1163,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"add checklist breakdown from GOAL\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": null, \"checkPoints\": [ \"login to email account with pikachu@pokemon.com and …"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 2831,
+      "totalTimeMs": 7000,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"add checklist breakdown from GOAL\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email account with email: pikachu@pokemon.com and password: P@ssword321\",\n          \"read new order email\",\n          \"get order detail from the order email\",\n          \"go to pos system\",\n          \"fill create order form with detail from the order email\",\n          \"set earliest delivery date in create order form\",\n          \"in preview order step if order amount > 1000 cap screenshot\",\n          \"go to messager send him order file/detail & screenshot seek for manager dillion's approve\",\n          \"do what he advise in case\",\n          \"save order\",\n          \"download the invoice in order list\",\n          \"go to email and reply the client with id detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"GOAL breakdown into atomic steps\",\n        \"taskRisk\": \"m\"\n      },\n      \"cp\": []\n    },\n    {\n      \"intent\": \"click Next button on email sign in form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After click Next, observe if password field appears or error. Then input password and submit to complete email login. Verify inbox for new order email next.\"\n  }\n}\n```",
+      "score": 4.5,
+      "highlights": [],
+      "resultChars": 1430,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"add checklist breakdown from GOAL\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"login to email account with email: pikachu@pokemon.com and password: P@…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/grok-4.1-fast/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 21.75,
+  "adjustedScoreRate": 69.05
+}

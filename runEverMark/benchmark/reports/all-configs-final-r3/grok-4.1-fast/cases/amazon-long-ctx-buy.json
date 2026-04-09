@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 12,
+  "scoreRate": 80,
+  "averageScore": 4,
+  "averageFirstTokenMs": 5857.67,
+  "averageTotalTimeMs": 7824.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 4909,
+      "totalTimeMs": 6953,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to 3 from args.buy_quantity\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\",\n        \"c\": null\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now button for express checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"e\": null,\n  \"next\": {\n    \"sc\": true,\n    \"tip\": \"On checkout page verify default address/payment and complete order.\",\n    \"readFiles\": null,\n    \"descAttachment\": null\n  }\n}\n```",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 617,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"set quantity to 3 from args.buy_quantity\", \"risk\": \"l\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\", \"c\": null }, \"cp\": [2] }, { \"intent\": \"click Buy Now button for e…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 6503,
+      "totalTimeMs": 8617,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"select quantity 3 from args.buy_quantity in dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now button to proceed to checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On checkout page, verify defaults and complete express checkout with default payment/address. Mark checklist 2 verified if quantity correct and Buy Now succeeded.\"\n  }\n}\n```",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 627,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"select quantity 3 from args.buy_quantity in dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" }, \"cp\": [2] }, { \"intent\": \"click Buy Now button to p…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6161,
+      "totalTimeMs": 7904,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"select quantity 3 from buy_quantity arg for House Blend 1kg\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now button to proceed to checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On checkout page verify defaults, complete express checkout with default payment/address if shown clearly.\"\n  }\n}\n```",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 578,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"select quantity 3 from buy_quantity arg for House Blend 1kg\", \"risk\": \"l\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" }, \"cp\": [2] }, { \"intent\": \"click Buy Now butt…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/grok-4.1-fast/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 80
+}
