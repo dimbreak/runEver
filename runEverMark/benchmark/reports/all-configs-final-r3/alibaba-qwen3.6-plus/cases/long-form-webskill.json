@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 18,
+  "scoreRate": 75,
+  "averageScore": 6,
+  "averageFirstTokenMs": 63598.33,
+  "averageTotalTimeMs": 68045.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 61372,
+      "totalTimeMs": 66660,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder web skill to fill form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"sc\": true,\n    \"tip\": \"Verify filled form fields and totals, then click Preview Order.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 969,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"call prepareOrder web skill to fill form\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"/skills/posorderprep/SKILL.md\", \"fnName\": \"window._web_skills.posOrderPrep.prep…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 60352,
+      "totalTimeMs": 64145,
+      "result": "{\"a\":[{\"intent\":\"Call webskill to fill order form\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Verify filled form fields match arguments. Click Preview Order to finish.\"}}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 790,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Call webskill to fill order form\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"client…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 69071,
+      "totalTimeMs": 73332,
+      "result": "{\"a\":[{\"intent\":\"Fill order form using posOrderPrep web skill with extracted data\",\"risk\":\"m\",\"cp\":[0],\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"}}],\"next\":{\"sc\":false,\"tip\":\"Web skill filled the form. Verify fields, delivery date, line items and totals.\"}}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 878,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Fill order form using posOrderPrep web skill with extracted data\",\"risk\":\"m\",\"cp\":[0],\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/long-form-webskill.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 75
+}

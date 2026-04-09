@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 18,
+  "scoreRate": 75,
+  "averageScore": 6,
+  "averageFirstTokenMs": 9468,
+  "averageTotalTimeMs": 13021.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 2267,
+      "totalTimeMs": 4820,
+      "result": "{\"a\":[{\"intent\":\"Add initial checkpoints for the order form filling process\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Fill the create order form's client name, email, and phone\",\"Fill the create order form's delivery address fields (Street, City, Region, Postal Code)\",\"Prepare sufficient order line items by clicking '+ Add Line Item' for each item in arguments\",\"Fill Order Lines with product, qty, and unit price for each item from arguments\",\"Fill Remark with remark and review all filled values in the form\"],\"permitFromGoal\":\"Fill the create order form using order details in arguments\",\"src\":\"[GOAL]\",\"taskRisk\":\"l\"}},{\"intent\":\"Fill client and address information from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"®4r\",\"v\":\"${args.clientName}\"},{\"f\":\"®4u\",\"v\":\"${args.clientEmail}\"},{\"f\":\"®4x\",\"v\":\"${args.clientPhone}\"},{\"f\":\"®52\",\"v\":\"${args.address}\"},{\"f\":\"®55\",\"v\":\"${args.city}\"},{\"f\":\"®58\",\"v\":\"${args.region}\"},{\"f\":\"®5c\",\"v\":\"${args.postal}\"}]},\"cp\":[0,1]},{\"intent\":\"Add 2 more line items to accommodate all 3 items from arguments\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]},{\"intent\":\"Fill the first order line product using combobox\",\"risk\":\"m\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"${args['items.0.name']}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Filled initial info and added lines. Product combobox for the first item is being set. Continue filling remaining items and remark.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1464,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add initial checkpoints for the order form filling process\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Fill the create order form's client name, email, and phone\",\"Fill th…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 23377,
+      "totalTimeMs": 27284,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist for order form filling\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Fill Client Information: Client Name, Email, and Phone\",\n          \"Fill Delivery Address: Street, City, Region, and Postal Code\",\n          \"Fill Delivery Date using the date from order_form.pdf\",\n          \"Add 2 more order line items (total 3 items from arguments)\",\n          \"Fill Order Line 1: Product, Qty, and Unit Price\",\n          \"Fill Order Line 2: Product, Qty, and Unit Price\",\n          \"Fill Order Line 3: Product, Qty, and Unit Price\",\n          \"Fill Additional Information: Remark\",\n          \"Review all filled values in the form\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form\",\n        \"src\": \"goal\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"Fill client and address information\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®4r\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"®4u\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"®4x\", \"v\": \"${args.clientPhone}\" },\n          { \"f\": \"®52\", \"v\": \"${args.address}\" },\n          { \"f\": \"®55\", \"v\": \"${args.city}\" },\n          { \"f\": \"®58\", \"v\": \"${args.region}\" },\n          { \"f\": \"®5c\", \"v\": \"${args.postal}\" }\n        ]\n      },\n      \"cp\": [0, 1]\n    },\n    {\n      \"intent\": \"Click Add Line Item twice to prepare for 3 items total\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client info and address filled. Added line item fields. Next: set delivery date and fill line items.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1789,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist for order form filling\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill Client Information: Client Name, Email, and Phone\", \"Fill Delive…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 2760,
+      "totalTimeMs": 6960,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"Initialize the checklist for the order form filling task.\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"addNewTask\",\n    \"permitFromGoal\": \"Fill the form at ®91\",\n    \"src\": \"GOAL\",\n    \"taskRisk\": \"m\",\n    \"checkPoints\": [\n     \"Fill client information (Name: ${args.clientName}, Email: ${args.clientEmail}, Phone: ${args.clientPhone})\",\n     \"Fill delivery address (Street: ${args.address}, City: ${args.city}, Region: ${args.region}, Postal Code: ${args.postal})\",\n     \"Add 2 more line items to match the 3 items in arguments\",\n     \"Fill first order line: ${args['items.0.name']}, Qty: ${args['items.0.qty']}\",\n     \"Fill second order line: ${args['items.1.name']}, Qty: ${args['items.1.qty']}\",\n     \"Fill third order line: ${args['items.2.name']}, Qty: ${args['items.2.qty']}\",\n     \"Fill remark: ${args.remark}\",\n     \"Review all filled values in the form\"\n    ]\n   }\n  },\n  {\n   \"intent\": \"Fill client and address information in the form.\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"fillForm\",\n    \"q\": \"®91\",\n    \"data\": [\n     {\n      \"f\": \"®4r\",\n      \"v\": \"${args.clientName}\"\n     },\n     {\n      \"f\": \"®4u\",\n      \"v\": \"${args.clientEmail}\"\n     },\n     {\n      \"f\": \"®4x\",\n      \"v\": \"${args.clientPhone}\"\n     },\n     {\n      \"f\": \"®52\",\n      \"v\": \"${args.address}\"\n     },\n     {\n      \"f\": \"®55\",\n      \"v\": \"${args.city}\"\n     },\n     {\n      \"f\": \"®58\",\n      \"v\": \"${args.region}\"\n     },\n     {\n      \"f\": \"®5c\",\n      \"v\": \"${args.postal}\"\n     }\n    ]\n   },\n   \"cp\": [\n    0,\n    1\n   ]\n  },\n  {\n   \"intent\": \"Add the second line item field.\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"mouse\",\n    \"a\": \"click\",\n    \"q\": \"®87\"\n   },\n   \"cp\": [\n    2\n   ]\n  },\n  {\n   \"intent\": \"Add the third line item field.\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"mouse\",\n    \"a\": \"click\",\n    \"q\": \"®87\"\n   },\n   \"cp\": [\n    2\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"Client info and address filled. Added line item fields. Next: Fill order lines and remark.\"\n }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 1995,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize the checklist for the order form filling task.\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"permitFromGoal\": \"Fill the form at ®91\", \"src\": \"GOAL\", \"taskRisk\": \"m\",…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-pro-preview/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 75
+}

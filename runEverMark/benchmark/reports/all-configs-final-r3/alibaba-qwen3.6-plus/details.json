@@ -1,0 +1,394 @@
+{
+  "apiId": "alibaba-qwen3.6-plus",
+  "provider": "alibaba",
+  "maxScore": 129,
+  "scoreRate": 78.29,
+  "totalScore": 101,
+  "averageScore": 4.81,
+  "averageFirstTokenMs": 69218.57,
+  "averageTotalTimeMs": 73715.05,
+  "caseSummaries": [
+    {
+      "caseId": "amazon-long-ctx-buy",
+      "caseName": "Amazon Long-CTX Buy",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 10,
+      "scoreRate": 66.67,
+      "averageScore": 3.33,
+      "averageFirstTokenMs": 52439.33,
+      "averageTotalTimeMs": 55830.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 43035,
+          "totalTimeMs": 45980,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to $args.buy_quantity\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      }\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Proceed with default payment and address on checkout page.\"\n  }\n}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 450,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to $args.buy_quantity\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" } }, { \"intent\": \"click Buy Now to start express checkout\", \"risk\": \"m\", \"action…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 50902,
+          "totalTimeMs": 52879,
+          "result": "{\"a\":[{\"intent\":\"change quantity to 3\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}},{\"intent\":\"click Buy Now for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"},\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":12000},\"cp\":[2]}],\"next\":{\"tip\":\"Verify checkout page shows 3 items, then place order using default payment and address.\",\"sc\":false}}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 364,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"change quantity to 3\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}},{\"intent\":\"click Buy Now for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"},\"pos…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 63381,
+          "totalTimeMs": 68633,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to 3\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"#d5\",\n        \"v\": \"3\"\n      }\n    },\n    {\n      \"intent\": \"click buy now for express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"#el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      }\n    },\n    {\n      \"intent\": \"verify quantity and buy now checkpoint\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 2,\n        \"verifiedProve\": {\n          \"domId\": \"el\",\n          \"proveOfWork\": \"Quantity updated to 3 and Buy Now clicked successfully\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On checkout page, verify default address/payment and complete order\",\n    \"sc\": false\n  }\n}",
+          "score": 3,
+          "highlights": [],
+          "resultChars": 854,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to 3\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"#d5\", \"v\": \"3\" } }, { \"intent\": \"click buy now for express checkout\", \"risk\": \"h\", \"action\": { \"k\": \"mouse\", \"a\"…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/amazon-long-ctx-buy.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 10,
+      "adjustedScoreRate": 66.67
+    },
+    {
+      "caseId": "fotopia-webskill-add-wishlist",
+      "caseName": "Fotopia WebSkill Add Wishlist",
+      "runCount": 3,
+      "singleRunMaxScore": 6,
+      "maxScore": 18,
+      "totalScore": 14,
+      "scoreRate": 77.78,
+      "averageScore": 4.67,
+      "averageFirstTokenMs": 89707.33,
+      "averageTotalTimeMs": 95853.33,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 121712,
+          "totalTimeMs": 128265,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add 3 wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Classic compact 28mm wide-angle, limited black paint edition. Excellent for discreet street photography.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Modern homage to nine-element design in brass. Unique rendering, includes hood & leather pouch.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Chrome version of the nine-element brass lens. Classic aesthetic with modern optical improvements.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify wishlist updated with 3 lenses. Mark cp 3 verified, set cp 4 working, then botherUser to ask which camera & lens combinations to buy. Use prepareOrder skill upon confirmation.\"\n  }\n}",
+          "score": 4,
+          "highlights": [
+            "wishlist item count or stock ids mismatch"
+          ],
+          "resultChars": 1113,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Add 3 wide-angle lenses to wishlist with comments\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName\": \"w…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 73925,
+          "totalTimeMs": 79369,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add selected wide angle lenses to wishlist with recommendation comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Compact classic 28mm f/2.8 with brass build, modern ED glass for excellent digital sharpness.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Original Leica Summaron-M 28mm f/5.6, ultra-compact and iconic for street photography.\\\"}]}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify lenses were added to wishlist, mark cp 3 verified, then ask user which camera/lens combo to buy and prepare checkout with provided address.\"\n  }\n}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 881,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Add selected wide angle lenses to wishlist with recommendation comments\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/S…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 73485,
+          "totalTimeMs": 79926,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add wide-angle lenses to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited matte black paint, compact 28mm ideal for street photography.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Classic 9-element rendering in black paint, matches vintage Leica style.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Chrome finish version of the classic 9-element lens, perfect for silver M6 bodies.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Lenses added to wishlist. Ask user which items to purchase, then prepare checkout with address 1 Kirn Rd, London, W13 0UB, UK and phone 123456.\"\n  }\n}",
+          "score": 4,
+          "highlights": [
+            "wishlist item count or stock ids mismatch"
+          ],
+          "resultChars": 998,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Add wide-angle lenses to wishlist with comments\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName\": \"win…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/fotopia-webskill-add-wishlist.json",
+      "weight": 1,
+      "adjustedMaxScore": 18,
+      "adjustedTotalScore": 14,
+      "adjustedScoreRate": 77.78
+    },
+    {
+      "caseId": "google-search-scam",
+      "caseName": "Google search scam",
+      "runCount": 3,
+      "singleRunMaxScore": 4,
+      "maxScore": 12,
+      "totalScore": 12,
+      "scoreRate": 100,
+      "averageScore": 4,
+      "averageFirstTokenMs": 42836,
+      "averageTotalTimeMs": 44826,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 54052,
+          "totalTimeMs": 56756,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click reliable Jigsaw24 store link for iPhone 17 Pro Max\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®13g\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      },\n      \"cp\": [\n        1\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"confirm product page loaded and proceed with details\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 395,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"click reliable Jigsaw24 store link for iPhone 17 Pro Max\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": \"®13g\" }, \"post\": { \"t\": \"net\", \"a\": \"idle2\" }, \"cp\": [ 1 ] …"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 35007,
+          "totalTimeMs": 36152,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click O2 UK link as reliable source\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®14a\"\n      },\n      \"cp\": [1]\n    }\n  ]\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 209,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"click O2 UK link as reliable source\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": \"®14a\" }, \"cp\": [1] } ] }"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 39449,
+          "totalTimeMs": 41570,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Click Jigsaw24 store link to open reliable source\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®13g\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify Jigsaw24 iPhone 17 Pro Max page loaded successfully and mark checklist 1 verified.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 326,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Click Jigsaw24 store link to open reliable source\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": \"®13g\" } } ], \"next\": { \"tip\": \"Verify Jigsaw24 iPhone 17 Pro Max p…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/google-search-scam.json",
+      "weight": 1,
+      "adjustedMaxScore": 12,
+      "adjustedTotalScore": 12,
+      "adjustedScoreRate": 100
+    },
+    {
+      "caseId": "long-form-filling",
+      "caseName": "Long Form Filling",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 18,
+      "scoreRate": 75,
+      "averageScore": 6,
+      "averageFirstTokenMs": 90383.33,
+      "averageTotalTimeMs": 97490.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 109466,
+          "totalTimeMs": 114338,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client info, address, and remark with args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"clientName\", \"v\": \"${args.clientName}\"},\n          {\"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\"},\n          {\"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\"},\n          {\"f\": \"address\", \"v\": \"${args.address}\"},\n          {\"f\": \"city\", \"v\": \"${args.city}\"},\n          {\"f\": \"region\", \"v\": \"${args.region}\"},\n          {\"f\": \"postal\", \"v\": \"${args.postal}\"},\n          {\"f\": \"remark\", \"v\": \"${args.remark}\"}\n        ]\n      },\n      \"cp\": [0, 1]\n    },\n    {\n      \"intent\": \"click add line item button twice\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Static fields & remark filled. 2 rows added. Next: fill product, qty, unit price for 3 rows. Combobox must be isolated per guide.\"\n  }\n}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 1029,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"fill client info, address, and remark with args\", \"risk\": \"m\", \"action\": { \"k\": \"fillForm\", \"q\": \"®91\", \"data\": [ {\"f\": \"clientName\", \"v\": \"${args.clientName}\"}, {\"f\": \"clientEm…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 115754,
+          "totalTimeMs": 127415,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"initialize task checklist\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Fill the create order form's client name, email, and phone\",\n          \"Fill the create order form's delivery address fields (Street, City, Region, Postal Code)\",\n          \"Prepare sufficient order line items by clicking + Add Line Item for each item in order_form.pdf\",\n          \"Fill Order Lines with product, qty, and unit price for each item from order_form.pdf\",\n          \"Fill Remark with remark from order_form.pdf and review all filled values in the form at ®91\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form using order details in arguments: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark.\",\n        \"src\": \"Initial checklist setup\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill client info, address and remark from arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" },\n          { \"f\": \"address\", \"v\": \"${args.address}\" },\n          { \"f\": \"city\", \"v\": \"${args.city}\" },\n          { \"f\": \"region\", \"v\": \"${args.region}\" },\n          { \"f\": \"postal\", \"v\": \"${args.postal}\" },\n          { \"f\": \"remark\", \"v\": \"${args.remark}\" }\n        ],\n        \"cp\": [0, 1, 4]\n      }\n    },\n    {\n      \"intent\": \"mark add line items task as working\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 2\n      }\n    },\n    {\n      \"intent\": \"click add line item twice to create 3 lines total\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      }\n    }\n  ],\n  \"next\": {\n    \"sc\": true,\n    \"tip\": \"Verify filled form values. Fill order line comboboxes for product, qty, price, then review.\"\n  }\n}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 2149,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"initialize task checklist\", \"risk\": \"m\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill the create order form's client name, email, and phone\", \"Fill the create order for…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 45930,
+          "totalTimeMs": 50718,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Fill client info and address fields\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" },\n          { \"f\": \"address\", \"v\": \"${args.address}\" },\n          { \"f\": \"city\", \"v\": \"${args.city}\" },\n          { \"f\": \"region\", \"v\": \"${args.region}\" },\n          { \"f\": \"postal\", \"v\": \"${args.postal}\" }\n        ]\n      },\n      \"cp\": [\n        0,\n        1\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Next, click '+ Add Line Item' twice to prepare 3 line items, then use combobox to select each product.\",\n    \"sc\": false\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 784,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Fill client info and address fields\", \"risk\": \"l\", \"action\": { \"k\": \"fillForm\", \"q\": \"®91\", \"data\": [ { \"f\": \"clientName\", \"v\": \"${args.clientName}\" }, { \"f\": \"clientEmail\", \"v\"…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/long-form-filling.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 18,
+      "adjustedScoreRate": 75
+    },
+    {
+      "caseId": "long-form-webskill",
+      "caseName": "Long Form Webskill",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 18,
+      "scoreRate": 75,
+      "averageScore": 6,
+      "averageFirstTokenMs": 63598.33,
+      "averageTotalTimeMs": 68045.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 61372,
+          "totalTimeMs": 66660,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder web skill to fill form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"sc\": true,\n    \"tip\": \"Verify filled form fields and totals, then click Preview Order.\"\n  }\n}",
+          "score": 8,
+          "highlights": [],
+          "resultChars": 969,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"call prepareOrder web skill to fill form\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"/skills/posorderprep/SKILL.md\", \"fnName\": \"window._web_skills.posOrderPrep.prep…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 60352,
+          "totalTimeMs": 64145,
+          "result": "{\"a\":[{\"intent\":\"Call webskill to fill order form\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Verify filled form fields match arguments. Click Preview Order to finish.\"}}",
+          "score": 2,
+          "highlights": [],
+          "resultChars": 790,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Call webskill to fill order form\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"client…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 69071,
+          "totalTimeMs": 73332,
+          "result": "{\"a\":[{\"intent\":\"Fill order form using posOrderPrep web skill with extracted data\",\"risk\":\"m\",\"cp\":[0],\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"}}],\"next\":{\"sc\":false,\"tip\":\"Web skill filled the form. Verify fields, delivery date, line items and totals.\"}}",
+          "score": 8,
+          "highlights": [],
+          "resultChars": 878,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"Fill order form using posOrderPrep web skill with extracted data\",\"risk\":\"m\",\"cp\":[0],\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/long-form-webskill.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 18,
+      "adjustedScoreRate": 75
+    },
+    {
+      "caseId": "long-task-splitting",
+      "caseName": "Long Task Splitting",
+      "runCount": 3,
+      "singleRunMaxScore": 7,
+      "maxScore": 21,
+      "totalScore": 17,
+      "scoreRate": 80.95,
+      "averageScore": 5.67,
+      "averageFirstTokenMs": 100725.33,
+      "averageTotalTimeMs": 105939.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 145604,
+          "totalTimeMs": 145613,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add workflow checkpoints for login to order processing\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Login to email account\",\n          \"Read new order email details\",\n          \"Navigate to POS and fill order form\",\n          \"Set earliest delivery date in POS\",\n          \"Check order amount > 1000: cap screenshot & message Dillion\",\n          \"Save order and download invoice\",\n          \"Reply to client email with details & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"goal\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill email field with pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"@2\",\n        \"v\": \"pikachu@pokemon.com\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"fill password field with P@ssword321\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"@5\",\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"click Next button to submit login form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"@c\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify login success. Look for new order email in inbox and extract order details to proceed to POS.\"\n  }\n}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 1383,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"add workflow checkpoints for login to order processing\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email account\", \"Read new order email details\", \"…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 83879,
+          "totalTimeMs": 92048,
+          "result": "{\n \"a\": [\n  {\n   \"intent\": \"Add workflow checkpoints\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"addNewTask\",\n    \"checkPoints\": [\n     \"Login to email platform\",\n     \"Login to POS platform\",\n     \"Read new order email and extract details\",\n     \"Fill create order form in POS system\",\n     \"Set earliest delivery date\",\n     \"Preview order and check amount > 1000\",\n     \"If >1000, screenshot & message Dillon for approval\",\n     \"Save order\",\n     \"Download invoice from order list\",\n     \"Reply to client email with order info\"\n    ],\n    \"permitFromGoal\": \"login to email / pos account with:\",\n    \"src\": \"email & pos workflow\",\n    \"taskRisk\": \"m\"\n   }\n  },\n  {\n   \"intent\": \"Input email pikachu@pokemon.com\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"input\",\n    \"q\": \"®2\",\n    \"v\": \"pikachu@pokemon.com\"\n   }\n  },\n  {\n   \"intent\": \"Input password P@ssword321\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"input\",\n    \"q\": \"®5\",\n    \"v\": \"P@ssword321\"\n   }\n  },\n  {\n   \"intent\": \"Click Next button\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"mouse\",\n    \"a\": \"click\",\n    \"q\": \"®c\"\n   },\n   \"post\": {\n    \"t\": \"net\",\n    \"a\": \"idle0\"\n   }\n  }\n ],\n \"next\": {\n  \"tip\": \"Verify email login success, then navigate to POS platform URL.\"\n }\n}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1237,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Add workflow checkpoints\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email platform\", \"Login to POS platform\", \"Read new order email and extract det…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 72693,
+          "totalTimeMs": 80157,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add workflow checkpoint breakdown\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Login to email\",\n          \"Read new order email and get order detail\",\n          \"Go to POS system and login\",\n          \"Fill create order form with detail and set earliest delivery date\",\n          \"Preview order, capture screenshot if >1000 and contact manager\",\n          \"Save order and download invoice\",\n          \"Reply to client email with id, detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"goal\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill email pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"fill password P@ssword321\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"click Next to submit login form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify login success and proceed to inbox.\"\n  }\n}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1294,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"add workflow checkpoint breakdown\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email\", \"Read new order email and get order detail\", \"Go to POS system…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/long-task-splitting.json",
+      "weight": 1.5,
+      "adjustedMaxScore": 31.5,
+      "adjustedTotalScore": 25.5,
+      "adjustedScoreRate": 80.95
+    },
+    {
+      "caseId": "reasoning-calendar",
+      "caseName": "Reasoning Calendar",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 12,
+      "scoreRate": 80,
+      "averageScore": 4,
+      "averageFirstTokenMs": 44840.33,
+      "averageTotalTimeMs": 48020,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 42682,
+          "totalTimeMs": 46192,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set earliest delivery date on calendar\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"Click 'Preview Order' button (®aq) to proceed. If total > 1000, capture screenshot and message manager dillion for approval.\",\n    \"readFiles\": []\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 598,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set earliest delivery date on calendar\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"order takes 11 m…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 53073,
+          "totalTimeMs": 56237,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set delivery date on calendar considering 11 months lead time\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"po-date: 25 Feb 2026\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify delivery date is correctly set, then click Preview Order button.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 534,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Set delivery date on calendar considering 11 months lead time\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValH…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 38766,
+          "totalTimeMs": 41631,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date in calendar\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        },\n        \"cp\": [4]\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify delivery date is set, then click Preview Order button.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 499,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Set earliest delivery date in calendar\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"Set earliest delivery date\", \"argValHint\": \"order takes 11 m…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/reasoning-calendar.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 12,
+      "adjustedScoreRate": 80
+    }
+  ],
+  "modelDir": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus",
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/details.json",
+  "adjustedMaxScore": 139.5,
+  "adjustedTotalScore": 109.5,
+  "adjustedScoreRate": 78.49
+}

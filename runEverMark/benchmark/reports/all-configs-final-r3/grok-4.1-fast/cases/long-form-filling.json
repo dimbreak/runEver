@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 8,
+  "scoreRate": 33.33,
+  "averageScore": 2.67,
+  "averageFirstTokenMs": 2880,
+  "averageTotalTimeMs": 7284.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3081,
+      "totalTimeMs": 6662,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"add checklist points for client info, delivery address, order lines prep, filling, remark and review\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": null,\n        \"checkPoints\": [\n          \"Fill the create order form's client name, email, and phone\",\n          \"Fill the create order form's delivery address fields (Street, City, Region, Postal Code)\",\n          \"Prepare sufficient order line items by clicking + Add Line Item enough times for 3 items\",\n          \"Fill Order Lines with product, qty, and unit price for each item\",\n          \"Fill Remark with remark and review all filled values in the form at ®91\"\n        ],\n        \"permitFromGoal\": \"Fill the form at ®91, context: Fill the create order form using order details in arguments: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark.\",\n        \"src\": \"GOAL breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"fill client name, email, phone using arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"clientName\", \"v\": \"Northwind Travel\"},\n          {\"f\": \"clientEmail\", \"v\": \"contact@client.com\"},\n          {\"f\": \"clientPhone\", \"v\": \"555-0100\"}\n        ]\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"fill delivery address using arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"address\", \"v\": \"123 Client St\"},\n          {\"f\": \"city\", \"v\": \"Business City\"},\n          {\"f\": \"region\", \"v\": \"ST\"},\n          {\"f\": \"postal\", \"v\": \"12345\"}\n        ]\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client and delivery fields filled. Next: prepare 3 line items by clicking + Add Line Item (id ®87), then fill products/qty using combobox and inputs, set remark, finally review all values match arguments.\"\n  }\n}\n```",
+      "score": 2.5,
+      "highlights": [],
+      "resultChars": 2033,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"add checklist points for client info, delivery address, order lines prep, filling, remark and review\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": null, \"ch…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 2790,
+      "totalTimeMs": 7603,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add new checklist points to isolate calendar, combobox, review\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 4,\n        \"checkPoints\": [\n          \"Handle delivery date calendar using context from order_form.pdf and remark\",\n          \"Fill product combobox for each order line item using arguments items\",\n          \"Review all filled form values match arguments and order_form.pdf\"\n        ],\n        \"permitFromGoal\": \"Fill the form at ®91, context: Fill the create order form using order details in arguments\",\n        \"src\": \"GOAL and checklist rules for isolation\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"fill client info, delivery address, remark using fillForm on ®91\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"clientName\", \"v\": \"__VAR__{args.clientName}\"},\n          {\"f\": \"clientEmail\", \"v\": \"__VAR__{args.clientEmail}\"},\n          {\"f\": \"clientPhone\", \"v\": \"__VAR__{args.clientPhone}\"},\n          {\"f\": \"address\", \"v\": \"__VAR__{args.address}\"},\n          {\"f\": \"city\", \"v\": \"__VAR__{args.city}\"},\n          {\"f\": \"region\", \"v\": \"__VAR__{args.region}\"},\n          {\"f\": \"postal\", \"v\": \"__VAR__{args.postal}\"},\n          {\"f\": \"remark\", \"v\": \"__VAR__{args.remark}\"}\n        ]\n      },\n      \"cp\": [0, 1, 4]\n    },\n    {\n      \"intent\": \"click + Add Line Item button 3 times to prepare fields for itemsCount=3\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 3\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Next: isolate combobox for products (use combobox action on ®8a), set qty/unit_price via input or fillForm, then review all values in form ®91 match args & pdf. Do not submit.\",\n    \"sc\": false\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 1874,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add new checklist points to isolate calendar, combobox, review\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": 4, \"checkPoints\": [ \"Handle delivery date calendar usin…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 2769,
+      "totalTimeMs": 7588,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"add new checklist checkpoints for client info, address, prepare lines, fill lines, remark and review\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": null,\n        \"checkPoints\": [\n          \"Fill the create order form's client name, email, and phone\",\n          \"Fill the create order form's delivery address fields (Street, City, Region, Postal Code)\",\n          \"Prepare sufficient order line items by clicking + Add Line Item enough times for 3 items\",\n          \"Fill Order Lines product combobox, qty, unit price for each of the 3 items\",\n          \"Fill Remark field with remark value\",\n          \"Review all filled values match arguments in the form at ®91\"\n        ],\n        \"permitFromGoal\": \"Fill the form at ®91, context: Fill the create order form using order details in arguments: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark.\",\n        \"src\": \"GOAL breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"fill client name, email, phone from arguments using fillForm on ®91\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"clientName\", \"v\": \"__VAR__{args.clientName}\"},\n          {\"f\": \"clientEmail\", \"v\": \"__VAR__{args.clientEmail}\"},\n          {\"f\": \"clientPhone\", \"v\": \"__VAR__{args.clientPhone}\"}\n        ]\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"fill delivery address fields from arguments using fillForm on ®91\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"address\", \"v\": \"__VAR__{args.address}\"},\n          {\"f\": \"city\", \"v\": \"__VAR__{args.city}\"},\n          {\"f\": \"region\", \"v\": \"__VAR__{args.region}\"},\n          {\"f\": \"postal\", \"v\": \"__VAR__{args.postal}\"}\n        ]\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"Next: click + Add Line Item button (®87) twice to prepare 3 lines total, then handle comboboxes for products in isolated steps, fill qty/price, remark, and review form values.\",\n    \"readFiles\": [],\n    \"descAttachment\": []\n  }\n}\n```",
+      "score": 1.5,
+      "highlights": [],
+      "resultChars": 2242,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"add new checklist checkpoints for client info, address, prepare lines, fill lines, remark and review\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": null, \"ch…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/grok-4.1-fast/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 8,
+  "adjustedScoreRate": 33.33
+}

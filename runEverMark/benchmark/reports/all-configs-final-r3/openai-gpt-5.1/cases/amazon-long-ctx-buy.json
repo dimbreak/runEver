@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 13,
+  "scoreRate": 86.67,
+  "averageScore": 4.33,
+  "averageFirstTokenMs": 7944.33,
+  "averageTotalTimeMs": 9268.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 9847,
+      "totalTimeMs": 11700,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to buy_quantity (3) in dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\n            \"buy_quantity\"\n          ]\n        },\n        \"v\": \"3\"\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"click Buy Now button to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 15000\n      },\n      \"cp\": [\n        2\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On the checkout page, verify default address and payment are selected, then place the order to complete express checkout.\",\n    \"readFiles\": []\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 800,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to buy_quantity (3) in dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": { \"id\": \"®d5\", \"argKeys\": [ \"buy_quantity\" ] }, \"v\": \"3\" }, \"cp\": [ 2 ] }, { \"intent\":…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8156,
+      "totalTimeMs": 9047,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to buy_quantity=3 in dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Confirm quantity shows 3, then click Buy Now button id=®el to proceed to checkout.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 324,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to buy_quantity=3 in dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" }, \"cp\": [2] } ], \"next\": { \"tip\": \"Confirm quantity shows 3, then click…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5830,
+      "totalTimeMs": 7058,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set one-time purchase quantity to buy_quantity (3)\",\n      \"risk\": \"m\",\n      \"cp\": [2],\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Click the Buy Now button id=®el to proceed, then complete checkout with default payment and address.\",\n    \"readFiles\": []\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 371,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set one-time purchase quantity to buy_quantity (3)\", \"risk\": \"m\", \"cp\": [2], \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" } } ], \"next\": { \"tip\": \"Click the Buy Now button id=…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.1/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 13,
+  "adjustedScoreRate": 86.67
+}

@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 11,
+  "scoreRate": 73.33,
+  "averageScore": 3.67,
+  "averageFirstTokenMs": 6085.33,
+  "averageTotalTimeMs": 7188,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 4507,
+      "totalTimeMs": 5419,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Select quantity 3 from the quantity dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"select#®d5\",\n        \"v\": \"3\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"Click 'Buy Now' to proceed with the purchase\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"input#®el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verified the quantity selection and initiated the checkout process. Proceed to confirm or complete the purchase if prompted.\"\n  }\n}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 632,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Select quantity 3 from the quantity dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"select#®d5\", \"v\": \"3\" }, \"cp\": [2] }, { \"intent\": \"Click 'Buy Now' to proceed with th…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8840,
+      "totalTimeMs": 10095,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Select quantity 3 from dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"select#®d5\",\n        \"v\": \"3\"\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"Click 'Buy Now' button to proceed with express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"input#®el\"\n      },\n      \"cp\": [\n        2\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Quantity set to 3. Buy Now clicked. The browser should now navigate to the checkout or purchase confirmation page. Please verify if we are on the checkout page.\"\n  }\n}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 649,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Select quantity 3 from dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"select#®d5\", \"v\": \"3\" }, \"cp\": [ 2 ] }, { \"intent\": \"Click 'Buy Now' button to proceed with expres…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 4909,
+      "totalTimeMs": 6050,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Select quantity 3 from the dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      }\n    },\n    {\n      \"intent\": \"Click the Buy Now button to proceed to checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify if the page transitioned to checkout/sign-in page. If it requires signing in, please sign in. If it's already on the checkout page, proceed to final confirmation.\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 658,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Select quantity 3 from the dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" } }, { \"intent\": \"Click the Buy Now button to proceed to checkout\", \"risk\": \"m\"…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-flash-lite-preview/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 11,
+  "adjustedScoreRate": 73.33
+}

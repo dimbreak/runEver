@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 15,
+  "scoreRate": 62.5,
+  "averageScore": 5,
+  "averageFirstTokenMs": 12820,
+  "averageTotalTimeMs": 15108,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 14807,
+      "totalTimeMs": 18862,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Fill client info, address, and remark using arguments\",\n      \"risk\": \"m\",\n      \"cp\": [0, 1, 4],\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®4r\", \"v\": \"Northwind Travel\" },\n          { \"f\": \"®4u\", \"v\": \"contact@client.com\" },\n          { \"f\": \"®4x\", \"v\": \"555-0100\" },\n          { \"f\": \"®52\", \"v\": \"123 Client St\" },\n          { \"f\": \"®55\", \"v\": \"Business City\" },\n          { \"f\": \"®58\", \"v\": \"ST\" },\n          { \"f\": \"®5c\", \"v\": \"12345\" },\n          { \"f\": \"®8u\", \"v\": \"We are not open on monday, please do not delivery on monday\" }\n        ]\n      }\n    },\n    {\n      \"intent\": \"Click + Add Line Item twice to prepare 3 order lines total\",\n      \"risk\": \"l\",\n      \"cp\": [2],\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Set products via combobox for each line, then adjust qty/unit prices from arguments and verify totals; do not submit.\"\n  }\n}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1040,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Fill client info, address, and remark using arguments\", \"risk\": \"m\", \"cp\": [0, 1, 4], \"action\": { \"k\": \"fillForm\", \"q\": \"®91\", \"data\": [ { \"f\": \"®4r\", \"v\": \"Northwind Travel\" },…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8852,
+      "totalTimeMs": 9307,
+      "result": "{\n  \"a\":",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 8,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\":"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 14801,
+      "totalTimeMs": 17155,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checkpoint to double-check filled values later per GOAL instruction\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 4,\n        \"checkPoints\": [\n          \"Double-check all filled form values at ®91 against arguments\"\n        ],\n        \"permitFromGoal\": \"make sure you filled all possible fields, and checked the values\",\n        \"src\": \"executor-1\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"fill client info, delivery address, and remark from arguments\",\n      \"risk\": \"m\",\n      \"cp\": [0, 1, 4],\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®4r\", \"v\": \"Northwind Travel\" },\n          { \"f\": \"®4u\", \"v\": \"contact@client.com\" },\n          { \"f\": \"®4x\", \"v\": \"555-0100\" },\n          { \"f\": \"®52\", \"v\": \"123 Client St\" },\n          { \"f\": \"®55\", \"v\": \"Business City\" },\n          { \"f\": \"®58\", \"v\": \"ST\" },\n          { \"f\": \"®5c\", \"v\": \"12345\" },\n          { \"f\": \"®8u\", \"v\": \"We are not open on monday, please do not delivery on monday\" }\n        ]\n      }\n    },\n    {\n      \"intent\": \"click + Add Line Item twice to create three order lines total\",\n      \"risk\": \"l\",\n      \"cp\": [2],\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Use comboboxes to select Laptop Pro, Desk Chair, and Keyboard on each line, verify qty/unit price match arguments, then review all values.\"\n  }\n}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1528,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add checkpoint to double-check filled values later per GOAL instruction\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": 4, \"checkPoints\": [ \"Double-check all filled f…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.1/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 62.5
+}

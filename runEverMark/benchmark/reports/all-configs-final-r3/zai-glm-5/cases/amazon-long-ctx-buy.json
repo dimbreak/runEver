@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 7,
+  "scoreRate": 46.67,
+  "averageScore": 2.33,
+  "averageFirstTokenMs": 11340,
+  "averageTotalTimeMs": 13203.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 9604,
+      "totalTimeMs": 13216,
+      "result": "Looking at the current page state, I'm on the Amazon product detail page for \"House Blend Coffee Beans, Medium Roast, 1kg by Amazon\". \n\nThe checklist shows I'm on step 2 (working): pick quantity and click buy now. I can see:\n- A quantity dropdown with current value=1 at id=®d5\n- A \"Buy Now\" button at id=®el\n\nI need to set quantity to 3 (from args.buy_quantity) and click Buy Now to proceed to checkout.\n\n```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Set quantity to 3 for the coffee beans purchase\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\"id\": \"®d5\", \"argKeys\": [\"buy_quantity\"]},\n        \"v\": \"3\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"Click Buy Now button to proceed to express checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\"id\": \"®el\"}\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Proceed to checkout page. Verify order details and complete purchase with default payment and address on the next page.\"\n  }\n}\n```",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 1038,
+      "resultFormat": "embedded_json",
+      "resultPreview": "Looking at the current page state, I'm on the Amazon product detail page for \"House Blend Coffee Beans, Medium Roast, 1kg by Amazon\". The checklist shows I'm on step 2 (working): pick quantity and cl…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 15482,
+      "totalTimeMs": 16649,
+      "result": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"}},{\"intent\":\"click Buy Now button for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"}}],\"next\":{\"tip\":\"verify checkout page loaded with correct quantity and default payment/address selected, proceed to place order if everything looks correct\"}}\n```",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 418,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"}},{\"intent\":\"click Buy Now button for express checkout\"…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 8934,
+      "totalTimeMs": 9746,
+      "result": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\"},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"click Buy Now button to proceed to express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\"}}}],\"next\":{\"tip\":\"on checkout page, verify order details and proceed with default payment and address\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 358,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to 3 from args.buy_quantity\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\"},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"click Buy Now button to proceed to express checkout\",\"risk\":…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 7,
+  "adjustedScoreRate": 46.67
+}

@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 13,
+  "scoreRate": 54.17,
+  "averageScore": 4.33,
+  "averageFirstTokenMs": 5890.67,
+  "averageTotalTimeMs": 8451.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 8309,
+      "totalTimeMs": 11588,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Fill client name, email, and phone\",\n          \"Fill address\",\n          \"Prepare order lines\",\n          \"Fill order lines (product, qty, price)\",\n          \"Fill remark and review\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form using order details\",\n        \"src\": \"Initial plan\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"Fill Client Information\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®4r\", \"v\": \"Northwind Travel\" },\n          { \"f\": \"®4u\", \"v\": \"contact@client.com\" },\n          { \"f\": \"®4x\", \"v\": \"555-0100\" }\n        ]\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"Fill Delivery Address\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®52\", \"v\": \"123 Client St\" },\n          { \"f\": \"®55\", \"v\": \"Business City\" },\n          { \"f\": \"®58\", \"v\": \"ST\" },\n          { \"f\": \"®5c\", \"v\": \"12345\" }\n        ]\n      },\n      \"cp\": [1]\n    },\n    {\n      \"intent\": \"Click Add Line Item button twice to prepare 3 lines total\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client info and address filled. Added two more line items. Now select products using comboboxes and fill quantities. Remember to verify inputs after filling.\"\n  }\n}",
+      "score": 5.5,
+      "highlights": [],
+      "resultChars": 1623,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill client name, email, and phone\", \"Fill address\", \"Prepare order lines\", \"Fill order line…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 3507,
+      "totalTimeMs": 5859,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist with breakdown steps\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Fill client information (Name, Email, Phone)\",\n          \"Fill delivery address (Street, City, Region, Postal Code)\",\n          \"Add line items for the 3 items (Laptop Pro, Desk Chair, Keyboard)\",\n          \"Fill order line details (Product, Qty)\",\n          \"Fill remark\",\n          \"Review all fields\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form using order details\",\n        \"src\": \"system\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"Fill Client Information fields\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"®4r\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"®4u\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"®4x\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"Fill Delivery Address fields\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"®52\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"®55\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"®58\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"®5c\",\n            \"v\": \"${args.postal}\"\n          }\n        ]\n      },\n      \"cp\": [\n        1\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client info and address filled. Next, I need to add 2 more order lines (total 3 items) by clicking '+ Add Line Item' button twice, then fill them. Currently, only one row is visible.\"\n  }\n}",
+      "score": 3.5,
+      "highlights": [],
+      "resultChars": 1868,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist with breakdown steps\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill client information (Name, Email, Phone)\", \"Fill delivery address (…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5856,
+      "totalTimeMs": 7907,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist with breakdown steps\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Fill client information and delivery address\",\n          \"Add line items for the order\",\n          \"Fill order line items with products and quantities\",\n          \"Fill remarks and review all details\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form\",\n        \"src\": \"Initial breakdown of the goal\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"Fill client and address information\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"®4r\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"®4u\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"®4x\",\n            \"v\": \"${args.clientPhone}\"\n          },\n          {\n            \"f\": \"®52\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"®55\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"®58\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"®5c\",\n            \"v\": \"${args.postal}\"\n          }\n        ]\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 1000\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client and address info filled. Now I need to add 2 more line items by clicking 'Add Line Item' button twice, then fill the product and quantity for all 3 items.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 1606,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist with breakdown steps\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Fill client information and delivery address\", \"Add line items for the …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-flash-lite-preview/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 13,
+  "adjustedScoreRate": 54.17
+}

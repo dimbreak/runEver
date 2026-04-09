@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 12,
+  "scoreRate": 80,
+  "averageScore": 4,
+  "averageFirstTokenMs": 30040,
+  "averageTotalTimeMs": 34154,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 11001,
+      "totalTimeMs": 14012,
+      "result": " {\"a\":[{\"intent\":\"Set earliest delivery date using calendar picker\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"order takes 11 months to produce, set earliest delivery date\",\"argValHint\":\"PO date is 25 Feb 2026, order takes 11 months to produce\",\"pageHint\":\"Calendar showing February 2026, all dates disabled, need to find earliest available date\"}}},{\"intent\":\"Click next month button to navigate forward in calendar\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®7a\"}}]}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 498,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set earliest delivery date using calendar picker\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"order takes 11 months to produce, set earliest delivery date\",\"argV…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 27104,
+      "totalTimeMs": 32507,
+      "result": " {\n  \"a\": [\n    {\n      \"intent\": \"mark check point 4 working - set earliest delivery date\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"set earliest delivery date using calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce, PO date is 25 Feb 2026\",\n          \"pageHint\": \"Calendar currently showing February 2026, all dates appear disabled, need to navigate to find earliest available date\"\n        }\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 1000\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After setting delivery date, click Preview Order button to proceed. Order total is $3530 which is > $1000, so will need screenshot and manager approval via messenger.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 947,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"mark check point 4 working - set earliest delivery date\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 4 } }, { \"intent\": \"set earliest delivery date using …"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 52015,
+      "totalTimeMs": 55943,
+      "result": " {\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date using calendar picker based on 11 month production time\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce from PO date 2026-02-25\",\n          \"pageHint\": \"Currently viewing February 2026 calendar, all date buttons are disabled\"\n        }\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 500\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Calendar executor will set the earliest available date. Wait for calendar selection to complete and date to be set in the form.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 719,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Set earliest delivery date using calendar picker based on 11 month production time\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest del…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/kimi-k2.5/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 80
+}

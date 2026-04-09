@@ -1,0 +1,59 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 13,
+  "scoreRate": 72.22,
+  "averageScore": 4.33,
+  "averageFirstTokenMs": 31187.33,
+  "averageTotalTimeMs": 40756,
+  "highlights": [
+    "wishlist item count or stock ids mismatch"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 29800,
+      "totalTimeMs": 42451,
+      "result": " {\n  \"a\": [\n    {\n      \"intent\": \"add wide angle lens options to wishlist with recommendation comments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Premium limited edition (500pcs worldwide), compact street photography lens with classic rendering, matt black paint finish\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Affordable high-quality 28mm f/2.8 with fast aperture, brass construction, optimized for digital sensors, great value alternative\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Same excellent optics as black version in classic chrome finish, budget-friendly wide angle option for Leica M\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 1500\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Lenses added to wishlist. Verify they appear on the wishlist page with comments, then ask user which camera and lens combination they want to buy, then prepare checkout with address '1 Kirn Rd, London, W13 0UB, UK' and phone '123456'.\"\n  }\n}",
+      "score": 4,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 1315,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add wide angle lens options to wishlist with recommendation comments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKIL…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 45903,
+      "totalTimeMs": 54184,
+      "result": " ```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Add 3 wide-angle lens options to wishlist with recommendation comments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited edition (500 pieces), matte black paint finish, ultra-compact at under 2cm, vintage aesthetic with modern quality - ultimate collectible wide angle\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Bargain modern homage to classic 'Nine Element' design, brass construction, optimized for digital sensors, f/2.8 fast aperture - best value performer\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Authentic Leica compact wide angle, classic rendering with visible vignetting, silver chrome finish, under 2cm length - perfect for discreet street photography\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3],\n      \"pre\": { \"t\": \"time\", \"ms\": 500 }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wide-angle lenses added to wishlist. Next: verify wishlist displays correctly, then ask user which camera and lens combination to buy (checklist #4).\"\n  }\n}\n```",
+      "score": 3,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 1321,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"Add 3 wide-angle lens options to wishlist with recommendation comments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopia…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 17859,
+      "totalTimeMs": 25633,
+      "result": " {\"a\":[{\"intent\":\"Add selected wide-angle lens options to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black - Limited to 500 pieces worldwide with special matte black paint finish. Extremely compact (under 2cm) and perfect for street photography with unique vintage rendering.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 Chrome - Budget-friendly option with classic Nine Element optical design. Brass construction, optimized for digital sensors, excellent value at ~HK$6,232.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver - Most compact M-lens under 2cm, classic silver chrome finish. Great for zone focusing with distinctive analog-style image character.\\\"}],\\\"navigateToWishlist\\\":true}\"}}],\"next\":{\"tip\":\"Wide-angle lens options added to wishlist. Now I have 3 cameras + 3 lenses in wishlist. Need to ask user which combination to buy and prepare checkout with the specified address and phone.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1279,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add selected wide-angle lens options to wishlist with recommendation comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/kimi-k2.5/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 13,
+  "adjustedScoreRate": 72.22
+}

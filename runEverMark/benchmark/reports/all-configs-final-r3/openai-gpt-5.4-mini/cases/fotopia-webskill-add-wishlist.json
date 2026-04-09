@@ -1,0 +1,57 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 16,
+  "scoreRate": 88.89,
+  "averageScore": 5.33,
+  "averageFirstTokenMs": 5369,
+  "averageTotalTimeMs": 7189,
+  "highlights": [
+    "wishlist item count or stock ids mismatch"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 4544,
+      "totalTimeMs": 6416,
+      "result": "{\"a\":[{\"intent\":\"add wide angle lenses to wishlist with comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended for its compact size, modern collector appeal, and strong wide-angle usability.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a brand-new, affordable wide-angle option with classic 28mm coverage.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended for the classic Summaron look and strong value among no-ASPH wide-angle choices.\\\"}],\\\"navigateToWishlist\\\":true}\"}}],\"next\":{\"tip\":\"Check the wish list now, then ask which camera and lens to buy before checkout.\"}}",
+      "score": 4,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 859,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add wide angle lenses to wishlist with comments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8163,
+      "totalTimeMs": 9189,
+      "result": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist with comments\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended for classic Leica rendering and compact size; good no-ASPH wide-angle option.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as a more affordable in-stock Leica wide-angle with classic Summaron look and no ASPH.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended if you want a modern-made 28mm no-ASPH option with strong value and Leica-compatible character.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Check the wishlist now, then ask which camera and lens to buy before checkout.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 900,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist with comments\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3400,
+      "totalTimeMs": 5962,
+      "result": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended for a compact, classic Leica wide-angle setup; in-stock, no ASPH, and a strong everyday 28mm choice.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Best if you want a premium limited-edition 28mm with modern build quality, no ASPH, and strong collectible value.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Good alternative 28mm option with a classic rendering style and no ASPH, suitable if you want a more modern brass build.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"After the wishlist updates, verify the lens items appear, then ask which camera/lens to buy and prepare checkout.\",\"descAttachment\":[{\"name\":\"lens-options\",\"desc\":\"Selected wide-angle lens wishlist candidates: Leica Summaron-M 28mm F5.6 Silver, Leica Summaron-M 28mm F5.6 Black, Light Lens Lab 28mm F2.8 9 Elements Chrome.\"}]}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1183,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopia…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4-mini/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 16,
+  "adjustedScoreRate": 88.89
+}

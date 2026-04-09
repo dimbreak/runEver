@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 4751.67,
+  "averageTotalTimeMs": 6331.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 4118,
+      "totalTimeMs": 5546,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set earliest delivery date using calendar per goal and remark\",\n      \"risk\": \"l\",\n      \"cp\": [4],\n      \"unverify\": true,\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; calendar currently shows 2026年2月 with all dates disabled\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify delivery date is set, then click Preview Order to continue approval flow.\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 648,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set earliest delivery date using calendar per goal and remark\", \"risk\": \"l\", \"cp\": [4], \"unverify\": true, \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earl…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 5195,
+      "totalTimeMs": 6775,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"ask calendar executor to set earliest valid delivery date respecting rules\",\n      \"risk\": \"l\",\n      \"cp\": [4],\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date in POS create order form\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday; delivery date field hint: order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date field with calendar currently on 2026年2月 and all visible dates disabled; label says: Delivery Date - order takes 11 months to produce.\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After date is set, click Preview Order and continue with approval flow if total > 1000.\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 780,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"ask calendar executor to set earliest valid delivery date respecting rules\", \"risk\": \"l\", \"cp\": [4], \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest …"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 4942,
+      "totalTimeMs": 6674,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date considering 11-month production and no Monday delivery\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date in POS create order form; client does not want delivery on Monday; delivery date - order takes 11 months to produce\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Calendar label says: Delivery Date - order takes 11 months to produce; need earliest valid delivery date that is not Monday\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ]\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 675,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Set earliest delivery date considering 11-month production and no Monday delivery\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest deli…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.1/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

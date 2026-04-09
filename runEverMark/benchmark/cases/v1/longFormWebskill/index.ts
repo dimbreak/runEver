@@ -68,13 +68,21 @@ const parseIsoDate = (value: unknown) => {
   return parsed;
 };
 
+const toUtcDayStart = (value: Date) =>
+  new Date(
+    Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
+  );
+
 const isValidDeliveryDate = (value: unknown) => {
   const parsed = parseIsoDate(value);
   if (!parsed) {
     return false;
   }
 
-  if (parsed.getTime() < earliestDeliveryDate.getTime()) {
+  if (
+    toUtcDayStart(parsed).getTime() <
+    toUtcDayStart(earliestDeliveryDate).getTime()
+  ) {
     return false;
   }
 
@@ -543,28 +551,40 @@ delivery date is up to the production lead time shown on the page & client instr
                   productId: 'sku-laptop',
                   productName: 'Laptop Pro',
                   productNameTemplates: [
+                    templatePlaceholder('args.items.0.name'),
                     templatePlaceholder("args['items.0.name']"),
                   ],
                   quantity: 5,
-                  quantityTemplates: [templatePlaceholder("args['items.0.qty']")],
+                  quantityTemplates: [
+                    templatePlaceholder('args.items.0.qty'),
+                    templatePlaceholder("args['items.0.qty']"),
+                  ],
                 },
                 {
                   productId: 'sku-chair',
                   productName: 'Desk Chair',
                   productNameTemplates: [
+                    templatePlaceholder('args.items.1.name'),
                     templatePlaceholder("args['items.1.name']"),
                   ],
                   quantity: 1,
-                  quantityTemplates: [templatePlaceholder("args['items.1.qty']")],
+                  quantityTemplates: [
+                    templatePlaceholder('args.items.1.qty'),
+                    templatePlaceholder("args['items.1.qty']"),
+                  ],
                 },
                 {
                   productId: 'sku-keyboard',
                   productName: 'Keyboard',
                   productNameTemplates: [
+                    templatePlaceholder('args.items.2.name'),
                     templatePlaceholder("args['items.2.name']"),
                   ],
                   quantity: 3,
-                  quantityTemplates: [templatePlaceholder("args['items.2.qty']")],
+                  quantityTemplates: [
+                    templatePlaceholder('args.items.2.qty'),
+                    templatePlaceholder("args['items.2.qty']"),
+                  ],
                 },
               ];
 

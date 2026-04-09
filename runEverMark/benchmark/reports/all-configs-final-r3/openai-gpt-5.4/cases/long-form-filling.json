@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 20.5,
+  "scoreRate": 85.42,
+  "averageScore": 6.83,
+  "averageFirstTokenMs": 9020.33,
+  "averageTotalTimeMs": 13908.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 12261,
+      "totalTimeMs": 17272,
+      "result": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"},{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"},{\"f\":\"remark\",\"v\":\"We are not open on monday, please do not delivery on monday\"}]},\"cp\":[0,1,4]},{\"intent\":\"add 2 line items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]},{\"intent\":\"cancel mixed order lines cp\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"cancel\",\"pos\":3,\"cancelReason\":\"Order line filling includes a combobox widget and must be split into isolated checkpoints before using combobox.\"}},{\"intent\":\"add split line item tasks\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"afterCpId\":3,\"checkPoints\":[\"Fill each order line product from order_form.pdf\",\"Fill each order line qty and unit price from order_form.pdf\",\"Review each order line subtotal and total against order_form.pdf\"],\"permitFromGoal\":\"order lines (product, qty, unit price) for each item, totals, and remark.\",\"src\":\"Split mixed order-line task so combobox product selection can be isolated per workflow rules.\",\"taskRisk\":\"m\"}}],\"next\":{\"tip\":\"Verify the extra line item rows appeared, then fill products with combobox before qty values.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1386,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clien…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 9282,
+      "totalTimeMs": 14729,
+      "result": "{\"a\":[{\"intent\":\"start client fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"}]},\"cp\":[0]},{\"intent\":\"start address and remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"},{\"f\":\"remark\",\"v\":\"We are not open on monday, please do not delivery on monday\"}]},\"cp\":[1,4]},{\"intent\":\"prepare 3 order lines\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]}],\"next\":{\"tip\":\"Verify filled text fields, then split order-line checkpoint before using combobox for each product.\"}}",
+      "score": 6.5,
+      "highlights": [],
+      "resultChars": 761,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"start client fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5518,
+      "totalTimeMs": 9725,
+      "result": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"},{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"},{\"f\":\"remark\",\"v\":\"${args.remark}\"}]},\"cp\":[0,1,4]},{\"intent\":\"add two more line items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]}],\"next\":{\"tip\":\"Review new line item fields, then fill each product with combobox and quantities/prices.\"}}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 651,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"cl…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 20.5,
+  "adjustedScoreRate": 85.42
+}

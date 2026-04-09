@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 12,
+  "scoreRate": 80,
+  "averageScore": 4,
+  "averageFirstTokenMs": 5987.33,
+  "averageTotalTimeMs": 7691.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 6370,
+      "totalTimeMs": 8010,
+      "result": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}}],\"next\":{\"tip\":\"Click Buy Now, then verify quantity ${args.buy_quantity} on checkout.\"}}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 196,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}}],\"next\":{\"tip\":\"Click Buy Now, then verify quantity ${args.buy_quantity} on checkout.\"}}"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4673,
+      "totalTimeMs": 6906,
+      "result": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"mark quantity step working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":2}}],\"next\":{\"tip\":\"Verify quantity shows 3, then submit Buy Now as a single action.\"}}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 334,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"mark quantity step working\",\"risk\":\"l…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6919,
+      "totalTimeMs": 8159,
+      "result": "{\"a\":[{\"intent\":\"set quantity to $args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"},\"cp\":[2]}],\"next\":{\"tip\":\"Quantity should show ${args.buy_quantity}; click Buy Now next as isolated submit action.\"}}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 222,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to $args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"},\"cp\":[2]}],\"next\":{\"tip\":\"Quantity should show ${args.buy_quantity}; click Buy Now next as iso…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 80
+}

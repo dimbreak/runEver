@@ -1,0 +1,44 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "totalScore": 14,
+  "adjustedTotalScore": 14,
+  "scoreRate": 93.33,
+  "adjustedScoreRate": 93.33,
+  "averageScore": 4.67,
+  "averageFirstTokenMs": 9432.33,
+  "averageTotalTimeMs": 11018.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 7184,
+      "totalTimeMs": 7800,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"open calendar to set earliest delivery date\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form\",\n          \"argValHint\": \"po-date: 25 Feb 2026; remarks: We are not open on monday, please do not delivery on monday; note: order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; calendar month shown: 2026年2月\"\n        }\n      },\n      \"cp\": [\n        4\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 500\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar executor sets the earliest date, verify the delivery input shows the chosen date then continue to Preview Order (checkpoint 5).\"\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 14655,
+      "totalTimeMs": 16521,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add isolated calendar checkpoint for delivery date\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 4,\n        \"checkPoints\": [\n          \"Set earliest delivery date in POS create order form\"\n        ],\n        \"permitFromGoal\": \"set earliest delivery date\",\n        \"src\": \"GOAL\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"mark calendar checkpoint working and open calendar widget\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"invoke calendar helper with page context for picking earliest delivery date\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday; order takes 11 months to produce; order-total: 3530.00\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [\n        4\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar executor picks the earliest delivery date, open Preview Order and take screenshot if amount > 1000.\",\n    \"sc\": false\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6458,
+      "totalTimeMs": 8734,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set earliest delivery date\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; calendar currently shows 2026年2月 with date buttons disabled\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After the calendar executor sets the date, verify the Delivery Date input shows the chosen earliest date and continue to preview step.\"\n  }\n}",
+      "score": 4,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/reasoning-calendar.json"
+}

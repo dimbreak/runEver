@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 12,
+  "scoreRate": 80,
+  "averageScore": 4,
+  "averageFirstTokenMs": 44840.33,
+  "averageTotalTimeMs": 48020,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 42682,
+      "totalTimeMs": 46192,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set earliest delivery date on calendar\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"Click 'Preview Order' button (®aq) to proceed. If total > 1000, capture screenshot and message manager dillion for approval.\",\n    \"readFiles\": []\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 598,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set earliest delivery date on calendar\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"order takes 11 m…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 53073,
+      "totalTimeMs": 56237,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set delivery date on calendar considering 11 months lead time\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"po-date: 25 Feb 2026\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify delivery date is correctly set, then click Preview Order button.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 534,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Set delivery date on calendar considering 11 months lead time\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValH…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 38766,
+      "totalTimeMs": 41631,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date in calendar\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n        },\n        \"cp\": [4]\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify delivery date is set, then click Preview Order button.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 499,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Set earliest delivery date in calendar\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"Set earliest delivery date\", \"argValHint\": \"order takes 11 m…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 80
+}

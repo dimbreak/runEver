@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 12,
+  "scoreRate": 50,
+  "averageScore": 4,
+  "averageFirstTokenMs": 6424,
+  "averageTotalTimeMs": 10247.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 6137,
+      "totalTimeMs": 10058,
+      "result": "{\"a\":[{\"intent\":\"Add checklist items for form filling tasks\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Fill client name, email, phone in client info section\",\"Fill delivery address fields (street, city, region, postal code)\",\"Add 2 more order line items (3 total items needed)\",\"Fill order line 1: Laptop Pro qty 5, unit price $1200\",\"Fill order line 2: Desk Chair qty 1, unit price $350\",\"Fill order line 3: Keyboard qty 3, unit price $80\",\"Fill remark field with delivery restriction note\",\"Review all filled form values to verify accuracy\"],\"permitFromGoal\":\"Fill the create order form using order details\",\"src\":\"Create order form filling task\",\"taskRisk\":\"l\"}},{\"intent\":\"Fill client info: name, email, phone\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address: street, city, region, postal\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"}]},\"cp\":[1]}]}",
+      "score": 3.5,
+      "highlights": [],
+      "resultChars": 1166,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add checklist items for form filling tasks\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Fill client name, email, phone in client info section\",\"Fill delivery address fields…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 6029,
+      "totalTimeMs": 7906,
+      "result": "{\"a\":[{\"intent\":\"Add checklist items for tracking form filling progress\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Fill client name, email, and phone in Client Information section\",\"Fill delivery address fields (Street, City, Region, Postal Code)\",\"Add 3 order line items using + Add Line Item button\",\"Fill order line 1: Laptop Pro - qty 5, price $1200\",\"Fill order line 2: Desk Chair - qty 1, price $350\",\"Fill order line 3: Keyboard - qty 3, price $80\",\"Fill Remark field and verify all values in form\"],\"permitFromGoal\":\"Fill the form at ®91\",\"src\":\"Create Order form filling\",\"taskRisk\":\"m\"},\"cp\":[0]}]}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 620,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add checklist items for tracking form filling progress\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Fill client name, email, and phone in Client Information section\",\"Fill …"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 7106,
+      "totalTimeMs": 12779,
+      "result": "{\"a\":[{\"intent\":\"Add checklist checkpoints for form filling tasks\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"permitFromGoal\":\"Fill the create order form\",\"src\":\"Fill create order form with client info, address, order lines, and remark\",\"taskRisk\":\"l\",\"checkPoints\":[\"Fill client name, email, phone fields in form\",\"Fill delivery address fields (street, city, region, postal code)\",\"Add sufficient order line items (3 total)\",\"Fill order lines with products, qty, unit price from order_form.pdf\",\"Fill remark field and review all filled values\"]}},{\"intent\":\"Fill client name, email, phone in form\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"}]},\"cp\":[1]},{\"intent\":\"Add 2 more line items for total of 3 items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®87\",\"argKeys\":[]},\"repeat\":2},\"cp\":[2]},{\"intent\":\"Fill first order line - Laptop Pro qty 5\",\"risk\":\"m\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Laptop Pro - $1200\"}},{\"intent\":\"Fill first line qty 5 and unit price 1200\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"®8i\",\"v\":\"5\"},{\"f\":\"®8e\",\"v\":\"1200\"}]}}],\"next\":{\"tip\":\"First line item (Laptop Pro) qty=5, price=$1200 filled. Need to fill 2nd line (Desk Chair qty 1) and 3rd line (Keyboard qty 3), then fill remark and review all values.\"}}",
+      "score": 5.5,
+      "highlights": [],
+      "resultChars": 1628,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add checklist checkpoints for form filling tasks\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"permitFromGoal\":\"Fill the create order form\",\"src\":\"Fill create order form with client info, …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/minimax-m2.7/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 12,
+  "adjustedScoreRate": 50
+}

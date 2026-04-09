@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 17,
+  "scoreRate": 80.95,
+  "averageScore": 5.67,
+  "averageFirstTokenMs": 7489,
+  "averageTotalTimeMs": 12791.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 10695,
+      "totalTimeMs": 17449,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill email field with pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"fill password field with P@ssword321\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"click Next button to submit login form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      }\n    },\n    {\n      \"intent\": \"add checklist for login to email\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email account\",\n          \"read new order email\",\n          \"get order detail from email\",\n          \"go to pos system\",\n          \"login to pos account\",\n          \"fill create order form with detail from email\",\n          \"set earliest delivery date\",\n          \"preview order\",\n          \"check if order amount > 1000\",\n          \"if amount > 1000: cap screenshot\",\n          \"if amount > 1000: go to messager\",\n          \"if amount > 1000: send order file/detail & screenshot to manager dillion\",\n          \"if amount > 1000: seek manager dillion's approve\",\n          \"if amount > 1000: do what manager advise\",\n          \"save order\",\n          \"download invoice from order list\",\n          \"go to email\",\n          \"reply client with order id, detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"breakdown from GOAL\",\n        \"taskRisk\": \"h\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"login form submitted, wait for page to load and check if login successful, then look for new order email\"\n  }\n}",
+      "score": 7,
+      "highlights": [],
+      "resultChars": 1788,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"fill email field with pikachu@pokemon.com\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®2\", \"v\": \"pikachu@pokemon.com\" } }, { \"intent\": \"fill password field with P@ssword321\",…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8131,
+      "totalTimeMs": 10627,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill email field with pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"fill password field with P@ssword321\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"submit login form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"login submitted, wait for email inbox to load and look for new order email\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 654,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"fill email field with pikachu@pokemon.com\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®2\", \"v\": \"pikachu@pokemon.com\" } }, { \"intent\": \"fill password field with P@ssword321\",…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3641,
+      "totalTimeMs": 10299,
+      "result": "{\"a\":[{\"intent\":\"Add checklist for full workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com / P@ssword321\",\"Read new order email and get order details\",\"Open POS system in new tab\",\"Login to POS with pikachu@pokemon.com / P@ssword321\",\"Fill create order form with order details from email\",\"Set earliest delivery date\",\"Preview order and check if amount > 1000\",\"If amount > 1000: capture screenshot\",\"If amount > 1000: go to messager and send order detail & screenshot to manager dillion seeking approval\",\"Follow dillion's advice if any\",\"Save the order\",\"Download invoice from order list\",\"Go to email and reply client with order id, detail & invoice\"],\"permitFromGoal\":\"do what you can what you want\",\"src\":\"goal breakdown\",\"taskRisk\":\"h\"}},{\"intent\":\"Fill email field with pikachu@pokemon.com\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[0]},{\"intent\":\"Fill password field\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"${args.new_arg_1770940290032}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Verify email/password filled, then click Next to submit login form.\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1137,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add checklist for full workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com / P@ssword321\",\"Read new order email and get order deta…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/anthropic-claude-opus-4-6/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 25.5,
+  "adjustedScoreRate": 80.95
+}

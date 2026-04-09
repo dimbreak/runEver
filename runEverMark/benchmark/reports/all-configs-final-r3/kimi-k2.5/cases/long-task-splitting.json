@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 18,
+  "scoreRate": 85.71,
+  "averageScore": 6,
+  "averageFirstTokenMs": 20695.33,
+  "averageTotalTimeMs": 28417,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 24812,
+      "totalTimeMs": 33253,
+      "result": " {\"a\": [{\"intent\": \"Initialize checklist for email order processing workflow\", \"risk\": \"l\", \"action\": {\"k\": \"addNewTask\", \"afterCpId\": 0, \"checkPoints\": [\"Login to email platform with pikachu@pokemon.com\", \"Read new order email and extract order details\", \"Navigate to POS system login\", \"Fill create order form with email details and set earliest delivery date\", \"Preview order and check if amount > 1000\", \"Save order and download invoice\", \"Reply to client email with ID, details and invoice\"], \"permitFromGoal\": \"do what you can what you want\", \"src\": \"Complex multi-step order processing workflow\", \"taskRisk\": \"l\"}}, {\"intent\": \"Fill email field with pikachu@pokemon.com\", \"risk\": \"m\", \"action\": {\"k\": \"input\", \"q\": {\"id\": \"®2\", \"argKeys\": []}, \"v\": \"pikachu@pokemon.com\"}, \"cp\": [0]}, {\"intent\": \"Fill password field with P@ssword321\", \"risk\": \"m\", \"action\": {\"k\": \"input\", \"q\": {\"id\": \"®5\", \"argKeys\": []}, \"v\": \"P@ssword321\"}, \"cp\": [0]}, {\"intent\": \"Click Next button to submit login\", \"risk\": \"m\", \"action\": {\"k\": \"mouse\", \"a\": \"click\", \"q\": {\"id\": \"®c\", \"argKeys\": []}}, \"post\": {\"t\": \"net\", \"a\": \"idle2\"}, \"cp\": [0]}], \"next\": {\"tip\": \"Logging into email, wait for inbox to load then look for new order emails\"}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1225,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\": [{\"intent\": \"Initialize checklist for email order processing workflow\", \"risk\": \"l\", \"action\": {\"k\": \"addNewTask\", \"afterCpId\": 0, \"checkPoints\": [\"Login to email platform with pikachu@pokemon.…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 32012,
+      "totalTimeMs": 42511,
+      "result": " {\n  \"a\": [\n    {\n      \"intent\": \"Add workflow checkpoints\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Login to email platform with pikachu@pokemon.com\",\n          \"Read new order email and extract order details\",\n          \"Navigate to POS platform\",\n          \"Fill create order form with order details and set earliest delivery date\",\n          \"Preview order and check if amount > 1000\",\n          \"If amount > 1000, capture screenshot and seek manager Dillion approval via messager\",\n          \"Save order in POS system\",\n          \"Download invoice from order list\",\n          \"Reply to client email with order id, details and invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"initial task breakdown\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"Fill email field with pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\"id\": \"®2\", \"argKeys\": []},\n        \"v\": \"pikachu@pokemon.com\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"Fill password field with provided password\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\"id\": \"®5\", \"argKeys\": []},\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"Click Next button to submit login form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\"id\": \"®c\", \"argKeys\": []}\n      },\n      \"post\": {\"t\": \"net\", \"a\": \"idle2\"}\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Login submitted, wait for email inbox to load and identify new order emails\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1650,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add workflow checkpoints\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email platform with pikachu@pokemon.com\", \"Read new order email and extract ord…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5262,
+      "totalTimeMs": 9487,
+      "result": " {\"a\":[{\"intent\":\"Add checklist for email login and order processing workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email platform with pikachu@pokemon.com\",\"Read new order email and extract order details\",\"Navigate to POS system and login\",\"Fill create order form with details from email\",\"Set earliest delivery date in order form\",\"Preview order and check if amount > 1000\",\"If order amount > 1000, get manager Dillon's approval via messenger\",\"Save order in POS system\",\"Download invoice from order list\",\"Reply to client email with order ID, details and invoice\"],\"permitFromGoal\":\"do what you can what you want\",\"src\":\"workflow breakdown\",\"taskRisk\":\"m\"}},{\"intent\":\"Fill email field with pikachu@pokemon.com\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"}},{\"intent\":\"Fill password field with P@ssword321\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"}},{\"intent\":\"Click Next button to login\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®c\"},\"post\":{\"t\":\"net\",\"a\":\"idle2\"}}]}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1049,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add checklist for email login and order processing workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email platform with pikachu@pokemon.com\",\"Read new order e…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/kimi-k2.5/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 27,
+  "adjustedScoreRate": 85.71
+}

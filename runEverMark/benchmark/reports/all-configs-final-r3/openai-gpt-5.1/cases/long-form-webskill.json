@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 24,
+  "scoreRate": 100,
+  "averageScore": 8,
+  "averageFirstTokenMs": 9187.33,
+  "averageTotalTimeMs": 10975.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 11638,
+      "totalTimeMs": 13724,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Use web skill to prepare order from arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check that all fields and line items match the order details, then click Preview Order if correct.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1110,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Use web skill to prepare order from arguments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName\": \"windo…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 9408,
+      "totalTimeMs": 11120,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepare order via webSkill using arguments and computed delivery date\",\n      \"risk\": \"m\",\n      \"cp\": [0],\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200.00},{\\\"productId\\\":\\\"sku-chair\\\",\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350.00},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80.00}]}\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check that the form fields, line items, totals, and delivery date now match the provided order details, then verify checklist item 0 and proceed to checklist item 1.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1194,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"prepare order via webSkill using arguments and computed delivery date\", \"risk\": \"m\", \"cp\": [0], \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotop…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6516,
+      "totalTimeMs": 8083,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepare order via webSkill using arguments and computed delivery date\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-10\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check that all form fields, line items, and total match the arguments, then use Preview Order.\",\n    \"readFiles\": []\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1151,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"prepare order via webSkill using arguments and computed delivery date\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKI…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.1/cases/long-form-webskill.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 24,
+  "adjustedScoreRate": 100
+}

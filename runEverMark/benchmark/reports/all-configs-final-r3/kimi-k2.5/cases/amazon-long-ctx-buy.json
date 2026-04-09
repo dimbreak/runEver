@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 82957.33,
+  "averageTotalTimeMs": 88185,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 140021,
+      "totalTimeMs": 143858,
+      "result": " {\"a\": [{\"intent\": \"set quantity to ${args.buy_quantity}\", \"risk\": \"l\", \"action\": {\"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\"}, \"cp\": [2]}, {\"intent\": \"click Buy Now button\", \"risk\": \"h\", \"action\": {\"k\": \"mouse\", \"a\": \"click\", \"q\": \"®el\"}, \"post\": {\"t\": \"net\", \"a\": \"idle2\"}, \"cp\": [2]}], \"next\": {\"tip\": \"verify checkout page loaded to continue confirm order\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 373,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\": [{\"intent\": \"set quantity to ${args.buy_quantity}\", \"risk\": \"l\", \"action\": {\"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\"}, \"cp\": [2]}, {\"intent\": \"click Buy Now button\", \"risk\": \"h\", \"…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 87981,
+      "totalTimeMs": 93827,
+      "result": " {\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"},\"cp\":[2]},{\"intent\":\"click Buy Now button to proceed to checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\",\"argKeys\":[]}},\"cp\":[2]}],\"next\":{\"tip\":\"quantity set to 3 and Buy Now clicked, should redirect to checkout page, verify cart has correct item and proceed with default payment\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 466,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"},\"cp\":[2]},{\"intent\":\"click Buy Now butt…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 20870,
+      "totalTimeMs": 26870,
+      "result": " {\n  \"a\": [\n    {\n      \"intent\": \"select quantity 3 in one-time purchase dropdown\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      }\n    },\n    {\n      \"intent\": \"click Buy Now button to proceed to checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      }\n    }\n  ]\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 450,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"select quantity 3 in one-time purchase dropdown\", \"risk\": \"l\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" } }, { \"intent\": \"click Buy Now button to proceed to checkout\", \"ri…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/kimi-k2.5/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

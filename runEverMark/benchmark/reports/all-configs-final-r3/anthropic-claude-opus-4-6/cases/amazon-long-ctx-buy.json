@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 10034,
+  "averageTotalTimeMs": 14823,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 10581,
+      "totalTimeMs": 15687,
+      "result": "{\"a\":[{\"intent\":\"Set quantity to 3 from args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"}},{\"intent\":\"Click Buy Now button\",\"risk\":\"h\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\",\"argKeys\":[]}},\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":8000},\"cp\":[2]}],\"next\":{\"tip\":\"Quantity set to 3 and Buy Now clicked. Verify checkout page loaded, then proceed to check out with default payment & address.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 469,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set quantity to 3 from args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"}},{\"intent\":\"Click Buy Now button\",\"…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 13232,
+      "totalTimeMs": 17289,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"select quantity 3 from dropdown using args.buy_quantity\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\"buy_quantity\"]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now button\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        }\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"verify quantity selected and buy now clicked\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 2,\n        \"verifiedProve\": {\n          \"domId\": \"®el\",\n          \"proveOfWork\": \"selected quantity 3 and clicked Buy Now button to proceed to checkout\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"proceeding to checkout page, verify default payment and address then complete checkout\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 1009,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"select quantity 3 from dropdown using args.buy_quantity\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": { \"id\": \"®d5\", \"argKeys\": [\"buy_quantity\"] }, \"v\": \"${args.buy_quantity}\" }…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 6289,
+      "totalTimeMs": 11493,
+      "result": "{\"a\":[{\"intent\":\"Set quantity to 3 from args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"}},{\"intent\":\"Click Buy Now button\",\"risk\":\"h\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®el\",\"argKeys\":[]}},\"cp\":[2],\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":10000}}],\"next\":{\"tip\":\"Verify checkout page loaded. Complete express checkout with default payment & address. Mark cp 2 verified if on checkout page, then proceed with cp 3.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 495,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set quantity to 3 from args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"${args.buy_quantity}\"}},{\"intent\":\"Click Buy Now button\",\"…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/anthropic-claude-opus-4-6/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

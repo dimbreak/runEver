@@ -1,0 +1,60 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 11.4,
+  "scoreRate": 47.5,
+  "averageScore": 3.8,
+  "averageFirstTokenMs": 9645.33,
+  "averageTotalTimeMs": 14230.67,
+  "highlights": [
+    "missing prepareOrder webskill call",
+    "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 11000,
+      "totalTimeMs": 17053,
+      "result": "{\"a\":[{\"intent\":\"Prepare order with all details from PDF using posOrderPrep webSkill\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Complete the create order form\",\"Verify the inputs\"],\"permitFromGoal\":\"Create order using details in arguments extracted from order_form.pdf: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark.\\ndelivery date is up to the production lead time shown on the page & client instruction.\",\"src\":\"webSkill posOrderPrep\",\"taskRisk\":\"m\"}},{\"intent\":\"Call posOrderPrep to fill entire order form at once\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"e\":\"The webSkill posOrderPrep is the efficient one-shot way to fill the order form with all details from the PDF arguments. The delivery date is calculated as 11 months from today (2026-04-08) = 2027-03-08, but since the client says not to deliver on Monday, and 2027-03-08 is a Sunday, I selected 2027-03-09 (Monday) instead. After the webSkill completes, the page should be ready for preview.\"}",
+      "score": 3,
+      "highlights": [
+        "missing prepareOrder webskill call"
+      ],
+      "resultChars": 1684,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Prepare order with all details from PDF using posOrderPrep webSkill\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Complete the create order form\",\"Verify the inputs\"],\"permi…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 7281,
+      "totalTimeMs": 12109,
+      "result": "{\"a\":[{\"intent\":\"Use posOrderPrep webSkill to fill order form with all details from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"sc\":false,\"tip\":\"After form is filled, click Preview Order to verify all details before submission\"}}\n\n\n<functioncall>\n{\n  \"@type\": \"LlmWireResult\",\n  \"a\": [\n    {\n      \"intent\": \"Use posOrderPrep webSkill to fill order form with all details from arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"After form is filled, click Preview Order to verify all details before submission\"\n  }\n}\n</functioncall>",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 1978,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Use posOrderPrep webSkill to fill order form with all details from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_ski…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 10655,
+      "totalTimeMs": 13530,
+      "result": "{\"a\":[{\"intent\":\"Use posorderprep webSkill to fill entire order form with PDF details\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-08\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"}}],\"next\":{\"tip\":\"After prepareOrder completes, verify form fields are filled correctly then click Preview Order to proceed\"}}\n",
+      "score": 7.4,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ],
+      "resultChars": 889,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Use posorderprep webSkill to fill entire order form with PDF details\",\"risk\":\"l\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posO…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/minimax-m2.7/cases/long-form-webskill.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 11.4,
+  "adjustedScoreRate": 47.5
+}

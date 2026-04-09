@@ -1,0 +1,57 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 16,
+  "scoreRate": 88.89,
+  "averageScore": 5.33,
+  "averageFirstTokenMs": 7118.67,
+  "averageTotalTimeMs": 9352.67,
+  "highlights": [
+    "wishlist item count or stock ids mismatch"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3059,
+      "totalTimeMs": 5701,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add selected wide-angle lens options to the wishlist with comments explaining recommendations.\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Black / v2: Extremely compact, stealthy, iconic vintage aesthetic. Perfect match for M6.\\\" },{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver / v2: Classic silver chrome, compact, unique imaging signature reminiscent of analog photography.\\\" }],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\"\n      },\n      \"cp\": [\n        3\n      ]\n    },\n    {\n      \"intent\": \"Mark the wishlisting of wide-angle lenses as verified.\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 3,\n        \"verifiedProve\": {\n          \"domId\": \"®3z\",\n          \"proveOfWork\": \"Added selected wide-angle lenses to wishlist with recommendations.\"\n        }\n      }\n    },\n    {\n      \"intent\": \"Ask the user which items to buy from the wish list options.\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"botherUser\",\n        \"warn\": \"I have added Leica M6 camera and wide-angle lens options to your wishlist. Please let me know which camera and lens you would like to purchase. Once selected, I will proceed with preparing the checkout with your provided details (1 Kirn Rd, London, W13 0UB, UK; Phone: 123456).\",\n        \"rc\": \"Which camera and lens combination do you want to buy?\"\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After the user replies, I will use `prepareOrder` to complete the checkout process.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1946,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add selected wide-angle lens options to the wishlist with comments explaining recommendations.\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.h…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 13441,
+      "totalTimeMs": 15364,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add wide-angle lenses to wishlist with recommendations\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Compact wide-angle lens with vintage aesthetic and unique vignetting, ideal for street photography.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Excellent modern interpretation of the classic 9-element design with improved rendering for digital sensors.\\\"}]}\"\n      },\n      \"cp\": [3]\n    },\n    {\n      \"intent\": \"Mark checkpoint #3 as working\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 3\n      }\n    },\n    {\n      \"intent\": \"Ask user for purchase preference\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"botherUser\",\n        \"warn\": \"I have added Leica M6 camera options and wide-angle lens options to your wishlist. Please let me know which camera and which lens you would like to purchase, and I will proceed with the checkout.\",\n        \"rc\": \"Which camera and lens combination do you prefer?\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"I have added the selected lenses to your wishlist. Please provide your choice of camera and lens so I can prepare the order.\"\n  }\n}",
+      "score": 4,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ],
+      "resultChars": 1461,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add wide-angle lenses to wishlist with recommendations\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\", \"fnName…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 4856,
+      "totalTimeMs": 6993,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add selected wide-angle lenses to wishlist with recommendations\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\": [{\\\"stockId\\\": \\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\", \\\"comment\\\": \\\"Leica Summaron-M 28mm F5.6: Extremely compact, iconic vintage aesthetic, perfect for street photography.\\\" }, {\\\"stockId\\\": \\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\", \\\"comment\\\": \\\"Light Lens Lab 28mm F2.8: A modern homage to the classic 9-element design, excellent rendering and performance.\\\" }], \\\"navigateToWishlist\\\": true}\"\n      }\n    },\n    {\n      \"intent\": \"Ask user for selection to proceed with checkout\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"botherUser\",\n        \"warn\": \"I have added Leica M6 camera options and wide-angle lens options to your wishlist. Please review them and let me know which camera and which lens you would like to purchase so I can proceed with the checkout using the provided address.\",\n        \"rc\": \"Which camera and lens would you like to buy?\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"I have added the lens options to your wishlist. Awaiting user selection to prepare the order.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1347,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add selected wide-angle lenses to wishlist with recommendations\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\"…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-flash-lite-preview/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 16,
+  "adjustedScoreRate": 88.89
+}

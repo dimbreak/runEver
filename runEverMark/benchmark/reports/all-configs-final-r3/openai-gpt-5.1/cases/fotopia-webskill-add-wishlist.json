@@ -1,0 +1,53 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "totalScore": 18,
+  "scoreRate": 100,
+  "averageScore": 6,
+  "averageFirstTokenMs": 7643.67,
+  "averageTotalTimeMs": 11147,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 8927,
+      "totalTimeMs": 11895,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"mark checklist #3 as working before adding lenses\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 3\n      },\n      \"cp\": [3]\n    },\n    {\n      \"intent\": \"add a few non-ASPH wide angle lenses to wishlist with comments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited to 500 pieces, compact classic 28mm with vintage rendering and full packing; great non-ASPH wide for Leica M6.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Fast F2.8 28mm with nine-element classic rendering, modern optical improvements and full kit; versatile non-ASPH wide angle for Leica M bodies.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Summaron-M 28mm reissue with compact size and analog-like character; more affordable non-ASPH wide ideal as an everyday companion to a Leica M6.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Confirm these three lenses now appear on the wishlist with their comments, then mark checkpoint #3 verified and proceed to ask the user which camera and lens to buy for checkout prep.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1446,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"mark checklist #3 as working before adding lenses\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 3 }, \"cp\": [3] }, { \"intent\": \"add a few non-ASPH wide angl…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 6818,
+      "totalTimeMs": 11697,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add selected wide-angle lenses to wishlist with comments\",\n      \"risk\": \"m\",\n      \"cp\": [3],\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 matte black: compact classic 28mm with vintage, non-ASPH rendering; great discreet street lens to pair with M6.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 silver: same classic look with more affordable price; excellent everyday wide for film with strong character.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm F2.8 9-element: faster aperture and classic 9-element look, good low-light and flexible wide option for M6.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Confirm the wishlist now shows the added lenses with comments, then mark checkpoint 3 verified and proceed to ask the user which combo to buy.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1184,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add selected wide-angle lenses to wishlist with comments\", \"risk\": \"m\", \"cp\": [3], \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 7186,
+      "totalTimeMs": 9849,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add non-ASPH wide lenses with comments via webSkill\",\n      \"risk\": \"l\",\n      \"cp\": [3],\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Compact 28mm Leica Summaron-M in limited matte black paint; classic low-contrast rendering and tiny size make it an excellent discreet wide-angle for M6 street use.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Silver Leica Summaron-M 28mm f/5.6 with classic vintage look; very compact and great for daylight shooting with distinctive vignette and character on film.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm f/2.8 9‑element offers a faster aperture than the Summaron with vintage-inspired rendering and modern coatings, giving more flexibility in low light.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Confirm the three wide lenses now appear in the wish list, then mark checkpoint 3 verified and ask the user which M6 + lens combo to buy before preparing checkout.\",\n    \"readFiles\": []\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1308,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add non-ASPH wide lenses with comments via webSkill\", \"risk\": \"l\", \"cp\": [3], \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.1/cases/fotopia-webskill-add-wishlist.json",
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "adjustedTotalScore": 18,
+  "adjustedScoreRate": 100
+}

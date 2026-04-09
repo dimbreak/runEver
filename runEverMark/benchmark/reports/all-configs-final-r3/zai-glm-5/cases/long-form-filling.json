@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 14,
+  "scoreRate": 58.33,
+  "averageScore": 4.67,
+  "averageFirstTokenMs": 58842.33,
+  "averageTotalTimeMs": 65249.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 69749,
+      "totalTimeMs": 74441,
+      "result": "Looking at the task, I need to fill a create order form using data from arguments (which already contains extracted order_form.pdf data).\n\nLet me analyze the current state:\n- Form has empty fields for client info, delivery address, and remark\n- There's 1 order line item visible with empty combobox and default qty=1\n- Need 3 items total (Laptop Pro, Desk Chair, Keyboard)\n\nI'll start by filling all text fields in one fillForm action, then handle the combobox for the first line, add two more line items, and continue from there.\n\n```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Fill client info, delivery address, and remark using fillForm\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"®4r\", \"v\": \"Northwind Travel\"},\n          {\"f\": \"®4u\", \"v\": \"contact@client.com\"},\n          {\"f\": \"®4x\", \"v\": \"555-0100\"},\n          {\"f\": \"®52\", \"v\": \"123 Client St\"},\n          {\"f\": \"®55\", \"v\": \"Business City\"},\n          {\"f\": \"®58\", \"v\": \"ST\"},\n          {\"f\": \"®5c\", \"v\": \"12345\"},\n          {\"f\": \"®8u\", \"v\": \"We are not open on monday, please do not delivery on monday\"}\n        ]\n      },\n      \"cp\": [0, 1, 4]\n    },\n    {\n      \"intent\": \"Set first line product combobox to Laptop Pro\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"combobox\",\n        \"q\": {\"id\": \"®8a\", \"argKeys\": [\"items.0.name\"]},\n        \"v\": \"Laptop Pro\"\n      },\n      \"cp\": [3]\n    },\n    {\n      \"intent\": \"Fill first line quantity to 5\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®8i\",\n        \"v\": \"5\"\n      }\n    },\n    {\n      \"intent\": \"Add second line item for Desk Chair\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Added second line item. Continue with: click Add Line Item again for third product, then set combobox and qty for remaining lines (Desk Chair qty=1, Keyboard qty=3), then review all filled values.\"\n  }\n}\n```",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 2025,
+      "resultFormat": "embedded_json",
+      "resultPreview": "Looking at the task, I need to fill a create order form using data from arguments (which already contains extracted order_form.pdf data). Let me analyze the current state: - Form has empty fields for…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 88613,
+      "totalTimeMs": 97141,
+      "result": "{\"a\":[{\"intent\":\"Fill client name, email, phone from args\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields (Street, City, Region, Postal Code) from args\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"}]},\"cp\":[1]},{\"intent\":\"Click + Add Line Item button to prepare first order line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Select 'Laptop Pro' from product combobox for first line item\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Laptop Pro\"},\"cp\":[3]},{\"intent\":\"Fill qty and unit_price for first line item (Laptop Pro)\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"qty\",\"v\":\"${args.items.0.qty}\"},{\"f\":\"unit_price\",\"v\":\"${args.items.0.unit_price}\"}]}},{\"intent\":\"Click + Add Line Item button to prepare second order line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Select 'Desk Chair' from product combobox for second line item\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Desk Chair\"},\"cp\":[3]},{\"intent\":\"Fill qty and unit_price for second line item (Desk Chair)\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"qty\",\"v\":\"${args.items.1.qty}\"},{\"f\":\"unit_price\",\"v\":\"${args.items.1.unit_price}\"}]}},{\"intent\":\"Click + Add Line Item button to prepare third order line\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\"}},{\"intent\":\"Select 'Keyboard' from product combobox for third line item\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"Keyboard\"},\"cp\":[3]},{\"intent\":\"Fill qty and unit_price for third line item (Keyboard)\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"qty\",\"v\":\"${args.items.2.qty}\"},{\"f\":\"unit_price\",\"v\":\"${args.items.2.unit_price}\"}]}},{\"intent\":\"Fill remark with args.remark\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"remark\",\"v\":\"${args.remark}\"}]}}],\"next\":{\"tip\":\"Review all filled values in form at ®91 to verify client info, address, 3 order lines (Laptop Pro, Desk Chair, Keyboard), and remark match args. Mark checklist items 0,1,2,3,4 as verified if correct.\"}}",
+      "score": 6.5,
+      "highlights": [],
+      "resultChars": 2375,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Fill client name, email, phone from args\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 18165,
+      "totalTimeMs": 24167,
+      "result": "{\"a\":[{\"intent\":\"Fill client name, email, phone using args values\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"}]},\"cp\":[0]},{\"intent\":\"Fill delivery address fields (Street, City, Region, Postal Code) using args values\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"}]},\"cp\":[1]},{\"intent\":\"Click + Add Line Item twice to prepare 3 order line rows for 3 items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®87\"},\"repeat\":2},\"cp\":[2]},{\"intent\":\"Set Product combobox to first item Laptop Pro from args\",\"risk\":\"l\",\"action\":{\"k\":\"combobox\",\"q\":\"®8a\",\"v\":\"${args.items.0.name}\"},\"cp\":[3]},{\"intent\":\"Set Delivery Date calendar - note delivery date info from order form\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®83\",\"ctx\":{\"goalHint\":\"Delivery Date - order takes 11 months to produce\",\"argValHint\":\"Delivery date from order form\",\"pageHint\":\"Calendar shows February 2026. Order takes 11 months to produce.\"}}}],\"next\":{\"tip\":\"Filled client info and address. Added 2 line items. Set first product to Laptop Pro. Need to fill qty, unit_price for item 0, then add products for items 1 and 2 (Desk Chair, Keyboard), fill remark, and review all values.\"}}",
+      "score": 6.5,
+      "highlights": [],
+      "resultChars": 1450,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Fill client name, email, phone using args values\",\"risk\":\"l\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.cli…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 14,
+  "adjustedScoreRate": 58.33
+}

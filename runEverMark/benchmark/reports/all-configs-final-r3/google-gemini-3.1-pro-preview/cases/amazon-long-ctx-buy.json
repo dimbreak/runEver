@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 7633.33,
+  "averageTotalTimeMs": 9240.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 9086,
+      "totalTimeMs": 10185,
+      "result": "{\"a\":[{\"intent\":\"select quantity 3 for 'House Blend Coffee Beans'\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"click 'Buy Now' to proceed to checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"},\"cp\":[2]}],\"next\":{\"tip\":\"Verify the quantity in the checkout page and proceed with the default payment and address.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 355,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"select quantity 3 for 'House Blend Coffee Beans'\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"click 'Buy Now' to proceed to checkout\",\"risk\":\"m\",\"action\"…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 10765,
+      "totalTimeMs": 12302,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"Select quantity ${args.buy_quantity} from the dropdown\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"input\",\n    \"q\": \"®d5\",\n    \"v\": \"${args.buy_quantity}\",\n    \"argKeys\": [\n     \"buy_quantity\"\n    ]\n   },\n   \"cp\": [\n    2\n   ]\n  },\n  {\n   \"intent\": \"Click the Buy Now button to proceed to checkout\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"mouse\",\n    \"a\": \"click\",\n    \"q\": \"®el\"\n   },\n   \"cp\": [\n    2\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"Wait for the checkout page to load, then verify the default address and payment method to complete the express checkout.\"\n }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 592,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Select quantity ${args.buy_quantity} from the dropdown\", \"risk\": \"l\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\", \"argKeys\": [ \"buy_quantity\" ] }, \"cp\": […"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3049,
+      "totalTimeMs": 5234,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"select quantity ${args.buy_quantity} from the dropdown\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"${args.buy_quantity}\",\n        \"argKeys\": [\n          \"buy_quantity\"\n        ]\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"click 'Buy Now' to proceed to checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [\n        2\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify quantity is ${args.buy_quantity} and click Buy Now to reach checkout page.\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 639,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"select quantity ${args.buy_quantity} from the dropdown\", \"risk\": \"l\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\", \"argKeys\": [ \"buy_quantity\" ] }, \"cp\": […"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-pro-preview/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

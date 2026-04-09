@@ -1,0 +1,44 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "totalScore": 24,
+  "adjustedTotalScore": 24,
+  "scoreRate": 100,
+  "adjustedScoreRate": 100,
+  "averageScore": 8,
+  "averageFirstTokenMs": 8905.33,
+  "averageTotalTimeMs": 10866.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 13230,
+      "totalTimeMs": 14331,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepareOrder using args (clientName, clientEmail, clientPhone, address, city, region, postal, remark, items.*)\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args.items.0.name}\\\",\\\"quantity\\\":${args.items.0.qty},\\\"unitPrice\\\":${args.items.0.unit_price}},{\\\"productName\\\":\\\"${args.items.1.name}\\\",\\\"quantity\\\":${args.items.1.qty},\\\"unitPrice\\\":${args.items.1.unit_price}},{\\\"productName\\\":\\\"${args.items.2.name}\\\",\\\"quantity\\\":${args.items.2.qty},\\\"unitPrice\\\":${args.items.2.unit_price}}]}\"\n      },\n      \"cp\": [\n        0\n      ],\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 5000\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Review the populated form (client, address, 3 line items, totals) and then verify inputs (check point 1). If deliveryDate needs weekday adjustment, change before preview.\",\n    \"sc\": false\n  }\n}",
+      "score": 8,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 5454,
+      "totalTimeMs": 8449,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call posOrderPrep.prepareOrder with order data\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200.00},{\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350.00},{\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80.00}]}\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 3000\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After prepareOrder runs, verify form fields and totals on the page (check checklist item 1).\"\n  }\n}",
+      "score": 8,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 8032,
+      "totalTimeMs": 9819,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepare order with args via webSkill\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200.00},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350.00},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80.00}]}\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\",\n        \"to\": 5000\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Review the populated form on page (client fields, 3 line items, totals, delivery date) and then click Preview Order to continue.\",\n    \"sc\": false\n  }\n}",
+      "score": 8,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/long-form-webskill.json"
+}

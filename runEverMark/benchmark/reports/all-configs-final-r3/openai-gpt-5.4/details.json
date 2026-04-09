@@ -1,0 +1,396 @@
+{
+  "apiId": "openai-gpt-5.4",
+  "provider": "openai",
+  "maxScore": 129,
+  "scoreRate": 93.57,
+  "totalScore": 120.7,
+  "averageScore": 5.75,
+  "averageFirstTokenMs": 6366.47,
+  "averageTotalTimeMs": 11063.05,
+  "caseSummaries": [
+    {
+      "caseId": "amazon-long-ctx-buy",
+      "caseName": "Amazon Long-CTX Buy",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 12,
+      "scoreRate": 80,
+      "averageScore": 4,
+      "averageFirstTokenMs": 5987.33,
+      "averageTotalTimeMs": 7691.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 6370,
+          "totalTimeMs": 8010,
+          "result": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}}],\"next\":{\"tip\":\"Click Buy Now, then verify quantity ${args.buy_quantity} on checkout.\"}}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 196,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}}],\"next\":{\"tip\":\"Click Buy Now, then verify quantity ${args.buy_quantity} on checkout.\"}}"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 4673,
+          "totalTimeMs": 6906,
+          "result": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"mark quantity step working\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":2}}],\"next\":{\"tip\":\"Verify quantity shows 3, then submit Buy Now as a single action.\"}}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 334,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"set quantity to ${args.buy_quantity}\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®d5\",\"argKeys\":[\"buy_quantity\"]},\"v\":\"3\"},\"cp\":[2]},{\"intent\":\"mark quantity step working\",\"risk\":\"l…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 6919,
+          "totalTimeMs": 8159,
+          "result": "{\"a\":[{\"intent\":\"set quantity to $args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"},\"cp\":[2]}],\"next\":{\"tip\":\"Quantity should show ${args.buy_quantity}; click Buy Now next as isolated submit action.\"}}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 222,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"set quantity to $args.buy_quantity\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"},\"cp\":[2]}],\"next\":{\"tip\":\"Quantity should show ${args.buy_quantity}; click Buy Now next as iso…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/amazon-long-ctx-buy.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 12,
+      "adjustedScoreRate": 80
+    },
+    {
+      "caseId": "fotopia-webskill-add-wishlist",
+      "caseName": "Fotopia WebSkill Add Wishlist",
+      "runCount": 3,
+      "singleRunMaxScore": 6,
+      "maxScore": 18,
+      "totalScore": 18,
+      "scoreRate": 100,
+      "averageScore": 6,
+      "averageFirstTokenMs": 4741.33,
+      "averageTotalTimeMs": 12032.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 5082,
+          "totalTimeMs": 12208,
+          "result": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist\",\"risk\":\"m\",\"cp\":[3],\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as the most practical Leica-made no-ASPH wide-angle option: compact 28mm, in stock, and far more affordable than the limited black version.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended as a premium collectible no-ASPH Leica wide-angle: matte black limited edition Summaron-M 28mm F5.6 with classic rendering and top collector appeal.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a budget-friendly capable no-ASPH 28mm option: modern remake of the classic 9-element design in black paint, good value for shooting.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Recommended as another budget-friendly capable no-ASPH 28mm option in chrome finish, for similar performance with different styling.\\\"}],\\\"navigateToWishlist\\\":true}\"}}],\"next\":{\"tip\":\"Verify the lens items appear in wish list, then ask the user which camera and lens to buy.\"}}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1267,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"add wide-angle lens options to wishlist\",\"risk\":\"m\",\"cp\":[3],\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skill…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 4724,
+          "totalTimeMs": 13577,
+          "result": "{\"a\":[{\"intent\":\"add wide-angle lens wishlist options\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as a capable non-ASPH Leica 28mm option: genuine Leica Summaron-M 28/5.6, compact, classic rendering, brand new/open box, and far more accessible in price than the limited black paint version.\\\"},{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended if you want the top-end non-ASPH Leica option: Leica Summaron-M 28/5.6 black paint limited edition, collectible, new old stock, and strong vintage-style rendering.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a more budget-friendly non-ASPH-style wide-angle choice: Light Lens Lab 28mm F2.8 9-element in black paint, faster at f/2.8 and inspired by the classic non-ASPH 9-element design.\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"Recommended as the chrome alternative of the Light Lens Lab 28mm F2.8 9-element: same capable non-ASPH-style design, lower cost, and suitable if you prefer silver/chrome finish.\\\"}],\\\"navigateToWishlist\\\":true}\",\"cp\":[3]}}],\"next\":{\"tip\":\"Verify the lens items appear in wishlist, then ask user which camera and lens to buy.\"}}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1417,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"add wide-angle lens wishlist options\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaSto…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 4418,
+          "totalTimeMs": 10313,
+          "result": "{\"a\":[{\"intent\":\"add lens options to wishlist\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWishlist\",\"arg\":\"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Recommended as a premium non-ASPH 28mm option: classic rendering, ultra-compact, and a strong match for Leica M6 shooting if budget allows.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Recommended as a more affordable non-ASPH Leica 28mm option: capable wide-angle coverage, compact size, and easier entry price for pairing with an M6.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Recommended as a budget-friendly non-ASPH style 28mm option: faster f/2.8 aperture and useful wide-angle capability for practical M6 use.\\\"}],\\\"navigateToWishlist\\\":true}\"},\"cp\":[3]}],\"next\":{\"tip\":\"Verify the lens items now appear in the wish list, then ask which camera and lens to buy.\"}}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1018,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"add lens options to wishlist\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.fotopiaStore.addWi…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/fotopia-webskill-add-wishlist.json",
+      "weight": 1,
+      "adjustedMaxScore": 18,
+      "adjustedTotalScore": 18,
+      "adjustedScoreRate": 100
+    },
+    {
+      "caseId": "google-search-scam",
+      "caseName": "Google search scam",
+      "runCount": 3,
+      "singleRunMaxScore": 4,
+      "maxScore": 12,
+      "totalScore": 12,
+      "scoreRate": 100,
+      "averageScore": 4,
+      "averageFirstTokenMs": 9175.33,
+      "averageTotalTimeMs": 11705.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 7677,
+          "totalTimeMs": 11219,
+          "result": "{\"a\":[{\"intent\":\"verify search results shown\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"pos\":0,\"verifiedProve\":{\"domId\":\"®9\",\"proveOfWork\":\"Google results page is loaded and the search box shows 'buy iphone 17 pro max'.\"}}},{\"intent\":\"open reliable source Three result\",\"risk\":\"l\",\"action\":{\"k\":\"tab\",\"id\":-1,\"url\":\"https://www.three.co.uk\",\"noteBeforeLeave\":\"Verified the Google search results. Chose the visible Three result (www.three.co.uk) as a reliable source and opened it in a new tab to continue shopping.\"},\"cp\":[1]}],\"next\":{\"tip\":\"Check the Three page loaded, then verify checkpoint 1 if it matches the buying source.\"}}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 643,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"verify search results shown\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"pos\":0,\"verifiedProve\":{\"domId\":\"®9\",\"proveOfWork\":\"Google results page is loaded and the search box…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 9219,
+          "totalTimeMs": 11122,
+          "result": "{\"a\":[{\"intent\":\"open trusted result in new tab\",\"risk\":\"l\",\"action\":{\"k\":\"tab\",\"id\":-1,\"url\":\"https://www.three.co.uk\",\"noteBeforeLeave\":\"Google results show a trusted carrier result 'Apple iPhone 17 Pro Max - Specs, Deals & Contracts' with href www.three.co.uk; opening it in a new tab to keep the search page available.\"},\"cp\":[1]}],\"next\":{\"tip\":\"Verify the Three page loaded and matches the iPhone 17 Pro Max buying source.\"}}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 431,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"open trusted result in new tab\",\"risk\":\"l\",\"action\":{\"k\":\"tab\",\"id\":-1,\"url\":\"https://www.three.co.uk\",\"noteBeforeLeave\":\"Google results show a trusted carrier result 'Apple iPhone 1…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 10630,
+          "totalTimeMs": 12775,
+          "result": "{\"a\":[{\"intent\":\"open reliable O2 source\",\"risk\":\"l\",\"action\":{\"k\":\"tab\",\"id\":-1,\"url\":\"https://www.o2.co.uk\",\"noteBeforeLeave\":\"Google results show O2 UK as a reliable source for buying iPhone 17 Pro Max; opening it in a new tab to continue safely.\"},\"cp\":[1]}],\"next\":{\"tip\":\"Check the O2 page loaded, then verify checkpoint 1 if it matches the goal.\"}}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 355,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"open reliable O2 source\",\"risk\":\"l\",\"action\":{\"k\":\"tab\",\"id\":-1,\"url\":\"https://www.o2.co.uk\",\"noteBeforeLeave\":\"Google results show O2 UK as a reliable source for buying iPhone 17 Pr…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/google-search-scam.json",
+      "weight": 1,
+      "adjustedMaxScore": 12,
+      "adjustedTotalScore": 12,
+      "adjustedScoreRate": 100
+    },
+    {
+      "caseId": "long-form-filling",
+      "caseName": "Long Form Filling",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 20.5,
+      "scoreRate": 85.42,
+      "averageScore": 6.83,
+      "averageFirstTokenMs": 9020.33,
+      "averageTotalTimeMs": 13908.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 12261,
+          "totalTimeMs": 17272,
+          "result": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"},{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"},{\"f\":\"remark\",\"v\":\"We are not open on monday, please do not delivery on monday\"}]},\"cp\":[0,1,4]},{\"intent\":\"add 2 line items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]},{\"intent\":\"cancel mixed order lines cp\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"cancel\",\"pos\":3,\"cancelReason\":\"Order line filling includes a combobox widget and must be split into isolated checkpoints before using combobox.\"}},{\"intent\":\"add split line item tasks\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"afterCpId\":3,\"checkPoints\":[\"Fill each order line product from order_form.pdf\",\"Fill each order line qty and unit price from order_form.pdf\",\"Review each order line subtotal and total against order_form.pdf\"],\"permitFromGoal\":\"order lines (product, qty, unit price) for each item, totals, and remark.\",\"src\":\"Split mixed order-line task so combobox product selection can be isolated per workflow rules.\",\"taskRisk\":\"m\"}}],\"next\":{\"tip\":\"Verify the extra line item rows appeared, then fill products with combobox before qty values.\"}}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 1386,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clien…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 9282,
+          "totalTimeMs": 14729,
+          "result": "{\"a\":[{\"intent\":\"start client fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"v\":\"555-0100\"}]},\"cp\":[0]},{\"intent\":\"start address and remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"address\",\"v\":\"123 Client St\"},{\"f\":\"city\",\"v\":\"Business City\"},{\"f\":\"region\",\"v\":\"ST\"},{\"f\":\"postal\",\"v\":\"12345\"},{\"f\":\"remark\",\"v\":\"We are not open on monday, please do not delivery on monday\"}]},\"cp\":[1,4]},{\"intent\":\"prepare 3 order lines\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]}],\"next\":{\"tip\":\"Verify filled text fields, then split order-line checkpoint before using combobox for each product.\"}}",
+          "score": 6.5,
+          "highlights": [],
+          "resultChars": 761,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"start client fields\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"Northwind Travel\"},{\"f\":\"clientEmail\",\"v\":\"contact@client.com\"},{\"f\":\"clientPhone\",\"…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 5518,
+          "totalTimeMs": 9725,
+          "result": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"clientPhone\",\"v\":\"${args.clientPhone}\"},{\"f\":\"address\",\"v\":\"${args.address}\"},{\"f\":\"city\",\"v\":\"${args.city}\"},{\"f\":\"region\",\"v\":\"${args.region}\"},{\"f\":\"postal\",\"v\":\"${args.postal}\"},{\"f\":\"remark\",\"v\":\"${args.remark}\"}]},\"cp\":[0,1,4]},{\"intent\":\"add two more line items\",\"risk\":\"l\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®87\",\"repeat\":2},\"cp\":[2]}],\"next\":{\"tip\":\"Review new line item fields, then fill each product with combobox and quantities/prices.\"}}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 651,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"fill client, address, remark\",\"risk\":\"m\",\"action\":{\"k\":\"fillForm\",\"q\":\"®91\",\"data\":[{\"f\":\"clientName\",\"v\":\"${args.clientName}\"},{\"f\":\"clientEmail\",\"v\":\"${args.clientEmail}\"},{\"f\":\"cl…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/long-form-filling.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 20.5,
+      "adjustedScoreRate": 85.42
+    },
+    {
+      "caseId": "long-form-webskill",
+      "caseName": "Long Form Webskill",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 22.2,
+      "scoreRate": 92.5,
+      "averageScore": 7.4,
+      "averageFirstTokenMs": 3576,
+      "averageTotalTimeMs": 7956.67,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 3827,
+          "totalTimeMs": 8639,
+          "result": "{\"a\":[{\"intent\":\"prepare order from args\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-08\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Verify filled values and totals on the form, then mark checkpoint 0 if matched.\"}}",
+          "score": 7.4,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "resultChars": 943,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"prepare order from args\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrd…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 3193,
+          "totalTimeMs": 7393,
+          "result": "{\"a\":[{\"intent\":\"prepare order from args\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-08\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Check the filled form in html, then verify inputs.\"}}",
+          "score": 7.4,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "resultChars": 823,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"prepare order from args\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrd…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 3708,
+          "totalTimeMs": 7838,
+          "result": "{\"a\":[{\"intent\":\"prepare form from args\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2026-04-08\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Check the filled form values and total, then verify inputs.\"}}",
+          "score": 7.4,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "resultChars": 834,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"prepare form from args\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrde…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/long-form-webskill.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 22.2,
+      "adjustedScoreRate": 92.5
+    },
+    {
+      "caseId": "long-task-splitting",
+      "caseName": "Long Task Splitting",
+      "runCount": 3,
+      "singleRunMaxScore": 7,
+      "maxScore": 21,
+      "totalScore": 21,
+      "scoreRate": 100,
+      "averageScore": 7,
+      "averageFirstTokenMs": 4760.67,
+      "averageTotalTimeMs": 13067.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 5350,
+          "totalTimeMs": 13463,
+          "result": "{\"a\":[{\"intent\":\"add workflow checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account\",\"Read the new order email\",\"Get the order details from the email\",\"Open the POS system in a new tab\",\"Log in to the POS account\",\"Fill the create order form with the order details\",\"Set the earliest delivery date\",\"Review the preview order step amount\",\"Capture a screenshot if the order amount is more than 1000\",\"Open messager in a new tab if approval is needed\",\"Send the order detail or file and screenshot to manager dillion\",\"Follow manager dillion's advice if approval is needed\",\"Save the order\",\"Download the invoice from the order list\",\"Return to email\",\"Reply to the client with the order id\",\"Include the order details in the reply\",\"Attach the invoice in the reply\"],\"permitFromGoal\":\"read new order email and get order detail from it. then go to pos system, fill create order form with detail from the the order form and set earliest delivery date.\\n\\n  in preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case\\n\\n  after that save order, download the invoice in order list. go to email and reply the client with id, detail & invoice\",\"src\":\"initial goal breakdown\",\"taskRisk\":\"m\"}},{\"intent\":\"start login email account\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1}},{\"intent\":\"fill email with account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[1]},{\"intent\":\"fill password with account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"},\"cp\":[1]},{\"intent\":\"next submit email login\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®c\"},\"cp\":[1],\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":10000}}],\"next\":{\"tip\":\"Check whether email login succeeded, then open the new order email.\"}}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 1902,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"add workflow checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account\",\"Read the new order email\",\"Get the order details from the email\",\"Open t…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 3395,
+          "totalTimeMs": 12853,
+          "result": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Open the new order email\",\"Get the order detail from the email\",\"Open the POS system in a new tab\",\"Log in to the POS account with the provided credentials\",\"Fill the create order form with the order detail\",\"Set the earliest delivery date\",\"Review the preview order step amount\",\"Capture a screenshot if order amount is more than 1000\",\"Open the messager in a new tab\",\"Send order detail and screenshot to ask manager dillion for approval if amount is more than 1000\",\"Follow manager dillion's advice if amount is more than 1000\",\"Save the order\",\"Download the invoice from the order list\",\"Return to email\",\"Reply to the client with id\",\"Reply to the client with detail\",\"Reply to the client with invoice\"],\"permitFromGoal\":\"login to email / pos account with:\\n\\nemail: pikachu@pokemon.com\\n\\npassword: P@ssword321\\n\\nread new order email and get order detail from it. then go to pos system, fill create order form with detail from the the order form and set earliest delivery date.\\n\\nin preview order step, if order amount > 1000, cap screenshot & go to messager, send him order file/detail & screenshot seek for manager dillion's approve, do what he advise in case\\n\\nafter that save order, download the invoice in order list. go to email and reply the client with id, detail & invoice\",\"src\":\"initial checklist breakdown from goal\",\"taskRisk\":\"m\"}},{\"intent\":\"fill email with provided email\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[0]},{\"intent\":\"fill password with provided password\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"}},{\"intent\":\"mark email login working\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":0}},{\"intent\":\"click Next to sign in\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®c\"},\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":10000}}],\"next\":{\"tip\":\"Check whether email login succeeded and open the new order email.\"}}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 2049,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Open the new order email\",\"Get the order detail from…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 5537,
+          "totalTimeMs": 12886,
+          "result": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Log in to the email account with the provided password\",\"Read the new order email\",\"Get the order details from the order email\",\"Go to the POS system\",\"Fill the create order form with the order details\",\"Set the earliest delivery date\",\"Check the preview order amount\",\"Capture a screenshot if the order amount is more than 1000\",\"Go to messager if the order amount is more than 1000\",\"Send the order detail or file and screenshot to manager dillion for approval if the order amount is more than 1000\",\"Follow manager dillion's advice if the order amount is more than 1000\",\"Save the order\",\"Download the invoice in the order list\",\"Go to email\",\"Reply the client with id\",\"Reply the client with detail\",\"Reply the client with invoice\"],\"permitFromGoal\":\"do what you can what you want, no botherUser\",\"src\":\"initial breakdown from GOAL\",\"taskRisk\":\"m\"}},{\"intent\":\"start email login email\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":0}},{\"intent\":\"fill email with provided account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®2\",\"v\":\"pikachu@pokemon.com\"},\"cp\":[0]},{\"intent\":\"start email login password\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":1}},{\"intent\":\"fill password with provided account\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":\"®5\",\"v\":\"P@ssword321\"},\"cp\":[1]}],\"next\":{\"tip\":\"Click Next to submit the sign-in form and inspect the inbox.\"}}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 1520,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"add task checkpoints\",\"risk\":\"m\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Log in to the email account with the provided email\",\"Log in to the email account with the provided passwo…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/long-task-splitting.json",
+      "weight": 1.5,
+      "adjustedMaxScore": 31.5,
+      "adjustedTotalScore": 31.5,
+      "adjustedScoreRate": 100
+    },
+    {
+      "caseId": "reasoning-calendar",
+      "caseName": "Reasoning Calendar",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 15,
+      "scoreRate": 100,
+      "averageScore": 5,
+      "averageFirstTokenMs": 7304.33,
+      "averageTotalTimeMs": 11079,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 9699,
+          "totalTimeMs": 14129,
+          "result": "{\"a\":[{\"intent\":\"rework check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3,\"rework\":true}},{\"intent\":\"verify check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"pos\":3,\"verifiedProve\":{\"domId\":\"®6i\",\"proveOfWork\":\"Create order form is filled with the order details including client info, line items, and remark.\"}}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Review the selected delivery date in the form, then continue to preview order.\"}}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 733,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"rework check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3,\"rework\":true}},{\"intent\":\"verify check point 3\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 4658,
+          "totalTimeMs": 7445,
+          "result": "{\"a\":[{\"intent\":\"start checkpoint 4 earliest date\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Verify the chosen delivery date on the form, then continue to preview.\"}}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 482,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"start checkpoint 4 earliest date\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"c…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 7556,
+          "totalTimeMs": 11663,
+          "result": "{\"a\":[{\"intent\":\"mark filled order details\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"verify order details filled\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"pos\":3,\"verifiedProve\":{\"domId\":\"®ao\",\"proveOfWork\":\"The create order form is filled with the client info, 3 order lines, remark, and total $3530.00.\"}}},{\"intent\":\"start earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Verify the chosen delivery date in the form, then preview the order.\"}}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 822,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"mark filled order details\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":3}},{\"intent\":\"verify order details filled\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"verified\",\"p…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/cases/reasoning-calendar.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 15,
+      "adjustedScoreRate": 100
+    }
+  ],
+  "modelDir": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4",
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5.4/details.json",
+  "adjustedMaxScore": 139.5,
+  "adjustedTotalScore": 131.2,
+  "adjustedScoreRate": 94.05
+}

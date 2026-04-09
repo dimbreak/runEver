@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 17,
+  "scoreRate": 80.95,
+  "averageScore": 5.67,
+  "averageFirstTokenMs": 5149.33,
+  "averageTotalTimeMs": 7624.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3524,
+      "totalTimeMs": 6044,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Login to email system with pikachu@pokemon.com\",\n          \"Read new order email to get order details\",\n          \"Navigate to POS system\",\n          \"Fill create order form in POS with details and earliest delivery date\",\n          \"Check order amount for approval workflow\",\n          \"Save order and download invoice\",\n          \"Reply to email with order ID, details, and invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"Initial task breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"Enter email into login field\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"Enter password into password field\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"Click Next to sign in\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Wait for login to complete and observe the email dashboard to find the new order email.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1517,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email system with pikachu@pokemon.com\", \"Read new order email to get order details\"…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4785,
+      "totalTimeMs": 6913,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Log in to email system\",\n          \"Read new order email and extract details\",\n          \"Navigate to POS system\",\n          \"Create order in POS with extracted details and set earliest delivery date\",\n          \"Check if order amount > 1000\",\n          \"If order > 1000, send details to manager Dillion in messenger for approval\",\n          \"Save order\",\n          \"Download invoice from order list\",\n          \"Reply to client email with ID, detail, and invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"Initial breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"Fill email and password to login\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®2\",\n          \"argKeys\": []\n        },\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"Fill password to login\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®5\",\n          \"argKeys\": []\n        },\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"Click Next to sign in\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®c\",\n          \"argKeys\": []\n        }\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Logging into email. Once signed in, search/look for the order confirmation email.\"\n  }\n}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1590,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Log in to email system\", \"Read new order email and extract details\", \"Navigate to POS system…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 7139,
+      "totalTimeMs": 9916,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add task checklist for the workflow\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Login to email account with credentials\",\n          \"Read new order email and extract order details\",\n          \"Login to POS system\",\n          \"Fill create order form with extracted details and set earliest delivery date\",\n          \"Review order, if amount > 1000, take screenshot\",\n          \"Go to messager and send details/screenshot to Dillion for approval\",\n          \"Perform action based on Dillion's advice\",\n          \"Save order in POS\",\n          \"Download invoice from order list\",\n          \"Reply to the client in email with ID, detail, and invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"Initial task breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"Set credentials in arguments for later use\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"email\": \"pikachu@pokemon.com\",\n          \"password\": \"P@ssword321\"\n        }\n      }\n    },\n    {\n      \"intent\": \"Input email address\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®2\",\n          \"argKeys\": [\n            \"email\"\n          ]\n        },\n        \"v\": \"${args.email}\"\n      }\n    },\n    {\n      \"intent\": \"Input password\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®5\",\n          \"argKeys\": [\n            \"password\"\n          ]\n        },\n        \"v\": \"${args.password}\"\n      }\n    },\n    {\n      \"intent\": \"Submit login form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®c\",\n          \"argKeys\": []\n        }\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"I have initiated the login process. Once the page loads, I will verify the login status and proceed to read the email.\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 2116,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Add task checklist for the workflow\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"Login to email account with credentials\", \"Read new order email and extract o…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-flash-lite-preview/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 25.5,
+  "adjustedScoreRate": 80.95
+}

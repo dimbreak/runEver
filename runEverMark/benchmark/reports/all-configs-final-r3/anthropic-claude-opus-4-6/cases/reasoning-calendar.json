@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 15,
+  "scoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 5771,
+  "averageTotalTimeMs": 9941.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 4459,
+      "totalTimeMs": 9232,
+      "result": "{\"a\":[{\"intent\":\"Set earliest delivery date using calendar\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"order takes 11 months to produce, po-date: 25 Feb 2026, remarks: We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce, calendar showing 2026年2月, all dates disabled\"}},\"cp\":[4]}]}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 414,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set earliest delivery date using calendar\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"order takes 11 months to produce…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 3931,
+      "totalTimeMs": 9360,
+      "result": "{\"a\":[{\"intent\":\"Set earliest delivery date using calendar\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"po-date: 25 Feb 2026, order takes 11 months to produce, remarks: We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce, calendar showing 2026年2月, all dates disabled\"}},\"cp\":[4]}],\"next\":{\"tip\":\"After calendar sets the delivery date, scroll down to verify the date is selected, then click Preview Order button.\"}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 547,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set earliest delivery date using calendar\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"po-date: 25 Feb 2026, order take…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 8923,
+      "totalTimeMs": 11232,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set delivery date using calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"order takes 11 months to produce, po-date: 25 Feb 2026, remarks: We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce, calendar showing 2026年2月\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Calendar set, verify delivery date then preview order\"\n  }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 601,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date using calendar\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"order takes 11 months …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/anthropic-claude-opus-4-6/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 15,
+  "adjustedScoreRate": 100
+}

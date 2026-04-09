@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 13,
+  "scoreRate": 86.67,
+  "averageScore": 4.33,
+  "averageFirstTokenMs": 11805,
+  "averageTotalTimeMs": 13366.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 2886,
+      "totalTimeMs": 4496,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"set delivery date using calendar with goal hints and page constraints\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"calendar\",\n    \"q\": \"®9u\",\n    \"ctx\": {\n     \"goalHint\": \"set earliest delivery date\",\n     \"argValHint\": \"We are not open on monday, please do not delivery on monday\",\n     \"pageHint\": \"Delivery Date - order takes 11 months to produce. Current calendar view is February 2026.\"\n    }\n   },\n   \"cp\": [\n    4\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"Delivery date set. Now preview the order and check if the amount > 1000 for manager approval.\"\n }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 581,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date using calendar with goal hints and page constraints\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", …"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 10286,
+      "totalTimeMs": 11619,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"set delivery date in calendar\",\n   \"risk\": \"l\",\n   \"action\": {\n    \"k\": \"calendar\",\n    \"q\": \"®9u\",\n    \"ctx\": {\n     \"goalHint\": \"set earliest delivery date\",\n     \"argValHint\": \"We are not open on monday, please do not delivery on monday\",\n     \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n    }\n   },\n   \"cp\": [\n    4\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"Delivery date set, now previewing the order to check if amount > 1000 for approval.\"\n }\n}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 490,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date in calendar\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\": \"We are not open on monday…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 22243,
+      "totalTimeMs": 23985,
+      "result": "{\n \"a\": [\n  {\n   \"intent\": \"set delivery date using calendar with goal and page hints\",\n   \"risk\": \"m\",\n   \"action\": {\n    \"k\": \"calendar\",\n    \"q\": \"®83\",\n    \"ctx\": {\n     \"goalHint\": \"set earliest delivery date\",\n     \"argValHint\": \"We are not open on monday, please do not delivery on monday\",\n     \"pageHint\": \"Delivery Date - order takes 11 months to produce\"\n    }\n   },\n   \"cp\": [\n    4\n   ]\n  }\n ],\n \"next\": {\n  \"tip\": \"After setting the date, preview the order to check the amount and proceed with manager approval if needed.\"\n }\n}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 541,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set delivery date using calendar with goal and page hints\", \"risk\": \"m\", \"action\": { \"k\": \"calendar\", \"q\": \"®83\", \"ctx\": { \"goalHint\": \"set earliest delivery date\", \"argValHint\"…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/google-gemini-3.1-pro-preview/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 13,
+  "adjustedScoreRate": 86.67
+}

@@ -1,0 +1,53 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 10,
+  "scoreRate": 66.67,
+  "averageScore": 3.33,
+  "averageFirstTokenMs": 52439.33,
+  "averageTotalTimeMs": 55830.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 43035,
+      "totalTimeMs": 45980,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to $args.buy_quantity\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      }\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Proceed with default payment and address on checkout page.\"\n  }\n}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 450,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to $args.buy_quantity\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"3\" } }, { \"intent\": \"click Buy Now to start express checkout\", \"risk\": \"m\", \"action…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 50902,
+      "totalTimeMs": 52879,
+      "result": "{\"a\":[{\"intent\":\"change quantity to 3\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}},{\"intent\":\"click Buy Now for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"},\"post\":{\"t\":\"net\",\"a\":\"idle2\",\"to\":12000},\"cp\":[2]}],\"next\":{\"tip\":\"Verify checkout page shows 3 items, then place order using default payment and address.\",\"sc\":false}}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 364,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"change quantity to 3\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":\"®d5\",\"v\":\"3\"}},{\"intent\":\"click Buy Now for express checkout\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":\"®el\"},\"pos…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 63381,
+      "totalTimeMs": 68633,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to 3\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"#d5\",\n        \"v\": \"3\"\n      }\n    },\n    {\n      \"intent\": \"click buy now for express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"#el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\"\n      }\n    },\n    {\n      \"intent\": \"verify quantity and buy now checkpoint\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 2,\n        \"verifiedProve\": {\n          \"domId\": \"el\",\n          \"proveOfWork\": \"Quantity updated to 3 and Buy Now clicked successfully\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On checkout page, verify default address/payment and complete order\",\n    \"sc\": false\n  }\n}",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 854,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to 3\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"#d5\", \"v\": \"3\" } }, { \"intent\": \"click buy now for express checkout\", \"risk\": \"h\", \"action\": { \"k\": \"mouse\", \"a\"…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/alibaba-qwen3.6-plus/cases/amazon-long-ctx-buy.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 10,
+  "adjustedScoreRate": 66.67
+}

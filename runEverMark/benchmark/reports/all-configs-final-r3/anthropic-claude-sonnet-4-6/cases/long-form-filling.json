@@ -1,0 +1,53 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 13.5,
+  "scoreRate": 56.25,
+  "averageScore": 4.5,
+  "averageFirstTokenMs": 12799,
+  "averageTotalTimeMs": 18667.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 10293,
+      "totalTimeMs": 14175,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"mark client info checkpoint as working\",\n      \"risk\": \"l\",\n      \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 0 }\n    },\n    {\n      \"intent\": \"fill client name, email, phone, and delivery address fields with arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" },\n          { \"f\": \"address\", \"v\": \"${args.address}\" },\n          { \"f\": \"city\", \"v\": \"${args.city}\" },\n          { \"f\": \"region\", \"v\": \"${args.region}\" },\n          { \"f\": \"postal\", \"v\": \"${args.postal}\" }\n        ]\n      },\n      \"cp\": [0, 1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client info and address fields should now be filled. Next: click '+ Add Line Item' 2 more times (already have 1 row) to prepare 3 rows total for items: Laptop Pro x5, Desk Chair x1, Keyboard x3. Then handle each combobox and qty/price per item.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 1077,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"mark client info checkpoint as working\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 0 } }, { \"intent\": \"fill client name, email, phone, and delivery addre…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 13404,
+      "totalTimeMs": 20299,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Fill client name with Northwind Travel\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"clientName\", \"v\": \"${args.clientName}\"},\n          {\"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\"},\n          {\"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\"}\n        ]\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"Fill delivery address fields\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\"f\": \"address\", \"v\": \"${args.address}\"},\n          {\"f\": \"city\", \"v\": \"${args.city}\"},\n          {\"f\": \"region\", \"v\": \"${args.region}\"},\n          {\"f\": \"postal\", \"v\": \"${args.postal}\"}\n        ]\n      },\n      \"cp\": [1]\n    },\n    {\n      \"intent\": \"Click + Add Line Item button to prepare for 3 items\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"Mark client info as verified\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 0,\n        \"verifiedProve\": {\n          \"domId\": \"®4r\",\n          \"proveOfWork\": \"Filled client name, email, phone fields with values from arguments\"\n        }\n      }\n    },\n    {\n      \"intent\": \"Mark address fields as verified\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 1,\n        \"verifiedProve\": {\n          \"domId\": \"®52\",\n          \"proveOfWork\": \"Filled delivery address fields with values from arguments\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Added 2 line items. Fill product comboboxes and quantities for 3 items from arguments, then fill remark and review.\"\n  }\n}",
+      "score": 5.5,
+      "highlights": [],
+      "resultChars": 1825,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Fill client name with Northwind Travel\", \"risk\": \"l\", \"action\": { \"k\": \"fillForm\", \"q\": \"®91\", \"data\": [ {\"f\": \"clientName\", \"v\": \"${args.clientName}\"}, {\"f\": \"clientEmail\", \"v\"…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 14700,
+      "totalTimeMs": 21528,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist checkpoints for form filling tasks\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": -1,\n        \"checkPoints\": [\n          \"Fill client name, email, phone with $clientName, $clientEmail, $clientPhone\",\n          \"Fill delivery address: street, city, region, postal with address args\",\n          \"Click + Add Line Item 2 more times to prepare 3 line item rows\",\n          \"Fill order line 1: Laptop Pro combobox, qty 5, unit price 1200\",\n          \"Fill order line 2: Desk Chair combobox, qty 1, unit price 350\",\n          \"Fill order line 3: Keyboard combobox, qty 3, unit price 80\",\n          \"Pick delivery date using calendar (order takes 11 months to produce)\",\n          \"Fill remark field and review all filled values\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form using order details in arguments\",\n        \"src\": \"GOAL breakdown for form filling\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill client info and delivery address fields with args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" },\n          { \"f\": \"address\", \"v\": \"${args.address}\" },\n          { \"f\": \"city\", \"v\": \"${args.city}\" },\n          { \"f\": \"region\", \"v\": \"${args.region}\" },\n          { \"f\": \"postal\", \"v\": \"${args.postal}\" }\n        ]\n      },\n      \"cp\": [0, 1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client info and address filled. Now click '+ Add Line Item' 2 more times (it already has 1 row) to get 3 rows total, then fill each row with combobox for product. Check cp 2 next.\"\n  }\n}",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 1828,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"add checklist checkpoints for form filling tasks\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"afterCpId\": -1, \"checkPoints\": [ \"Fill client name, email, phone with $clientName…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/anthropic-claude-sonnet-4-6/cases/long-form-filling.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 13.5,
+  "adjustedScoreRate": 56.25
+}

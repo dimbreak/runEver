@@ -1,0 +1,44 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "totalScore": 15,
+  "adjustedTotalScore": 15,
+  "scoreRate": 100,
+  "adjustedScoreRate": 100,
+  "averageScore": 5,
+  "averageFirstTokenMs": 10121.67,
+  "averageTotalTimeMs": 12485,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 10261,
+      "totalTimeMs": 10843,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to ${args.buy_quantity}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\n            \"buy_quantity\"\n          ]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 300\n      }\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle2\",\n        \"to\": 15000\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After Buy Now, verify checkout page shows default address & payment; if prompted confirm order, do NOT auto-submit without explicit confirmation.\",\n    \"sc\": false\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 12553,
+      "totalTimeMs": 16831,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"record chosen quantity\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"buy_quantity\": \"3\",\n          \"quantitySelected_domId\": {\n            \"q\": {\n              \"id\": \"®d5\",\n              \"argKeys\": []\n            },\n            \"attr\": \"value\"\n          }\n        }\n      }\n    },\n    {\n      \"intent\": \"set quantity dropdown to ${args.buy_quantity}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\n            \"buy_quantity\"\n          ]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 400\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        },\n        \"repeat\": 1\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\",\n        \"to\": 30000\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"verify quantity set and Buy Now click initiated\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 2,\n        \"verifiedProve\": {\n          \"domId\": \"®d5\",\n          \"proveOfWork\": \"Quantity dropdown set to 3 (value changed to 3) and Buy Now clicked to begin checkout\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After Buy Now navigates, verify checkout page shows default payment & address. If it doesn't, stop and report.\",\n    \"sc\": false\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 7551,
+      "totalTimeMs": 9781,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to args.buy_quantity (3)\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"3\"\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 300\n      },\n      \"cp\": [\n        2\n      ]\n    },\n    {\n      \"intent\": \"click Buy Now to start express checkout\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®el\"\n      },\n      \"post\": {\n        \"t\": \"net\",\n        \"a\": \"idle0\",\n        \"to\": 60000\n      },\n      \"cp\": [\n        2\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After clicking Buy Now, check the new page HTML for order preview/payment details and verify default address/payment before confirming.\",\n    \"sc\": false\n  }\n}",
+      "score": 5,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/amazon-long-ctx-buy.json"
+}

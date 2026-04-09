@@ -1,0 +1,57 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "totalScore": 23.4,
+  "scoreRate": 97.5,
+  "averageScore": 7.8,
+  "averageFirstTokenMs": 22843.67,
+  "averageTotalTimeMs": 25980.67,
+  "highlights": [
+    "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 14106,
+      "totalTimeMs": 15593,
+      "result": "{\"a\":[{\"intent\":\"Prepare complete order via webSkill using extracted form data\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-05\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"Verify the form is populated correctly with client info, delivery address, 3 order lines (Laptop Pro x5, Desk Chair x1, Keyboard x3), and the remark. Total should be $6,590. Then click Preview Order to proceed.\"}}",
+      "score": 7.4,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ],
+      "resultChars": 995,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Prepare complete order via webSkill using extracted form data\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPre…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 26314,
+      "totalTimeMs": 27613,
+      "result": "{\"a\":[{\"intent\":\"Call prepareOrder webSkill with all order details from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\",\"fnName\":\"window._web_skills.posOrderPrep.prepareOrder\",\"arg\":\"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-09\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"},\"cp\":[0]}],\"next\":{\"tip\":\"The webSkill should populate all form fields. Verify the form is filled correctly with client info, delivery address, 3 line items (Laptop Pro x5, Desk Chair x1, Keyboard x3), and remark. Then proceed to preview the order.\"}}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1036,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Call prepareOrder webSkill with all order details from arguments\",\"risk\":\"m\",\"action\":{\"k\":\"callWebSkill\",\"href\":\"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\",\"fnName\":\"w…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 28111,
+      "totalTimeMs": 34736,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Prepare order using WebSkill with all client and item details\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-16\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"WebSkill will fill the entire order form including client info, delivery date (respecting 11-month lead time and no Monday delivery), and line items. Verify the form is populated correctly and ready for preview.\"\n  }\n}",
+      "score": 8,
+      "highlights": [],
+      "resultChars": 1132,
+      "resultFormat": "raw_json",
+      "resultPreview": "{ \"a\": [ { \"intent\": \"Prepare order using WebSkill with all client and item details\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/posorderprep/SKILL.md\", …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/long-form-webskill.json",
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "adjustedTotalScore": 23.4,
+  "adjustedScoreRate": 97.5
+}

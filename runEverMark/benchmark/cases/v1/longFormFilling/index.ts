@@ -25,13 +25,25 @@ const matchesExpectedValue = (
 };
 
 type FillFormDatum = {
-  f?: string;
-  k?: string;
-  key?: string;
-  field?: string;
-  label?: string;
+  f?: string | { id?: string };
+  k?: string | { id?: string };
+  key?: string | { id?: string };
+  field?: string | { id?: string };
+  label?: string | { id?: string };
   v?: string | number | boolean;
   value?: string | number | boolean;
+};
+
+const getFieldRefKeys = (
+  value: string | { id?: string } | undefined,
+): string[] => {
+  if (typeof value === 'string') {
+    return [normalizeText(value)];
+  }
+  if (value && typeof value === 'object' && typeof value.id === 'string') {
+    return [normalizeText(value.id)];
+  }
+  return [];
 };
 
 const hasFillFormField = (
@@ -43,8 +55,7 @@ const hasFillFormField = (
 
   return data.some((entry) => {
     const entryKeys = [entry.f, entry.k, entry.key, entry.field, entry.label]
-      .filter((value): value is string => typeof value === 'string')
-      .map(normalizeText);
+      .flatMap((value) => getFieldRefKeys(value));
 
     const matchesField = entryKeys.some((key) => normalizedKeys.includes(key));
     if (!matchesField) {
@@ -215,42 +226,42 @@ Fill the form at ®91, context: Fill the create order form using order details i
             }
             const expectedFillFields = [
               {
-                keys: ['clientName'],
+                keys: ['clientName', '®4r'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.clientName}', 'Northwind Travel'],
               },
               {
-                keys: ['clientEmail'],
+                keys: ['clientEmail', '®4u'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.clientEmail}', 'contact@client.com'],
               },
               {
-                keys: ['clientPhone'],
+                keys: ['clientPhone', '®4x'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.clientPhone}', '555-0100'],
               },
               {
-                keys: ['address'],
+                keys: ['address', '®52'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.address}', '123 Client St'],
               },
               {
-                keys: ['city'],
+                keys: ['city', '®55'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.city}', 'Business City'],
               },
               {
-                keys: ['region'],
+                keys: ['region', '®58'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.region}', 'ST'],
               },
               {
-                keys: ['postal'],
+                keys: ['postal', '®5c'],
                 // eslint-disable-next-line no-template-curly-in-string
                 values: ['${args.postal}', '12345'],
               },
               {
-                keys: ['remark'],
+                keys: ['remark', '®8u'],
                 values: [
                   // eslint-disable-next-line no-template-curly-in-string
                   '${args.remark}',
@@ -291,13 +302,19 @@ Fill the form at ®91, context: Fill the create order form using order details i
               [
                 'Laptop Pro',
                 // eslint-disable-next-line no-template-curly-in-string
-                '${items.0.name}',
+                '${args.items.0.name}',
+                // eslint-disable-next-line no-template-curly-in-string
+                "${args['items.0.name']}",
                 'Desk Chair',
                 // eslint-disable-next-line no-template-curly-in-string
-                '${items.1.name}',
+                '${args.items.1.name}',
+                // eslint-disable-next-line no-template-curly-in-string
+                "${args['items.1.name']}",
                 'Keyboard',
                 // eslint-disable-next-line no-template-curly-in-string
-                '${items.2.name}',
+                '${args.items.2.name}',
+                // eslint-disable-next-line no-template-curly-in-string
+                "${args['items.2.name']}",
               ].includes(item.action.v),
           );
 

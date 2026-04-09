@@ -1,0 +1,53 @@
+{
+  "caseId": "long-task-splitting",
+  "caseName": "Long Task Splitting",
+  "runCount": 3,
+  "singleRunMaxScore": 7,
+  "maxScore": 21,
+  "totalScore": 17.5,
+  "scoreRate": 83.33,
+  "averageScore": 5.83,
+  "averageFirstTokenMs": 12022,
+  "averageTotalTimeMs": 14732.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 13772,
+      "totalTimeMs": 13780,
+      "result": "{\"a\":[{\"intent\":\"Add checklist items for entire workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email platform with pikachu@pokemon.com\",\"Read new order email and extract order detail\",\"Go to POS system, fill create order form with detail\",\"Set earliest delivery date in order form\",\"Preview order - if amount > 1000, seek manager approval via messager\",\"Save order and download invoice from order list\",\"Reply to client via email with order id, detail and invoice attachment\"],\"permitFromGoal\":\"do what you can what you want, no botherUser\",\"src\":\"add checklist for email ordering workflow\",\"taskRisk\":\"l\"}},{\"intent\":\"Login to email platform\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®2\",\"argKeys\":[\"email\"]},\"v\":\"pikachu@pokemon.com\"}},{\"intent\":\"Click Next to proceed to password\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®c\"}},\"post\":{\"t\":\"time\",\"ms\":2000}}],\"next\":{\"tip\":\"Password field should appear after email submitted\"}}",
+      "score": 5.5,
+      "highlights": [],
+      "resultChars": 975,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add checklist items for entire workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email platform with pikachu@pokemon.com\",\"Read new order email and extract ord…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 19079,
+      "totalTimeMs": 22760,
+      "result": "{\"a\":[\n{\"intent\":\"Add checkpoints for the entire workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email platform\",\"Read new order email and extract order detail\",\"Go to POS system and fill create order form with order detail\",\"Set earliest delivery date in POS\",\"Preview order - if amount > 1000, seek manager approval via messager\",\"Save order and download invoice from POS\",\"Reply to client email with order id, detail and invoice attachment\"],\"permitFromGoal\":\"do what you can what you want\",\"src\":\"login to email / pos account with...\",\"taskRisk\":\"m\"}},\n{\"intent\":\"Fill email field with pikachu@pokemon.com\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®2\",\"argKeys\":[\"email\"]},\"v\":\"pikachu@pokemon.com\"},\"cp\":[1]},\n{\"intent\":\"Fill password field with P@ssword321\",\"risk\":\"l\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®5\",\"argKeys\":[\"password\"]},\"v\":\"P@ssword321\"}},\n{\"intent\":\"Click Next button to login\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®c\",\"argKeys\":[]}},\"post\":{\"t\":\"time\",\"ms\":2000}}\n]}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1032,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[ {\"intent\":\"Add checkpoints for the entire workflow\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"checkPoints\":[\"Login to email platform\",\"Read new order email and extract order detail\",\"Go to POS sy…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3215,
+      "totalTimeMs": 7657,
+      "result": "{\"a\":[{\"intent\":\"Add all task checkpoints from goal\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"permitFromGoal\":\"do what you can what you want, no botherUser\",\"src\":\"Add checkpoints for email login, read order, POS order creation, approval workflow, invoice download, and client reply\",\"taskRisk\":\"l\",\"checkPoints\":[\"Login to email with pikachu@pokemon.com\",\"Read new order email and extract order details\",\"Go to POS system and create order with extracted details\",\"Set earliest delivery date in order form\",\"Preview order - if amount > 1000, seek manager approval via messager\",\"Save order and download invoice from order list\",\"Reply to client with order id, detail and invoice\"]}},{\"intent\":\"Login to email with credentials\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®2\"},\"v\":\"pikachu@pokemon.com\"},\"cp\":[1]},{\"intent\":\"Click Next to proceed\",\"risk\":\"m\",\"action\":{\"k\":\"mouse\",\"a\":\"click\",\"q\":{\"id\":\"®c\"},\"repeat\":1},\"post\":{\"t\":\"time\",\"ms\":1500}},{\"intent\":\"Enter password\",\"risk\":\"m\",\"action\":{\"k\":\"input\",\"q\":{\"id\":\"®5\"},\"v\":\"P@ssword321\"},\"cp\":[1]}],\"next\":{\"sc\":true,\"tip\":\"Enter password and click Next to complete email login, then read order email\",\"readFiles\":[]}}",
+      "score": 6,
+      "highlights": [],
+      "resultChars": 1174,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Add all task checkpoints from goal\",\"risk\":\"l\",\"action\":{\"k\":\"addNewTask\",\"permitFromGoal\":\"do what you can what you want, no botherUser\",\"src\":\"Add checkpoints for email login, read…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/minimax-m2.7/cases/long-task-splitting.json",
+  "weight": 1.5,
+  "adjustedMaxScore": 31.5,
+  "adjustedTotalScore": 26.25,
+  "adjustedScoreRate": 83.33
+}

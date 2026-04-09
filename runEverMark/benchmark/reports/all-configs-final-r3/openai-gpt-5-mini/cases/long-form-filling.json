@@ -1,0 +1,44 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "totalScore": 16,
+  "adjustedTotalScore": 16,
+  "scoreRate": 66.67,
+  "adjustedScoreRate": 66.67,
+  "averageScore": 5.33,
+  "averageFirstTokenMs": 15004,
+  "averageTotalTimeMs": 16963.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 19693,
+      "totalTimeMs": 22291,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill clientName, clientEmail, clientPhone from args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"fill address, city, region, postal from args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          }\n        ]\n      },\n      \"cp\": [\n        1\n      ]\n    },\n    {\n      \"intent\": \"add 2 more line items to prepare 3 total (itemsCount=3)\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 400\n      }\n    },\n    {\n      \"intent\": \"select product for first line using items.0.name\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"combobox\",\n        \"q\": {\n          \"id\": \"®8a\",\n          \"argKeys\": [\n            \"items.0.name\"\n          ]\n        },\n        \"v\": \"${args.items.0.name}\"\n      },\n      \"cp\": [\n        3\n      ]\n    },\n    {\n      \"intent\": \"fill remark with args.remark\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"remark\",\n            \"v\": \"${args.remark}\"\n          }\n        ]\n      },\n      \"cp\": [\n        4\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After product selection(s), fill each line's qty and unit price (they're enabled after choosing product) and verify totals; repeat combobox per new line with items.1.name and items.2.name.\",\n    \"sc\": false\n  }\n}",
+      "score": 7.5,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 20286,
+      "totalTimeMs": 21631,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client name, email, phone\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    },\n    {\n      \"intent\": \"fill delivery address fields Street, City, Region, Postal Code\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          }\n        ]\n      },\n      \"cp\": [\n        1\n      ]\n    },\n    {\n      \"intent\": \"add required line items (+ Add Line Item) to reach itemsCount\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [\n        2\n      ],\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      }\n    },\n    {\n      \"intent\": \"stop here and leave product selection & qty/unit price for isolated combobox filling\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 2,\n        \"rework\": false\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Now select each product (combobox), set qty and unit price for each of the 3 items, then fill Remark and review all fields. Use isolated combobox steps for product picks.\",\n    \"sc\": false\n  }\n}",
+      "score": 5.5,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 5033,
+      "totalTimeMs": 6968,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill clientName, clientEmail, clientPhone\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          }\n        ]\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After this, prepare delivery address fields (Street, City, Region, Postal Code) as next step.\",\n    \"sc\": false\n  }\n}",
+      "score": 3,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/openai-gpt-5-mini/cases/long-form-filling.json"
+}

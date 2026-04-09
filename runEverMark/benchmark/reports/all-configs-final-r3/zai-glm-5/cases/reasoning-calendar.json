@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 8,
+  "scoreRate": 53.33,
+  "averageScore": 2.67,
+  "averageFirstTokenMs": 10121,
+  "averageTotalTimeMs": 12157.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 10826,
+      "totalTimeMs": 14031,
+      "result": "Looking at the current state, I need to set the earliest delivery date. The calendar shows February 2026 but all dates are disabled. The label indicates \"order takes 11 months to produce\", so I need to use the calendar action to find and select the earliest available date.\n\nLet me use the calendar action to set the delivery{\n\"a\": [\n{\n\"intent\": \"Set earliest delivery date using calendar with production context\",\n\"risk\": \"l\",\n\"action\": {\n\"k\": \"calendar\",\n\"q\": \"®9u\",\n\"ctx\": {\n\"goalHint\": \"set earliest delivery date\",\n\"argValHint\": \"order takes 11 months to produce\",\n\"pageHint\": \"All dates in February 2026 are disabled. Can navigate forward. Remark: We are not open on monday, please do not delivery on monday\"\n}\n},\n\"cp\": [4]\n}\n],\n\"next\": {\n\"tip\": \"After delivery date is set, click 'Preview Order' button to proceed. If order total > $1000, capture screenshot and send to messenger for manager dillion's approval.\"\n}\n}",
+      "score": 1,
+      "highlights": [],
+      "resultChars": 923,
+      "resultFormat": "text",
+      "resultPreview": "Looking at the current state, I need to set the earliest delivery date. The calendar shows February 2026 but all dates are disabled. The label indicates \"order takes 11 months to produce\", so I need …"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 8999,
+      "totalTimeMs": 10494,
+      "result": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4},{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"order takes 11 months to produce, po-date: 25 Feb 2026\",\"pageHint\":\"Delivery Date - order takes 11 months to produce, current calendar shows February 2026 with all dates disabled\"}}],\"next\":{\"tip\":\"After calendar action completes, verify the date is set then proceed to preview order (step 5).\"}}",
+      "score": 2,
+      "highlights": [],
+      "resultChars": 429,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4},{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"order takes 11 months to produce, po-date: 25 Feb 2026\",\"pageHint\"…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 10538,
+      "totalTimeMs": 11948,
+      "result": "{\"a\":[{\"intent\":\"Set earliest delivery date for order\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"remarks: We are not open on monday, please do not delivery on monday\",\"pageHint\":\"Delivery Date - order takes 11 months to produce. Current calendar shows February 2026 with dates visible.\"}},\"cp\":[4]}]}",
+      "score": 5,
+      "highlights": [],
+      "resultChars": 365,
+      "resultFormat": "raw_json",
+      "resultPreview": "{\"a\":[{\"intent\":\"Set earliest delivery date for order\",\"risk\":\"m\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"remarks: We are not open on monday, p…"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/zai-glm-5/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 8,
+  "adjustedScoreRate": 53.33
+}

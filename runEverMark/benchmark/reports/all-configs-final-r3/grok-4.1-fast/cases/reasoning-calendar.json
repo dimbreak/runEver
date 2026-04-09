@@ -1,0 +1,53 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "totalScore": 11,
+  "scoreRate": 73.33,
+  "averageScore": 3.67,
+  "averageFirstTokenMs": 3583,
+  "averageTotalTimeMs": 5957.67,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 3192,
+      "totalTimeMs": 5854,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date using calendar with remark avoid Monday\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date - order takes 11 months to produce. remark: We are not open on monday, please do not delivery on monday\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Delivery Date field in create order form, current calendar showing 2026年2月 with many disabled dates\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar sets date, verify delivery date field updated in form (not Monday), then proceed to preview order.\"\n  }\n}\n```",
+      "score": 3,
+      "highlights": [],
+      "resultChars": 780,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"Set earliest delivery date using calendar with remark avoid Monday\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery da…"
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 4019,
+      "totalTimeMs": 6337,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date using calendar widget with remark preference\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date in POS create order form\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday; po-date: 25 Feb 2026\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; current calendar shows February 2026 with dates starting from 26 Jan\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After date set, verify form, click Preview Order if ready, then handle preview step per goal.\"\n  }\n}\n```",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 727,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"Set earliest delivery date using calendar widget with remark preference\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delive…"
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 3538,
+      "totalTimeMs": 5682,
+      "result": "```json\n{\n  \"a\": [\n    {\n      \"intent\": \"Set earliest delivery date using calendar from order details\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date in POS create order form\",\n          \"argValHint\": \"order_form.pdf-filename: order_form.pdf; po-date: 25 Feb 2026; remarks: We are not open on monday, please do not delivery on monday; current month shown: 2026年2月\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce; calendar showing Feb 2026 with many dates disabled\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar set, verify form, then click Preview Order button if valid. Check total >1000 for screenshot & messenger step next.\"\n  }\n}\n```",
+      "score": 4,
+      "highlights": [],
+      "resultChars": 806,
+      "resultFormat": "fenced_json",
+      "resultPreview": "```json { \"a\": [ { \"intent\": \"Set earliest delivery date using calendar from order details\", \"risk\": \"l\", \"action\": { \"k\": \"calendar\", \"q\": \"®9u\", \"ctx\": { \"goalHint\": \"set earliest delivery date in …"
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/grok-4.1-fast/cases/reasoning-calendar.json",
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "adjustedTotalScore": 11,
+  "adjustedScoreRate": 73.33
+}
