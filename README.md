@@ -140,6 +140,8 @@ Setup:
 
 These scores reflect RunEver's own execution interface rather than a generic chat benchmark, so they are most useful as a measure of structured browser-task reliability.
 
+[Detail report](https://dimbreak.github.io/runEver/)
+
 ---
 
 ## Architecture
