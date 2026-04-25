@@ -65,6 +65,26 @@
       font-weight: 500;
     }
     .pill b { color: var(--text); font-weight: 600; }
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--cyan);
+      font-size: .86rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+    .repo-link:hover {
+      border-color: var(--cyan);
+      background: #1a2236;
+      transform: translateY(-1px);
+    }
 
     /* ── Section ───────────────────────────────────────────── */
     .section {
@@ -363,6 +383,10 @@
       <h1>runEverMark Benchmark</h1>
       <p>Model performance comparison across test cases</p>
       <div class="meta-pills" id="meta-pills"></div>
+      <a class="repo-link" href="https://github.com/dimbreak/runEver" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 016.02 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.21.7.82.58A12.01 12.01 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        dimbreak/runEver
+      </a>
     </header>
 
     <!-- 1. Leaderboard -->
@@ -509,13 +533,10 @@
     /* ── Meta Pills ────────────────────────────────────────── */
     function renderPills() {
       const el = document.getElementById('meta-pills');
-      const d1 = new Date(DATA.startedAt).toLocaleString();
-      const d2 = new Date(DATA.finishedAt).toLocaleString();
       el.innerHTML = `
         <span class="pill"><b>${DATA.apis.length}</b>&nbsp;Models</span>
         <span class="pill"><b>${DATA.caseCount}</b>&nbsp;Cases</span>
         <span class="pill"><b>${DATA.repeats}</b>&nbsp;Runs each</span>
-        <span class="pill">${d1}</span>
       `;
     }
 

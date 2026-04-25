@@ -1,5 +1,7 @@
 # RunEver
 
+[![RunEver demo video](https://img.youtube.com/vi/fk15rsW_E_0/hqdefault.jpg)](https://www.youtube.com/watch?v=fk15rsW_E_0)
+
 **RunEver** is an open-source agentic browser built with **TypeScript**, **Electron**, and an **HTML-first automation runtime**.
 
 It is designed to make browser automation practical for real-world work: not just for benchmark demos, not just for teams with frontier models, and not just for companies with dedicated automation engineers.
