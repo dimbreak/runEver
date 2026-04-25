@@ -5,15 +5,16 @@
   "repeats": 3,
   "apis": [
     "openai-gpt-5.4",
+    "anthropic-claude-opus-4-6",
     "openai-gpt-5.1",
     "google-gemini-3.1-pro-preview",
     "openai-gpt-5-mini",
-    "anthropic-claude-opus-4-6",
     "x-ai/grok-4.20",
     "anthropic-claude-sonnet-4-6",
     "google-gemini-3.1-flash-lite-preview",
     "alibaba-qwen3.6-plus",
     "kimi-k2.5",
+    "deepseek-v4-pro",
     "openai-gpt-5.4-mini",
     "minimax-m2.7",
     "grok-4.1-fast",
@@ -3881,6 +3882,346 @@
       "adjustedMaxScore": 139.5,
       "adjustedTotalScore": 109.4,
       "adjustedScoreRate": 78.42
+    },
+    {
+      "apiId": "deepseek-v4-pro",
+      "provider": "deepseek",
+      "maxScore": 129,
+      "adjustedMaxScore": 139.5,
+      "scoreRate": 76.51,
+      "adjustedScoreRate": 77.03,
+      "totalScore": 98.7,
+      "adjustedTotalScore": 107.45,
+      "averageScore": 4.7,
+      "averageFirstTokenMs": 3522.48,
+      "averageTotalTimeMs": 14227.62,
+      "caseSummaries": [
+        {
+          "caseId": "google-search-scam",
+          "caseName": "Google search scam",
+          "runCount": 3,
+          "singleRunMaxScore": 4,
+          "maxScore": 12,
+          "weight": 1,
+          "adjustedMaxScore": 12,
+          "totalScore": 7,
+          "adjustedTotalScore": 7,
+          "scoreRate": 58.33,
+          "adjustedScoreRate": 58.33,
+          "averageScore": 2.33,
+          "averageFirstTokenMs": 1254.33,
+          "averageTotalTimeMs": 2997.33,
+          "highlights": [],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 2001,
+              "totalTimeMs": 3314,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Find reliable source: Apple official site\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®61\",\n          \"argKeys\": []\n        }\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check page for buying options\"\n  }\n}",
+              "score": 3,
+              "highlights": []
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 1052,
+              "totalTimeMs": 3436,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Verify working check point 1: a reliable source found\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 1,\n        \"verifiedProve\": {\n          \"domId\": \"®12l\",\n          \"proveOfWork\": \"Search results page loaded with multiple retailer links including Apple, O2, Three, Sky, and others. The search 'buy iphone 17 pro max' returned valid shopping results. Proceeding to select a reliable source.\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Review results and click an official carrier or Apple link. Consider Apple official site or known carriers like Sky, EE, or John Lewis.\"\n  }\n}",
+              "score": 3,
+              "highlights": []
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 710,
+              "totalTimeMs": 2242,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"mark check point 1 verified\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 1,\n        \"verifiedProve\": {\n          \"domId\": \"®12l\",\n          \"proveOfWork\": \"search results for 'buy iphone 17 pro max' are\n  displayed, with sponsored products, organic links and knowledge panel visible.\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify result and select reliable source (e.g. apple.com/uk or\n  johnlewis.com).\"\n  }\n}",
+              "score": 1,
+              "highlights": []
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/google-search-scam.json"
+        },
+        {
+          "caseId": "amazon-long-ctx-buy",
+          "caseName": "Amazon Long-CTX Buy",
+          "runCount": 3,
+          "singleRunMaxScore": 5,
+          "maxScore": 15,
+          "weight": 1,
+          "adjustedMaxScore": 15,
+          "totalScore": 14,
+          "adjustedTotalScore": 14,
+          "scoreRate": 93.33,
+          "adjustedScoreRate": 93.33,
+          "averageScore": 4.67,
+          "averageFirstTokenMs": 1446.33,
+          "averageTotalTimeMs": 8892,
+          "highlights": [],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 2815,
+              "totalTimeMs": 5346,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"select quantity using arg buy_quantity\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\"buy_quantity\"]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now button for express check out\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"verify checkout page loaded with quantity 3, then proceed to place order with default payment & address\"\n  }\n}",
+              "score": 5,
+              "highlights": []
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 798,
+              "totalTimeMs": 19355,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to 3\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\"buy_quantity\"]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now with quantity 3\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        }\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"review checkout page, verify item & quantity, proceed to place order using default payment & address\"\n  }\n}",
+              "score": 5,
+              "highlights": []
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 726,
+              "totalTimeMs": 1975,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set quantity to 3 from arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": { \"id\": \"®d5\", \"argKeys\": [] },\n        \"v\": \"3\",\n        \"c\": \"noClear\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify quantity set to 3, then click Buy Now\"\n  }\n}",
+              "score": 4,
+              "highlights": []
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/amazon-long-ctx-buy.json"
+        },
+        {
+          "caseId": "long-task-splitting",
+          "caseName": "Long Task Splitting",
+          "runCount": 3,
+          "singleRunMaxScore": 7,
+          "maxScore": 21,
+          "weight": 1.5,
+          "adjustedMaxScore": 31.5,
+          "totalScore": 17.5,
+          "adjustedTotalScore": 26.25,
+          "scoreRate": 83.33,
+          "adjustedScoreRate": 83.33,
+          "averageScore": 5.83,
+          "averageFirstTokenMs": 5154.33,
+          "averageTotalTimeMs": 16661.33,
+          "highlights": [],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 12152,
+              "totalTimeMs": 28524,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"dispatch tasks\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": -1,\n        \"checkPoints\": [\n          \"go to email platform\",\n          \"login to email with credentials\",\n          \"read new order email\",\n          \"extract order detail from email\",\n          \"go to ordering platform\",\n          \"login to pos with credentials\",\n          \"fill create order form with extracted detail\",\n          \"set earliest delivery date in form\",\n          \"proceed to preview order\",\n          \"check if order amount > 1000 trigger approval\",\n          \"go to messager\",\n          \"send order detail and screenshot to dillion for approval\",\n          \"follow dillion's advice\",\n          \"save order\",\n          \"download invoice from order list\",\n          \"go back to email\",\n          \"reply to client with order id, detail and invoice\"\n        ],\n        \"permitFromGoal\": \"\",\n        \"src\": \"user goal\",\n        \"taskRisk\": \"l\"\n      }\n    }\n  ],\n  \"e\": \"\"\n}",
+              "score": 6,
+              "highlights": []
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 531,
+              "totalTimeMs": 14925,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add full check point list from goal\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email with pikachu@pokemon.com / P@ssword321\",\n          \"read new order email and get order detail\",\n          \"go to pos system and login\",\n          \"fill create order form with detail from the order email\",\n          \"set earliest delivery date\",\n          \"preview order: if amount > 1000, cap screenshot & go to messager send order file/detail/screenshot seek manager dillions approve, do what he advise\",\n          \"save order\",\n          \"download the invoice in order list\",\n          \"go to email and reply the client with id, detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"goal breakdown\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"login to email with args.new_arg_1770940290032 as email and args.secret_keyword as password\"\n  }\n}",
+              "score": 5.5,
+              "highlights": []
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 2780,
+              "totalTimeMs": 6535,
+              "result": "{\n  \"next\": {\n    \"tip\": \"Add checklist then login with pikachu@pokemon.com / P@ssword321\"\n  },\n  \"a\": [\n    {\n      \"intent\": \"Initialize task checklist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"Login to email account (pikachu@pokemon.com / P@ssword321)\",\n          \"Read new order email and extract order details\",\n          \"Login to POS system\",\n          \"Fill create order form with order details from email\",\n          \"Set earliest delivery date on order form\",\n          \"Preview order and check if amount > 1000\",\n          \"If amount > 1000, screenshot preview and go to messager\",\n          \"Send order details and screenshot to manager Dillion for approval\",\n          \"Follow Dillion's advice\",\n          \"Save the order\",\n          \"Download invoice from order list\",\n          \"Go to email and reply to client with order ID, detail and invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"breakdown from goal\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ]\n}",
+              "score": 6,
+              "highlights": []
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/long-task-splitting.json"
+        },
+        {
+          "caseId": "long-form-filling",
+          "caseName": "Long Form Filling",
+          "runCount": 3,
+          "singleRunMaxScore": 8,
+          "maxScore": 24,
+          "weight": 1,
+          "adjustedMaxScore": 24,
+          "totalScore": 9,
+          "adjustedTotalScore": 9,
+          "scoreRate": 37.5,
+          "adjustedScoreRate": 37.5,
+          "averageScore": 3,
+          "averageFirstTokenMs": 9106.33,
+          "averageTotalTimeMs": 12281.33,
+          "highlights": [],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 8112,
+              "totalTimeMs": 10482,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client info fields\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": {\n          \"id\": \"®91\",\n          \"argKeys\": [\"clientName\", \"clientEmail\", \"clientPhone\"]\n        },\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" }\n        ]\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify client fields filled, then fill address fields\"\n  }\n}",
+              "score": 3,
+              "highlights": []
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 9014,
+              "totalTimeMs": 11442,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client name, email, phone with arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®4r\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"®4u\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"®4x\", \"v\": \"${args.clientPhone}\" }\n        ]\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"client info filled, next fill delivery address\"\n  }\n}",
+              "score": 3,
+              "highlights": []
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 10193,
+              "totalTimeMs": 14920,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client info fields\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" }\n        ]\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify client info filled correctly\"\n  }\n}",
+              "score": 3,
+              "highlights": []
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/long-form-filling.json"
+        },
+        {
+          "caseId": "reasoning-calendar",
+          "caseName": "Reasoning Calendar",
+          "runCount": 3,
+          "singleRunMaxScore": 5,
+          "maxScore": 15,
+          "weight": 1,
+          "adjustedMaxScore": 15,
+          "totalScore": 13,
+          "adjustedTotalScore": 13,
+          "scoreRate": 86.67,
+          "adjustedScoreRate": 86.67,
+          "averageScore": 4.33,
+          "averageFirstTokenMs": 935.67,
+          "averageTotalTimeMs": 13224.33,
+          "highlights": [],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 1120,
+              "totalTimeMs": 3874,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set check point #4 to working\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"alter delivery date with calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form\",\n          \"argValHint\": null,\n          \"pageHint\": \"Delivery Date label says: order takes 11 months to produce. Remark: We are not open on monday, please do not delivery on monday. Current calendar shows February 2026.\"\n        }\n      },\n      \"pre\": {\n        \"t\": \"time\",\n        \"ms\": 300\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After date is set, verify delivery date field updated, then proceed to check point 5 (preview screenshot & messenger approval).\"\n  }\n}",
+              "score": 5,
+              "highlights": []
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 642,
+              "totalTimeMs": 15079,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"alter check point #4 to working status\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"abbort original check point #4 and add separate calendar check points\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 3,\n        \"checkPoints\": [\n          \"acci acci set earliest delivery date via calendar\",\n          \"verify delivery date is set correctly\"\n        ],\n        \"permitFromGoal\": \"set earliest delivery date\",\n        \"src\": \"calendar task breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"cancel old mixed check point #4\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"cancel\",\n        \"pos\": 4,\n        \"cancelReason\": \"replace with separated calendar checkpoints for calendar executor\"\n      }\n    },\n    {\n      \"intent\": \"set calendar delivery date with full context from goal and remarks\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce. Calendar shows February 2026.\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify delivery date is set and proceed to preview order\"\n  }\n}",
+              "score": 5,
+              "highlights": []
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 1045,
+              "totalTimeMs": 20720,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"laman create order di POS\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 3,\n        \"checkPoints\": [\n          \"Dapatkan tarikh penghantaran terawal dengan mengambil kira nota 'Not open on Monday'\",\n          \"Isi tarikh penghantaran terawal pada borang POS\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"Berdasarkan status borang, kita perlu tetapkan tarikh penghantaran. Perlu check point baru untuk selesaikan.\",\n        \"taskRisk\": \"l\"\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check point baru telah ditambah. Teruskan dengan set tarikh penghantaran terawal.\",\n    \"sc\": false\n  }\n}",
+              "score": 3,
+              "highlights": []
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/reasoning-calendar.json"
+        },
+        {
+          "caseId": "fotopia-webskill-add-wishlist",
+          "caseName": "Fotopia WebSkill Add Wishlist",
+          "runCount": 3,
+          "singleRunMaxScore": 6,
+          "maxScore": 18,
+          "weight": 1,
+          "adjustedMaxScore": 18,
+          "totalScore": 16,
+          "adjustedTotalScore": 16,
+          "scoreRate": 88.89,
+          "adjustedScoreRate": 88.89,
+          "averageScore": 5.33,
+          "averageFirstTokenMs": 1248.67,
+          "averageTotalTimeMs": 22607,
+          "highlights": [
+            "wishlist item count or stock ids mismatch",
+            "addWishlist should not disable wishlist navigation"
+          ],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 1938,
+              "totalTimeMs": 42770,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set lens search results to arguments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"wideLensResults\": \"[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"productName\\\":\\\"Leica Summaron-M 28mm F5.6 - Black / v2 / Matt Black Paint Finish / 11928\\\",\\\"unitPrice\\\":\\\"69800\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"productName\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver / v2 / 11695\\\",\\\"unitPrice\\\":\\\"18800\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"productName\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements / Brass / Black Paint\\\",\\\"unitPrice\\\":\\\"6622\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"productName\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements / Brass / Chrome\\\",\\\"unitPrice\\\":\\\"6232\\\"}]\"\n        }\n      }\n    },\n    {\n      \"intent\": \"Add Summaron-M Black to wishlist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Ultra-compact 28mm with vintage rendering. Limited black paint edition, perfect match for black Leica M6. No ASPH - classic Mandler-era optical signature.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After wishlist navigation, add remaining lens options (Summaron-M Silver, LLL 28mm Black Paint, LLL 28mm Chrome) with comments\"\n  }\n}",
+              "score": 4,
+              "highlights": [
+                "wishlist item count or stock ids mismatch"
+              ]
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 803,
+              "totalTimeMs": 6092,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add wide-angle lens options to wishlist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black: ultra-compact classic rendering, perfect street pair for M6\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: same vintage look in silver chrome, excellent match for silver M6\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Black Paint: modern homage with fluorite ED glass, brass build, great value alternative\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Chrome: classic aesthetic with modern optics, matches chrome M6 beautifully\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"wishlist updated with lens options, then ask user which camera+lens to buy, prepare checkout\"\n  }\n}",
+              "score": 6,
+              "highlights": []
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 1005,
+              "totalTimeMs": 18959,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add 28mm lens options to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: ultra-compact, classic rendering, no ASPH, great for street and wide-angle character\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Black Paint: classic formula homage, no ASPH, modern improvements, faster F2.8 for low light\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Chrome: same classic formula, no ASPH, silver chrome finish option\\\"}],\\\"navigateToWishlist\\\":false}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After wishlist update, ask user which camera+lens to buy, then prepare checkout with address 1 Kirn Rd London W13 0UB UK and phone 123456\"\n  }\n}",
+              "score": 6,
+              "highlights": [
+                "addWishlist should not disable wishlist navigation"
+              ]
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/fotopia-webskill-add-wishlist.json"
+        },
+        {
+          "caseId": "long-form-webskill",
+          "caseName": "Long Form Webskill",
+          "runCount": 3,
+          "singleRunMaxScore": 8,
+          "maxScore": 24,
+          "weight": 1,
+          "adjustedMaxScore": 24,
+          "totalScore": 22.2,
+          "adjustedTotalScore": 22.2,
+          "scoreRate": 92.5,
+          "adjustedScoreRate": 92.5,
+          "averageScore": 7.4,
+          "averageFirstTokenMs": 5511.67,
+          "averageTotalTimeMs": 22930,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "runs": [
+            {
+              "attempt": 1,
+              "firstTokenMs": 12956,
+              "totalTimeMs": 31065,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder with all arguments\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args.items.0.name}\\\",\\\"quantity\\\":${args.items.0.qty},\\\"unitPrice\\\":${args.items.0.unit_price}},{\\\"productName\\\":\\\"${args.items.1.name}\\\",\\\"quantity\\\":${args.items.1.qty},\\\"unitPrice\\\":${args.items.1.unit_price}},{\\\"productName\\\":\\\"${args.items.2.name}\\\",\\\"quantity\\\":${args.items.2.qty},\\\"unitPrice\\\":${args.items.2.unit_price}}],\\\"deliveryDate\\\":null}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"delivery date not51 provided; calendar executor must pick date after call returns\"\n  }\n}",
+              "score": 7.4,
+              "highlights": [
+                "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+              ]
+            },
+            {
+              "attempt": 2,
+              "firstTokenMs": 1219,
+              "totalTimeMs": 11679,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepare order with callWebSkill\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-28\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"prepareOrder called; use next turn to verify returned result and update check points\"\n  }\n}",
+              "score": 7.4,
+              "highlights": [
+                "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+              ]
+            },
+            {
+              "attempt": 3,
+              "firstTokenMs": 2360,
+              "totalTimeMs": 26046,
+              "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder with all client, line items, and context args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"verify inputs after prepareOrder\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 1,\n        \"verifiedProve\": {\n          \"domId\": \"®8r\",\n          \"proveOfWork\": \"prepared order via webSkill; form inputs, lines, totals populated; ready to verify all fields\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify the filled form values match order_form.pdf, especially line items, totals, and delivery date according to client instruction and 11-month lead time\",\n    \"sc\": true\n  }\n}",
+              "score": 7.4,
+              "highlights": [
+                "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+              ]
+            }
+          ],
+          "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/long-form-webskill.json"
+        }
+      ],
+      "modelDir": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro",
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/details.json"
     },
     {
       "apiId": "openai-gpt-5.4-mini",

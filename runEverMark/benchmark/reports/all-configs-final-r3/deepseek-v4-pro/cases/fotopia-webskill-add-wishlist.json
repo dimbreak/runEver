@@ -1,0 +1,51 @@
+{
+  "caseId": "fotopia-webskill-add-wishlist",
+  "caseName": "Fotopia WebSkill Add Wishlist",
+  "runCount": 3,
+  "singleRunMaxScore": 6,
+  "maxScore": 18,
+  "weight": 1,
+  "adjustedMaxScore": 18,
+  "totalScore": 16,
+  "adjustedTotalScore": 16,
+  "scoreRate": 88.89,
+  "adjustedScoreRate": 88.89,
+  "averageScore": 5.33,
+  "averageFirstTokenMs": 1248.67,
+  "averageTotalTimeMs": 22607,
+  "highlights": [
+    "wishlist item count or stock ids mismatch",
+    "addWishlist should not disable wishlist navigation"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 1938,
+      "totalTimeMs": 42770,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set lens search results to arguments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"wideLensResults\": \"[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"productName\\\":\\\"Leica Summaron-M 28mm F5.6 - Black / v2 / Matt Black Paint Finish / 11928\\\",\\\"unitPrice\\\":\\\"69800\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"productName\\\":\\\"Leica Summaron-M 28mm F5.6 - Silver / v2 / 11695\\\",\\\"unitPrice\\\":\\\"18800\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"productName\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements / Brass / Black Paint\\\",\\\"unitPrice\\\":\\\"6622\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"productName\\\":\\\"Light Lens Lab 28mm F2.8 - 9 Elements / Brass / Chrome\\\",\\\"unitPrice\\\":\\\"6232\\\"}]\"\n        }\n      }\n    },\n    {\n      \"intent\": \"Add Summaron-M Black to wishlist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Ultra-compact 28mm with vintage rendering. Limited black paint edition, perfect match for black Leica M6. No ASPH - classic Mandler-era optical signature.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After wishlist navigation, add remaining lens options (Summaron-M Silver, LLL 28mm Black Paint, LLL 28mm Chrome) with comments\"\n  }\n}",
+      "score": 4,
+      "highlights": [
+        "wishlist item count or stock ids mismatch"
+      ]
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 803,
+      "totalTimeMs": 6092,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add wide-angle lens options to wishlist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Black: ultra-compact classic rendering, perfect street pair for M6\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: same vintage look in silver chrome, excellent match for silver M6\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Black Paint: modern homage with fluorite ED glass, brass build, great value alternative\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Chrome: classic aesthetic with modern optics, matches chrome M6 beautifully\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"wishlist updated with lens options, then ask user which camera+lens to buy, prepare checkout\"\n  }\n}",
+      "score": 6,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 1005,
+      "totalTimeMs": 18959,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add 28mm lens options to wishlist with comments\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Leica Summaron-M 28mm F5.6 Silver: ultra-compact, classic rendering, no ASPH, great for street and wide-angle character\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Black Paint: classic formula homage, no ASPH, modern improvements, faster F2.8 for low light\\\"},{\\\"stockId\\\":\\\"a58c2fc9-c347-494f-b335-5b8b100a0f96\\\",\\\"comment\\\":\\\"LLL 28mm F2.8 9-Element Chrome: same classic formula, no ASPH, silver chrome finish option\\\"}],\\\"navigateToWishlist\\\":false}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After wishlist update, ask user which camera+lens to buy, then prepare checkout with address 1 Kirn Rd London W13 0UB UK and phone 123456\"\n  }\n}",
+      "score": 6,
+      "highlights": [
+        "addWishlist should not disable wishlist navigation"
+      ]
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/fotopia-webskill-add-wishlist.json"
+}

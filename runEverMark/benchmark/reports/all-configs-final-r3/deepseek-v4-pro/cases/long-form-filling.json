@@ -1,0 +1,44 @@
+{
+  "caseId": "long-form-filling",
+  "caseName": "Long Form Filling",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "totalScore": 9,
+  "adjustedTotalScore": 9,
+  "scoreRate": 37.5,
+  "adjustedScoreRate": 37.5,
+  "averageScore": 3,
+  "averageFirstTokenMs": 9106.33,
+  "averageTotalTimeMs": 12281.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 8112,
+      "totalTimeMs": 10482,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client info fields\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": {\n          \"id\": \"®91\",\n          \"argKeys\": [\"clientName\", \"clientEmail\", \"clientPhone\"]\n        },\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" }\n        ]\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify client fields filled, then fill address fields\"\n  }\n}",
+      "score": 3,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 9014,
+      "totalTimeMs": 11442,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client name, email, phone with arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"®4r\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"®4u\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"®4x\", \"v\": \"${args.clientPhone}\" }\n        ]\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"client info filled, next fill delivery address\"\n  }\n}",
+      "score": 3,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 10193,
+      "totalTimeMs": 14920,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client info fields\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          { \"f\": \"clientName\", \"v\": \"${args.clientName}\" },\n          { \"f\": \"clientEmail\", \"v\": \"${args.clientEmail}\" },\n          { \"f\": \"clientPhone\", \"v\": \"${args.clientPhone}\" }\n        ]\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify client info filled correctly\"\n  }\n}",
+      "score": 3,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/long-form-filling.json"
+}

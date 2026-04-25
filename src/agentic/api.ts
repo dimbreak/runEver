@@ -404,8 +404,8 @@ export namespace LlmApi {
       });
       return {
         provider: 'deepseek',
-        hi: deepseek('deepseek-v3.2'),
-        mid: deepseek('deepseek-v3.2'),
+        hi: deepseek('deepseek/deepseek-v4-pro'),
+        mid: deepseek('deepseek/deepseek-v4-flash'),
         low: deepseek('deepseek-v3.2'),
         streaming: true,
         makeProviderOptions: (reasoningEffort: ReasoningEffort) => {
@@ -413,6 +413,77 @@ export namespace LlmApi {
             deepseek: {
               thinking: { type: reasoningEffort ? 'enabled' : 'disabled' },
             } satisfies DeepSeekLanguageModelOptions,
+          };
+        },
+        queryStream: async ({
+          prompt,
+          systemPrompt,
+          attachments,
+          cacheKey,
+          model,
+          reasoningEffort,
+        }) => {
+          const streamResult = streamText({
+            model: deepseek(
+              {
+                hi: 'deepseek/deepseek-v4-pro',
+                mid: 'deepseek/deepseek-v4-flash',
+                low: 'deepseek-v3.2',
+              }[model],
+            ),
+            providerOptions: {
+              deepseek: {
+                thinking: { type: reasoningEffort ? 'enabled' : 'disabled' },
+              } satisfies DeepSeekLanguageModelOptions,
+            },
+            system:
+              buildProviderSystemPrompt('deepseek', systemPrompt) ||
+              undefined,
+            messages: [createUserMessage(prompt, attachments)],
+            experimental_context: cacheKey ? { cacheKey } : undefined,
+          });
+
+          return {
+            response: streamResult.response,
+            textStream: (async function* () {
+              let buffer = '';
+              let shouldBuffer = false;
+              let decided = false;
+
+              for await (const part of streamResult.textStream) {
+                buffer += part;
+
+                if (!decided) {
+                  const trimmed = buffer.trimStart();
+                  if (!trimmed) {
+                    continue;
+                  }
+
+                  decided = true;
+                  shouldBuffer = !(
+                    trimmed.startsWith('{') || trimmed.startsWith('[')
+                  );
+
+                  if (!shouldBuffer) {
+                    yield buffer;
+                    buffer = '';
+                  }
+                  continue;
+                }
+
+                if (!shouldBuffer) {
+                  yield part;
+                }
+              }
+
+              if (shouldBuffer) {
+                const salvaged = salvageClaudeJsonOutput(buffer);
+                if (salvaged !== buffer) {
+                  console.warn('DeepSeek output salvaged to JSON-only response.');
+                }
+                yield* splitIntoChunks(salvaged);
+              }
+            })(),
           };
         },
       };
@@ -563,7 +634,8 @@ CRITICAL OUTPUT CONTRACT FOR ${providerName.toUpperCase()}:
       provider === 'anthropic' ||
       provider === 'zai' ||
       provider === 'moonshot' ||
-      provider === 'minimax'
+      provider === 'minimax' ||
+      provider === 'deepseek'
     ) {
       return buildStrictJsonSystemPrompt(provider, systemPrompt);
     }
