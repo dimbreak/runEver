@@ -1,0 +1,44 @@
+{
+  "caseId": "amazon-long-ctx-buy",
+  "caseName": "Amazon Long-CTX Buy",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "totalScore": 14,
+  "adjustedTotalScore": 14,
+  "scoreRate": 93.33,
+  "adjustedScoreRate": 93.33,
+  "averageScore": 4.67,
+  "averageFirstTokenMs": 1446.33,
+  "averageTotalTimeMs": 8892,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 2815,
+      "totalTimeMs": 5346,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"select quantity using arg buy_quantity\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\"buy_quantity\"]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now button for express check out\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"sc\": false,\n    \"tip\": \"verify checkout page loaded with quantity 3, then proceed to place order with default payment & address\"\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 798,
+      "totalTimeMs": 19355,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to 3\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": {\n          \"id\": \"®d5\",\n          \"argKeys\": [\"buy_quantity\"]\n        },\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"click Buy Now with quantity 3\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®el\",\n          \"argKeys\": []\n        }\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"review checkout page, verify item & quantity, proceed to place order using default payment & address\"\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 726,
+      "totalTimeMs": 1975,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Set quantity to 3 from arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": { \"id\": \"®d5\", \"argKeys\": [] },\n        \"v\": \"3\",\n        \"c\": \"noClear\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify quantity set to 3, then click Buy Now\"\n  }\n}",
+      "score": 4,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/amazon-long-ctx-buy.json"
+}

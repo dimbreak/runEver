@@ -1,0 +1,52 @@
+{
+  "caseId": "long-form-webskill",
+  "caseName": "Long Form Webskill",
+  "runCount": 3,
+  "singleRunMaxScore": 8,
+  "maxScore": 24,
+  "weight": 1,
+  "adjustedMaxScore": 24,
+  "totalScore": 22.2,
+  "adjustedTotalScore": 22.2,
+  "scoreRate": 92.5,
+  "adjustedScoreRate": 92.5,
+  "averageScore": 7.4,
+  "averageFirstTokenMs": 5511.67,
+  "averageTotalTimeMs": 22930,
+  "highlights": [
+    "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+  ],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 12956,
+      "totalTimeMs": 31065,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder with all arguments\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"${args.items.0.name}\\\",\\\"quantity\\\":${args.items.0.qty},\\\"unitPrice\\\":${args.items.0.unit_price}},{\\\"productName\\\":\\\"${args.items.1.name}\\\",\\\"quantity\\\":${args.items.1.qty},\\\"unitPrice\\\":${args.items.1.unit_price}},{\\\"productName\\\":\\\"${args.items.2.name}\\\",\\\"quantity\\\":${args.items.2.qty},\\\"unitPrice\\\":${args.items.2.unit_price}}],\\\"deliveryDate\\\":null}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"delivery date not51 provided; calendar executor must pick date after call returns\"\n  }\n}",
+      "score": 7.4,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ]
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 1219,
+      "totalTimeMs": 11679,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"prepare order with callWebSkill\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-28\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"prepareOrder called; use next turn to verify returned result and update check points\"\n  }\n}",
+      "score": 7.4,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ]
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 2360,
+      "totalTimeMs": 26046,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder with all client, line items, and context args\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"${args.clientName}\\\",\\\"clientEmail\\\":\\\"${args.clientEmail}\\\",\\\"clientPhone\\\":\\\"${args.clientPhone}\\\",\\\"address\\\":\\\"${args.address}\\\",\\\"city\\\":\\\"${args.city}\\\",\\\"region\\\":\\\"${args.region}\\\",\\\"postal\\\":\\\"${args.postal}\\\",\\\"deliveryDate\\\":\\\"\\\",\\\"remark\\\":\\\"${args.remark}\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"verify inputs after prepareOrder\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"verified\",\n        \"pos\": 1,\n        \"verifiedProve\": {\n          \"domId\": \"®8r\",\n          \"proveOfWork\": \"prepared order via webSkill; form inputs, lines, totals populated; ready to verify all fields\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify the filled form values match order_form.pdf, especially line items, totals, and delivery date according to client instruction and 11-month lead time\",\n    \"sc\": true\n  }\n}",
+      "score": 7.4,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ]
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/long-form-webskill.json"
+}

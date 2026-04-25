@@ -1,0 +1,44 @@
+{
+  "caseId": "reasoning-calendar",
+  "caseName": "Reasoning Calendar",
+  "runCount": 3,
+  "singleRunMaxScore": 5,
+  "maxScore": 15,
+  "weight": 1,
+  "adjustedMaxScore": 15,
+  "totalScore": 13,
+  "adjustedTotalScore": 13,
+  "scoreRate": 86.67,
+  "adjustedScoreRate": 86.67,
+  "averageScore": 4.33,
+  "averageFirstTokenMs": 935.67,
+  "averageTotalTimeMs": 13224.33,
+  "highlights": [],
+  "runs": [
+    {
+      "attempt": 1,
+      "firstTokenMs": 1120,
+      "totalTimeMs": 3874,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set check point #4 to working\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"alter delivery date with calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": {\n          \"id\": \"®9u\",\n          \"argKeys\": []\n        },\n        \"ctx\": {\n          \"goalHint\": \"Set earliest delivery date in POS create order form\",\n          \"argValHint\": null,\n          \"pageHint\": \"Delivery Date label says: order takes 11 months to produce. Remark: We are not open on monday, please do not delivery on monday. Current calendar shows February 2026.\"\n        }\n      },\n      \"pre\": {\n        \"t\": \"time\",\n        \"ms\": 300\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After date is set, verify delivery date field updated, then proceed to check point 5 (preview screenshot & messenger approval).\"\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 2,
+      "firstTokenMs": 642,
+      "totalTimeMs": 15079,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"alter check point #4 to working status\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"abbort original check point #4 and add separate calendar check points\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 3,\n        \"checkPoints\": [\n          \"acci acci set earliest delivery date via calendar\",\n          \"verify delivery date is set correctly\"\n        ],\n        \"permitFromGoal\": \"set earliest delivery date\",\n        \"src\": \"calendar task breakdown\",\n        \"taskRisk\": \"l\"\n      }\n    },\n    {\n      \"intent\": \"cancel old mixed check point #4\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"cancel\",\n        \"pos\": 4,\n        \"cancelReason\": \"replace with separated calendar checkpoints for calendar executor\"\n      }\n    },\n    {\n      \"intent\": \"set calendar delivery date with full context from goal and remarks\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": \"We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Delivery Date - order takes 11 months to produce. Calendar shows February 2026.\"\n        }\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"verify delivery date is set and proceed to preview order\"\n  }\n}",
+      "score": 5,
+      "highlights": []
+    },
+    {
+      "attempt": 3,
+      "firstTokenMs": 1045,
+      "totalTimeMs": 20720,
+      "result": "{\n  \"a\": [\n    {\n      \"intent\": \"laman create order di POS\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 3,\n        \"checkPoints\": [\n          \"Dapatkan tarikh penghantaran terawal dengan mengambil kira nota 'Not open on Monday'\",\n          \"Isi tarikh penghantaran terawal pada borang POS\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want\",\n        \"src\": \"Berdasarkan status borang, kita perlu tetapkan tarikh penghantaran. Perlu check point baru untuk selesaikan.\",\n        \"taskRisk\": \"l\"\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check point baru telah ditambah. Teruskan dengan set tarikh penghantaran terawal.\",\n    \"sc\": false\n  }\n}",
+      "score": 3,
+      "highlights": []
+    }
+  ],
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/deepseek-v4-pro/cases/reasoning-calendar.json"
+}

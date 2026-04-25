@@ -19,12 +19,12 @@ dotenv.config({
 });
 
 export const benchmarkCases: BenchmarkCase[] = [
-  // googleSearchScamTest,
-  // amazonLongCtxBuyTest,
-  // longTaskSplittingTest,
-  // longFormFillingTest,
-  // reasoningCalendarTest,
-  // webskillAddWishlistTest,
+  googleSearchScamTest,
+  amazonLongCtxBuyTest,
+  longTaskSplittingTest,
+  longFormFillingTest,
+  reasoningCalendarTest,
+  webskillAddWishlistTest,
   longFormWebskillTest,
 ];
 
@@ -195,15 +195,15 @@ const configuredBenchmarkApis: BenchmarkApiPreset[] = [
   //   reasoningEffort: 'low',
   //   repeats: env.REPEAT,
   // },
-  // {
-  //   id: 'deepseek-v3.2',
-  //   provider: 'deepseek',
-  //   apiKey: env.DEEPSEEK_API_KEY,
-  //   baseUrl: env.DEEPSEEK_BASE_URL,
-  //   model: 'hi',
-  //   reasoningEffort: 'low',
-  //   repeats: env.REPEAT,
-  // },
+  {
+    id: 'deepseek-v4-pro',
+    provider: 'deepseek',
+    apiKey: env.DEEPSEEK_API_KEY,
+    baseUrl: env.DEEPSEEK_BASE_URL,
+    model: 'hi',
+    reasoningEffort: 'low',
+    repeats: env.REPEAT,
+  },
   {
     id: 'zai-glm-5',
     provider: 'zai',
