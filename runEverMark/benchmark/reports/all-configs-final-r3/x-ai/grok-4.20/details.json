@@ -1,0 +1,401 @@
+{
+  "apiId": "x-ai/grok-4.20",
+  "provider": "xai",
+  "maxScore": 129,
+  "scoreRate": 85.89,
+  "totalScore": 110.8,
+  "averageScore": 5.28,
+  "averageFirstTokenMs": 29922.33,
+  "averageTotalTimeMs": 31284.9,
+  "caseSummaries": [
+    {
+      "caseId": "amazon-long-ctx-buy",
+      "caseName": "Amazon Long-CTX Buy",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 12,
+      "scoreRate": 80,
+      "averageScore": 4,
+      "averageFirstTokenMs": 22488.33,
+      "averageTotalTimeMs": 23128.33,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 24104,
+          "totalTimeMs": 24775,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to ${args.buy_quantity} using the one-time purchase selector\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Quantity now set to args.buy_quantity. Verify selected quantity shows 3, price is updated for 3 units, and no errors. Then use isolated single action response to click the Buy Now button (id ®el) to proceed to checkout.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 511,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to ${args.buy_quantity} using the one-time purchase selector\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\" }, \"cp\": [2] } ], \"nex…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 22499,
+          "totalTimeMs": 23124,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity to ${args.buy_quantity} on purchase form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Quantity now set to args.buy_quantity. Verify it shows 3, then use isolated single-action click on Buy Now button to start express checkout with defaults.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 426,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity to ${args.buy_quantity} on purchase form\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\" }, \"cp\": [2] } ], \"next\": { \"tip\": \"Quanti…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 20862,
+          "totalTimeMs": 21486,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set quantity from args.buy_quantity to 3 in dropdown\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®d5\",\n        \"v\": \"${args.buy_quantity}\"\n      },\n      \"cp\": [\n        2\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Quantity updated to buy_quantity. Verify input on page then isolate click Buy Now button (id ®el) as single high-risk submit action next.\",\n    \"sc\": false\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 441,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set quantity from args.buy_quantity to 3 in dropdown\", \"risk\": \"m\", \"action\": { \"k\": \"input\", \"q\": \"®d5\", \"v\": \"${args.buy_quantity}\" }, \"cp\": [ 2 ] } ], \"next\": { \"tip\": \"Quant…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/amazon-long-ctx-buy.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 12,
+      "adjustedScoreRate": 80
+    },
+    {
+      "caseId": "fotopia-webskill-add-wishlist",
+      "caseName": "Fotopia WebSkill Add Wishlist",
+      "runCount": 3,
+      "singleRunMaxScore": 6,
+      "maxScore": 18,
+      "totalScore": 13,
+      "scoreRate": 72.22,
+      "averageScore": 4.33,
+      "averageFirstTokenMs": 19101.67,
+      "averageTotalTimeMs": 20587,
+      "highlights": [
+        "addWishlist should not disable wishlist navigation",
+        "invalid executor schema"
+      ],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 26495,
+          "totalTimeMs": 28147,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add 3 recommended wide angle (no asph) lenses to wishlist with comments via fotopiastore.addWishlist\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited edition matte black paint 28mm f/5.6 (500 pcs worldwide), compact stealth design ideal for street photography with vintage character.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Silver chrome compact 28mm f/5.6 Summaron, unique analog-like rendering, excellent for zone focusing and depth of field control.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Brass black paint 28mm f/2.8 9-element homage with ED glass for improved digital performance, solid value modern classic alternative.\\\"}],\\\"navigateToWishlist\\\":true}\"\n      },\n      \"cp\": [\n        3\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Lenses added with comments. Verify in wishlist then ask user selection before preparing checkout.\"\n  }\n}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1200,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Add 3 recommended wide angle (no asph) lenses to wishlist with comments via fotopiastore.addWishlist\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 12290,
+          "totalTimeMs": 14066,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Add 3 wide angle lens options to wishlist with comments via fotopiastore.addWishlist\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n        \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n        \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Compact 28mm f/5.6 limited matte black edition with vintage aesthetic and classic rendering, no ASPH, ideal for street photography\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Brass black paint 28mm f/2.8 9-element homage with modern ED glass improvements for digital sensors, retains classic character without ASPH\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Silver 28mm f/5.6 Summaron, ultra-compact with unique analog-like signature, depth of field scale, no ASPH, great capable wide angle\\\"}],\\\"navigateToWishlist\\\":false}\"\n      },\n      \"cp\": [3]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify lenses now appear in wishlist with comments. Then bother user to select which camera+lens combo to buy before preparing checkout with UK address and phone.\"\n  }\n}",
+          "score": 6,
+          "highlights": [
+            "addWishlist should not disable wishlist navigation"
+          ],
+          "resultChars": 1233,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Add 3 wide angle lens options to wishlist with comments via fotopiastore.addWishlist\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skills/f…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 18520,
+          "totalTimeMs": 19548,
+          "result": "[\n  {\n    \"intent\": \"add wide angle lens options to wishlist w/ recommendation comments using fotopiaStore webSkill\",\n    \"risk\": \"l\",\n    \"action\": {\n      \"k\": \"callWebSkill\",\n      \"href\": \"https://uat.fotopia.com.hk/skills/fotopiastore/SKILL.md\",\n      \"fnName\": \"window._web_skills.fotopiaStore.addWishlist\",\n      \"arg\": \"{\\\"items\\\":[{\\\"stockId\\\":\\\"b34b4287-a6fd-40ca-9e65-8f5e5acbc262\\\",\\\"comment\\\":\\\"Limited matte black Leica Summaron-M 28/5.6: compact stealth street lens with vintage signature.\\\"},{\\\"stockId\\\":\\\"fd9504ce-9708-464a-94b6-e3ea8cea58e8\\\",\\\"comment\\\":\\\"Silver Leica Summaron-M 28mm f/5.6: smallest M lens, unique analog character & precise zone focus.\\\"},{\\\"stockId\\\":\\\"3b0b4cde-9b33-43bc-b864-4b1412be76ca\\\",\\\"comment\\\":\\\"Light Lens Lab 28mm f/2.8 9-el brass black paint: classic homage with ED glass for better performance, value option.\\\"}],\\\"navigateToWishlist\\\":true}\"\n    },\n    \"cp\": [3]\n  }\n]",
+          "score": 1,
+          "highlights": [
+            "invalid executor schema"
+          ],
+          "resultChars": 923,
+          "resultFormat": "raw_json",
+          "resultPreview": "[ { \"intent\": \"add wide angle lens options to wishlist w/ recommendation comments using fotopiaStore webSkill\", \"risk\": \"l\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"https://uat.fotopia.com.hk/skill…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/fotopia-webskill-add-wishlist.json",
+      "weight": 1,
+      "adjustedMaxScore": 18,
+      "adjustedTotalScore": 13,
+      "adjustedScoreRate": 72.22
+    },
+    {
+      "caseId": "google-search-scam",
+      "caseName": "Google search scam",
+      "runCount": 3,
+      "singleRunMaxScore": 4,
+      "maxScore": 12,
+      "totalScore": 11,
+      "scoreRate": 91.67,
+      "averageScore": 3.67,
+      "averageFirstTokenMs": 33973.33,
+      "averageTotalTimeMs": 34569,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 33031,
+          "totalTimeMs": 33526,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click reliable O2 source link for buy iphone 17 pro max deals\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®14a\"\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On the opened retailer page, find and select a purchase option or deal for iPhone 17 Pro Max.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 359,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"click reliable O2 source link for buy iphone 17 pro max deals\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": \"®14a\" }, \"cp\": [1] } ], \"next\": { \"tip\": \"On the opene…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 28905,
+          "totalTimeMs": 29467,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click Apple iPhone 17 Pro Max 256G link from Apple as reliable source\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®6u\"\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On new page verify it's a reliable purchase option for iPhone 17 Pro Max then mark checklist 1 verified\"\n  }\n}",
+          "score": 3,
+          "highlights": [],
+          "resultChars": 376,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"click Apple iPhone 17 Pro Max 256G link from Apple as reliable source\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": \"®6u\" }, \"cp\": [1] } ], \"next\": { \"tip\": \"On ne…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 39984,
+          "totalTimeMs": 40714,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"click O2 UK link for iPhone 17 Pro Max deals as reliable source\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": {\n          \"id\": \"®14a\",\n          \"argKeys\": []\n        }\n      },\n      \"cp\": [1]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"On new page confirm reliable O2 iPhone 17 Pro Max deals loaded, mark checklist 1 verified with prove from HTML.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 432,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"click O2 UK link for iPhone 17 Pro Max deals as reliable source\", \"risk\": \"l\", \"action\": { \"k\": \"mouse\", \"a\": \"click\", \"q\": { \"id\": \"®14a\", \"argKeys\": [] } }, \"cp\": [1] } ], \"ne…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/google-search-scam.json",
+      "weight": 1,
+      "adjustedMaxScore": 12,
+      "adjustedTotalScore": 11,
+      "adjustedScoreRate": 91.67
+    },
+    {
+      "caseId": "long-form-filling",
+      "caseName": "Long Form Filling",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 20,
+      "scoreRate": 83.33,
+      "averageScore": 6.67,
+      "averageFirstTokenMs": 61923.33,
+      "averageTotalTimeMs": 65041,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 52617,
+          "totalTimeMs": 57991,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"mark checklist 0 as working before filling client info using args\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 0\n      }\n    },\n    {\n      \"intent\": \"mark checklist 1 as working before filling delivery address using args\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 1\n      }\n    },\n    {\n      \"intent\": \"mark checklist 4 as working before filling remark using args and review\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"fillForm on ®91 with clientName $args.clientName, clientEmail $args.clientEmail, clientPhone $args.clientPhone, address $args.address, city $args.city, region $args.region, postal $args.postal, remark $args.remark\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          },\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          },\n          {\n            \"f\": \"remark\",\n            \"v\": \"${args.remark}\"\n          }\n        ]\n      }\n    },\n    {\n      \"intent\": \"mark checklist 2 as working and click + Add Line Item 2 times to prepare 3 lines per itemsCount:3\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 2\n      },\n      \"post\": {\n        \"t\": \"time\",\n        \"ms\": 800\n      }\n    },\n    {\n      \"intent\": \"click + Add Line Item button repeat:2 to prepare sufficient fields for 3 items from args\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify client, delivery, remark fields now match args in HTML. Proceed to fill order lines (products via combobox isolated, qtys/unit prices), then review all at ®91. Isolate combobox/calendar per guides.\"\n  }\n}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 2524,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"mark checklist 0 as working before filling client info using args\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 0 } }, { \"intent\": \"mark checklist 1 as wor…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 65385,
+          "totalTimeMs": 68407,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Cancel checklist 3 to isolate combobox per guide\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"cancel\",\n        \"pos\": 3,\n        \"cancelReason\": \"combobox action must be in isolated check point per combobox guide\"\n      }\n    },\n    {\n      \"intent\": \"Add isolated checkpoints for each order line combobox from goal\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 2,\n        \"checkPoints\": [\n          \"Select product for line item 1 using combobox\",\n          \"Set qty for line item 1\",\n          \"Select product for line item 2 using combobox\",\n          \"Set qty for line item 2\",\n          \"Select product for line item 3 using combobox\",\n          \"Set qty for line item 3\",\n          \"Review all filled values in the form at ®91\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form using order details in arguments: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark.\",\n        \"src\": \"filling guide and combobox guide\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fillForm clientName with ${args.clientName}, clientEmail with ${args.clientEmail}, clientPhone with ${args.clientPhone}, address with ${args.address} ${args.city} ${args.region} ${args.postal}, remark with ${args.remark}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          },\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          },\n          {\n            \"f\": \"remark\",\n            \"v\": \"${args.remark}\"\n          }\n        ]\n      },\n      \"cp\": [0, 1]\n    },\n    {\n      \"intent\": \"Prepare sufficient order line items by clicking + Add Line Item 3 times from args.itemsCount\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 3\n      },\n      \"cp\": [2]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Client/address/remark filled, 3 lines added. Use new cps to fill order lines via combobox then review all.\"\n  }\n}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 2680,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Cancel checklist 3 to isolate combobox per guide\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"cancel\", \"pos\": 3, \"cancelReason\": \"combobox action must be in isolated check…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 67768,
+          "totalTimeMs": 68725,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"fill client name, email, phone, delivery address fields and remark using ${args.clientName} ${args.clientEmail} ${args.clientPhone} ${args.address} ${args.city} ${args.region} ${args.postal} ${args.remark}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"fillForm\",\n        \"q\": \"®91\",\n        \"data\": [\n          {\n            \"f\": \"clientName\",\n            \"v\": \"${args.clientName}\"\n          },\n          {\n            \"f\": \"clientEmail\",\n            \"v\": \"${args.clientEmail}\"\n          },\n          {\n            \"f\": \"clientPhone\",\n            \"v\": \"${args.clientPhone}\"\n          },\n          {\n            \"f\": \"address\",\n            \"v\": \"${args.address}\"\n          },\n          {\n            \"f\": \"city\",\n            \"v\": \"${args.city}\"\n          },\n          {\n            \"f\": \"region\",\n            \"v\": \"${args.region}\"\n          },\n          {\n            \"f\": \"postal\",\n            \"v\": \"${args.postal}\"\n          },\n          {\n            \"f\": \"remark\",\n            \"v\": \"${args.remark}\"\n          }\n        ]\n      },\n      \"cp\": [0, 1]\n    },\n    {\n      \"intent\": \"prepare sufficient order line items by clicking + Add Line Item button twice for the 3 items\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®87\",\n        \"repeat\": 2\n      },\n      \"cp\": [2]\n    },\n    {\n      \"intent\": \"cancel original checklist 3 to isolate combobox steps per guide\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"cancel\",\n        \"pos\": 3,\n        \"cancelReason\": \"combobox requires isolated check point per combobox guide\"\n      }\n    },\n    {\n      \"intent\": \"cancel original checklist 4 to integrate remark review with new steps\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"cancel\",\n        \"pos\": 4,\n        \"cancelReason\": \"to integrate with new isolated combobox and review steps from goal\"\n      }\n    },\n    {\n      \"intent\": \"add new isolated check points after 2 for combobox selections and review using exact goal wording\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"afterCpId\": 2,\n        \"checkPoints\": [\n          \"Fill Order Lines with product, qty, and unit price for Laptop Pro from order_form.pdf\",\n          \"Fill Order Lines with product, qty, and unit price for Desk Chair from order_form.pdf\",\n          \"Fill Order Lines with product, qty, and unit price for Keyboard from order_form.pdf\",\n          \"Fill Remark with remark from order_form.pdf and review all filled values in the form at ®91\"\n        ],\n        \"permitFromGoal\": \"Fill the create order form using order details in arguments: set client name, email, phone, delivery address fields, order lines (product, qty, unit price) for each item, totals, and remark.\",\n        \"src\": \"first executor requirement and combobox/calendar guide\",\n        \"taskRisk\": \"m\"\n      }\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Basic client/address/remark fields filled and 2 more line items added. Read order_form.pdf to confirm all data including delivery date then follow new isolated checklist points starting with combobox for each product one-by-one.\",\n    \"readFiles\": [\"order_form.pdf\"]\n  }\n}",
+          "score": 7,
+          "highlights": [],
+          "resultChars": 3248,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"fill client name, email, phone, delivery address fields and remark using ${args.clientName} ${args.clientEmail} ${args.clientPhone} ${args.address} ${args.city} ${args.region} $…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/long-form-filling.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 20,
+      "adjustedScoreRate": 83.33
+    },
+    {
+      "caseId": "long-form-webskill",
+      "caseName": "Long Form Webskill",
+      "runCount": 3,
+      "singleRunMaxScore": 8,
+      "maxScore": 24,
+      "totalScore": 22.8,
+      "scoreRate": 95,
+      "averageScore": 7.6,
+      "averageFirstTokenMs": 18762.67,
+      "averageTotalTimeMs": 19433.33,
+      "highlights": [
+        "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+      ],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 22436,
+          "totalTimeMs": 22924,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"call prepareOrder using args clientName/items/remark/deliveryDate\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2026-02-25\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify all form fields match args (client info, address, remark, 3 line items with qtys/prices, delivery date). If readyForPreview, click Preview Order next.\"\n  }\n}",
+          "score": 7.4,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "resultChars": 1072,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"call prepareOrder using args clientName/items/remark/deliveryDate\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"/skills/posorderprep/SKILL.md\", \"fnName\": \"window._web…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 17564,
+          "totalTimeMs": 18385,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Call prepareOrder webSkill using all order_form.pdf arguments to complete form\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-16\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productName\\\":\\\"Laptop Pro\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productName\\\":\\\"Desk Chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productName\\\":\\\"Keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Check if form is populated with client info, address, 3 line items, remark and a valid delivery date. Verify all inputs match arguments then click Preview Order button.\"\n  }\n}",
+          "score": 8,
+          "highlights": [],
+          "resultChars": 1083,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Call prepareOrder webSkill using all order_form.pdf arguments to complete form\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"/skills/posorderprep/SKILL.md\", \"fnName\":…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 16288,
+          "totalTimeMs": 16991,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Call prepareOrder web skill using client/order details from arguments\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"callWebSkill\",\n        \"href\": \"/skills/posorderprep/SKILL.md\",\n        \"fnName\": \"window._web_skills.posOrderPrep.prepareOrder\",\n        \"arg\": \"{\\\"clientName\\\":\\\"Northwind Travel\\\",\\\"clientEmail\\\":\\\"contact@client.com\\\",\\\"clientPhone\\\":\\\"555-0100\\\",\\\"address\\\":\\\"123 Client St\\\",\\\"city\\\":\\\"Business City\\\",\\\"region\\\":\\\"ST\\\",\\\"postal\\\":\\\"12345\\\",\\\"deliveryDate\\\":\\\"2027-03-20\\\",\\\"remark\\\":\\\"Deliver ASAP, but we are not open on monday, please do not delivery on monday\\\",\\\"lines\\\":[{\\\"productId\\\":\\\"sku-laptop\\\",\\\"quantity\\\":5,\\\"unitPrice\\\":1200},{\\\"productId\\\":\\\"sku-chair\\\",\\\"quantity\\\":1,\\\"unitPrice\\\":350},{\\\"productId\\\":\\\"sku-keyboard\\\",\\\"quantity\\\":3,\\\"unitPrice\\\":80}]}\"\n      },\n      \"cp\": [\n        0\n      ]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify form fields and order lines match arguments from order_form.pdf, confirm no Mondays chosen per remark, then preview order if ready.\"\n  }\n}",
+          "score": 7.4,
+          "highlights": [
+            "delivery date must be at least 11 months after today and not monday/saturday/sunday"
+          ],
+          "resultChars": 1057,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Call prepareOrder web skill using client/order details from arguments\", \"risk\": \"m\", \"action\": { \"k\": \"callWebSkill\", \"href\": \"/skills/posorderprep/SKILL.md\", \"fnName\": \"window.…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/long-form-webskill.json",
+      "weight": 1,
+      "adjustedMaxScore": 24,
+      "adjustedTotalScore": 22.8,
+      "adjustedScoreRate": 95
+    },
+    {
+      "caseId": "long-task-splitting",
+      "caseName": "Long Task Splitting",
+      "runCount": 3,
+      "singleRunMaxScore": 7,
+      "maxScore": 21,
+      "totalScore": 19,
+      "scoreRate": 90.48,
+      "averageScore": 6.33,
+      "averageFirstTokenMs": 34928.67,
+      "averageTotalTimeMs": 37088,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 33566,
+          "totalTimeMs": 35629,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"Initialize checklist breakdown from GOAL into atomic steps\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email account with pikachu@pokemon.com and P@ssword321\",\n          \"read new order email\",\n          \"get order detail from it\",\n          \"login to pos account with pikachu@pokemon.com and P@ssword321\",\n          \"go to pos system\",\n          \"fill create order form with detail from the order email\",\n          \"set earliest delivery date\",\n          \"in preview order step if order amount > 1000 cap screenshot\",\n          \"go to messager send order file/detail & screenshot seek for manager dillion's approve\",\n          \"do what he advise in case\",\n          \"save order\",\n          \"download the invoice in order list\",\n          \"go to email and reply the client with id detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"initial [GOAL] breakdown\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill email field with pikachu@pokemon.com to login to email account\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"fill password field with P@ssword321 to login to email account\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      },\n      \"cp\": [0]\n    },\n    {\n      \"intent\": \"click the Next button to submit login for email account\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify successful login to email inbox. Locate and open the new order email, extract all order details. Set args for order details to carry forward.\"\n  }\n}",
+          "score": 6.5,
+          "highlights": [],
+          "resultChars": 1925,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"Initialize checklist breakdown from GOAL into atomic steps\", \"risk\": \"l\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"login to email account with pikachu@pokemon.com and P@…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 31183,
+          "totalTimeMs": 33404,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set login credentials to args for reuse across email/POS\",\n      \"risk\": \"h\",\n      \"action\": {\n        \"k\": \"setArg\",\n        \"kv\": {\n          \"email\": \"pikachu@pokemon.com\",\n          \"password\": \"P@ssword321\"\n        }\n      }\n    },\n    {\n      \"intent\": \"add checklist breakdown from GOAL for order workflow\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email account with pikachu@pokemon.com and P@ssword321\",\n          \"read new order email\",\n          \"get order detail from it\",\n          \"go to pos system\",\n          \"fill create order form with detail from the order email\",\n          \"set earliest delivery date\",\n          \"check order amount in preview order step\",\n          \"if order amount > 1000, cap screenshot\",\n          \"go to messager\",\n          \"send order file/detail & screenshot to manager dillion\",\n          \"seek for dillion's approve and do what he advise\",\n          \"save order\",\n          \"download the invoice in order list\",\n          \"go to email\",\n          \"reply the client with id, detail & invoice\"\n        ],\n        \"permitFromGoal\": \"read new order email and get order detail from it\",\n        \"src\": \"initial GOAL breakdown\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill email with ${args.email}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"${args.email}\"\n      }\n    },\n    {\n      \"intent\": \"fill password with ${args.password}\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"${args.password}\"\n      }\n    },\n    {\n      \"intent\": \"click Next button to login to email\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      },\n      \"cp\": [0]\n    }\n  ]\n}",
+          "score": 6,
+          "highlights": [],
+          "resultChars": 1872,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set login credentials to args for reuse across email/POS\", \"risk\": \"h\", \"action\": { \"k\": \"setArg\", \"kv\": { \"email\": \"pikachu@pokemon.com\", \"password\": \"P@ssword321\" } } }, { \"in…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 40037,
+          "totalTimeMs": 42231,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"add checklist points from goal to track multi-step order task\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"addNewTask\",\n        \"checkPoints\": [\n          \"login to email account with email: pikachu@pokemon.com password: P@ssword321\",\n          \"login to pos account with email: pikachu@pokemon.com password: P@ssword321\",\n          \"read new order email\",\n          \"get order detail from it\",\n          \"go to pos system\",\n          \"fill create order form with detail from the order form\",\n          \"set earliest delivery date\",\n          \"in preview order step, if order amount > 1000, cap screenshot\",\n          \"go to messager, send him order file/detail & screenshot seek for manager dillion's approve\",\n          \"do what he advise in case\",\n          \"save order\",\n          \"download the invoice in order list\",\n          \"go to email and reply the client with id, detail & invoice\"\n        ],\n        \"permitFromGoal\": \"do what you can what you want, no botherUser\",\n        \"src\": \"[GOAL]\",\n        \"taskRisk\": \"m\"\n      }\n    },\n    {\n      \"intent\": \"fill email with pikachu@pokemon.com\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®2\",\n        \"v\": \"pikachu@pokemon.com\"\n      }\n    },\n    {\n      \"intent\": \"fill password with P@ssword321\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"input\",\n        \"q\": \"®5\",\n        \"v\": \"P@ssword321\"\n      }\n    },\n    {\n      \"intent\": \"click Next button to login to email\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"mouse\",\n        \"a\": \"click\",\n        \"q\": \"®c\"\n      },\n      \"cp\": [0]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After login, open the new order email, extract its details, mark checklist items 2 and 3 working and continue to POS.\"\n  }\n}",
+          "score": 6.5,
+          "highlights": [],
+          "resultChars": 1794,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"add checklist points from goal to track multi-step order task\", \"risk\": \"m\", \"action\": { \"k\": \"addNewTask\", \"checkPoints\": [ \"login to email account with email: pikachu@pokemon.…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/long-task-splitting.json",
+      "weight": 1.5,
+      "adjustedMaxScore": 31.5,
+      "adjustedTotalScore": 28.5,
+      "adjustedScoreRate": 90.48
+    },
+    {
+      "caseId": "reasoning-calendar",
+      "caseName": "Reasoning Calendar",
+      "runCount": 3,
+      "singleRunMaxScore": 5,
+      "maxScore": 15,
+      "totalScore": 13,
+      "scoreRate": 86.67,
+      "averageScore": 4.33,
+      "averageFirstTokenMs": 18278.33,
+      "averageTotalTimeMs": 19147.67,
+      "highlights": [],
+      "runs": [
+        {
+          "attempt": 1,
+          "firstTokenMs": 23153,
+          "totalTimeMs": 23882,
+          "result": "{\"a\":[{\"intent\":\"mark cp 4 as working for delivery date\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date per goal and remarks using calendar\",\"risk\":\"l\",\"action\":{\"k\":\"calendar\",\"q\":\"®9u\",\"ctx\":{\"goalHint\":\"set earliest delivery date\",\"argValHint\":\"We are not open on monday, please do not delivery on monday\",\"pageHint\":\"order takes 11 months to produce\"}},\"cp\":[4]}],\"next\":{\"tip\":\"Verify delivery date set considering production time and no Monday delivery then preview order since total >1000\"}}",
+          "score": 5,
+          "highlights": [],
+          "resultChars": 550,
+          "resultFormat": "raw_json",
+          "resultPreview": "{\"a\":[{\"intent\":\"mark cp 4 as working for delivery date\",\"risk\":\"l\",\"action\":{\"k\":\"checklist\",\"a\":\"working\",\"pos\":4}},{\"intent\":\"set earliest delivery date per goal and remarks using calendar\",\"risk\"…"
+        },
+        {
+          "attempt": 2,
+          "firstTokenMs": 18516,
+          "totalTimeMs": 19522,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"mark cp 4 as working for set earliest delivery date\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"set earliest delivery date using calendar action\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date. order takes 11 months to produce. do not delivery on monday\",\n          \"argValHint\": \"remarks: We are not open on monday, please do not delivery on monday\",\n          \"pageHint\": \"Delivery Date section shows calendar on Feb 2026 with disabled dates\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"After calendar sets date, verify form then isolate preview order action.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 831,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"mark cp 4 as working for set earliest delivery date\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 4 } }, { \"intent\": \"set earliest delivery date using cale…"
+        },
+        {
+          "attempt": 3,
+          "firstTokenMs": 13166,
+          "totalTimeMs": 14039,
+          "result": "{\n  \"a\": [\n    {\n      \"intent\": \"set checklist #4 to working\",\n      \"risk\": \"l\",\n      \"action\": {\n        \"k\": \"checklist\",\n        \"a\": \"working\",\n        \"pos\": 4\n      }\n    },\n    {\n      \"intent\": \"set earliest delivery date with calendar\",\n      \"risk\": \"m\",\n      \"action\": {\n        \"k\": \"calendar\",\n        \"q\": \"®9u\",\n        \"ctx\": {\n          \"goalHint\": \"set earliest delivery date\",\n          \"argValHint\": null,\n          \"pageHint\": \"order takes 11 months to produce\"\n        }\n      },\n      \"cp\": [4]\n    }\n  ],\n  \"next\": {\n    \"tip\": \"Verify date set on form then proceed to preview order button.\"\n  }\n}",
+          "score": 4,
+          "highlights": [],
+          "resultChars": 625,
+          "resultFormat": "raw_json",
+          "resultPreview": "{ \"a\": [ { \"intent\": \"set checklist #4 to working\", \"risk\": \"l\", \"action\": { \"k\": \"checklist\", \"a\": \"working\", \"pos\": 4 } }, { \"intent\": \"set earliest delivery date with calendar\", \"risk\": \"m\", \"acti…"
+        }
+      ],
+      "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/cases/reasoning-calendar.json",
+      "weight": 1,
+      "adjustedMaxScore": 15,
+      "adjustedTotalScore": 13,
+      "adjustedScoreRate": 86.67
+    }
+  ],
+  "modelDir": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20",
+  "detailPath": "/Volumes/code/runEver/runEverMark/benchmark/reports/all-configs-final-r3/x-ai/grok-4.20/details.json",
+  "adjustedMaxScore": 139.5,
+  "adjustedTotalScore": 120.3,
+  "adjustedScoreRate": 86.24
+}
